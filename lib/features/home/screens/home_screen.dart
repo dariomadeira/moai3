@@ -7,9 +7,12 @@ import 'package:moai3/features/home/widgets/navigation_rail_section.dart';
 import 'package:moai3/focus/tv_intents.dart';
 import 'package:moai3/focus/tv_shortcuts.dart';
 import 'package:moai3/layout/settings_panel_layout.dart';
+import 'package:moai3/services/plugin_host_service.dart';
+import 'package:moai3/services/plugin_update_service.dart';
 import 'package:moai3/services/update_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/dialogs/plugin_update_dialog.dart';
 import 'package:moai3/widgets/dialogs/update_dialog.dart';
 
 /// Shell del home — foco como moaiSmart:
@@ -53,9 +56,28 @@ class _HomeScreenState extends State<HomeScreen> {
     await Future.delayed(const Duration(seconds: 4));
     if (!mounted) return;
 
-    final update = await UpdateService.checkForUpdate();
-    if (update != null && mounted) {
-      UpdateDialog.show(context, update);
+    // 1. PRIORIDAD 1: Actualización del APK general del sistema
+    final appUpdate = await UpdateService.checkForUpdate();
+    if (appUpdate != null && mounted) {
+      // Se muestra el diálogo del APK y se aborta cualquier búsqueda de plugins.
+      // Si el usuario actualiza, el proceso se reinicia/reinstala.
+      UpdateDialog.show(context, appUpdate);
+      return;
+    }
+
+    // 2. PRIORIDAD 2: Solo si el APK general ya está al día, comprobar plugins
+    if (!mounted) return;
+    try {
+      final pluginHost = context.read<PluginHostController>();
+      if (pluginHost.sources.isNotEmpty) {
+        final pendingUpdates =
+            await PluginUpdateService.checkForUpdates(pluginHost.sources);
+        if (pendingUpdates.isNotEmpty && mounted) {
+          PluginUpdateDialog.show(context, pendingUpdates);
+        }
+      }
+    } catch (e) {
+      debugPrint('[HomeScreen] Error comprobando plugins: $e');
     }
   }
 
