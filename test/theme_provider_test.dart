@@ -32,5 +32,45 @@ void main() {
       expect(reloadedProvider.darkMode, isFalse);
       expect(reloadedProvider.themeMode, ThemeMode.light);
     });
+
+    test('defaults to autoAccent false', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await AppPreferences.init();
+      final themeProvider = ThemeProvider(prefs);
+
+      expect(themeProvider.autoAccent, isFalse);
+    });
+
+    test('setAutoAccent toggles preference and restores manual color on disable', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await AppPreferences.init();
+      final themeProvider = ThemeProvider(prefs);
+
+      // Set manual color index 3
+      await themeProvider.setAccentColorIndex(3);
+      expect(themeProvider.accentColorIndex, 3);
+
+      // Turn on auto accent
+      await themeProvider.setAutoAccent(true);
+      expect(themeProvider.autoAccent, isTrue);
+      expect(themeProvider.accentColorIndex, inInclusiveRange(0, 11));
+
+      // Turn off auto accent, should restore manual color index 3
+      await themeProvider.setAutoAccent(false);
+      expect(themeProvider.autoAccent, isFalse);
+      expect(themeProvider.accentColorIndex, 3);
+    });
+
+    test('cold start with autoAccent true generates random color', () async {
+      SharedPreferences.setMockInitialValues({
+        'auto_accent_color': true,
+        'accent_color_index': 5,
+      });
+      final prefs = await AppPreferences.init();
+      final themeProvider = ThemeProvider(prefs);
+
+      expect(themeProvider.autoAccent, isTrue);
+      expect(themeProvider.accentColorIndex, inInclusiveRange(0, 11));
+    });
   });
 }
