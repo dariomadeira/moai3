@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/services/plugin_host_service.dart';
+import 'package:moai3/services/plugin_update_service.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
@@ -696,11 +697,32 @@ class _SourceTile extends StatefulWidget {
 }
 
 class _SourceTileState extends State<_SourceTile> {
+  String? _availableVersion;
+
   @override
   void initState() {
     super.initState();
     widget.updateFocus.addListener(_onFocus);
     widget.removeFocus.addListener(_onFocus);
+    _checkForUpdate();
+  }
+
+  Future<void> _checkForUpdate() async {
+    final info = await PluginUpdateService.checkSingleSource(widget.source);
+    if (info != null && mounted) {
+      setState(() {
+        _availableVersion = info.remoteVersion;
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _SourceTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.source.version != widget.source.version ||
+        oldWidget.source.sourceUrl != widget.source.sourceUrl) {
+      _checkForUpdate();
+    }
   }
 
   @override
@@ -783,18 +805,48 @@ class _SourceTileState extends State<_SourceTile> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    'v${widget.source.version} · '
-                    '${_formatChannelsCount(widget.source.canales.length)}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: MoaiText.body(
-                      context,
-                      color: descColor,
-                      fontSize: 12,
-                      height: 1.3,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        'v${widget.source.version} · '
+                        '${_formatChannelsCount(widget.source.canales.length)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: MoaiText.body(
+                          context,
+                          color: descColor,
+                          fontSize: 12,
+                          height: 1.3,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      if (_availableVersion != null) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1.5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isFocused
+                                ? scheme.onPrimary.withValues(alpha: 0.22)
+                                : scheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'v$_availableVersion disponible',
+                            style: MoaiText.body(
+                              context,
+                              color: isFocused
+                                  ? scheme.onPrimary
+                                  : scheme.onPrimaryContainer,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
@@ -802,9 +854,16 @@ class _SourceTileState extends State<_SourceTile> {
             const SizedBox(width: 12),
             _IconButtonAction(
               focusNode: widget.updateFocus,
-              tooltip: 'sources_update'.tr(),
-              icon: Icons.sync_rounded,
-              onPressed: widget.onUpdate,
+              tooltip: _availableVersion != null
+                  ? 'Actualizar a v$_availableVersion'
+                  : 'sources_update'.tr(),
+              icon: _availableVersion != null
+                  ? Symbols.system_update_rounded
+                  : Icons.sync_rounded,
+              onPressed: () {
+                widget.onUpdate();
+                setState(() => _availableVersion = null);
+              },
               parentFocused: isFocused,
               onKeyRight: () => widget.removeFocus.requestFocus(),
               onKeyUp: widget.onUpdateKeyUp,
