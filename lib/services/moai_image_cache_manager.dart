@@ -7,7 +7,8 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 /// - Periodo de expiración extendido (180 días) para evitar descargas repetitivas.
 /// - Base de datos SQLite dedicada para aislar los logos de otros recursos temporales.
 class MoaiImageCacheManager {
-  static const String key = 'moai_channel_logos';
+  static const String key = 'moai_channel_logos_v2';
+  static const String _legacyKey = 'moai_channel_logos';
 
   static final CacheManager instance = CacheManager(
     Config(
@@ -18,6 +19,14 @@ class MoaiImageCacheManager {
       fileService: HttpFileService(),
     ),
   );
+
+  /// Limpia de forma silenciosa la caché antigua que contenía imágenes con deformación forzada.
+  static Future<void> clearLegacyCache() async {
+    try {
+      final legacy = CacheManager(Config(_legacyKey));
+      await legacy.emptyCache();
+    } catch (_) {}
+  }
 
   /// Genera una clave de caché limpia para evitar que parámetros de consulta dinámicos
   /// (como ?cb=... o ?timestamp=...) provoquen descargas duplicadas.

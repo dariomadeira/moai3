@@ -129,6 +129,7 @@ class _ChannelLogo extends StatelessWidget {
         return SvgPicture.network(
           cleanUrl,
           fit: BoxFit.contain,
+          alignment: Alignment.center,
           headers: const {'User-Agent': 'Mozilla/5.0 (Linux; Android 10) MoaiTV/1.0'},
           placeholderBuilder: (_) => placeholder,
           errorBuilder: (_, _, _) => placeholder,
@@ -139,11 +140,10 @@ class _ChannelLogo extends StatelessWidget {
         cacheKey: MoaiImageCacheManager.cleanCacheKey(cleanUrl),
         cacheManager: MoaiImageCacheManager.instance,
         fit: BoxFit.contain,
-        memCacheWidth: 96,
-        memCacheHeight: 64,
-        maxWidthDiskCache: 160,
-        maxHeightDiskCache: 120,
+        alignment: Alignment.center,
+        memCacheHeight: 120,
         fadeInDuration: const Duration(milliseconds: 80),
+        filterQuality: FilterQuality.medium,
         httpHeaders: const {'User-Agent': 'Mozilla/5.0 (Linux; Android 10) MoaiTV/1.0'},
         placeholder: (_, _) => placeholder,
         errorWidget: (_, _, _) => placeholder,
@@ -151,7 +151,9 @@ class _ChannelLogo extends StatelessWidget {
     }
     return Image.asset(
       cleanUrl,
-      fit: BoxFit.cover,
+      fit: BoxFit.contain,
+      alignment: Alignment.center,
+      filterQuality: FilterQuality.medium,
       errorBuilder: (_, _, _) => placeholder,
     );
   }
