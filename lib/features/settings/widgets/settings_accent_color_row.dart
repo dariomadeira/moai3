@@ -11,6 +11,7 @@ class SettingsAccentColorRow extends StatelessWidget {
   final ValueChanged<int> onChanged;
   final IconData? icon;
   final VoidCallback? onKeyUp;
+  final VoidCallback? onKeyDown;
 
   const SettingsAccentColorRow({
     super.key,
@@ -19,6 +20,7 @@ class SettingsAccentColorRow extends StatelessWidget {
     required this.onChanged,
     this.icon,
     this.onKeyUp,
+    this.onKeyDown,
   });
 
   void _select(int index) {
@@ -36,12 +38,17 @@ class SettingsAccentColorRow extends StatelessWidget {
       description: 'settings_general_accent_desc'.tr(),
       icon: icon,
       onKeyUp: onKeyUp,
+      onKeyDown: onKeyDown,
       onKeyEvent: (node, event) {
         if (event is! KeyDownEvent) return KeyEventResult.ignored;
         final key = event.logicalKey;
 
         if (key == LogicalKeyboardKey.arrowUp && onKeyUp != null) {
           onKeyUp!();
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.arrowDown && onKeyDown != null) {
+          onKeyDown!();
           return KeyEventResult.handled;
         }
         if (key == LogicalKeyboardKey.arrowLeft) {

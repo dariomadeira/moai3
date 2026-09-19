@@ -26,11 +26,14 @@ class SettingsGeneralPanel extends StatefulWidget {
 class _SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
   final FocusNode _darkModeFocusNode = FocusNode(debugLabel: 'general_dark_mode');
   final FocusNode _accentFocusNode = FocusNode(debugLabel: 'general_accent');
+  final FocusNode _autoAccentFocusNode =
+      FocusNode(debugLabel: 'general_auto_accent');
 
   @override
   void dispose() {
     _darkModeFocusNode.dispose();
     _accentFocusNode.dispose();
+    _autoAccentFocusNode.dispose();
     super.dispose();
   }
 
@@ -38,6 +41,7 @@ class _SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
     final theme = context.watch<ThemeProvider>();
+    final isAutoAccent = theme.autoAccent;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 16, 16, 16),
@@ -94,15 +98,36 @@ class _SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
               onKeyLeft: widget.onKeyLeft,
               onKeyRight: widget.onKeyRight,
               onKeyUp: () => widget.focusNode.requestFocus(),
-              onKeyDown: () => _accentFocusNode.requestFocus(),
+              onKeyDown: () => isAutoAccent
+                  ? _autoAccentFocusNode.requestFocus()
+                  : _accentFocusNode.requestFocus(),
             ),
+            if (!isAutoAccent) ...[
+              const SizedBox(height: 12),
+              SettingsAccentColorRow(
+                focusNode: _accentFocusNode,
+                icon: Icons.palette_outlined,
+                selectedIndex: theme.accentColorIndex,
+                onChanged: (index) => theme.setAccentColorIndex(index),
+                onKeyUp: () => _darkModeFocusNode.requestFocus(),
+                onKeyDown: () => _autoAccentFocusNode.requestFocus(),
+              ),
+            ],
             const SizedBox(height: 12),
-            SettingsAccentColorRow(
-              focusNode: _accentFocusNode,
-              icon: Icons.palette_outlined,
-              selectedIndex: theme.accentColorIndex,
-              onChanged: (index) => theme.setAccentColorIndex(index),
-              onKeyUp: () => _darkModeFocusNode.requestFocus(),
+            TvSettingsSwitchRow(
+              focusNode: _autoAccentFocusNode,
+              icon: Icons.auto_awesome_outlined,
+              label: 'settings_general_auto_accent'.tr(),
+              description: 'settings_general_auto_accent_desc'.tr(),
+              value: isAutoAccent,
+              onChanged: (auto) {
+                theme.setAutoAccent(auto);
+              },
+              onKeyLeft: widget.onKeyLeft,
+              onKeyRight: widget.onKeyRight,
+              onKeyUp: () => isAutoAccent
+                  ? _darkModeFocusNode.requestFocus()
+                  : _accentFocusNode.requestFocus(),
             ),
           ],
         ),
