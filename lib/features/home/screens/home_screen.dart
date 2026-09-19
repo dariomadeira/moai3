@@ -7,8 +7,10 @@ import 'package:moai3/features/home/widgets/navigation_rail_section.dart';
 import 'package:moai3/focus/tv_intents.dart';
 import 'package:moai3/focus/tv_shortcuts.dart';
 import 'package:moai3/layout/settings_panel_layout.dart';
+import 'package:moai3/services/update_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/dialogs/update_dialog.dart';
 
 /// Shell del home — foco como moaiSmart:
 /// Shortcuts D-pad globales; → del rail llama [HomeTvAreaState.requestEntryFocus].
@@ -37,6 +39,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int _selectedIndex = _sectionTv;
   int _activeSettingsPanelIndex = SettingsPanelLayout.configTvPanelIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAutoUpdate();
+    });
+  }
+
+  Future<void> _checkAutoUpdate() async {
+    // Esperar 4 segundos tras arrancar para permitir que la interfaz y canales carguen fluidamente
+    await Future.delayed(const Duration(seconds: 4));
+    if (!mounted) return;
+
+    final update = await UpdateService.checkForUpdate();
+    if (update != null && mounted) {
+      UpdateDialog.show(context, update);
+    }
+  }
 
   @override
   void dispose() {
