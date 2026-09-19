@@ -13,6 +13,7 @@ import 'package:moai3/helpers/notification_helper.dart';
 import 'package:moai3/routers/routers.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/debug_log_controller.dart';
+import 'package:moai3/services/moai_image_cache_manager.dart';
 import 'package:moai3/services/playback_stats_controller.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/favorites_provider.dart';
@@ -38,6 +39,7 @@ class BadCertHttpOverrides extends HttpOverrides {
 void main() async {
   HttpOverrides.global = BadCertHttpOverrides();
   WidgetsFlutterBinding.ensureInitialized();
+  MoaiImageCacheManager.clearLegacyCache();
   PaintingBinding.instance.imageCache.maximumSize = kImageCacheMaximumSize;
   PaintingBinding.instance.imageCache.maximumSizeBytes =
       kImageCacheMaximumSizeBytes;
