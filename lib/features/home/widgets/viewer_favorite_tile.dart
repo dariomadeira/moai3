@@ -1,12 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
-import 'package:moai3/services/moai_image_cache_manager.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/cards/tv_list_card_leading_logo.dart';
 import 'package:moai3/widgets/cards/tv_list_card_style.dart';
 
 class ViewerFavoriteTile extends StatefulWidget {
@@ -67,21 +64,11 @@ class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: ColoredBox(
-                    color: Colors.white,
-                    child: SizedBox(
-                      width: 48,
-                      height: 32,
-                      child: Padding(
-                        padding: widget.channel.logoUrl.startsWith('http')
-                            ? const EdgeInsets.all(3)
-                            : EdgeInsets.zero,
-                        child: _ChannelLogo(logoUrl: widget.channel.logoUrl),
-                      ),
-                    ),
-                  ),
+                TvListCardLeadingLogo(
+                  logoUrl: widget.channel.logoUrl,
+                  width: 48,
+                  height: 32,
+                  isFocused: _isFocused,
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -101,60 +88,6 @@ class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ChannelLogo extends StatelessWidget {
-  final String logoUrl;
-
-  const _ChannelLogo({required this.logoUrl});
-
-  @override
-  Widget build(BuildContext context) {
-    const placeholder = Icon(
-      Symbols.tv_gen,
-      color: Colors.black45,
-      size: 22,
-    );
-
-    final cleanUrl = logoUrl.trim();
-    if (cleanUrl.isEmpty) {
-      return placeholder;
-    }
-
-    if (cleanUrl.startsWith('http')) {
-      final isSvg = cleanUrl.toLowerCase().contains('.svg');
-      if (isSvg) {
-        return SvgPicture.network(
-          cleanUrl,
-          fit: BoxFit.contain,
-          alignment: Alignment.center,
-          headers: const {'User-Agent': 'Mozilla/5.0 (Linux; Android 10) MoaiTV/1.0'},
-          placeholderBuilder: (_) => placeholder,
-          errorBuilder: (_, _, _) => placeholder,
-        );
-      }
-      return CachedNetworkImage(
-        imageUrl: cleanUrl,
-        cacheKey: MoaiImageCacheManager.cleanCacheKey(cleanUrl),
-        cacheManager: MoaiImageCacheManager.instance,
-        fit: BoxFit.contain,
-        alignment: Alignment.center,
-        memCacheHeight: 120,
-        fadeInDuration: const Duration(milliseconds: 80),
-        filterQuality: FilterQuality.medium,
-        httpHeaders: const {'User-Agent': 'Mozilla/5.0 (Linux; Android 10) MoaiTV/1.0'},
-        placeholder: (_, _) => placeholder,
-        errorWidget: (_, _, _) => placeholder,
-      );
-    }
-    return Image.asset(
-      cleanUrl,
-      fit: BoxFit.contain,
-      alignment: Alignment.center,
-      filterQuality: FilterQuality.medium,
-      errorBuilder: (_, _, _) => placeholder,
     );
   }
 }

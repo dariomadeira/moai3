@@ -6,6 +6,8 @@ import 'package:moai3/widgets/cards/tv_icon_list_card.dart';
 class CategoryCard extends StatelessWidget {
   static const Map<String, IconData> icons = {
     'Aire': Symbols.airware,
+    'Interior': Symbols.location_city,
+    'Provinciales': Symbols.location_city,
     'Deportes': Icons.sports_soccer,
     'Noticias': Icons.newspaper,
     'Infantiles': Symbols.child_hat,
