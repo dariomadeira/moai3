@@ -76,6 +76,15 @@ class ChannelViewerHeader extends StatelessWidget {
               label: channel.category,
               textStyle: metaStyle.copyWith(color: scheme.onTertiaryContainer),
             ),
+            if (channel.pluginTag != null && channel.pluginTag!.trim().isNotEmpty)
+              _MetaPill(
+                color: scheme.tertiaryContainer,
+                foreground: scheme.onTertiaryContainer,
+                icon: Icons.extension_outlined,
+                label: channel.pluginTag!.trim(),
+                textStyle:
+                    metaStyle.copyWith(color: scheme.onTertiaryContainer),
+              ),
             if (channel.fallbackUrls.length > 1 && !isPuppeteer)
               _MetaPill(
                 color: scheme.tertiaryContainer,
