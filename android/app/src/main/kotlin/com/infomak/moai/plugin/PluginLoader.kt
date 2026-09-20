@@ -270,6 +270,15 @@ class PluginLoader(private val context: Context) {
             throw IllegalArgumentException("manifest.json sin canales")
         }
 
+        val tagRaw = json.optString("tag", "").trim()
+        val tag = if (tagRaw.isNotEmpty()) {
+            tagRaw
+        } else if (id.startsWith("moai_")) {
+            id.removePrefix("moai_")
+        } else {
+            ""
+        }
+
         return PluginManifest(
             id = id,
             nombre = nombre,
@@ -278,6 +287,7 @@ class PluginLoader(private val context: Context) {
             maxContrato = maxContrato,
             canales = canales,
             clase = clase,
+            tag = tag,
         )
     }
 
@@ -406,6 +416,7 @@ class PluginLoader(private val context: Context) {
 
     private fun pluginMap(p: InstalledPlugin): Map<String, Any?> = mapOf(
         "id" to p.manifest.id,
+        "tag" to p.manifest.tag,
         "nombre" to p.manifest.nombre,
         "version" to p.manifest.version,
         "minContrato" to p.manifest.minContrato,

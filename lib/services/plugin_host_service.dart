@@ -32,6 +32,7 @@ class PluginChannelInfo {
 /// Fuente (`.dex`) instalada, según la reporta el loader.
 class PluginSource {
   final String id;
+  final String tag;
   final String nombre;
   final String version;
   final int minContrato;
@@ -41,6 +42,7 @@ class PluginSource {
 
   const PluginSource({
     required this.id,
+    this.tag = '',
     required this.nombre,
     required this.version,
     required this.minContrato,
@@ -50,8 +52,14 @@ class PluginSource {
   });
 
   factory PluginSource.fromMap(Map<dynamic, dynamic> map) {
+    final id = map['id'] as String? ?? '';
+    final rawTag = (map['tag'] as String? ?? '').trim();
+    final tag = rawTag.isNotEmpty
+        ? rawTag
+        : (id.startsWith('moai_') ? id.substring(5) : '');
     return PluginSource(
-      id: map['id'] as String? ?? '',
+      id: id,
+      tag: tag,
       nombre: map['nombre'] as String? ?? '',
       version: map['version'] as String? ?? '',
       minContrato: map['minContrato'] as int? ?? 1,
@@ -270,6 +278,7 @@ class PluginChannelCatalog {
             pluginId: source.id,
             pluginChannelId: info.id,
             pluginName: source.nombre,
+            pluginTag: source.tag.isNotEmpty ? source.tag : null,
           ),
         );
       }

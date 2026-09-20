@@ -11,6 +11,7 @@ class Channel {
   final String? pluginId;
   final String? pluginChannelId;
   final String? pluginName;
+  final String? pluginTag;
 
   Channel({
     required this.id,
@@ -23,6 +24,7 @@ class Channel {
     this.pluginId,
     this.pluginChannelId,
     this.pluginName,
+    this.pluginTag,
   });
 
   /// Primera URL del catálogo (puede ser no reproducible; usar helpers en playback).
@@ -57,6 +59,10 @@ class Channel {
       fallbackUrls: urls,
       country: json['country'] as String? ?? 'General',
       category: json['category'] as String? ?? 'General',
+      pluginId: json['pluginId'] as String?,
+      pluginChannelId: json['pluginChannelId'] as String?,
+      pluginName: json['pluginName'] as String?,
+      pluginTag: json['pluginTag'] as String?,
     );
   }
 
@@ -68,6 +74,10 @@ class Channel {
       'logoUrl': logoUrl,
       'country': country,
       'category': category,
+      if (pluginId != null) 'pluginId': pluginId,
+      if (pluginChannelId != null) 'pluginChannelId': pluginChannelId,
+      if (pluginName != null) 'pluginName': pluginName,
+      if (pluginTag != null) 'pluginTag': pluginTag,
     };
   }
 }
