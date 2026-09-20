@@ -162,6 +162,11 @@ class _NewChannelCardState extends State<NewChannelCard> {
                   final metrics =
                       TvListCardMetrics.forWidth(constraints.maxWidth);
 
+                  final rawTag = widget.channel.pluginTag?.trim();
+                  final tag = (rawTag != null && rawTag.isNotEmpty)
+                      ? rawTag.toUpperCase()
+                      : null;
+
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -188,6 +193,35 @@ class _NewChannelCardState extends State<NewChannelCard> {
                           ),
                         ),
                       ),
+                      if (tag != null && constraints.maxWidth >= 130) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isFocused
+                                ? itemStyle.foregroundColor.withValues(alpha: 0.18)
+                                : scheme.onSurface.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            tag,
+                            maxLines: 1,
+                            style: MoaiText.body(
+                              context,
+                              fontSize: 9.0,
+                              fontWeight: FontWeight.w700,
+                              height: 1.0,
+                              letterSpacing: 0.5,
+                              color: isFocused
+                                  ? itemStyle.foregroundColor
+                                  : scheme.onSurface.withValues(alpha: 0.5),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   );
                 },

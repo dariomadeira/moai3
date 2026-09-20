@@ -98,17 +98,46 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
     if (widget.channel != null) unawaited(_playChannel(widget.channel!));
   }
 
+  bool _wasBackgrounded = false;
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (_engine == null || _isDisposed) return;
+    if (_isDisposed) return;
     if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive ||
         state == AppLifecycleState.hidden) {
-      _log('App en segundo plano: pausando reproductor y liberando buffers');
-      unawaited(_engine?.pause());
+      if (!_wasBackgrounded) {
+        _log('App en segundo plano: liberando reproductor y recursos');
+        _wasBackgrounded = true;
+        _session.begin();
+        _reconnect.reset();
+        unawaited(_disposeEngine().then((_) {
+          _safeSetState(() {
+            _hasFirstFrame = false;
+            _isBuffering = false;
+          });
+        }));
+      }
+    } else if (state == AppLifecycleState.inactive) {
+      if (!_wasBackgrounded) {
+        _log('App inactiva: pausando reproductor');
+        unawaited(_engine?.pause());
+      }
     } else if (state == AppLifecycleState.resumed) {
-      _log('App en primer plano: reanudando reproductor');
-      unawaited(_engine?.play());
+      if (_wasBackgrounded) {
+        _log('App en primer plano: reconectando transmisión en vivo');
+        _wasBackgrounded = false;
+        _safeSetState(() {
+          _hasFirstFrame = false;
+          _isBuffering = false;
+          _errorMessage = null;
+        });
+        if (widget.channel != null) {
+          unawaited(_playChannel(widget.channel!));
+        }
+      } else if (_engine != null) {
+        _log('App en primer plano: reanudando reproductor');
+        unawaited(_engine?.play());
+      }
     }
   }
 
