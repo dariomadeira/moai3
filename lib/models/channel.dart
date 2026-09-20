@@ -57,8 +57,12 @@ class Channel {
       name: json['name'] as String? ?? '',
       logoUrl: json['logoUrl'] as String? ?? '',
       fallbackUrls: urls,
-      country: json['country'] as String? ?? 'General',
-      category: json['category'] as String? ?? 'General',
+      country: (json['country'] as String?)?.trim().isNotEmpty == true
+          ? (json['country'] as String).trim()
+          : 'General',
+      category: (json['category'] as String?)?.trim().isNotEmpty == true
+          ? (json['category'] as String).trim()
+          : 'General',
       pluginId: json['pluginId'] as String?,
       pluginChannelId: json['pluginChannelId'] as String?,
       pluginName: json['pluginName'] as String?,

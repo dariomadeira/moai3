@@ -43,7 +43,11 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
   void syncFromChannels(List<Channel> allChannels, {bool? isAdultUnlocked}) {
     if (isAdultUnlocked != null) this.isAdultUnlocked = isAdultUnlocked;
     final filtered = filterChannels(allChannels);
-    countries = filtered.map((c) => c.country).toSet().toList()..sort();
+    countries = filtered
+        .map((c) => c.country.trim().isEmpty ? 'General' : c.country.trim())
+        .toSet()
+        .toList()
+      ..sort();
     FocusScrollSync.syncFocusNodes(countries.length, countryFocusNodes);
 
     if (countries.isEmpty) {
@@ -90,12 +94,18 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
       return;
     }
     final filtered = filterChannels(allChannels);
-    countries = filtered.map((c) => c.country).toSet().toList()..sort();
+    countries = filtered
+        .map((c) => c.country.trim().isEmpty ? 'General' : c.country.trim())
+        .toSet()
+        .toList()
+      ..sort();
     FocusScrollSync.syncFocusNodes(countries.length, countryFocusNodes);
     selectedChannel = channel;
-    selectedCountry = channel.country;
+    selectedCountry =
+        channel.country.trim().isEmpty ? 'General' : channel.country.trim();
     _refreshCategories(filtered);
-    selectedCategory = channel.category;
+    selectedCategory =
+        channel.category.trim().isEmpty ? 'General' : channel.category.trim();
     _refreshChannels(filtered);
     safeNotifyListeners();
   }
@@ -115,7 +125,11 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
       if (countries.isNotEmpty) return;
     }
     final filtered = filterChannels(allChannels);
-    countries = filtered.map((c) => c.country).toSet().toList()..sort();
+    countries = filtered
+        .map((c) => c.country.trim().isEmpty ? 'General' : c.country.trim())
+        .toSet()
+        .toList()
+      ..sort();
     FocusScrollSync.syncFocusNodes(countries.length, countryFocusNodes);
     if (countries.isNotEmpty) {
       selectedCountry = countries.first;
@@ -123,8 +137,10 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
     _refreshCategories(filtered);
 
     final localCategories = filtered
-        .where((c) => c.country == selectedCountry)
-        .map((c) => c.category)
+        .where((c) =>
+            (c.country.trim().isEmpty ? 'General' : c.country.trim()) ==
+            selectedCountry)
+        .map((c) => c.category.trim().isEmpty ? 'General' : c.category.trim())
         .toSet()
         .toList()
       ..sort();
@@ -143,8 +159,9 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
     _refreshCategories(filtered);
 
     final localCategories = filtered
-        .where((c) => c.country == country)
-        .map((c) => c.category)
+        .where((c) =>
+            (c.country.trim().isEmpty ? 'General' : c.country.trim()) == country)
+        .map((c) => c.category.trim().isEmpty ? 'General' : c.category.trim())
         .toSet()
         .toList()
       ..sort();
@@ -176,8 +193,10 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
 
   void _refreshCategories(List<Channel> allChannels) {
     categories = allChannels
-        .where((c) => c.country == selectedCountry)
-        .map((c) => c.category)
+        .where((c) =>
+            (c.country.trim().isEmpty ? 'General' : c.country.trim()) ==
+            selectedCountry)
+        .map((c) => c.category.trim().isEmpty ? 'General' : c.category.trim())
         .toSet()
         .toList()
       ..sort();
@@ -188,7 +207,10 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
     channels = allChannels
         .where(
           (c) =>
-              c.country == selectedCountry && c.category == selectedCategory,
+              (c.country.trim().isEmpty ? 'General' : c.country.trim()) ==
+                  selectedCountry &&
+              (c.category.trim().isEmpty ? 'General' : c.category.trim()) ==
+                  selectedCategory,
         )
         .toList()
       ..sort(
