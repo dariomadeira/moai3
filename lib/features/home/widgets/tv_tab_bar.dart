@@ -5,11 +5,13 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
 
-/// Tabs Explorar / Grupos.
+/// Floating Toolbar M3 Expressive para las pestañas Explorar / Mis grupos.
 ///
-/// Alineación: `top: 8` = `_verticalSpacer` interno del [NavigationRail] M3,
-/// para que el pill quede a la misma altura que el indicador TV.
-/// Colores: misma lógica que [NavigationRailSection].
+/// Diseño visual:
+///  - Cápsula flotante continua con colores planos sin bordes ([ColorScheme.surfaceContainerHigh]).
+///  - Pestaña activa expandida con icono y texto ([ColorScheme.secondaryContainer]).
+///  - Pestaña inactiva compacta sólo con icono ([ColorScheme.onSurfaceVariant]).
+///  - Foco D-Pad de alto contraste con [ColorScheme.primary].
 class TvTabBar extends StatelessWidget {
   final String selectedTab;
   final ValueChanged<String> onTabChanged;
@@ -19,7 +21,7 @@ class TvTabBar extends StatelessWidget {
   final VoidCallback onFocusLeft;
   final VoidCallback onFocusPlayer;
 
-  /// Altura del indicador M3 del NavigationRail.
+  /// Altura del indicador interno de cada píldora.
   static const double indicatorHeight = 32;
 
   const TvTabBar({
@@ -35,73 +37,82 @@ class TvTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = context.scheme;
+
     return Padding(
-      // 8 = spacer vertical del NavigationRail (Material).
+      // Alineación vertical superior para sincronizar con NavigationRail M3.
       padding: const EdgeInsets.only(top: 8, bottom: 8, right: 8),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _TabPill(
-              title: 'home_tab_explore'.tr(),
-              icon: Icons.explore_outlined,
-              selectedIcon: Icons.explore,
-              isSelected: selectedTab == 'explore',
-              focusNode: exploreFocusNode,
-              onFocused: () => onTabChanged('explore'),
-              onKeyLeft: onFocusLeft,
-              onKeyRight: () => groupsFocusNode.requestFocus(),
-              onKeyDown: onFocusDown,
-            ),
-            const SizedBox(width: 12),
-            _TabPill(
-              title: 'home_tab_groups'.tr(),
-              icon: Symbols.stack,
-              selectedIcon: Symbols.stack,
-              isSelected: selectedTab == 'groups',
-              focusNode: groupsFocusNode,
-              onFocused: () => onTabChanged('groups'),
-              onKeyLeft: () => exploreFocusNode.requestFocus(),
-              onKeyRight: onFocusPlayer,
-              onKeyDown: onFocusDown,
-            ),
-          ],
+        child: Container(
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          padding: const EdgeInsets.all(4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _M3EFloatingTabPill(
+                title: 'home_tab_explore'.tr(),
+                icon: Icons.explore_outlined,
+                selectedIcon: Icons.explore,
+                isSelected: selectedTab == 'explore',
+                focusNode: exploreFocusNode,
+                onSelect: () => onTabChanged('explore'),
+                onKeyLeft: onFocusLeft,
+                onKeyRight: () => groupsFocusNode.requestFocus(),
+                onKeyDown: onFocusDown,
+              ),
+              const SizedBox(width: 4),
+              _M3EFloatingTabPill(
+                title: 'home_tab_groups'.tr(),
+                icon: Symbols.bookmarks,
+                selectedIcon: Symbols.bookmarks,
+                isSelected: selectedTab == 'groups',
+                focusNode: groupsFocusNode,
+                onSelect: () => onTabChanged('groups'),
+                onKeyLeft: () => exploreFocusNode.requestFocus(),
+                onKeyRight: onFocusPlayer,
+                onKeyDown: onFocusDown,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _TabPill extends StatefulWidget {
+class _M3EFloatingTabPill extends StatefulWidget {
   final String title;
   final IconData icon;
   final IconData selectedIcon;
   final bool isSelected;
   final FocusNode focusNode;
-  final VoidCallback onFocused;
+  final VoidCallback onSelect;
   final VoidCallback onKeyLeft;
   final VoidCallback onKeyRight;
   final VoidCallback onKeyDown;
 
-  const _TabPill({
+  const _M3EFloatingTabPill({
     required this.title,
     required this.icon,
     required this.selectedIcon,
     required this.isSelected,
     required this.focusNode,
-    required this.onFocused,
+    required this.onSelect,
     required this.onKeyLeft,
     required this.onKeyRight,
     required this.onKeyDown,
   });
 
   @override
-  State<_TabPill> createState() => _TabPillState();
+  State<_M3EFloatingTabPill> createState() => _M3EFloatingTabPillState();
 }
 
-class _TabPillState extends State<_TabPill> {
+class _M3EFloatingTabPillState extends State<_M3EFloatingTabPill> {
   bool _focused = false;
 
   @override
@@ -110,6 +121,8 @@ class _TabPillState extends State<_TabPill> {
 
     final Color bg;
     final Color fg;
+
+    // Sincronizado exactamente con los tokens visuales del NavigationRail.
     if (_focused) {
       bg = scheme.primary;
       fg = scheme.onPrimary;
@@ -140,7 +153,7 @@ class _TabPillState extends State<_TabPill> {
           return KeyEventResult.handled;
         }
         if (TvKeyHandler.isActionKey(key)) {
-          widget.onFocused();
+          widget.onSelect();
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;
@@ -148,15 +161,18 @@ class _TabPillState extends State<_TabPill> {
       child: GestureDetector(
         onTap: () {
           widget.focusNode.requestFocus();
-          widget.onFocused();
+          widget.onSelect();
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          clipBehavior: Clip.antiAlias,
           height: TvTabBar.indicatorHeight,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(
+            horizontal: widget.isSelected ? 12 : 8,
+          ),
           decoration: BoxDecoration(
             color: bg,
-            // Mismo radio que el indicador del NavigationRail M3.
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
@@ -167,20 +183,33 @@ class _TabPillState extends State<_TabPill> {
                     ? widget.selectedIcon
                     : widget.icon,
                 color: fg,
-                size: 22,
+                size: 18,
               ),
-              const SizedBox(width: 8),
-              Text(
-                widget.title,
-                style: MoaiText.display(
-                  context,
-                  color: fg,
-                  fontSize: 12,
-                  fontWeight: widget.isSelected || _focused
-                      ? FontWeight.w700
-                      : FontWeight.w600,
-                  letterSpacing: 0.4,
-                ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                child: widget.isSelected
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(width: 6),
+                          Text(
+                            widget.title,
+                            maxLines: 1,
+                            softWrap: false,
+                            style: MoaiText.display(
+                              context,
+                              color: fg,
+                              fontSize: 12,
+                              fontWeight: widget.isSelected || _focused
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      )
+                    : const SizedBox.shrink(),
               ),
             ],
           ),

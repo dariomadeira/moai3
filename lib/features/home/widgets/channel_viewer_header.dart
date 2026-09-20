@@ -19,8 +19,8 @@ class ChannelViewerHeader extends StatelessWidget {
     final metaStyle = MoaiText.body(
       context,
       color: scheme.onSurface.withValues(alpha: 0.85),
-      fontSize: 13,
-      fontWeight: FontWeight.w600,
+      fontSize: 12,
+      fontWeight: FontWeight.w700,
     );
 
     final fallbackIndex =
@@ -58,7 +58,7 @@ class ChannelViewerHeader extends StatelessWidget {
         ),
         const SizedBox(height: TvPanelHeaderMetrics.titleSubtitleGap),
         Wrap(
-          spacing: 8,
+          spacing: 4,
           runSpacing: 6,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
@@ -122,7 +122,7 @@ class _MetaPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(20),
@@ -130,8 +130,8 @@ class _MetaPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: foreground),
-          const SizedBox(width: 6),
+          Icon(icon, size: 18, color: foreground),
+          const SizedBox(width: 4),
           Text(label, style: textStyle),
         ],
       ),

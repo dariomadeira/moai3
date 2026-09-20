@@ -802,7 +802,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
         'home_panel_groups'.tr(),
         'home_panel_channels'.tr(),
       ],
-      icons: const [Symbols.stack, Icons.live_tv_rounded],
+      icons: const [Symbols.bookmarks, Icons.live_tv_rounded],
       alphabetModePanelIndex:
           _groups.isAlphabetMode ? _groupsPanelIndex : null,
       alphabetPanelBuilder: (_) => AlphabetJumpPanel(
