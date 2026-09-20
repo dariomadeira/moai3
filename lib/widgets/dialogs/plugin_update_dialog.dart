@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -68,7 +69,9 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
     try {
       for (final update in widget.updates) {
         setState(() {
-          _statusText = 'Actualizando ${update.source.nombre}...';
+          _statusText = 'plugin_update_updating_named'.tr(
+            namedArgs: {'name': update.source.nombre},
+          );
         });
         await controller.updateSource(update.manifestUrl);
       }
@@ -85,8 +88,12 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
         MoaiSnackBar.showSuccess(
           context,
           message: widget.updates.length == 1
-              ? '${widget.updates.first.source.nombre} actualizada con éxito.'
-              : '${widget.updates.length} fuentes actualizadas con éxito.',
+              ? 'plugin_update_success_single'.tr(
+                  namedArgs: {'name': widget.updates.first.source.nombre},
+                )
+              : 'plugin_update_success_plural'.tr(
+                  namedArgs: {'count': widget.updates.length.toString()},
+                ),
         );
       }
     } catch (e) {
@@ -155,8 +162,8 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
                       children: [
                         Text(
                           widget.updates.length == 1
-                              ? 'Actualización de Fuente'
-                              : 'Actualizaciones de Fuentes',
+                              ? 'plugin_update_title_singular'.tr()
+                              : 'plugin_update_title_plural'.tr(),
                           style: MoaiText.display(
                             context,
                             fontSize: 18,
@@ -166,7 +173,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Nueva versión disponible en el repositorio',
+                          'plugin_update_subtitle'.tr(),
                           style: MoaiText.body(
                             context,
                             fontSize: 12,
@@ -183,7 +190,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
               // Contenido según estado
               if (_state == _PluginUpdateState.idle) ...[
                 Text(
-                  'Fuentes a actualizar:',
+                  'plugin_update_header'.tr(),
                   style: MoaiText.body(
                     context,
                     fontSize: 13,
@@ -233,7 +240,11 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
                                   ),
                                 ),
                                 Text(
-                                  '${u.newChannelCount} canales organizados',
+                                  'plugin_update_channels_count'.tr(
+                                    namedArgs: {
+                                      'count': u.newChannelCount.toString(),
+                                    },
+                                  ),
                                   style: MoaiText.body(
                                     context,
                                     fontSize: 11,
@@ -273,14 +284,14 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
                   children: [
                     _DialogActionButton(
                       focusNode: _cancelBtnFocus,
-                      label: 'Más tarde',
+                      label: 'update_action_later'.tr(),
                       isPrimary: false,
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                     const SizedBox(width: 12),
                     _DialogActionButton(
                       focusNode: _updateBtnFocus,
-                      label: 'Actualizar ahora',
+                      label: 'update_action_update_now'.tr(),
                       isPrimary: true,
                       onPressed: _startUpdate,
                     ),
@@ -308,7 +319,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Descargando y verificando firma DEX...',
+                        'plugin_update_updating_status'.tr(),
                         style: MoaiText.body(
                           context,
                           fontSize: 11,
@@ -331,7 +342,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        '¡Actualización completada!',
+                        'plugin_update_completed'.tr(),
                         style: MoaiText.display(
                           context,
                           fontSize: 16,
@@ -360,7 +371,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
                         child: Text(
                           _errorMessage.isNotEmpty
                               ? _errorMessage
-                              : 'Ocurrió un error al actualizar la fuente.',
+                              : 'plugin_update_error_default'.tr(),
                           style: MoaiText.body(
                             context,
                             fontSize: 12,
@@ -377,14 +388,14 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
                   children: [
                     _DialogActionButton(
                       focusNode: _cancelBtnFocus,
-                      label: 'Cerrar',
+                      label: 'common_close'.tr(),
                       isPrimary: false,
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                     const SizedBox(width: 12),
                     _DialogActionButton(
                       focusNode: _retryBtnFocus,
-                      label: 'Reintentar',
+                      label: 'update_action_retry'.tr(),
                       isPrimary: true,
                       onPressed: _startUpdate,
                     ),
