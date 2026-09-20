@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -91,7 +92,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
       if (!success && mounted) {
         setState(() {
           _state = UpdateDialogState.error;
-          _errorMessage = 'No se pudo abrir el instalador del sistema.';
+          _errorMessage = 'update_error_installer'.tr();
         });
         _retryBtnFocus.requestFocus();
       }
@@ -169,7 +170,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Actualización disponible',
+                          'update_available_title'.tr(),
                           style: MoaiText.display(
                             context,
                             fontSize: 18,
@@ -181,7 +182,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
                         Row(
                           children: [
                             Text(
-                              'Versión ${widget.updateInfo.version}',
+                              'update_available_version'.tr(namedArgs: {'version': widget.updateInfo.version}),
                               style: MoaiText.body(
                                 context,
                                 fontSize: 13,
@@ -211,7 +212,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
               // Contenido dinámico según estado
               if (_state == UpdateDialogState.idle) ...[
                 Text(
-                  'Novedades:',
+                  'update_changelog_title'.tr(),
                   style: MoaiText.body(
                     context,
                     fontSize: 13,
@@ -246,14 +247,14 @@ class _UpdateDialogState extends State<UpdateDialog> {
                   children: [
                     _DialogButton(
                       focusNode: _cancelBtnFocus,
-                      label: 'Más tarde',
+                      label: 'update_action_later'.tr(),
                       isPrimary: false,
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                     const SizedBox(width: 12),
                     _DialogButton(
                       focusNode: _updateBtnFocus,
-                      label: 'Actualizar ahora',
+                      label: 'update_action_update_now'.tr(),
                       isPrimary: true,
                       onPressed: _startDownload,
                     ),
@@ -261,7 +262,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
                 ),
               ] else if (_state == UpdateDialogState.downloading) ...[
                 Text(
-                  'Descargando actualización...',
+                  'update_downloading'.tr(),
                   style: MoaiText.body(
                     context,
                     fontSize: 13,
@@ -284,7 +285,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      _progress >= 0 ? '${(_progress * 100).toInt()}%' : 'Descargando...',
+                      _progress >= 0 ? '${(_progress * 100).toInt()}%' : 'update_downloading_progress'.tr(),
                       style: MoaiText.body(
                         context,
                         fontSize: 12,
@@ -308,7 +309,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
                   alignment: Alignment.centerRight,
                   child: _DialogButton(
                     focusNode: _cancelBtnFocus,
-                    label: 'Cancelar',
+                    label: 'common_cancel'.tr(),
                     isPrimary: false,
                     onPressed: _cancelDownload,
                   ),
@@ -324,7 +325,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Abriendo el instalador del sistema...',
+                          'update_installing_title'.tr(),
                           style: MoaiText.body(
                             context,
                             fontSize: 14,
@@ -334,7 +335,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Sigue las instrucciones en pantalla para completar la instalación.',
+                          'update_installing_desc'.tr(),
                           textAlign: TextAlign.center,
                           style: MoaiText.body(
                             context,
@@ -361,7 +362,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
                         child: Text(
                           _errorMessage.isNotEmpty
                               ? _errorMessage
-                              : 'Ocurrió un error al descargar la actualización.',
+                              : 'update_error_default'.tr(),
                           style: MoaiText.body(
                             context,
                             fontSize: 12,
@@ -378,14 +379,14 @@ class _UpdateDialogState extends State<UpdateDialog> {
                   children: [
                     _DialogButton(
                       focusNode: _cancelBtnFocus,
-                      label: 'Cerrar',
+                      label: 'common_close'.tr(),
                       isPrimary: false,
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                     const SizedBox(width: 12),
                     _DialogButton(
                       focusNode: _retryBtnFocus,
-                      label: 'Reintentar',
+                      label: 'update_action_retry'.tr(),
                       isPrimary: true,
                       onPressed: _startDownload,
                     ),

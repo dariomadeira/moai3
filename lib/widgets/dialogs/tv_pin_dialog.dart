@@ -91,7 +91,7 @@ class TvPinDialog extends StatefulWidget {
     final pin1 = await show(
       context,
       title: 'parental_pin_title_create'.tr(),
-      subtitle: 'Ingresa un PIN de 4 dígitos',
+      subtitle: 'parental_pin_create_subtitle'.tr(),
     );
 
     if (pin1 == null || pin1.length != 4 || !context.mounted) return false;
@@ -99,7 +99,7 @@ class TvPinDialog extends StatefulWidget {
     final pin2 = await show(
       context,
       title: 'parental_pin_title_confirm'.tr(),
-      subtitle: 'Vuelve a escribir los 4 dígitos para confirmar',
+      subtitle: 'parental_pin_confirm_subtitle'.tr(),
     );
 
     if (pin2 == null || !context.mounted) return false;
@@ -133,7 +133,7 @@ class TvPinDialog extends StatefulWidget {
       final currentOk = await show(
         context,
         title: 'parental_pin_title_current'.tr(),
-        subtitle: 'Ingresa tu PIN de seguridad actual',
+        subtitle: 'parental_pin_current_subtitle'.tr(),
         onValidate: (pin) async => tvSettings.verifyPin(pin),
       );
       if (currentOk == null || !context.mounted) return false;

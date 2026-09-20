@@ -834,7 +834,9 @@ class _SourceTileState extends State<_SourceTile> {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'v$_availableVersion disponible',
+                            'sources_version_available'.tr(
+                              namedArgs: {'version': _availableVersion!},
+                            ),
                             style: MoaiText.body(
                               context,
                               color: isFocused
@@ -855,7 +857,9 @@ class _SourceTileState extends State<_SourceTile> {
             _IconButtonAction(
               focusNode: widget.updateFocus,
               tooltip: _availableVersion != null
-                  ? 'Actualizar a v$_availableVersion'
+                  ? 'sources_update_to_version'.tr(
+                      namedArgs: {'version': _availableVersion!},
+                    )
                   : 'sources_update'.tr(),
               icon: _availableVersion != null
                   ? Symbols.system_update_rounded
