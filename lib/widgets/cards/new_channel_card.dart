@@ -203,7 +203,7 @@ class _NewChannelCardState extends State<NewChannelCard> {
                           decoration: BoxDecoration(
                             color: isFocused
                                 ? itemStyle.foregroundColor.withValues(alpha: 0.18)
-                                : scheme.onSurface.withValues(alpha: 0.08),
+                                : scheme.tertiaryContainer,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -217,7 +217,7 @@ class _NewChannelCardState extends State<NewChannelCard> {
                               letterSpacing: 0.5,
                               color: isFocused
                                   ? itemStyle.foregroundColor
-                                  : scheme.onSurface.withValues(alpha: 0.5),
+                                  : scheme.onTertiaryContainer,
                             ),
                           ),
                         ),
