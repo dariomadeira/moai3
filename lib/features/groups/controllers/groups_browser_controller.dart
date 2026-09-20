@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:moai3/features/channel_browser/controllers/channel_browser_controller.dart';
 import 'package:moai3/focus/focus_scroll_sync.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/models/channel.dart';
@@ -18,6 +19,8 @@ class GroupsBrowserController extends ChangeNotifier with SafeChangeNotifier {
   ChannelGroup? alphabetModeGroup;
   List<String> alphabetLetters = [];
   final List<FocusNode> alphabetFocusNodes = [];
+
+  bool isAdultUnlocked = false;
 
   bool get isAlphabetMode => alphabetModeGroup != null;
   bool get canDeleteAlphabetGroup =>
@@ -72,9 +75,21 @@ class GroupsBrowserController extends ChangeNotifier with SafeChangeNotifier {
     }
   }
 
-  void syncFrom(List<ChannelGroup> serverGroups, List<Channel> allChannels,
-      List<String> favoriteChannelIds) {
-    groups = serverGroups;
+  void syncFrom(
+    List<ChannelGroup> serverGroups,
+    List<Channel> allChannels,
+    List<String> favoriteChannelIds, {
+    bool? isAdultUnlocked,
+  }) {
+    if (isAdultUnlocked != null) this.isAdultUnlocked = isAdultUnlocked;
+
+    groups = this.isAdultUnlocked
+        ? serverGroups
+        : serverGroups
+            .where((g) =>
+                g.name.toLowerCase() != 'adultos' &&
+                g.id.toLowerCase() != 'adultos')
+            .toList();
     FocusScrollSync.syncFocusNodes(groups.length, groupFocusNodes);
 
     if (selectedGroup == null && groups.isNotEmpty) {
@@ -144,13 +159,19 @@ class GroupsBrowserController extends ChangeNotifier with SafeChangeNotifier {
       return;
     }
 
+    final pool = isAdultUnlocked
+        ? allChannels
+        : allChannels
+            .where((c) => !ChannelBrowserController.isAdult(c))
+            .toList();
+
     if (selectedGroup!.type == 'favorites') {
       filteredChannels =
-          allChannels.where((c) => favoriteChannelIds.contains(c.id)).toList();
+          pool.where((c) => favoriteChannelIds.contains(c.id)).toList();
     } else {
       final allowedIds = selectedGroup!.channelIds.toSet();
       filteredChannels =
-          allChannels.where((c) => allowedIds.contains(c.id)).toList();
+          pool.where((c) => allowedIds.contains(c.id)).toList();
     }
 
     filteredChannels

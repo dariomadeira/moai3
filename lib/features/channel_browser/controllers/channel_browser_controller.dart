@@ -26,15 +26,23 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
   List<String> alphabetLetters = [];
   final List<FocusNode> alphabetFocusNodes = [];
 
-  bool _isAdult(Channel c) {
+  bool isAdultUnlocked = false;
+
+  static bool isAdult(Channel c) {
     return c.country == 'Adultos' ||
         c.category == 'Adultos' ||
         c.name.toLowerCase().contains('18+') ||
         c.name.toLowerCase().contains('+18');
   }
 
-  void syncFromChannels(List<Channel> allChannels) {
-    final filtered = allChannels.where((c) => !_isAdult(c)).toList();
+  List<Channel> filterChannels(List<Channel> allChannels) {
+    if (isAdultUnlocked) return allChannels;
+    return allChannels.where((c) => !isAdult(c)).toList();
+  }
+
+  void syncFromChannels(List<Channel> allChannels, {bool? isAdultUnlocked}) {
+    if (isAdultUnlocked != null) this.isAdultUnlocked = isAdultUnlocked;
+    final filtered = filterChannels(allChannels);
     countries = filtered.map((c) => c.country).toSet().toList()..sort();
     FocusScrollSync.syncFocusNodes(countries.length, countryFocusNodes);
 
@@ -70,13 +78,18 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
     safeNotifyListeners();
   }
 
-  void syncPlayingChannel(Channel channel, List<Channel> allChannels) {
-    if (_isAdult(channel)) {
+  void syncPlayingChannel(
+    Channel channel,
+    List<Channel> allChannels, {
+    bool? isAdultUnlocked,
+  }) {
+    if (isAdultUnlocked != null) this.isAdultUnlocked = isAdultUnlocked;
+    if (!this.isAdultUnlocked && isAdult(channel)) {
       selectedChannel = channel;
       safeNotifyListeners();
       return;
     }
-    final filtered = allChannels.where((c) => !_isAdult(c)).toList();
+    final filtered = filterChannels(allChannels);
     countries = filtered.map((c) => c.country).toSet().toList()..sort();
     FocusScrollSync.syncFocusNodes(countries.length, countryFocusNodes);
     selectedChannel = channel;
@@ -87,12 +100,21 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
     safeNotifyListeners();
   }
 
-  void initializeFromChannels(List<Channel> allChannels, {Channel? initial}) {
+  void initializeFromChannels(
+    List<Channel> allChannels, {
+    Channel? initial,
+    bool? isAdultUnlocked,
+  }) {
+    if (isAdultUnlocked != null) this.isAdultUnlocked = isAdultUnlocked;
     if (initial != null) {
-      syncPlayingChannel(initial, allChannels);
+      syncPlayingChannel(
+        initial,
+        allChannels,
+        isAdultUnlocked: this.isAdultUnlocked,
+      );
       if (countries.isNotEmpty) return;
     }
-    final filtered = allChannels.where((c) => !_isAdult(c)).toList();
+    final filtered = filterChannels(allChannels);
     countries = filtered.map((c) => c.country).toSet().toList()..sort();
     FocusScrollSync.syncFocusNodes(countries.length, countryFocusNodes);
     if (countries.isNotEmpty) {
@@ -116,7 +138,7 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
   }
 
   void selectCountry(String country, List<Channel> allChannels) {
-    final filtered = allChannels.where((c) => !_isAdult(c)).toList();
+    final filtered = filterChannels(allChannels);
     selectedCountry = country;
     _refreshCategories(filtered);
 
@@ -134,7 +156,7 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
   }
 
   void selectCategory(String category, List<Channel> allChannels) {
-    final filtered = allChannels.where((c) => !_isAdult(c)).toList();
+    final filtered = filterChannels(allChannels);
     selectedCategory = category;
     _refreshChannels(filtered);
     selectedChannel = channels.isNotEmpty ? channels.first : null;
