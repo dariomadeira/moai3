@@ -94,6 +94,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
   List<String> _lastGroupIds = [];
   double _lastOverlapX = -1;
   double _lastOverlapY = -1;
+  bool _lastIsAdultUnlocked = false;
   ChannelProvider? _channelProvider;
   TvSettingsProvider? _tvSettingsProvider;
   FavoritesProvider? _favoritesProvider;
@@ -126,7 +127,12 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     _tvSettingsProvider!.addListener(_onStateChanged);
     _favoritesProvider!.addListener(_onStateChanged);
 
-    _search.attachQueryListener(() => _channelProvider!.allChannels);
+    _lastIsAdultUnlocked = _tvSettingsProvider!.isAdultUnlocked;
+
+    _search.attachQueryListener(
+      () => _channelProvider!.allChannels,
+      isAdultUnlocked: () => _tvSettingsProvider?.isAdultUnlocked ?? false,
+    );
 
     _lastShowTvLog = _tvSettingsProvider!.showTvLog;
     _activePanelIndex = TvPanelLayout.channelPanelIndex(_lastShowTvLog);
@@ -139,16 +145,24 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     _browser.initializeFromChannels(
       _channelProvider!.allChannels,
       initial: _channelProvider!.selectedChannel,
+      isAdultUnlocked: _lastIsAdultUnlocked,
     );
     _favorites.syncFrom(
-        _channelProvider!.allChannels, _favoritesProvider!.favoriteChannelIds);
+      _channelProvider!.allChannels,
+      _favoritesProvider!.favoriteChannelIds,
+      isAdultUnlocked: _lastIsAdultUnlocked,
+    );
     _favoritesBar.syncFrom(
       _favorites.favoriteChannels.isEmpty
           ? 0
           : _favorites.favoriteChannels.length + 2,
     );
-    _groups.syncFrom(_channelProvider!.groups, _channelProvider!.allChannels,
-        _favoritesProvider!.favoriteChannelIds);
+    _groups.syncFrom(
+      _channelProvider!.groups,
+      _channelProvider!.allChannels,
+      _favoritesProvider!.favoriteChannelIds,
+      isAdultUnlocked: _lastIsAdultUnlocked,
+    );
 
     final initial = _channelProvider!.selectedChannel;
     if (initial != null) {
@@ -217,6 +231,19 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
       });
     }
 
+    final isAdultUnlocked = tvSettings.isAdultUnlocked;
+    final adultUnlockedChanged = isAdultUnlocked != _lastIsAdultUnlocked;
+    if (adultUnlockedChanged) {
+      _lastIsAdultUnlocked = isAdultUnlocked;
+      if (_search.queryController.text.isNotEmpty) {
+        _search.updateResults(
+          channelProv.allChannels,
+          _search.queryController.text,
+          isAdultUnlocked: isAdultUnlocked,
+        );
+      }
+    }
+
     final channels = channelProv.allChannels;
     final favIds = favProv.favoriteChannelIds;
     final groupIds = channelProv.groups.map((g) => g.id).toList();
@@ -225,12 +252,13 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     final favIdsChanged = !_sameStringList(favIds, _lastFavoriteIds);
     final groupsChanged = !_sameStringList(groupIds, _lastGroupIds);
 
-    if (channelsChanged) {
+    if (channelsChanged || adultUnlockedChanged) {
       _lastChannelIds = List.from(channelIds);
       if (_browser.countries.isEmpty && channels.isNotEmpty) {
         _browser.initializeFromChannels(
           channels,
           initial: channelProv.selectedChannel,
+          isAdultUnlocked: isAdultUnlocked,
         );
         final initial = channelProv.selectedChannel;
         if (initial != null) {
@@ -238,24 +266,25 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
           _groups.selectChannel(initial);
         }
       } else {
-        _browser.syncFromChannels(channels);
+        _browser.syncFromChannels(channels, isAdultUnlocked: isAdultUnlocked);
       }
     }
 
-    if (channelsChanged || favIdsChanged || groupsChanged) {
+    if (channelsChanged || favIdsChanged || groupsChanged || adultUnlockedChanged) {
       if (favIdsChanged) {
         _lastFavoriteIds = List.from(favIds);
       }
       if (groupsChanged) {
         _lastGroupIds = List.from(groupIds);
       }
-      _favorites.syncFrom(channels, favIds);
+      _favorites.syncFrom(channels, favIds, isAdultUnlocked: isAdultUnlocked);
       _favoritesBar.syncFrom(
         _favorites.favoriteChannels.isEmpty
             ? 0
             : _favorites.favoriteChannels.length + 2,
       );
-      _groups.syncFrom(channelProv.groups, channels, favIds);
+      _groups.syncFrom(channelProv.groups, channels, favIds,
+          isAdultUnlocked: isAdultUnlocked);
     }
 
     final playingChannel = channelProv.selectedChannel;
@@ -786,7 +815,8 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
           _groups.clearAlphabetMode();
           await channelProv.deleteGroup(g.id);
           _groups.syncFrom(channelProv.groups, channelProv.allChannels,
-              favProv.favoriteChannelIds);
+              favProv.favoriteChannelIds,
+              isAdultUnlocked: _lastIsAdultUnlocked);
           setState(() {});
         },
         onLetterTap: (letter) {

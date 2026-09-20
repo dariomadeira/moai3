@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/features/channel_browser/controllers/channel_browser_controller.dart';
 import 'package:moai3/models/channel.dart';
 
@@ -80,6 +80,38 @@ void main() {
       expect(browser.selectedCountry, 'Chile');
       expect(browser.selectedCategory, 'Noticias');
       expect(browser.channels.map((c) => c.id), ['2', '3']);
+
+      browser.dispose();
+    });
+
+    test('filtra canales adultos por defecto y los muestra cuando isAdultUnlocked es true', () {
+      final browser = ChannelBrowserController();
+      final channels = [
+        _ch(
+          id: '1',
+          name: 'Canal Familiar',
+          country: 'Argentina',
+          category: 'Aire',
+        ),
+        _ch(
+          id: '2',
+          name: 'Canal +18 Adulto',
+          country: 'Argentina',
+          category: 'Adultos',
+        ),
+      ];
+
+      // Bloqueado por defecto
+      browser.initializeFromChannels(channels, isAdultUnlocked: false);
+      expect(browser.categories, ['Aire']);
+      expect(browser.channels.map((c) => c.id), ['1']);
+
+      // Desbloqueado para la sesión
+      browser.syncFromChannels(channels, isAdultUnlocked: true);
+      expect(browser.categories, contains('Adultos'));
+
+      browser.selectCategory('Adultos', channels);
+      expect(browser.channels.map((c) => c.id), ['2']);
 
       browser.dispose();
     });

@@ -1,6 +1,7 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:moai3/features/channel_browser/controllers/channel_browser_controller.dart';
 import 'package:moai3/focus/focus_scroll_sync.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/utils/safe_change_notifier.dart';
@@ -29,24 +30,41 @@ class HomeSearchController extends ChangeNotifier with SafeChangeNotifier {
     safeNotifyListeners();
   }
 
-  void attachQueryListener(List<Channel> Function() getAllChannels) {
+  void attachQueryListener(
+    List<Channel> Function() getAllChannels, {
+    bool Function()? isAdultUnlocked,
+  }) {
     queryController.addListener(() {
       safeNotifyListeners();
       _debounce?.cancel();
       _debounce = Timer(const Duration(milliseconds: 300), () {
-        updateResults(getAllChannels(), queryController.text);
+        final unlocked = isAdultUnlocked?.call() ?? false;
+        updateResults(
+          getAllChannels(),
+          queryController.text,
+          isAdultUnlocked: unlocked,
+        );
       });
     });
   }
 
-  void updateResults(List<Channel> allChannels, String query) {
+  void updateResults(
+    List<Channel> allChannels,
+    String query, {
+    bool isAdultUnlocked = false,
+  }) {
     final trimmed = query.trim();
     if (trimmed.isEmpty || trimmed.length < minQueryLength) {
       results = [];
       resultsCapped = false;
     } else {
       final cleanQuery = trimmed.toLowerCase();
-      final matched = allChannels
+      final pool = isAdultUnlocked
+          ? allChannels
+          : allChannels
+              .where((c) => !ChannelBrowserController.isAdult(c))
+              .toList();
+      final matched = pool
           .where((c) => c.name.toLowerCase().contains(cleanQuery))
           .toList();
       matched.sort(
