@@ -15,6 +15,7 @@ import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/debug_log_controller.dart';
 import 'package:moai3/services/moai_image_cache_manager.dart';
 import 'package:moai3/services/playback_stats_controller.dart';
+import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/state/theme_provider.dart';
@@ -61,8 +62,12 @@ void main() async {
   final appPreferences = await AppPreferences.init();
   final themeProvider = ThemeProvider(appPreferences);
   final tvSettingsProvider = TvSettingsProvider(appPreferences);
-  final channelProvider = ChannelProvider(appPreferences);
+  final channelProvider = ChannelProvider(
+    appPreferences,
+    isAdultUnlocked: () => tvSettingsProvider.isAdultUnlocked,
+  );
   final favoritesProvider = FavoritesProvider(appPreferences);
+  final calendarProvider = CalendarProvider();
   final playbackStats = PlaybackStatsController();
   final debugLog = DebugLogController();
   final router = createRouter(tvSettingsProvider);
@@ -77,6 +82,7 @@ void main() async {
         ChangeNotifierProvider.value(value: tvSettingsProvider),
         ChangeNotifierProvider.value(value: channelProvider),
         ChangeNotifierProvider.value(value: favoritesProvider),
+        ChangeNotifierProvider.value(value: calendarProvider),
         ChangeNotifierProvider.value(value: playbackStats),
         ChangeNotifierProvider.value(value: debugLog),
         ChangeNotifierProvider.value(value: channelProvider.pluginHost),

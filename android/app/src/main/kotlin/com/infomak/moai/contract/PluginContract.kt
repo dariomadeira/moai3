@@ -38,6 +38,7 @@ data class PluginManifest(
     /** FQCN de la clase que implementa [IPlugin], ej. "com.fuente.Plugin". */
     val clase: String,
     val tag: String = "",
+    val canalInicial: String? = null,
 )
 
 /** Lo que la app le pide al plugin al abrir un canal. */

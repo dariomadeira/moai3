@@ -8,6 +8,7 @@ import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/cards/tv_list_card_style.dart';
+import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/tv_input/tv_input.dart';
 
 class CreateGroupTile extends StatefulWidget {
@@ -101,13 +102,10 @@ class _CreateGroupTileState extends State<CreateGroupTile> {
   }
 
   void _showCreateGroupDialog(BuildContext context) {
-    showGeneralDialog(
+    showTvGeneralDialog(
       context: context,
-      barrierDismissible: true,
       barrierLabel: 'common_close'.tr(),
-      barrierColor: Colors.black54,
-      transitionDuration: const Duration(milliseconds: 250),
-      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+      builder: (dialogContext) {
         return _CreateGroupDialogContent(tileContext: context);
       },
     );
@@ -182,186 +180,62 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
 
-    return Align(
-      alignment: Alignment.topCenter,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 64.0),
-        child: Material(
-          color: scheme.surfaceContainerHigh,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+    return TvDialog(
+      icon: Icons.bookmark_add_rounded,
+      title: 'groups_create_title'.tr(),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TvTextField(
+            controller: _textController,
+            focusNode: _textFieldFocusNode,
+            label: 'groups_name_label'.tr(),
+            hint: 'groups_name_hint'.tr(),
+            keyboardType: TvKeyboardType.text,
+            textInputAction: TvTextInputAction.done,
+            leadingIcon: Icons.playlist_add_rounded,
+            onFocusDown: () => _createFocusNode.requestFocus(),
+            onSubmitted: (_) => _createFocusNode.requestFocus(),
+            onChanged: (_) {
+              if (_errorText != null) {
+                setState(() => _errorText = null);
+              }
+            },
           ),
-          child: SizedBox(
-            width: 440,
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'groups_create_title'.tr(),
-                    style: MoaiText.display(
-                      context,
-                      color: scheme.onSurface,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TvTextField(
-                    controller: _textController,
-                    focusNode: _textFieldFocusNode,
-                    label: 'groups_name_label'.tr(),
-                    hint: 'groups_name_hint'.tr(),
-                    keyboardType: TvKeyboardType.text,
-                    textInputAction: TvTextInputAction.done,
-                    leadingIcon: Icons.playlist_add_rounded,
-                    onFocusDown: () => _createFocusNode.requestFocus(),
-                    onSubmitted: (_) => _createFocusNode.requestFocus(),
-                    onChanged: (_) {
-                      if (_errorText != null) {
-                        setState(() => _errorText = null);
-                      }
-                    },
-                  ),
-                  if (_errorText != null) ...[
-                    const SizedBox(height: 10),
-                    Text(
-                      _errorText!,
-                      style: MoaiText.body(
-                        context,
-                        color: scheme.error,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      _DialogButton(
-                        focusNode: _cancelFocusNode,
-                        label: 'common_cancel'.tr(),
-                        onPressed: () => Navigator.of(context).pop(),
-                        onKeyLeft: () {},
-                        onKeyRight: () => _createFocusNode.requestFocus(),
-                        onKeyUp: () => _textFieldFocusNode.requestFocus(),
-                      ),
-                      const SizedBox(width: 8),
-                      _DialogButton(
-                        focusNode: _createFocusNode,
-                        label: 'groups_create_confirm'.tr(),
-                        isPrimary: true,
-                        onKeyLeft: () => _cancelFocusNode.requestFocus(),
-                        onKeyRight: () {},
-                        onKeyUp: () => _textFieldFocusNode.requestFocus(),
-                        onPressed: _create,
-                      ),
-                    ],
-                  ),
-                ],
+          if (_errorText != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              _errorText!,
+              style: MoaiText.body(
+                context,
+                color: scheme.error,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
               ),
             ),
-          ),
-        ),
+          ],
+        ],
       ),
-    );
-  }
-}
-
-class _DialogButton extends StatefulWidget {
-  final FocusNode focusNode;
-  final String label;
-  final VoidCallback onPressed;
-  final bool isPrimary;
-  final VoidCallback onKeyLeft;
-  final VoidCallback onKeyRight;
-  final VoidCallback onKeyUp;
-
-  const _DialogButton({
-    required this.focusNode,
-    required this.label,
-    required this.onPressed,
-    required this.onKeyLeft,
-    required this.onKeyRight,
-    required this.onKeyUp,
-    this.isPrimary = false,
-  });
-
-  @override
-  State<_DialogButton> createState() => _DialogButtonState();
-}
-
-class _DialogButtonState extends State<_DialogButton> {
-  bool _isFocused = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.scheme;
-
-    final Color buttonColor;
-    final Color textColor;
-    if (widget.isPrimary) {
-      buttonColor = _isFocused ? scheme.primary : scheme.primaryContainer;
-      textColor = _isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
-    } else {
-      buttonColor =
-          _isFocused ? scheme.surfaceContainerHighest : scheme.surfaceContainer;
-      textColor = _isFocused ? scheme.onSurface : scheme.onSurfaceVariant;
-    }
-
-    return Focus(
-      focusNode: widget.focusNode,
-      onFocusChange: (focus) => setState(() => _isFocused = focus),
-      onKeyEvent: (node, event) {
-        if (event is! KeyDownEvent) return KeyEventResult.ignored;
-        final key = event.logicalKey;
-        if (key == LogicalKeyboardKey.enter ||
-            key == LogicalKeyboardKey.select) {
-          widget.onPressed();
-          return KeyEventResult.handled;
-        }
-        if (key == LogicalKeyboardKey.arrowLeft) {
-          widget.onKeyLeft();
-          return KeyEventResult.handled;
-        }
-        if (key == LogicalKeyboardKey.arrowRight) {
-          widget.onKeyRight();
-          return KeyEventResult.handled;
-        }
-        if (key == LogicalKeyboardKey.arrowUp) {
-          widget.onKeyUp();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      child: GestureDetector(
-        onTap: widget.onPressed,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: buttonColor,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: _isFocused ? scheme.primary : Colors.transparent,
-              width: 1.5,
-            ),
-          ),
-          child: Text(
-            widget.label,
-            style: MoaiText.body(
-              context,
-              color: textColor,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+      actions: [
+        TvDialogButton(
+          focusNode: _cancelFocusNode,
+          label: 'common_cancel'.tr(),
+          variant: TvDialogButtonVariant.neutral,
+          onPressed: () => Navigator.of(context).pop(),
+          onKeyRight: () => _createFocusNode.requestFocus(),
+          onKeyUp: () => _textFieldFocusNode.requestFocus(),
         ),
-      ),
+        const SizedBox(width: 12),
+        TvDialogButton(
+          focusNode: _createFocusNode,
+          label: 'groups_create_confirm'.tr(),
+          variant: TvDialogButtonVariant.primary,
+          onKeyLeft: () => _cancelFocusNode.requestFocus(),
+          onKeyUp: () => _textFieldFocusNode.requestFocus(),
+          onPressed: _create,
+        ),
+      ],
     );
   }
 }

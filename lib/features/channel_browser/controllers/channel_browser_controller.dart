@@ -28,12 +28,7 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
 
   bool isAdultUnlocked = false;
 
-  static bool isAdult(Channel c) {
-    return c.country == 'Adultos' ||
-        c.category == 'Adultos' ||
-        c.name.toLowerCase().contains('18+') ||
-        c.name.toLowerCase().contains('+18');
-  }
+  static bool isAdult(Channel c) => c.isAdult;
 
   List<Channel> filterChannels(List<Channel> allChannels) {
     if (isAdultUnlocked) return allChannels;

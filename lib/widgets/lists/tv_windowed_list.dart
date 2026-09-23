@@ -1,5 +1,12 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+
+/// Tipo de indicador de scroll para listas TV por ventana.
+enum TvScrollIndicator {
+  none,
+  dots,
+  arrows,
+}
 
 /// Lista TV por ventana fija (sin ListView/scroll).
 ///
@@ -10,6 +17,14 @@ class TvWindowedList<T> extends StatefulWidget {
   final int windowSize;
   final int initialGlobalIndex;
   final double itemExtent;
+  /// Estilo del indicador visual de scroll.
+  final TvScrollIndicator scrollIndicator;
+  /// Si es true, renderiza del lado derecho unos puntos indicadores (dots)
+  /// que reflejan la página o grupo de scroll actual en listas paginadas.
+  final bool showScrollDots;
+  /// Si es true, renderiza flechas tipo 'pill' (cápsula) superpuestas arriba o abajo
+  /// según haya más elementos disponibles para hacer scroll.
+  final bool showScrollArrows;
   final VoidCallback? onFocusUpFromFirst;
   final ValueChanged<int>? onFocusedGlobalIndex;
   final Widget Function(
@@ -29,6 +44,9 @@ class TvWindowedList<T> extends StatefulWidget {
     this.windowSize = 6,
     this.initialGlobalIndex = 0,
     this.itemExtent = 56,
+    this.scrollIndicator = TvScrollIndicator.none,
+    this.showScrollDots = false,
+    this.showScrollArrows = false,
     this.onFocusUpFromFirst,
     this.onFocusedGlobalIndex,
   });
@@ -58,6 +76,36 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
   }
 
   int get focusedGlobalIndex => _windowStart + _activeLocal;
+
+  /// Cantidad total de páginas o grupos de scroll
+  int get pageCount =>
+      widget.items.isEmpty ? 0 : (widget.items.length / windowSize).ceil();
+
+  /// Índice del punto / página actualmente enfocado (0-indexed)
+  int get activeDotIndex => pageCount <= 1
+      ? 0
+      : (focusedGlobalIndex / windowSize).floor().clamp(0, pageCount - 1);
+
+  /// Indicador efectivo a renderizar (prioriza arrows si se activó)
+  TvScrollIndicator get effectiveIndicator {
+    if (widget.showScrollArrows ||
+        widget.scrollIndicator == TvScrollIndicator.arrows) {
+      return TvScrollIndicator.arrows;
+    }
+    if (widget.showScrollDots ||
+        widget.scrollIndicator == TvScrollIndicator.dots) {
+      return TvScrollIndicator.dots;
+    }
+    return TvScrollIndicator.none;
+  }
+
+  /// Indica si hay ítems más arriba del corte visible
+  bool get canScrollUp => _windowStart > 0;
+
+  /// Indica si hay ítems más abajo del corte visible
+  bool get canScrollDown =>
+      widget.items.isNotEmpty &&
+      (_windowStart + _visibleCount < widget.items.length);
 
   @override
   void initState() {
@@ -270,13 +318,73 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
       ],
     );
 
+    Widget content = list;
+
+    if (effectiveIndicator == TvScrollIndicator.arrows) {
+      final scheme = Theme.of(context).colorScheme;
+      content = Stack(
+        alignment: Alignment.center,
+        children: [
+          list,
+          if (canScrollUp)
+            Positioned(
+              top: 4,
+              child: IgnorePointer(
+                child: _buildArrowPill(context, scheme, isUp: true),
+              ),
+            ),
+          if (canScrollDown)
+            Positioned(
+              bottom: 4,
+              child: IgnorePointer(
+                child: _buildArrowPill(context, scheme, isUp: false),
+              ),
+            ),
+        ],
+      );
+    } else if (effectiveIndicator == TvScrollIndicator.dots && pageCount > 1) {
+      final scheme = Theme.of(context).colorScheme;
+      final activeDot = activeDotIndex;
+
+      content = Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(child: list),
+          const SizedBox(width: 4),
+          Padding(
+            padding: const EdgeInsets.only(right: 2),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(pageCount, (dotIdx) {
+                final isActive = dotIdx == activeDot;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOutCubic,
+                  margin: const EdgeInsets.symmetric(vertical: 2.5),
+                  width: 4.5,
+                  height: 4.5,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isActive
+                        ? scheme.primary
+                        : scheme.onSurface.withValues(alpha: 0.22),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      );
+    }
+
     // Si el padre aprieta el alto (p. ej. animación del acordeón), no assert:
     // clip sin cambiar itemExtent ni el anclaje visual inferior.
     return LayoutBuilder(
       builder: (context, constraints) {
         final maxH = constraints.maxHeight;
         if (!maxH.isFinite || maxH >= needed) {
-          return list;
+          return content;
         }
         return SizedBox(
           height: maxH,
@@ -285,11 +393,30 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
               alignment: Alignment.bottomCenter,
               minHeight: needed,
               maxHeight: needed,
-              child: list,
+              child: content,
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildArrowPill(
+    BuildContext context,
+    ColorScheme scheme, {
+    required bool isUp,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      decoration: BoxDecoration(
+        color: scheme.tertiaryContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Icon(
+        isUp ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+        size: 16,
+        color: scheme.onTertiaryContainer,
+      ),
     );
   }
 }

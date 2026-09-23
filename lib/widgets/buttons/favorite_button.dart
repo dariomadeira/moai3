@@ -32,6 +32,10 @@ class _FavoriteButtonState extends State<FavoriteButton> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.channel.isAdult) {
+      return const SizedBox.shrink();
+    }
+
     final scheme = context.scheme;
     final isFav = context.select<FavoritesProvider, bool>(
       (state) => state.isFavorite(widget.channel),

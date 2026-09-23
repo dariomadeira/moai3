@@ -33,6 +33,17 @@ class Channel {
   /// Un canal-plugin no tiene URL estática: la resuelve el plugin en runtime.
   bool get isPluginChannel => pluginId != null && pluginChannelId != null;
 
+  /// Indica si el canal corresponde a contenido para adultos sujeto a control parental.
+  bool get isAdult {
+    final cat = category.trim().toLowerCase();
+    final cnt = country.trim().toLowerCase();
+    final n = name.toLowerCase();
+    return cat == 'adultos' ||
+        cnt == 'adultos' ||
+        n.contains('18+') ||
+        n.contains('+18');
+  }
+
   factory Channel.fromJson(Map<String, dynamic> json) {
     final urls = <String>[];
 
