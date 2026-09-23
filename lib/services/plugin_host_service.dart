@@ -38,6 +38,7 @@ class PluginSource {
   final int minContrato;
   final int maxContrato;
   final String sourceUrl;
+  final String? initialChannel;
   final List<PluginChannelInfo> canales;
 
   const PluginSource({
@@ -48,6 +49,7 @@ class PluginSource {
     required this.minContrato,
     required this.maxContrato,
     required this.sourceUrl,
+    this.initialChannel,
     required this.canales,
   });
 
@@ -57,6 +59,10 @@ class PluginSource {
     final tag = rawTag.isNotEmpty
         ? rawTag
         : (id.startsWith('moai_') ? id.substring(5) : '');
+    final rawInitial = (map['canalInicial'] ?? map['initialChannel']) as String?;
+    final initial = (rawInitial != null && rawInitial.trim().isNotEmpty)
+        ? rawInitial.trim()
+        : null;
     return PluginSource(
       id: id,
       tag: tag,
@@ -65,6 +71,7 @@ class PluginSource {
       minContrato: map['minContrato'] as int? ?? 1,
       maxContrato: map['maxContrato'] as int? ?? 1,
       sourceUrl: map['sourceUrl'] as String? ?? '',
+      initialChannel: initial,
       canales: ((map['canales'] as List?) ?? const [])
           .map((c) => PluginChannelInfo.fromMap(c as Map<dynamic, dynamic>))
           .toList(),

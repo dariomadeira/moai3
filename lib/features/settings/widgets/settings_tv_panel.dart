@@ -5,10 +5,17 @@ import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/features/sources/screens/sources_screen.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:provider/provider.dart';
-
 import 'package:moai3/widgets/dialogs/tv_pin_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
+import 'package:moai3/widgets/lists/tv_windowed_list.dart';
+import 'package:provider/provider.dart';
+
+enum _SettingsTvItemType {
+  debugLog,
+  adultContent,
+  changePin,
+  sources,
+}
 
 class SettingsTvPanel extends StatefulWidget {
   final FocusNode focusNode;
@@ -23,20 +30,18 @@ class SettingsTvPanel extends StatefulWidget {
   });
 
   @override
-  State<SettingsTvPanel> createState() => _SettingsTvPanelState();
+  State<SettingsTvPanel> createState() => SettingsTvPanelState();
 }
 
-class _SettingsTvPanelState extends State<SettingsTvPanel> {
-  final FocusNode _adultFocusNode = FocusNode(debugLabel: 'tv_adult');
-  final FocusNode _changePinFocusNode = FocusNode(debugLabel: 'tv_change_pin');
-  final FocusNode _sourcesFocusNode = FocusNode(debugLabel: 'tv_sources');
+class SettingsTvPanelState extends State<SettingsTvPanel> {
+  static const int _windowSize = 6;
+  static const double _itemExtent = 74.0;
 
-  @override
-  void dispose() {
-    _adultFocusNode.dispose();
-    _changePinFocusNode.dispose();
-    _sourcesFocusNode.dispose();
-    super.dispose();
+  final _listKey = GlobalKey<TvWindowedListState<_SettingsTvItemType>>();
+  int _selectedIndex = 0;
+
+  void focusSelected() {
+    _listKey.currentState?.ensureVisible(_selectedIndex);
   }
 
   @override
@@ -45,109 +50,187 @@ class _SettingsTvPanelState extends State<SettingsTvPanel> {
     final tvSettings = context.watch<TvSettingsProvider>();
     final hasPin = tvSettings.hasParentalPin;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 16, 16, 16),
-      child: SingleChildScrollView(
+    final items = <_SettingsTvItemType>[
+      _SettingsTvItemType.debugLog,
+      _SettingsTvItemType.adultContent,
+      if (hasPin) _SettingsTvItemType.changePin,
+      _SettingsTvItemType.sources,
+    ];
+
+    if (_selectedIndex >= items.length) {
+      _selectedIndex = items.length - 1;
+    }
+
+    final listAlign = items.length < _windowSize
+        ? Alignment.topCenter
+        : Alignment.bottomCenter;
+
+    return Focus(
+      focusNode: widget.focusNode,
+      onFocusChange: (hasFocus) {
+        if (hasFocus) {
+          _listKey.currentState?.ensureVisible(_selectedIndex);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.only(
+          left: 4,
+          right: 12,
+          top: 8,
+          bottom: 8,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'settings_tv_title'.tr(),
-              style: MoaiText.display(
-                context,
-                color: scheme.onSurface,
-                fontSize: 18,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'settings_tv_subtitle'.tr(),
-              style: MoaiText.body(
-                context,
-                color: scheme.onSurfaceVariant,
-                fontSize: 13,
-                height: 1.3,
-              ),
-            ),
-            const SizedBox(height: 20),
-            TvSettingsSwitchRow(
-              focusNode: widget.focusNode,
-              icon: Icons.terminal_outlined,
-              label: 'settings_tv_log'.tr(),
-              description: 'settings_tv_log_desc'.tr(),
-              value: tvSettings.showTvLog,
-              onChanged: (v) => tvSettings.setShowTvLog(v),
-              onKeyLeft: widget.onKeyLeft,
-              onKeyRight: widget.onKeyRight,
-              onKeyDown: () => _adultFocusNode.requestFocus(),
-            ),
-            const SizedBox(height: 12),
-            TvSettingsSwitchRow(
-              focusNode: _adultFocusNode,
-              icon: tvSettings.isAdultUnlocked ? Symbols.lock_open : Symbols.lock,
-              label: 'settings_tv_adult_content'.tr(),
-              description: 'settings_tv_adult_content_desc'.tr(),
-              value: tvSettings.isAdultUnlocked,
-              onChanged: (enable) async {
-                if (enable) {
-                  await TvPinDialog.unlockAdultSession(context, tvSettings);
-                } else {
-                  tvSettings.lockAdult();
-                  if (context.mounted) {
-                    MoaiSnackBar.show(
+            Padding(
+              padding: const EdgeInsets.only(left: 6, top: 4, bottom: 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'settings_tv_title'.tr(),
+                    style: MoaiText.display(
                       context,
-                      message: 'parental_adult_locked'.tr(),
-                      icon: Symbols.lock,
-                    );
-                  }
-                }
-              },
-              onKeyLeft: widget.onKeyLeft,
-              onKeyRight: widget.onKeyRight,
-              onKeyUp: () => widget.focusNode.requestFocus(),
-              onKeyDown: () => hasPin
-                  ? _changePinFocusNode.requestFocus()
-                  : _sourcesFocusNode.requestFocus(),
-            ),
-            if (hasPin) ...[
-              const SizedBox(height: 12),
-              TvSettingsActionRow(
-                focusNode: _changePinFocusNode,
-                icon: Icons.pin_outlined,
-                label: 'settings_tv_change_pin'.tr(),
-                description: 'settings_tv_change_pin_desc'.tr(),
-                onPressed: () async {
-                  await TvPinDialog.changePin(context, tvSettings);
-                },
-                onKeyLeft: widget.onKeyLeft,
-                onKeyRight: widget.onKeyRight,
-                onKeyUp: () => _adultFocusNode.requestFocus(),
-                onKeyDown: () => _sourcesFocusNode.requestFocus(),
-              ),
-            ],
-            const SizedBox(height: 12),
-            TvSettingsActionRow(
-              focusNode: _sourcesFocusNode,
-              icon: Symbols.extension,
-              label: 'settings_general_sources'.tr(),
-              description: 'settings_general_sources_desc'.tr(),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const SourcesScreen(),
+                      color: scheme.onSurface,
+                      fontSize: 18,
+                    ),
                   ),
-                );
-              },
-              onKeyLeft: widget.onKeyLeft,
-              onKeyRight: widget.onKeyRight,
-              onKeyUp: () => hasPin
-                  ? _changePinFocusNode.requestFocus()
-                  : _adultFocusNode.requestFocus(),
+                  const SizedBox(height: 2),
+                  Text(
+                    'settings_tv_subtitle'.tr(),
+                    style: MoaiText.body(
+                      context,
+                      color: scheme.onSurfaceVariant,
+                      fontSize: 13,
+                      height: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Align(
+                alignment: listAlign,
+                child: TvWindowedList<_SettingsTvItemType>(
+                  key: _listKey,
+                  items: items,
+                  windowSize: _windowSize,
+                  itemExtent: _itemExtent,
+                  showScrollDots: true,
+                  initialGlobalIndex: _selectedIndex,
+                  onFocusedGlobalIndex: (idx) {
+                    _selectedIndex = idx;
+                  },
+                  itemBuilder: (
+                    context,
+                    item,
+                    focusNode,
+                    local,
+                    global,
+                    onKeyUp,
+                    onKeyDown,
+                  ) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: _buildItem(
+                        context: context,
+                        item: item,
+                        tvSettings: tvSettings,
+                        focusNode: focusNode,
+                        onKeyUp: onKeyUp,
+                        onKeyDown: onKeyDown,
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
   }
-}
 
+  Widget _buildItem({
+    required BuildContext context,
+    required _SettingsTvItemType item,
+    required TvSettingsProvider tvSettings,
+    required FocusNode focusNode,
+    required VoidCallback onKeyUp,
+    required VoidCallback onKeyDown,
+  }) {
+    switch (item) {
+      case _SettingsTvItemType.debugLog:
+        return TvSettingsSwitchRow(
+          focusNode: focusNode,
+          icon: Icons.terminal_outlined,
+          label: 'settings_tv_log'.tr(),
+          description: 'settings_tv_log_desc'.tr(),
+          value: tvSettings.showTvLog,
+          onChanged: (v) => tvSettings.setShowTvLog(v),
+          onKeyLeft: widget.onKeyLeft,
+          onKeyRight: widget.onKeyRight,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+        );
+      case _SettingsTvItemType.adultContent:
+        return TvSettingsSwitchRow(
+          focusNode: focusNode,
+          icon: tvSettings.isAdultUnlocked ? Symbols.lock_open : Symbols.lock,
+          label: 'settings_tv_adult_content'.tr(),
+          description: 'settings_tv_adult_content_desc'.tr(),
+          value: tvSettings.isAdultUnlocked,
+          onChanged: (enable) async {
+            if (enable) {
+              await TvPinDialog.unlockAdultSession(context, tvSettings);
+            } else {
+              tvSettings.lockAdult();
+              if (context.mounted) {
+                MoaiSnackBar.show(
+                  context,
+                  message: 'parental_adult_locked'.tr(),
+                  icon: Symbols.lock,
+                );
+              }
+            }
+          },
+          onKeyLeft: widget.onKeyLeft,
+          onKeyRight: widget.onKeyRight,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+        );
+      case _SettingsTvItemType.changePin:
+        return TvSettingsActionRow(
+          focusNode: focusNode,
+          icon: Icons.pin_outlined,
+          label: 'settings_tv_change_pin'.tr(),
+          description: 'settings_tv_change_pin_desc'.tr(),
+          onPressed: () async {
+            await TvPinDialog.changePin(context, tvSettings);
+          },
+          onKeyLeft: widget.onKeyLeft,
+          onKeyRight: widget.onKeyRight,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+        );
+      case _SettingsTvItemType.sources:
+        return TvSettingsActionRow(
+          focusNode: focusNode,
+          icon: Symbols.extension,
+          label: 'settings_general_sources'.tr(),
+          description: 'settings_general_sources_desc'.tr(),
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const SourcesScreen(),
+              ),
+            );
+          },
+          onKeyLeft: widget.onKeyLeft,
+          onKeyRight: widget.onKeyRight,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+        );
+    }
+  }
+}

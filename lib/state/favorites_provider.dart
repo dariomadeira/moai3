@@ -20,6 +20,9 @@ class FavoritesProvider extends ChangeNotifier {
   void toggleFavorite(Channel channel) =>
       _favoritesRepository.toggleFavorite(channel);
 
+  void sanitizeAdultFavorites(List<Channel> channels) =>
+      _favoritesRepository.sanitizeAdultFavorites(channels);
+
   void clearAllFavorites() => _favoritesRepository.clearAllFavorites();
 
   @override

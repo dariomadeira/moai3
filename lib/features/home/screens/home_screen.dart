@@ -1,15 +1,21 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/features/home/areas/home_calendar_area.dart';
 import 'package:moai3/features/home/areas/home_settings_area.dart';
 import 'package:moai3/features/home/areas/home_tv_area.dart';
 import 'package:moai3/features/home/widgets/double_back_exit_scope.dart';
 import 'package:moai3/features/home/widgets/navigation_rail_section.dart';
 import 'package:moai3/focus/tv_intents.dart';
 import 'package:moai3/focus/tv_shortcuts.dart';
+import 'package:moai3/helpers/notification_helper.dart';
 import 'package:moai3/layout/settings_panel_layout.dart';
+import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/services/plugin_host_service.dart';
 import 'package:moai3/services/plugin_update_service.dart';
 import 'package:moai3/services/update_service.dart';
+import 'package:moai3/state/calendar_provider.dart';
+import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/plugin_update_dialog.dart';
@@ -26,7 +32,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   static const int _sectionTv = 0;
-  static const int _sectionSettings = 1;
+  static const int _sectionCalendar = 1;
+  static const int _sectionSettings = 2;
 
   final FocusScopeNode _railScopeNode =
       FocusScopeNode(debugLabel: 'rail_scope');
@@ -35,6 +42,11 @@ class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<DoubleBackExitScopeState> _doubleBackKey =
       GlobalKey<DoubleBackExitScopeState>();
 
+  final FocusNode _calendarEventsFocus = FocusNode(debugLabel: 'calendar_events');
+  final FocusNode _calendarSubscriptionsFocus =
+      FocusNode(debugLabel: 'calendar_subscriptions');
+  int _activeCalendarPanelIndex = 0;
+
   final FocusNode _settingsTvFocus = FocusNode(debugLabel: 'settings_tv');
   final FocusNode _settingsGeneralFocus =
       FocusNode(debugLabel: 'settings_general');
@@ -42,12 +54,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int _selectedIndex = _sectionTv;
   int _activeSettingsPanelIndex = SettingsPanelLayout.configTvPanelIndex;
+  StreamSubscription<List<CalendarEvent>>? _liveEventsSub;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAutoUpdate();
+      _listenToLiveEvents();
+    });
+  }
+
+  void _listenToLiveEvents() {
+    final calendar = context.read<CalendarProvider>();
+    _liveEventsSub = calendar.onLiveEventsStarted.listen((events) {
+      if (!mounted || events.isEmpty) return;
+      final message = CalendarProvider.formatLiveEventsMessage(events);
+      final icon = CalendarProvider.getLiveEventsIcon(events);
+      NotificationHelper.show(
+        message: message,
+        icon: icon,
+        duration: events.length > 1
+            ? const Duration(seconds: 5)
+            : const Duration(seconds: 4),
+      );
     });
   }
 
@@ -83,8 +113,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _liveEventsSub?.cancel();
     _railFocusNode.dispose();
     _railScopeNode.dispose();
+    _calendarEventsFocus.dispose();
+    _calendarSubscriptionsFocus.dispose();
     _settingsTvFocus.dispose();
     _settingsGeneralFocus.dispose();
     _settingsAboutFocus.dispose();
@@ -107,6 +140,19 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) _railFocusNode.requestFocus();
   }
 
+  void _focusCalendarPanelByIndex(int index) {
+    if (index == 0) {
+      _requestFocusWithRetry(_calendarEventsFocus);
+    } else {
+      _requestFocusWithRetry(_calendarSubscriptionsFocus);
+    }
+  }
+
+  void _onCalendarPanelIndexChanged(int index) {
+    setState(() => _activeCalendarPanelIndex = index);
+    _focusCalendarPanelByIndex(index);
+  }
+
   void _focusSettingsPanelByIndex(int index) {
     if (SettingsPanelLayout.isConfigTvPanel(index)) {
       _requestFocusWithRetry(_settingsTvFocus);
@@ -124,6 +170,10 @@ class _HomeScreenState extends State<HomeScreen> {
       _focusSettingsPanelByIndex(_activeSettingsPanelIndex);
       return;
     }
+    if (_selectedIndex == _sectionCalendar) {
+      _focusCalendarPanelByIndex(_activeCalendarPanelIndex);
+      return;
+    }
     _tvAreaKey.currentState?.requestEntryFocus();
   }
 
@@ -135,6 +185,22 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _interceptBack() {
     if (_selectedIndex == _sectionTv) {
       return _tvAreaKey.currentState?.handleBack() ?? false;
+    }
+    if (_selectedIndex == _sectionCalendar) {
+      if (_railFocusNode.hasFocus) {
+        setState(() => _selectedIndex = _sectionTv);
+        return true;
+      }
+      _focusRail();
+      return true;
+    }
+    if (_selectedIndex == _sectionSettings) {
+      if (_railFocusNode.hasFocus) {
+        setState(() => _selectedIndex = _sectionTv);
+        return true;
+      }
+      _focusRail();
+      return true;
     }
     return false;
   }
@@ -184,9 +250,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     Expanded(
                       child: RepaintBoundary(
                         child: Padding(
-                          padding: _selectedIndex == _sectionSettings
-                              ? const EdgeInsets.all(8)
-                              : const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                          padding: _selectedIndex == _sectionTv
+                              ? const EdgeInsets.fromLTRB(8, 0, 8, 8)
+                              : const EdgeInsets.all(8),
                           child: _selectedIndex == _sectionSettings
                               ? HomeSettingsArea(
                                   activePanelIndex: _activeSettingsPanelIndex,
@@ -197,10 +263,31 @@ class _HomeScreenState extends State<HomeScreen> {
                                       _onSettingsPanelIndexChanged,
                                   onExitLeft: _focusRail,
                                 )
-                              : HomeTvArea(
-                                  key: _tvAreaKey,
-                                  onExitLeft: _focusRail,
-                                ),
+                              : _selectedIndex == _sectionCalendar
+                                  ? HomeCalendarArea(
+                                      activePanelIndex:
+                                          _activeCalendarPanelIndex,
+                                      eventsPanelFocus: _calendarEventsFocus,
+                                      subscriptionsPanelFocus:
+                                          _calendarSubscriptionsFocus,
+                                      onPanelIndexChanged:
+                                          _onCalendarPanelIndexChanged,
+                                      onExitLeft: _focusRail,
+                                      onTuneChannel: (channel) {
+                                        context.read<ChannelProvider>().selectChannel(channel);
+                                        setState(() => _selectedIndex = _sectionTv);
+                                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                                          if (mounted) {
+                                            _tvAreaKey.currentState?.selectChannel(channel);
+                                            _tvAreaKey.currentState?.requestViewerFocus();
+                                          }
+                                        });
+                                      },
+                                    )
+                                  : HomeTvArea(
+                                      key: _tvAreaKey,
+                                      onExitLeft: _focusRail,
+                                    ),
                         ),
                       ),
                     ),

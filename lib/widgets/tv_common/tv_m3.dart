@@ -13,6 +13,9 @@ enum TvButtonVariant {
 
   /// Superficie neutra → [ColorScheme.surfaceContainerHighest].
   surface,
+
+  /// Acción destructiva (p. ej. Vaciar favoritos) → [ColorScheme.errorContainer].
+  destructive,
 }
 
 /// Botón TV Material 3: fill + scale al foco, sin outline.
@@ -25,6 +28,8 @@ class TvFocusButton extends StatefulWidget {
   final TvButtonVariant variant;
   final bool loading;
   final double height;
+  final double fontSize;
+  final double radius;
   final VoidCallback? onArrowUp;
   final VoidCallback? onArrowDown;
   final VoidCallback? onArrowLeft;
@@ -40,6 +45,8 @@ class TvFocusButton extends StatefulWidget {
     this.variant = TvButtonVariant.secondary,
     this.loading = false,
     this.height = 48,
+    this.fontSize = 15,
+    this.radius = 16,
     this.onArrowUp,
     this.onArrowDown,
     this.onArrowLeft,
@@ -90,6 +97,9 @@ class _TvFocusButtonState extends State<TvFocusButton> {
 
   (Color bg, Color fg) _colors(ColorScheme scheme) {
     if (_focused) {
+      if (widget.variant == TvButtonVariant.destructive) {
+        return (scheme.error, scheme.onError);
+      }
       return (scheme.primary, scheme.onPrimary);
     }
     switch (widget.variant) {
@@ -99,6 +109,8 @@ class _TvFocusButtonState extends State<TvFocusButton> {
         return (scheme.primaryContainer, scheme.onPrimaryContainer);
       case TvButtonVariant.surface:
         return (scheme.surfaceContainerHighest, scheme.onSurface);
+      case TvButtonVariant.destructive:
+        return (scheme.errorContainer, scheme.onErrorContainer);
     }
   }
 
@@ -179,7 +191,7 @@ class _TvFocusButtonState extends State<TvFocusButton> {
           shadowColor: Colors.transparent,
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(widget.radius),
           ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -221,7 +233,7 @@ class _TvFocusButtonState extends State<TvFocusButton> {
                     style: MoaiText.body(
                       context,
                       color: fg,
-                      fontSize: 15,
+                      fontSize: widget.fontSize,
                       fontWeight: FontWeight.w700,
                     ),
                   ),

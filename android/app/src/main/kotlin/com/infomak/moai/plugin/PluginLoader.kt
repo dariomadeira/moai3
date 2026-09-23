@@ -279,6 +279,11 @@ class PluginLoader(private val context: Context) {
             ""
         }
 
+        val canalInicialRaw = json.optString("canalInicial", "").ifEmpty {
+            json.optString("initialChannel", "")
+        }.trim()
+        val canalInicial = if (canalInicialRaw.isNotEmpty()) canalInicialRaw else null
+
         return PluginManifest(
             id = id,
             nombre = nombre,
@@ -288,6 +293,7 @@ class PluginLoader(private val context: Context) {
             canales = canales,
             clase = clase,
             tag = tag,
+            canalInicial = canalInicial,
         )
     }
 
@@ -422,6 +428,7 @@ class PluginLoader(private val context: Context) {
         "minContrato" to p.manifest.minContrato,
         "maxContrato" to p.manifest.maxContrato,
         "sourceUrl" to p.sourceUrl,
+        "canalInicial" to p.manifest.canalInicial,
         "canales" to p.manifest.canales.map { c ->
             mapOf(
                 "id" to c.id,

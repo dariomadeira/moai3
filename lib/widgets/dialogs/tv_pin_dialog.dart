@@ -105,11 +105,13 @@ class TvPinDialog extends StatefulWidget {
     if (pin2 == null || !context.mounted) return false;
 
     if (pin1 != pin2) {
-      MoaiSnackBar.show(
-        context,
-        message: 'parental_pin_error_mismatch'.tr(),
-        icon: Icons.error_outline,
-      );
+      if (context.mounted) {
+        MoaiSnackBar.show(
+          context,
+          message: 'parental_pin_error_mismatch'.tr(),
+          icon: Icons.error_outline,
+        );
+      }
       return false;
     }
 

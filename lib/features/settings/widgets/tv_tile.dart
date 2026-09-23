@@ -149,7 +149,7 @@ class _TvTileState extends State<TvTile> {
                           const SizedBox(height: 2),
                           Text(
                             widget.description!,
-                            maxLines: 2,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: MoaiText.body(
                               context,
