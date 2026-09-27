@@ -267,7 +267,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
         child: Column(
           children: [
             Icon(
-              Symbols.check_circle_rounded,
+              Symbols.check_circle,
               color: scheme.primary,
               size: 44,
             ),

@@ -350,9 +350,9 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(child: list),
-          const SizedBox(width: 4),
+          const SizedBox(width: 10),
           Padding(
-            padding: const EdgeInsets.only(right: 2),
+            padding: const EdgeInsets.only(right: 4),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
@@ -362,13 +362,11 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOutCubic,
                   margin: const EdgeInsets.symmetric(vertical: 2.5),
-                  width: 4.5,
-                  height: 4.5,
+                  width: 5.0,
+                  height: 5.0,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isActive
-                        ? scheme.primary
-                        : scheme.onSurface.withValues(alpha: 0.22),
+                    color: isActive ? scheme.primary : scheme.outlineVariant,
                   ),
                 );
               }),
@@ -413,7 +411,7 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Icon(
-        isUp ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+        isUp ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
         size: 16,
         color: scheme.onTertiaryContainer,
       ),

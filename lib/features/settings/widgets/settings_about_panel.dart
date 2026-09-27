@@ -9,6 +9,7 @@ import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/update_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
+import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 import 'package:provider/provider.dart';
 
 enum _AboutItemType {
@@ -31,8 +32,8 @@ class SettingsAboutPanel extends StatefulWidget {
 }
 
 class SettingsAboutPanelState extends State<SettingsAboutPanel> {
-  static const int _windowSize = 4;
-  static const double _itemExtent = 74.0;
+  static const int _windowSize = 5;
+  static const double _itemExtent = 70.0;
 
   final _listKey = GlobalKey<TvWindowedListState<_AboutItemType>>();
   int _selectedIndex = 0;
@@ -94,10 +95,6 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
       _selectedIndex = items.length - 1;
     }
 
-    final listAlign = items.length < _windowSize
-        ? Alignment.topCenter
-        : Alignment.bottomCenter;
-
     return Focus(
       focusNode: widget.focusNode,
       onFocusChange: (hasFocus) {
@@ -115,127 +112,117 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
+            TvPanelHeader(
+              title: 'settings_about_title'.tr(),
+              subtitle: 'settings_about_subtitle'.tr(),
               padding: const EdgeInsets.only(left: 6, top: 4, bottom: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'settings_about_title'.tr(),
-                    style: MoaiText.display(
-                      context,
-                      color: scheme.onSurface,
-                      fontSize: 18,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'settings_about_subtitle'.tr(),
-                    style: MoaiText.body(
-                      context,
-                      color: scheme.onSurfaceVariant,
-                      fontSize: 13,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final narrow = constraints.maxWidth < 220;
-                      final image = Image.asset(
-                        'assets/images/moaiAbout.png',
-                        height: narrow ? 60 : 76,
-                        width: narrow ? constraints.maxWidth : null,
-                        fit: BoxFit.contain,
-                      );
-                      final meta = Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SvgPicture.asset(
-                            'assets/svgs/appLogo.svg',
-                            height: narrow ? 20 : 26,
-                            colorFilter: ColorFilter.mode(
-                              scheme.onSurface,
-                              BlendMode.srcIn,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'settings_about_version'.tr(
-                              namedArgs: {'version': PlayerConfig.appVersion},
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: MoaiText.body(
-                              context,
-                              color: scheme.onSurfaceVariant,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      );
+              extraContent: LayoutBuilder(
+                builder: (context, constraints) {
+                  final narrow = constraints.maxWidth < 220;
+                  final image = Image.asset(
+                    'assets/images/moaiAbout.png',
+                    height: narrow ? 60 : 76,
+                    width: narrow ? constraints.maxWidth : null,
+                    fit: BoxFit.contain,
+                  );
+                  final meta = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SvgPicture.asset(
+                        'assets/svgs/appLogo.svg',
+                        height: narrow ? 20 : 26,
+                        colorFilter: ColorFilter.mode(
+                          scheme.onSurface,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'settings_about_version'.tr(
+                          namedArgs: {'version': PlayerConfig.appVersion},
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: MoaiText.body(
+                          context,
+                          color: scheme.onSurfaceVariant,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  );
 
-                      if (narrow) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            image,
-                            const SizedBox(height: 8),
-                            meta,
-                          ],
-                        );
-                      }
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          image,
-                          const SizedBox(width: 16),
-                          Expanded(child: meta),
-                        ],
-                      );
-                    },
-                  ),
-                ],
+                  if (narrow) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        image,
+                        const SizedBox(height: 8),
+                        meta,
+                      ],
+                    );
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      image,
+                      const SizedBox(width: 16),
+                      Expanded(child: meta),
+                    ],
+                  );
+                },
               ),
             ),
             Expanded(
-              child: Align(
-                alignment: listAlign,
-                child: TvWindowedList<_AboutItemType>(
-                  key: _listKey,
-                  items: items,
-                  windowSize: _windowSize,
-                  itemExtent: _itemExtent,
-                  showScrollDots: true,
-                  initialGlobalIndex: _selectedIndex,
-                  onFocusedGlobalIndex: (idx) {
-                    _selectedIndex = idx;
-                  },
-                  itemBuilder: (
-                    context,
-                    item,
-                    focusNode,
-                    local,
-                    global,
-                    onKeyUp,
-                    onKeyDown,
-                  ) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: _buildItem(
-                        context: context,
-                        item: item,
-                        valueText: valueText,
-                        scheme: scheme,
-                        focusNode: focusNode,
-                        onKeyUp: onKeyUp,
-                        onKeyDown: onKeyDown,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final targetHeight = (_windowSize * _itemExtent)
+                      .clamp(0.0, constraints.maxHeight);
+                  return Align(
+                    alignment: Alignment.bottomCenter,
+                    child: SizedBox(
+                      height: targetHeight,
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: TvWindowedList<_AboutItemType>(
+                          key: _listKey,
+                          items: items,
+                          windowSize: _windowSize,
+                          itemExtent: _itemExtent,
+                          showScrollDots: true,
+                          initialGlobalIndex: _selectedIndex,
+                          onFocusedGlobalIndex: (idx) {
+                            _selectedIndex = idx;
+                          },
+                          itemBuilder: (
+                            context,
+                            item,
+                            focusNode,
+                            local,
+                            global,
+                            onKeyUp,
+                            onKeyDown,
+                          ) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: _buildItem(
+                                context: context,
+                                item: item,
+                                valueText: valueText,
+                                scheme: scheme,
+                                focusNode: focusNode,
+                                onKeyUp: onKeyUp,
+                                onKeyDown: onKeyDown,
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
             ),
           ],

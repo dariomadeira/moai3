@@ -19,9 +19,9 @@ class TvListCardLeadingIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final iconBg = isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.18)
-        : scheme.primaryContainer;
+    // final iconBg = isFocused
+    //     ? scheme.onPrimary.withValues(alpha: 0.18)
+    //     : scheme.primaryContainer;
     final iconColor = isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
 
     // Settings: padding 10 + icon 22. Compact: 6 + 18 para caber en itemExtent 56.
@@ -35,7 +35,8 @@ class TvListCardLeadingIcon extends StatelessWidget {
       width: side,
       height: side,
       decoration: BoxDecoration(
-        color: iconBg,
+        // color: iconBg,
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(radius),
       ),
       alignment: Alignment.center,

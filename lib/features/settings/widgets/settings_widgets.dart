@@ -12,6 +12,8 @@ class TvSettingsActionRow extends StatelessWidget {
   final VoidCallback? onKeyRight;
   final VoidCallback? onKeyUp;
   final VoidCallback? onKeyDown;
+  final EdgeInsetsGeometry? padding;
+  final double? minHeight;
 
   const TvSettingsActionRow({
     super.key,
@@ -24,6 +26,8 @@ class TvSettingsActionRow extends StatelessWidget {
     this.onKeyRight,
     this.onKeyUp,
     this.onKeyDown,
+    this.padding,
+    this.minHeight,
   });
 
   @override
@@ -33,6 +37,8 @@ class TvSettingsActionRow extends StatelessWidget {
       label: label,
       description: description,
       icon: icon,
+      padding: padding,
+      minHeight: minHeight,
       onPressed: onPressed,
       onKeyLeft: onKeyLeft,
       onKeyRight: onKeyRight,
@@ -41,7 +47,7 @@ class TvSettingsActionRow extends StatelessWidget {
       trailingBuilder: (context, isFocused) {
         final scheme = context.scheme;
         return Icon(
-          Icons.chevron_right_rounded,
+          Icons.chevron_right,
           size: 26,
           color: isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
         );
@@ -61,6 +67,8 @@ class TvSettingsSwitchRow extends StatelessWidget {
   final VoidCallback? onKeyRight;
   final VoidCallback? onKeyUp;
   final VoidCallback? onKeyDown;
+  final EdgeInsetsGeometry? padding;
+  final double? minHeight;
 
   const TvSettingsSwitchRow({
     super.key,
@@ -74,6 +82,8 @@ class TvSettingsSwitchRow extends StatelessWidget {
     this.onKeyRight,
     this.onKeyUp,
     this.onKeyDown,
+    this.padding,
+    this.minHeight,
   });
 
   @override
@@ -83,6 +93,8 @@ class TvSettingsSwitchRow extends StatelessWidget {
       label: label,
       description: description,
       icon: icon,
+      padding: padding,
+      minHeight: minHeight,
       onPressed: () => onChanged(!value),
       onKeyLeft: onKeyLeft,
       onKeyRight: onKeyRight,

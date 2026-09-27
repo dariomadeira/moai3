@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/features/calendar/widgets/calendar_events_panel.dart';
 import 'package:moai3/features/calendar/widgets/calendar_subscriptions_panel.dart';
-import 'package:moai3/features/home/widgets/tv_accordion_row.dart';
+import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/theme/moai_text.dart';
 
@@ -60,7 +60,7 @@ class _HomeCalendarAreaState extends State<HomeCalendarArea> {
       'calendar_panel_subscriptions_title'.tr(),
     ];
 
-    return TvAccordionRow(
+    return TvAccordionRowPreview(
       panelCount: 2,
       activeIndex: widget.activePanelIndex,
       colors: panelColors,

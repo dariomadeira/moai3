@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:moai3/models/calendar_event.dart';
+import 'package:moai3/services/calendar/argentina_time.dart';
 
 /// Servicio para consultar el calendario oficial de Fórmula 1 vía API pública Jolpica/Ergast.
 class F1CalendarService {
@@ -185,10 +186,11 @@ class F1CalendarService {
     try {
       final cleanTime = time.endsWith('Z') ? time : '${time}Z';
       final iso = '${date}T$cleanTime';
-      return DateTime.parse(iso).toLocal();
+      return DateTime.parse(iso).toUtc();
     } catch (_) {
       try {
-        return DateTime.parse(date).toLocal();
+        final parsed = DateTime.parse(date);
+        return DateTime.utc(parsed.year, parsed.month, parsed.day);
       } catch (_) {
         return null;
       }
@@ -196,9 +198,10 @@ class F1CalendarService {
   }
 
   static CalendarEventStatus _calculateStatus(DateTime start, Duration duration) {
-    final now = DateTime.now();
-    final end = start.add(duration);
-    if (now.isBefore(start)) {
+    final now = ArgentinaTime.utcNow();
+    final startUtc = start.toUtc();
+    final end = startUtc.add(duration);
+    if (now.isBefore(startUtc)) {
       return CalendarEventStatus.upcoming;
     } else if (now.isAfter(end)) {
       return CalendarEventStatus.finished;
@@ -257,9 +260,9 @@ class F1CalendarService {
       round: '14',
       raceName: 'Gran Premio de España',
       circuit: 'Madring',
-      fpDate: DateTime(2026, 9, 11, 8, 30),
-      qualyDate: DateTime(2026, 9, 12, 11, 0),
-      raceDate: DateTime(2026, 9, 13, 10, 0),
+      fpDate: ArgentinaTime.fromCivil(2026, 9, 11, 8, 30),
+      qualyDate: ArgentinaTime.fromCivil(2026, 9, 12, 11, 0),
+      raceDate: ArgentinaTime.fromCivil(2026, 9, 13, 10, 0),
     );
 
     // Fin de semana 18-20 Sep 2026: NO HAY F1
@@ -269,9 +272,9 @@ class F1CalendarService {
       round: '15',
       raceName: 'Gran Premio de Azerbaiyán',
       circuit: 'Baku City Circuit',
-      fpDate: DateTime(2026, 9, 25, 6, 30),
-      qualyDate: DateTime(2026, 9, 26, 9, 0),
-      raceDate: DateTime(2026, 9, 27, 8, 0),
+      fpDate: ArgentinaTime.fromCivil(2026, 9, 25, 6, 30),
+      qualyDate: ArgentinaTime.fromCivil(2026, 9, 26, 9, 0),
+      raceDate: ArgentinaTime.fromCivil(2026, 9, 27, 8, 0),
     );
 
     // GP 16: Bahrein / Malasia (4 Oct 2026)
@@ -279,9 +282,9 @@ class F1CalendarService {
       round: '16',
       raceName: 'Gran Premio de Bahrein',
       circuit: 'Sepang Circuit',
-      fpDate: DateTime(2026, 10, 2, 4, 30),
-      qualyDate: DateTime(2026, 10, 3, 5, 0),
-      raceDate: DateTime(2026, 10, 4, 4, 0),
+      fpDate: ArgentinaTime.fromCivil(2026, 10, 2, 4, 30),
+      qualyDate: ArgentinaTime.fromCivil(2026, 10, 3, 5, 0),
+      raceDate: ArgentinaTime.fromCivil(2026, 10, 4, 4, 0),
     );
 
     // GP 17: Singapur (11 Oct 2026)
@@ -289,9 +292,9 @@ class F1CalendarService {
       round: '17',
       raceName: 'Gran Premio de Singapur',
       circuit: 'Marina Bay Street Circuit',
-      fpDate: DateTime(2026, 10, 9, 6, 30),
-      qualyDate: DateTime(2026, 10, 10, 10, 0),
-      raceDate: DateTime(2026, 10, 11, 9, 0),
+      fpDate: ArgentinaTime.fromCivil(2026, 10, 9, 6, 30),
+      qualyDate: ArgentinaTime.fromCivil(2026, 10, 10, 10, 0),
+      raceDate: ArgentinaTime.fromCivil(2026, 10, 11, 9, 0),
     );
 
     // GP 18: Estados Unidos (25 Oct 2026)
@@ -299,9 +302,9 @@ class F1CalendarService {
       round: '18',
       raceName: 'Gran Premio de Estados Unidos',
       circuit: 'Circuit of the Americas',
-      fpDate: DateTime(2026, 10, 23, 14, 30),
-      qualyDate: DateTime(2026, 10, 24, 19, 0),
-      raceDate: DateTime(2026, 10, 25, 16, 0),
+      fpDate: ArgentinaTime.fromCivil(2026, 10, 23, 14, 30),
+      qualyDate: ArgentinaTime.fromCivil(2026, 10, 24, 19, 0),
+      raceDate: ArgentinaTime.fromCivil(2026, 10, 25, 16, 0),
     );
 
     return events;

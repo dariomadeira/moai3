@@ -61,15 +61,14 @@ class _ClearFavoritesTileState extends State<ClearFavoritesTile> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
+                ClipOval(
                   child: ColoredBox(
                     color: Colors.red.withValues(alpha: 0.15),
                     child: SizedBox(
-                      width: 48,
-                      height: 32,
+                      width: 36,
+                      height: 36,
                       child: Icon(
-                        Icons.delete_outline_rounded,
+                        Icons.delete_outline,
                         color: _isFocused ? scheme.onPrimary : Colors.redAccent,
                         size: 22,
                       ),
@@ -142,7 +141,7 @@ class _ClearConfirmDialogContentState
     final scheme = context.scheme;
 
     return TvDialog(
-      icon: Icons.delete_sweep_rounded,
+      icon: Icons.delete_sweep_outlined,
       iconBgColor: scheme.errorContainer,
       iconColor: scheme.onErrorContainer,
       title: 'favorites_clear_title'.tr(),

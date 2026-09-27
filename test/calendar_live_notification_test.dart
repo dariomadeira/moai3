@@ -110,7 +110,7 @@ void main() {
       );
 
       final icon = CalendarProvider.getLiveEventsIcon([ev1, ev2]);
-      expect(icon, Icons.live_tv_rounded);
+      expect(icon, Icons.live_tv_outlined);
     });
 
     test('CalendarProvider emite en onLiveEventsStarted y deduplica avisos posteriores', () async {

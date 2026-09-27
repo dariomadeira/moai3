@@ -33,6 +33,10 @@ Todas las decisiones de diseño, contratos de plugins, modelos de datos y flujos
   *Verificación secuencial de actualizaciones, deducción de manifiestos y hot-update.*
 - [SPEC-32: Motor de Reproducción de Video y Ciclo de Vida del Stream](features/player_engine.md)  
   *Renderizado a SurfaceTexture sin PlatformViews, máquina de estados y watchdog de 45 segundos.*
+- [SPEC-33: Componentes de Interfaz de Usuario TV, Pestañas, Rail y Diálogos](features/tv_ui_components_and_layout.md)  
+  *Navigation Rail con Ajustes al fondo, pestañas (Explorar/Buscar/Marcadores), modal PIN continuo sin parpadeos y colores sólidos.*
+- [SPEC-34: Diagnóstico y Captura de Voz del Control Remoto (PoC)](features/tv_remote_voice_input.md)  
+  *Módulo empírico de prueba de micrófono físico de control remoto por software en Android TV.*
 
 ### 5. Verificación y Calidad
 - [SPEC-40: Matriz de Criterios de Aceptación (Baseline v3.0.11)](verification/baseline_acceptance_matrix.md)  

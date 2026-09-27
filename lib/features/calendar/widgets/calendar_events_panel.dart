@@ -5,11 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/models/channel.dart';
+import 'package:moai3/services/calendar/argentina_time.dart';
 import 'package:moai3/services/calendar/calendar_channel_matcher.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
+import 'package:moai3/features/settings/widgets/tv_tile.dart';
 import 'package:moai3/widgets/cards/new_channel_card.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
@@ -20,6 +22,7 @@ enum _FocusSection {
 }
 
 enum _HeaderAction {
+  refresh,
   prev,
   current,
   next,
@@ -158,7 +161,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
   }
 
   List<_HeaderAction> _getAvailableHeaderActions() {
-    final actions = <_HeaderAction>[];
+    final actions = <_HeaderAction>[_HeaderAction.refresh];
     if (_weekOffset > -1) {
       actions.add(_HeaderAction.prev);
     }
@@ -209,7 +212,12 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
       if (key == LogicalKeyboardKey.select ||
           key == LogicalKeyboardKey.enter ||
           key == LogicalKeyboardKey.space) {
-        _executeHeaderAction(actions[_headerActionIndex]);
+        final action = actions[_headerActionIndex];
+        if (action == _HeaderAction.refresh) {
+          _refreshCalendar(calendar);
+        } else {
+          _executeHeaderAction(action);
+        }
         return KeyEventResult.handled;
       }
 
@@ -355,9 +363,16 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
     _windowStarts[_selectedDayIndex] = start.clamp(0, maxStart);
   }
 
+  void _refreshCalendar(CalendarProvider calendar) {
+    if (calendar.isLoading) return;
+    calendar.refreshEvents(force: true);
+  }
+
   void _executeHeaderAction(_HeaderAction action) {
     setState(() {
       switch (action) {
+        case _HeaderAction.refresh:
+          return;
         case _HeaderAction.prev:
           if (_weekOffset > -1) {
             _weekOffset--;
@@ -365,7 +380,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
           break;
         case _HeaderAction.current:
           _weekOffset = 0;
-          final todayWeekday = DateTime.now().weekday;
+          final todayWeekday = ArgentinaTime.now().weekday;
           _selectedDayIndex = (todayWeekday - 1).clamp(0, 6);
           break;
         case _HeaderAction.next:
@@ -407,21 +422,10 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
   }
 
   void _showEventDetails(BuildContext context, CalendarEvent event) {
-    if (event.status == CalendarEventStatus.finished) {
-      return;
-    }
-    final isLive = event.status == CalendarEventStatus.live;
-
-    showTvGeneralDialog<void>(
-      context: context,
-      barrierLabel: 'calendar_dialog_close'.tr(),
-      builder: (dialogContext) {
-        return _CalendarEventDialogContent(
-          event: event,
-          isLive: isLive,
-          onTuneChannel: widget.onTuneChannel,
-        );
-      },
+    showCalendarEventDetails(
+      context,
+      event,
+      onTuneChannel: widget.onTuneChannel,
     );
   }
 
@@ -456,7 +460,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                   child: Row(
                     children: [
                       Icon(
-                        Icons.calendar_month_rounded,
+                        Icons.calendar_month_outlined,
                         size: 20,
                         color: scheme.primary,
                       ),
@@ -488,11 +492,26 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                         _headerActionIndex == idx;
 
                     switch (action) {
+                      case _HeaderAction.refresh:
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: _HeaderButton(
+                            icon: Icons.sync_outlined,
+                            tooltip: 'calendar_refresh'.tr(),
+                            isFocused: isFocused,
+                            isLoading: calendar.isLoading,
+                            onTap: () {
+                              _headerActionIndex = idx;
+                              _refreshCalendar(calendar);
+                              widget.focusNode.requestFocus();
+                            },
+                          ),
+                        );
                       case _HeaderAction.prev:
                         return Padding(
                           padding: const EdgeInsets.only(right: 6),
                           child: _HeaderButton(
-                            icon: Icons.chevron_left_rounded,
+                            icon: Icons.chevron_left,
                             tooltip: 'calendar_week_nav_prev'.tr(),
                             isFocused: isFocused,
                             onTap: () {
@@ -506,7 +525,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                         return Padding(
                           padding: const EdgeInsets.only(right: 6),
                           child: _HeaderButton(
-                            icon: Icons.today_rounded,
+                            icon: Icons.today_outlined,
                             label: 'calendar_week_current'.tr(),
                             isFocused: isFocused,
                             onTap: () {
@@ -518,7 +537,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                         );
                       case _HeaderAction.next:
                         return _HeaderButton(
-                          icon: Icons.chevron_right_rounded,
+                          icon: Icons.chevron_right,
                           tooltip: 'calendar_week_nav_next'.tr(),
                           isFocused: isFocused,
                           onTap: () {
@@ -603,6 +622,7 @@ class _HeaderButton extends StatelessWidget {
   final String? label;
   final String? tooltip;
   final bool isFocused;
+  final bool isLoading;
   final VoidCallback onTap;
 
   const _HeaderButton({
@@ -610,6 +630,7 @@ class _HeaderButton extends StatelessWidget {
     this.label,
     this.tooltip,
     required this.isFocused,
+    this.isLoading = false,
     required this.onTap,
   });
 
@@ -638,7 +659,17 @@ class _HeaderButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 17, color: fgColor),
+              if (isLoading)
+                SizedBox(
+                  width: 17,
+                  height: 17,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: fgColor,
+                  ),
+                )
+              else
+                Icon(icon, size: 17, color: fgColor),
               if (label != null) ...[
                 const SizedBox(width: 6),
                 Text(
@@ -686,7 +717,7 @@ class _DayColumn extends StatelessWidget {
   static const _dayNames = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
 
   bool get _isToday {
-    final now = DateTime.now();
+    final now = ArgentinaTime.now();
     return now.year == day.year && now.month == day.month && now.day == day.day;
   }
 
@@ -737,30 +768,48 @@ class _DayColumn extends StatelessWidget {
               color: headerBg,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+            child: Stack(
               children: [
-                Text(
-                  dayLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: MoaiText.body(
-                    context,
-                    fontSize: 11,
-                    fontWeight: isToday ? FontWeight.w800 : FontWeight.w700,
-                    color: headerDayNameColor,
-                  ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      dayLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: MoaiText.body(
+                        context,
+                        fontSize: 11,
+                        fontWeight: isToday ? FontWeight.w800 : FontWeight.w700,
+                        color: headerDayNameColor,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${day.day}',
+                      style: MoaiText.display(
+                        context,
+                        fontSize: 15,
+                        fontWeight: isToday ? FontWeight.w800 : FontWeight.w700,
+                        color: headerDayNumberColor,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '${day.day}',
-                  style: MoaiText.display(
-                    context,
-                    fontSize: 15,
-                    fontWeight: isToday ? FontWeight.w800 : FontWeight.w700,
-                    color: headerDayNumberColor,
+                if (events.isNotEmpty)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Badge(
+                      backgroundColor: scheme.tertiaryContainer,
+                      textColor: scheme.onTertiaryContainer,
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 10,
+                      ),
+                      label: Text('${events.length}'),
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -839,7 +888,7 @@ class _DayColumn extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
-                          Icons.keyboard_arrow_up_rounded,
+                          Icons.keyboard_arrow_up,
                           size: 12,
                           color: scheme.onTertiaryContainer,
                         ),
@@ -876,7 +925,7 @@ class _DayColumn extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
-                          Icons.keyboard_arrow_down_rounded,
+                          Icons.keyboard_arrow_down,
                           size: 12,
                           color: scheme.onTertiaryContainer,
                         ),
@@ -911,7 +960,7 @@ class _DayColumn extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(
-              Icons.event_busy_rounded,
+              Icons.event_busy_outlined,
               size: 24,
               color: isFocused ? scheme.onSecondaryContainer : scheme.outline,
             ),
@@ -1019,7 +1068,7 @@ class _CalendarEventGridCard extends StatelessWidget {
                         if (isFinished) ...[
                           const SizedBox(width: 4),
                           Icon(
-                            Icons.check_circle_outline_rounded,
+                            Icons.check_circle_outline,
                             size: 11,
                             color: fgColor,
                           ),
@@ -1150,26 +1199,23 @@ class _CalendarEventDialogContentState
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildModalDetailRow(
-          context,
-          icon: Icons.schedule_rounded,
+        TvInfoTile(
+          icon: Icons.schedule_outlined,
           label: 'calendar_event_time'.tr(),
-          value: '${event.formattedDate} • ${event.formattedTime} hs',
+          description: '${event.formattedDate} • ${event.formattedTime} hs',
         ),
-        const SizedBox(height: 12),
-        _buildModalDetailRow(
-          context,
-          icon: Icons.sports_rounded,
+        const SizedBox(height: 8),
+        TvInfoTile(
+          icon: Icons.sports_outlined,
           label: 'calendar_event_sport'.tr(),
-          value: event.sessionType ?? event.competition,
+          description: event.sessionType ?? event.competition,
         ),
         if (event.broadcaster != null && event.broadcaster!.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _buildModalDetailRow(
-            context,
-            icon: Icons.tv_rounded,
+          const SizedBox(height: 8),
+          TvInfoTile(
+            icon: Icons.tv_outlined,
             label: 'calendar_event_broadcaster'.tr(),
-            value: event.broadcaster!,
+            description: event.broadcaster!,
           ),
         ],
       ],
@@ -1189,10 +1235,10 @@ class _CalendarEventDialogContentState
               Expanded(
                 flex: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: scheme.surfaceContainerHighest.withValues(alpha: 0.65),
-                    borderRadius: BorderRadius.circular(16),
+                    color: scheme.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(18),
                   ),
                   child: TvWindowedList<Channel>(
                     key: _listKey,
@@ -1227,7 +1273,7 @@ class _CalendarEventDialogContentState
 
     return TvDialog(
       width: hasChannels ? 800 : 480,
-      icon: Icons.event_note_rounded,
+      icon: Icons.event_note_outlined,
       title: event.title,
       subtitle: event.competition,
       trailingHeader: widget.isLive
@@ -1274,47 +1320,28 @@ class _CalendarEventDialogContentState
     );
   }
 
-  Widget _buildModalDetailRow(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    final scheme = context.scheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: scheme.onSurfaceVariant),
-          const SizedBox(width: 10),
-          Text(
-            '$label: ',
-            style: MoaiText.body(
-              context,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: MoaiText.body(
-                context,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: scheme.onSurface,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+}
+
+Future<void> showCalendarEventDetails(
+  BuildContext context,
+  CalendarEvent event, {
+  ValueChanged<Channel>? onTuneChannel,
+}) async {
+  if (event.status == CalendarEventStatus.finished) {
+    return;
   }
+
+  await showTvGeneralDialog<void>(
+    context: context,
+    barrierLabel: 'calendar_dialog_close'.tr(),
+    builder: (dialogContext) {
+      return _CalendarEventDialogContent(
+        event: event,
+        isLive: event.status == CalendarEventStatus.live,
+        onTuneChannel: onTuneChannel,
+      );
+    },
+  );
 }
 
 

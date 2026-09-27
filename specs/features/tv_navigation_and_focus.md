@@ -56,9 +56,18 @@ Teclas de acción reconocidas:
 
 ---
 
-## 3. Navegación en Pestañas Flotantes M3 Expressive
+## 3. Navegación en Pestañas Flotantes M3 Expressive (`TvTabBar`)
 
-La navegación principal utiliza una barra de pestañas flotante con atajos direccionales:
-- **Flecha Arriba desde la cabecera del contenido**: Salta directamente a la pestaña activa en la barra flotante.
-- **Flecha Abajo desde una pestaña**: Desciende al primer elemento activo del cuerpo de la pantalla actual.
-- **Flechas Izquierda / Derecha dentro de la barra**: Conmutan entre pestañas de navegación (`Canales`, `Favoritos`, `Explorar`, `Ajustes`).
+La navegación en el área principal de TV organiza sus vistas mediante tres pestañas horizontales continuas:
+- **Pestañas disponibles**: `Explorar` (`Icons.explore_outlined` / `Icons.explore`), `Buscar` (`Icons.search_outlined` / `Icons.search`) y `Marcadores` (`Icons.bookmarks_outlined` / `Icons.bookmarks`).
+- **Flecha Arriba desde el contenido o buscador**: Salta directamente a enfocar la pestaña activa en la barra flotante.
+- **Flecha Abajo desde una pestaña**: Desciende al elemento de entrada del contenido activo (`_focusActiveContent()`):
+  - *Explorar*: enfoca el panel activo del acordeón (Países o Canales).
+  - *Buscar*: enfoca el campo de búsqueda (`TvTextField`) o resultados.
+  - *Marcadores*: enfoca el panel de grupos o canales guardados.
+- **Flechas Izquierda / Derecha dentro de la barra**:
+  - `Explorar`: `←` sale al Navigation Rail; `→` pasa a Buscar.
+  - `Buscar`: `←` regresa a Explorar; `→` pasa a Marcadores.
+  - `Marcadores`: `←` regresa a Buscar; `→` salta al Visor/Player.
+
+*(Para especificaciones detalladas de los componentes visuales, el Navigation Rail y el diálogo continuo de PIN, consultar [SPEC-33: Componentes de Interfaz de Usuario TV](tv_ui_components_and_layout.md)).*

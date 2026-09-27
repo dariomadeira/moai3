@@ -4,8 +4,8 @@ import 'package:moai3/features/bootstrap/screens/overlap_config_screen.dart';
 import 'package:moai3/features/settings/widgets/settings_accent_color_row.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/state/theme_provider.dart';
-import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
+import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 import 'package:provider/provider.dart';
 
 enum _SettingsGeneralItemType {
@@ -33,7 +33,7 @@ class SettingsGeneralPanel extends StatefulWidget {
 
 class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
   static const int _windowSize = 6;
-  static const double _itemExtent = 74.0;
+  static const double _itemExtent = 70.0;
 
   final _listKey = GlobalKey<TvWindowedListState<_SettingsGeneralItemType>>();
   int _selectedIndex = 0;
@@ -44,7 +44,6 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
     final theme = context.watch<ThemeProvider>();
     final isAutoAccent = theme.autoAccent;
 
@@ -58,10 +57,6 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
     if (_selectedIndex >= items.length) {
       _selectedIndex = items.length - 1;
     }
-
-    final listAlign = items.length < _windowSize
-        ? Alignment.topCenter
-        : Alignment.bottomCenter;
 
     return Focus(
       focusNode: widget.focusNode,
@@ -80,68 +75,58 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 6, top: 4, bottom: 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'settings_general_title'.tr(),
-                    style: MoaiText.display(
-                      context,
-                      color: scheme.onSurface,
-                      fontSize: 18,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'settings_general_subtitle'.tr(),
-                    style: MoaiText.body(
-                      context,
-                      color: scheme.onSurfaceVariant,
-                      fontSize: 13,
-                      height: 1.2,
-                    ),
-                  ),
-                ],
-              ),
+            TvPanelHeader(
+              title: 'settings_general_title'.tr(),
+              subtitle: 'settings_general_subtitle'.tr(),
             ),
             Expanded(
-              child: Align(
-                alignment: listAlign,
-                child: TvWindowedList<_SettingsGeneralItemType>(
-                  key: _listKey,
-                  items: items,
-                  windowSize: _windowSize,
-                  itemExtent: _itemExtent,
-                  showScrollDots: true,
-                  initialGlobalIndex: _selectedIndex,
-                  onFocusedGlobalIndex: (idx) {
-                    _selectedIndex = idx;
-                  },
-                  itemBuilder: (
-                    context,
-                    item,
-                    focusNode,
-                    local,
-                    global,
-                    onKeyUp,
-                    onKeyDown,
-                  ) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: _buildItem(
-                        context: context,
-                        item: item,
-                        theme: theme,
-                        isAutoAccent: isAutoAccent,
-                        focusNode: focusNode,
-                        onKeyUp: onKeyUp,
-                        onKeyDown: onKeyDown,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final targetHeight = (_windowSize * _itemExtent)
+                      .clamp(0.0, constraints.maxHeight);
+                  return Align(
+                    alignment: Alignment.bottomCenter,
+                    child: SizedBox(
+                      height: targetHeight,
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: TvWindowedList<_SettingsGeneralItemType>(
+                          key: _listKey,
+                          items: items,
+                          windowSize: _windowSize,
+                          itemExtent: _itemExtent,
+                          showScrollDots: true,
+                          initialGlobalIndex: _selectedIndex,
+                          onFocusedGlobalIndex: (idx) {
+                            _selectedIndex = idx;
+                          },
+                          itemBuilder: (
+                            context,
+                            item,
+                            focusNode,
+                            local,
+                            global,
+                            onKeyUp,
+                            onKeyDown,
+                          ) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: _buildItem(
+                                context: context,
+                                item: item,
+                                theme: theme,
+                                isAutoAccent: isAutoAccent,
+                                focusNode: focusNode,
+                                onKeyUp: onKeyUp,
+                                onKeyDown: onKeyDown,
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
             ),
           ],

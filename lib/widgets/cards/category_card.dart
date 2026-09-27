@@ -8,15 +8,15 @@ class CategoryCard extends StatelessWidget {
     'Aire': Symbols.airware,
     'Interior': Symbols.location_city,
     'Provinciales': Symbols.location_city,
-    'Deportes': Icons.sports_soccer,
-    'Noticias': Icons.newspaper,
+    'Deportes': Icons.sports_soccer_outlined,
+    'Noticias': Icons.newspaper_outlined,
     'Infantiles': Symbols.child_hat,
     'Infantil': Symbols.child_hat,
     'Entretenimiento': Symbols.confirmation_number,
-    'Comedia': Icons.theater_comedy,
+    'Comedia': Icons.theater_comedy_outlined,
     'Reality': Symbols.visibility,
     'Anime': Symbols.animation,
-    'Cocina': Icons.restaurant_menu,
+    'Cocina': Icons.restaurant_menu_outlined,
     'Radios': Symbols.radio,
     'Series': Symbols.tv,
     'Películas': Symbols.movie,
@@ -43,7 +43,7 @@ class CategoryCard extends StatelessWidget {
   };
 
   static IconData iconFor(String category) =>
-      icons[category] ?? Icons.tv_rounded;
+      icons[category] ?? Icons.tv_outlined;
 
   final String category;
   final bool isSelected;

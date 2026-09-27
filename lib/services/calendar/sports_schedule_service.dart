@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:moai3/models/calendar_event.dart';
+import 'package:moai3/services/calendar/argentina_time.dart';
 
 /// Servicio para consultar eventos y partidos deportivos de las principales ligas.
 class SportsScheduleService {
@@ -223,28 +224,26 @@ class SportsScheduleService {
   }
 
   static DateTime _parseEventDateTime(String timeStr, [DateTime? baseUtc]) {
-    final nowLocal = DateTime.now();
+    final nowUtc = baseUtc ?? ArgentinaTime.utcNow();
     if (timeStr.toLowerCase() == 'live') {
-      return nowLocal;
+      return nowUtc;
     }
-    // Formato común "HH:mm" (hora provista en UTC por el feed)
+    // El feed trae solo HH:mm en UTC. Se ancla al día UTC actual y, si queda
+    // a 14 horas o más, se corre un día para caer en la ventana de 24 horas.
     final parts = timeStr.split(':');
     if (parts.length >= 2) {
       final h = int.tryParse(parts[0]) ?? 0;
       final m = int.tryParse(parts[1]) ?? 0;
 
-      final nowUtc = baseUtc ?? DateTime.now().toUtc();
       var eventDateUtc = DateTime.utc(nowUtc.year, nowUtc.month, nowUtc.day, h, m);
 
-      // Si la hora del feed difiere sustancialmente de la hora UTC actual,
-      // ajustamos el día (+1 o -1 en UTC) dentro de la ventana de 24 horas del feed:
       if (nowUtc.hour - h >= 14) {
         eventDateUtc = eventDateUtc.add(const Duration(days: 1));
       } else if (h - nowUtc.hour >= 14) {
         eventDateUtc = eventDateUtc.subtract(const Duration(days: 1));
       }
-      return eventDateUtc.toLocal();
+      return eventDateUtc;
     }
-    return nowLocal;
+    return nowUtc;
   }
 }

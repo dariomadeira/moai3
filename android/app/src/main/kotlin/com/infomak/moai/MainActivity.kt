@@ -31,6 +31,7 @@ import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
 import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import androidx.media3.exoplayer.upstream.LoadErrorHandlingPolicy
 import com.infomak.moai.plugin.PluginLoader
+import com.infomak.moai.voice.RemoteVoiceManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
@@ -44,12 +45,15 @@ class MainActivity : FlutterActivity() {
 
     private val engine = PlayerEngine()
     private lateinit var pluginLoader: PluginLoader
+    private var voiceManager: RemoteVoiceManager? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         FlutterActivityHolder.current = this
         pluginLoader = PluginLoader(this)
+        voiceManager = RemoteVoiceManager(this)
         setupDeviceChannel(flutterEngine)
+        setupVoiceTestChannel(flutterEngine)
         engine.attach(flutterEngine)
         pluginLoader.attach(flutterEngine.dartExecutor.binaryMessenger)
     }
@@ -59,6 +63,8 @@ class MainActivity : FlutterActivity() {
             pluginLoader.shutdown()
         }
         engine.disposeAll()
+        voiceManager?.release()
+        voiceManager = null
         FlutterActivityHolder.current = null
         super.onDestroy()
     }
@@ -130,6 +136,51 @@ class MainActivity : FlutterActivity() {
                         Log.e("MainActivity", "Error installing APK: ${e.message}", e)
                         result.error("INSTALL_ERROR", e.message, null)
                     }
+                }
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    /** Canal para la prueba empírica de captura de audio del control remoto TV. */
+    private fun setupVoiceTestChannel(flutterEngine: FlutterEngine) {
+        val channel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "com.infomak.moai.tv/remote_voice"
+        )
+        channel.setMethodCallHandler { call, result ->
+            val vm = voiceManager ?: run {
+                result.error("NOT_INITIALIZED", "Voice manager no inicializado", null)
+                return@setMethodCallHandler
+            }
+            when (call.method) {
+                "checkHardware" -> {
+                    result.success(vm.checkHardware())
+                }
+                "hasPermission" -> {
+                    result.success(vm.hasPermission())
+                }
+                "requestPermission" -> {
+                    vm.requestPermission()
+                    result.success(true)
+                }
+                "startRecording" -> {
+                    result.success(vm.startRecording())
+                }
+                "stopRecording" -> {
+                    result.success(vm.stopRecording())
+                }
+                "playRecording" -> {
+                    val res = vm.playRecording {
+                        runOnUiThread {
+                            channel.invokeMethod("onPlaybackComplete", null)
+                        }
+                    }
+                    result.success(res)
+                }
+                "stopPlayback" -> {
+                    vm.stopPlayback()
+                    result.success(true)
                 }
                 else -> result.notImplemented()
             }

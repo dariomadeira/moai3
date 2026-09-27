@@ -53,3 +53,35 @@
 - **Given**: Un stream en estado `MoaiEngineState.buffering` cuya conexión TCP no envía datos.
 - **When**: Transcurren 45 segundos sin emitirse `firstFrame` ni `ready`.
 - **Then**: El watchdog debe forzar el paso a `MoaiEngineState.error` y permitir al orquestador solicitar reintento con `fallbackIndex = 1`.
+
+---
+
+## 5. Módulo: Interfaz TV, Pestañas, Rail y Diálogo PIN (SPEC-33)
+
+### CASO-UI-01: Conmutación Outlined / Filled en Rail y Pestañas
+- **Given**: Las pestañas de navegación y los destinos del Navigation Rail montados en pantalla.
+- **When**: Un elemento no está seleccionado (`isSelected == false`).
+- **Then**: Debe renderizar su icono con variante `_outlined`.
+- **When**: El usuario selecciona el elemento (`isSelected == true`).
+- **Then**: El icono debe conmutar inmediatamente a su versión `filled` / sólida.
+
+### CASO-UI-02: Navegación Continua en Rail con Ajustes al Fondo
+- **Given**: El cursor posicionado en el destino Calendario (índice 1).
+- **When**: El usuario presiona `ArrowDown`.
+- **Then**: El foco debe saltar directamente sobre el `Spacer()` y situarse en Ajustes (índice 2) sin perderse en el árbol de renderizado.
+- **When**: Presiona `ArrowUp` desde Ajustes.
+- **Then**: El foco debe regresar directamente a Calendario (índice 1).
+
+### CASO-UI-03: Modal PIN Continuo sin Parpadeos (Zero-Flash)
+- **Given**: El usuario configurando o cambiando un PIN de control parental en modo `create` o `change`.
+- **When**: Completa los 4 dígitos del primer paso.
+- **Then**: La pantalla transiciona al siguiente paso mediante `AnimatedSwitcher` sin cerrar la ruta modal ni provocar parpadeo (*pantallazo*).
+- **When**: Los dígitos de confirmación no coinciden.
+- **Then**: Los casilleros ejecutan una animación de sacudida (*shake*), se limpian y el usuario permanece dentro del modal para reintentar.
+
+### CASO-UI-04: Área y Pestaña de Búsqueda Dedicada
+- **Given**: El usuario navegando en la pestaña `Buscar`.
+- **When**: Se renderiza `SearchPanel`.
+- **Then**: El contenedor debe aplicar un padding horizontal simétrico de 12 dp a la izquierda y 12 dp a la derecha.
+- **When**: El usuario presiona `ArrowLeft`.
+- **Then**: El foco debe transferirse de forma limpia al Navigation Rail.

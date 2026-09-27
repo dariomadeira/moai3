@@ -23,24 +23,26 @@ class TvListCardLeadingLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final containerBg = isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.18)
-        : scheme.primaryContainer;
+    // final containerBg = isFocused
+    //     ? scheme.onPrimary.withValues(alpha: 0.18)
+    //     : scheme.primaryContainer;
     final iconColor = isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
 
-    final placeholder = Center(
+    final errorPlaceholder = Center(
       child: Icon(
-        Icons.tv_rounded,
+        Icons.tv_outlined,
         color: iconColor,
         size: height * 0.55,
       ),
     );
+    // Sin ícono durante la carga: el logo hace fade limpio encima.
+    const loadingPlaceholder = SizedBox.shrink();
 
     final cleanUrl = logoUrl.trim();
     final Widget logoContent;
 
     if (cleanUrl.isEmpty) {
-      logoContent = placeholder;
+      logoContent = errorPlaceholder;
     } else if (cleanUrl.startsWith('http')) {
       final isSvg = cleanUrl.toLowerCase().contains('.svg');
       if (isSvg) {
@@ -49,8 +51,8 @@ class TvListCardLeadingLogo extends StatelessWidget {
           fit: BoxFit.contain,
           alignment: Alignment.center,
           headers: const {'User-Agent': 'Mozilla/5.0 (Linux; Android 10) MoaiTV/1.0'},
-          placeholderBuilder: (_) => placeholder,
-          errorBuilder: (_, _, _) => placeholder,
+          placeholderBuilder: (_) => loadingPlaceholder,
+          errorBuilder: (_, _, _) => errorPlaceholder,
         );
       } else {
         logoContent = CachedNetworkImage(
@@ -60,13 +62,16 @@ class TvListCardLeadingLogo extends StatelessWidget {
           fit: BoxFit.contain,
           alignment: Alignment.center,
           memCacheHeight: 120,
-          fadeInDuration: const Duration(milliseconds: 80),
+          fadeInDuration: const Duration(milliseconds: 220),
+          fadeOutDuration: const Duration(milliseconds: 180),
+          fadeInCurve: Curves.easeOutCubic,
+          fadeOutCurve: Curves.easeOut,
           filterQuality: FilterQuality.medium,
           httpHeaders: const {
             'User-Agent': 'Mozilla/5.0 (Linux; Android 10) MoaiTV/1.0',
           },
-          placeholder: (_, _) => placeholder,
-          errorWidget: (_, _, _) => placeholder,
+          placeholder: (_, _) => loadingPlaceholder,
+          errorWidget: (_, _, _) => errorPlaceholder,
         );
       }
     } else {
@@ -75,7 +80,7 @@ class TvListCardLeadingLogo extends StatelessWidget {
         fit: BoxFit.contain,
         alignment: Alignment.center,
         filterQuality: FilterQuality.medium,
-        errorBuilder: (_, _, _) => placeholder,
+        errorBuilder: (_, _, _) => errorPlaceholder,
       );
     }
 
@@ -84,7 +89,8 @@ class TvListCardLeadingLogo extends StatelessWidget {
       height: height,
       child: Container(
         decoration: BoxDecoration(
-          color: containerBg,
+          // color: containerBg,
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         clipBehavior: Clip.antiAlias,

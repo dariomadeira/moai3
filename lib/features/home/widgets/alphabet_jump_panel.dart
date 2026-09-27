@@ -78,16 +78,16 @@ class _AlphabetDeleteCardState extends State<AlphabetDeleteCard> {
             onTap: widget.onTap,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 28,
-              height: 28,
+              width: 26,
+              height: 26,
               decoration: BoxDecoration(
                 color: _isFocused ? scheme.errorContainer : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
+                shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
               child: Icon(
                 Symbols.delete,
-                size: 16,
+                size: 15,
                 color: _isFocused ? scheme.onErrorContainer : scheme.error,
               ),
             ),

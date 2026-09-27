@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/config/app_config.dart';
 import 'package:moai3/focus/tv_focus_controller.dart';
 import 'package:moai3/layout/tv_panel_layout.dart';
@@ -10,8 +10,7 @@ void main() {
       AppConfig.tvModeOverride = null;
     });
 
-    test('restoreAfterRailRight en pestaña TV enfoca panel activo (Canales)',
-        () {
+    test('restoreAfterRailRight en pestaña TV enfoca panel activo (Canales)', () {
       AppConfig.debugModeOverride = false;
       const showTvLog = false;
       final controller = TvFocusController();
@@ -24,29 +23,27 @@ void main() {
         focusCountry: () => focused = 'country',
         focusCategory: () => focused = 'category',
         focusChannel: () => focused = 'channel',
-        focusSearch: () => focused = 'search',
       );
 
       expect(focused, 'channel');
     });
 
-    test('restoreAfterRailRight en TV con Buscar activo enfoca búsqueda', () {
+    test('restoreAfterRailRight en TV con Países activo enfoca país', () {
       AppConfig.debugModeOverride = false;
       const showTvLog = false;
       final controller = TvFocusController();
       String? focused;
 
       controller.restoreAfterRailRight(
-        activePanelIndex: TvPanelLayout.searchPanelIndex(showTvLog),
+        activePanelIndex: TvPanelLayout.countryPanelIndex(showTvLog),
         showTvLog: showTvLog,
         focusDebug: () => focused = 'debug',
         focusCountry: () => focused = 'country',
         focusCategory: () => focused = 'category',
         focusChannel: () => focused = 'channel',
-        focusSearch: () => focused = 'search',
       );
 
-      expect(focused, 'search');
+      expect(focused, 'country');
     });
 
     test('restoreAfterRailRight en TV con debug y log activo enfoca debug', () {
@@ -62,11 +59,9 @@ void main() {
         focusCountry: () => focused = 'country',
         focusCategory: () => focused = 'category',
         focusChannel: () => focused = 'channel',
-        focusSearch: () => focused = 'search',
       );
 
       expect(focused, 'debug');
     });
   });
 }
-

@@ -6,7 +6,10 @@ import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:provider/provider.dart';
 
-/// Rail lateral (paridad moaiSmart 100%): TV + Ajustes.
+/// Rail lateral de navegación para Android TV: TV, Calendario y Ajustes (al pie).
+///
+/// Soporta íconos outlined por defecto y rellenos (filled) al estar seleccionados.
+/// Ajustes queda fijado abajo del todo con navegación D-Pad 100% fluida y predecible.
 class NavigationRailSection extends StatefulWidget {
   final int selectedIndex;
   final FocusScopeNode railScopeNode;
@@ -50,6 +53,10 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
     final scheme = context.scheme;
     final railBg = scheme.surfaceContainer;
 
+    final todayEvents = context.select(
+      (CalendarProvider p) => p.todayEventCount,
+    );
+
     return FocusScope(
       node: widget.railScopeNode,
       child: Focus(
@@ -75,7 +82,7 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
             return KeyEventResult.handled;
           }
 
-          // ↓ : bajar en el rail (consumir siempre para no saltar de scope)
+          // ↓ : bajar en el rail (TV 0 -> Calendario 1 -> Ajustes 2)
           if (key == LogicalKeyboardKey.arrowDown) {
             if (_focusedIndex < 2) {
               setState(() => _focusedIndex++);
@@ -83,7 +90,7 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
             return KeyEventResult.handled;
           }
 
-          // ↑ : subir en el rail (consumir siempre para no saltar de scope)
+          // ↑ : subir en el rail (Ajustes 2 -> Calendario 1 -> TV 0)
           if (key == LogicalKeyboardKey.arrowUp) {
             if (_focusedIndex > 0) {
               setState(() => _focusedIndex--);
@@ -102,91 +109,133 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
         },
         child: ColoredBox(
           color: railBg,
-          child: ExcludeFocus(
-            child: Builder(
-              builder: (context) {
-                final todayEvents = context.select(
-                  (CalendarProvider p) => p.todayEventCount,
-                );
+          child: SizedBox(
+            width: 68,
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                const SizedBox(height: 12),
+                // Destino 0: TV
+                _buildRailDestination(0, scheme, todayEvents),
+                const SizedBox(height: 12),
+                // Destino 1: Calendario
+                _buildRailDestination(1, scheme, todayEvents),
 
-                return NavigationRail(
-                  minWidth: 56,
-                  backgroundColor: railBg,
-                  selectedIndex: _isFocused ? _focusedIndex : widget.selectedIndex,
-                  onDestinationSelected: (index) {
-                    setState(() => _focusedIndex = index);
-                    widget.onIndexChanged(index);
-                  },
-                  labelType: NavigationRailLabelType.all,
-                  useIndicator: true,
-                  indicatorColor:
-                      _isFocused ? scheme.primary : scheme.primaryContainer,
-                  selectedIconTheme: IconThemeData(
-                    color:
-                        _isFocused ? scheme.onPrimary : scheme.onPrimaryContainer,
-                    size: 26,
-                  ),
-                  unselectedIconTheme: IconThemeData(
-                    color: scheme.onSurface.withValues(alpha: 0.6),
-                    size: 26,
-                  ),
-                  selectedLabelTextStyle: MoaiText.display(
-                    context,
-                    color:
-                        _isFocused ? scheme.primary : scheme.onPrimaryContainer,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  unselectedLabelTextStyle: MoaiText.display(
-                    context,
-                    color: scheme.onSurface.withValues(alpha: 0.6),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  destinations: [
-                    NavigationRailDestination(
-                      icon: const Icon(Icons.tv_outlined),
-                      selectedIcon: const Icon(Icons.tv),
-                      label: Text('home_rail_tv_title'.tr()),
-                    ),
-                    NavigationRailDestination(
-                      icon: Badge(
-                        isLabelVisible: todayEvents > 0,
-                        backgroundColor: scheme.tertiaryContainer,
-                        textColor: scheme.onTertiaryContainer,
-                        textStyle: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 10,
-                        ),
-                        label: Text('$todayEvents'),
-                        child: const Icon(Icons.calendar_month_outlined),
-                      ),
-                      selectedIcon: Badge(
-                        isLabelVisible: todayEvents > 0,
-                        backgroundColor: scheme.tertiaryContainer,
-                        textColor: scheme.onTertiaryContainer,
-                        textStyle: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 10,
-                        ),
-                        label: Text('$todayEvents'),
-                        child: const Icon(Icons.calendar_month),
-                      ),
-                      label: Text('home_rail_calendar_title'.tr()),
-                    ),
-                    NavigationRailDestination(
-                      icon: const Icon(Icons.settings_outlined),
-                      selectedIcon: const Icon(Icons.settings),
-                      label: Text('home_rail_settings_title'.tr()),
-                    ),
-                  ],
-                );
-              },
+                // Espaciador flexible que posiciona Ajustes al final de la pantalla
+                const Spacer(),
+
+                // Destino 2: Ajustes (al fondo)
+                _buildRailDestination(2, scheme, todayEvents),
+                const SizedBox(height: 16),
+              ],
             ),
           ),
         ),
       ),
     );
   }
-}
 
+  Widget _buildRailDestination(int index, ColorScheme scheme, int todayEvents) {
+    final isSelected = widget.selectedIndex == index;
+    final isHovered = _isFocused && _focusedIndex == index;
+
+    final IconData iconData;
+    final String label;
+
+    switch (index) {
+      case 0:
+        iconData = isSelected ? Icons.tv : Icons.tv_outlined;
+        label = 'home_rail_tv_title'.tr();
+        break;
+      case 1:
+        iconData =
+            isSelected ? Icons.calendar_month : Icons.calendar_month_outlined;
+        label = 'home_rail_calendar_title'.tr();
+        break;
+      case 2:
+      default:
+        iconData = isSelected ? Icons.settings : Icons.settings_outlined;
+        label = 'home_rail_settings_title'.tr();
+        break;
+    }
+
+    final Color pillColor;
+    final Color iconColor;
+    final Color textColor;
+
+    if (isHovered) {
+      pillColor = scheme.primary;
+      iconColor = scheme.onPrimary;
+      textColor = scheme.primary;
+    } else if (isSelected) {
+      pillColor = scheme.primaryContainer;
+      iconColor = scheme.onPrimaryContainer;
+      textColor = scheme.onPrimaryContainer;
+    } else {
+      pillColor = Colors.transparent;
+      iconColor = scheme.onSurfaceVariant;
+      textColor = scheme.onSurfaceVariant;
+    }
+
+    Widget iconWidget = Icon(
+      iconData,
+      size: 24,
+      color: iconColor,
+    );
+
+    if (index == 1 && todayEvents > 0) {
+      iconWidget = Badge(
+        isLabelVisible: true,
+        backgroundColor: scheme.tertiaryContainer,
+        textColor: scheme.onTertiaryContainer,
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w800,
+          fontSize: 10,
+        ),
+        label: Text('$todayEvents'),
+        child: iconWidget,
+      );
+    }
+
+    return InkWell(
+      onTap: () {
+        setState(() => _focusedIndex = index);
+        widget.onIndexChanged(index);
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: 56,
+              height: 32,
+              decoration: BoxDecoration(
+                color: pillColor,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              alignment: Alignment.center,
+              child: iconWidget,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: MoaiText.display(
+                context,
+                color: textColor,
+                fontSize: 11,
+                fontWeight: isSelected || isHovered
+                    ? FontWeight.w700
+                    : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
