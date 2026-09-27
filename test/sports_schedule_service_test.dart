@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:moai3/services/calendar/argentina_time.dart';
 import 'package:moai3/services/calendar/sports_schedule_service.dart';
 
 void main() {
@@ -55,10 +56,12 @@ void main() {
 
       expect(events.length, 1);
       final ev = events.first;
-      // En UTC el partido es a las 00:15 del 23 de Septiembre.
-      // En hora local (UTC-3), debe ser a las 21:15 del 22 de Septiembre.
-      final expectedLocal = DateTime.utc(2026, 9, 23, 0, 15).toLocal();
-      expect(ev.startDateTime, expectedLocal);
+      // El instante queda en UTC. En Argentina es el 22 a las 21:15.
+      expect(ev.startDateTime, DateTime.utc(2026, 9, 23, 0, 15));
+      final civil = ArgentinaTime.toCivil(ev.startDateTime);
+      expect(civil.day, 22);
+      expect(civil.hour, 21);
+      expect(civil.minute, 15);
     });
 
     test('Extrae channelHints desde el array de channels de la API de DaddyLive', () {

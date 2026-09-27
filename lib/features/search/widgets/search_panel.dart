@@ -2,14 +2,13 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/features/search/controllers/home_search_controller.dart';
-import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/widgets/cards/new_channel_card.dart';
-import 'package:moai3/widgets/lists/tv_windowed_list.dart';
+import 'package:moai3/widgets/cards/channel_grid_tile.dart';
+import 'package:moai3/widgets/lists/tv_windowed_grid.dart';
 import 'package:moai3/widgets/tv_input/tv_input.dart';
 
-/// Panel Buscar: header compacto propio + ventana fija de 6 (como Canales).
+/// Panel Buscar: header compacto propio + grilla 2×3 (como Canales).
 class SearchPanel extends StatefulWidget {
   final String title;
   final TextEditingController queryController;
@@ -44,8 +43,9 @@ class SearchPanel extends StatefulWidget {
 
 class SearchPanelState extends State<SearchPanel> {
   static const int _windowSize = 6;
+  static const double _rowExtent = 120.0;
 
-  final _listKey = GlobalKey<TvWindowedListState<Channel>>();
+  final _listKey = GlobalKey<TvWindowedGridState<Channel>>();
 
   int get _selectedIndex {
     final id = widget.selectedChannel?.id;
@@ -121,7 +121,7 @@ class SearchPanelState extends State<SearchPanel> {
 
     return Container(
       padding: const EdgeInsets.only(
-        left: 4,
+        left: 12,
         right: 12,
         top: 6,
         bottom: 8,
@@ -202,12 +202,13 @@ class SearchPanelState extends State<SearchPanel> {
                       )
                     : Align(
                         alignment: listAlign,
-                        child: TvWindowedList<Channel>(
+                        child: TvWindowedGrid<Channel>(
                           key: _listKey,
                           items: widget.searchResults,
                           windowSize: _windowSize,
+                          crossAxisCount: 2,
                           initialGlobalIndex: _selectedIndex,
-                          itemExtent: TvLayoutConstants.channelItemHeight,
+                          itemExtent: _rowExtent,
                           onFocusUpFromFirst: _focusInputFromFirstResult,
                           itemBuilder: (
                             context,
@@ -217,8 +218,10 @@ class SearchPanelState extends State<SearchPanel> {
                             global,
                             onKeyUp,
                             onKeyDown,
+                            onKeyLeft,
+                            onKeyRight,
                           ) {
-                            return NewChannelCard(
+                            return ChannelGridTile(
                               key: ValueKey(channel.id),
                               channel: channel,
                               isSelected:
@@ -227,6 +230,8 @@ class SearchPanelState extends State<SearchPanel> {
                               onLongPress: widget.onLongPress,
                               onKeyUp: onKeyUp,
                               onKeyDown: onKeyDown,
+                              onKeyLeft: onKeyLeft,
+                              onKeyRight: onKeyRight,
                               onTap: () => widget.onSelectChannel(channel),
                             );
                           },
@@ -402,7 +407,7 @@ class _SearchClearButtonState extends State<_SearchClearButton> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Icon(
-              Icons.clear,
+              Icons.close_outlined,
               color: _isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
               size: 20,
             ),

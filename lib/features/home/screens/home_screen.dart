@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/features/calendar/widgets/calendar_events_panel.dart';
 import 'package:moai3/features/home/areas/home_calendar_area.dart';
 import 'package:moai3/features/home/areas/home_settings_area.dart';
 import 'package:moai3/features/home/areas/home_tv_area.dart';
@@ -50,11 +52,16 @@ class _HomeScreenState extends State<HomeScreen> {
   final FocusNode _settingsTvFocus = FocusNode(debugLabel: 'settings_tv');
   final FocusNode _settingsGeneralFocus =
       FocusNode(debugLabel: 'settings_general');
+  final FocusNode _settingsAgendaFocus =
+      FocusNode(debugLabel: 'settings_agenda');
   final FocusNode _settingsAboutFocus = FocusNode(debugLabel: 'settings_about');
 
   int _selectedIndex = _sectionTv;
   int _activeSettingsPanelIndex = SettingsPanelLayout.configTvPanelIndex;
   StreamSubscription<List<CalendarEvent>>? _liveEventsSub;
+  final List<CalendarEvent> _liveSnackQueue = [];
+  bool _liveSnackBusy = false;
+  bool _openingLiveSnackDialog = false;
 
   @override
   void initState() {
@@ -69,16 +76,54 @@ class _HomeScreenState extends State<HomeScreen> {
     final calendar = context.read<CalendarProvider>();
     _liveEventsSub = calendar.onLiveEventsStarted.listen((events) {
       if (!mounted || events.isEmpty) return;
-      final message = CalendarProvider.formatLiveEventsMessage(events);
-      final icon = CalendarProvider.getLiveEventsIcon(events);
-      NotificationHelper.show(
-        message: message,
-        icon: icon,
-        duration: events.length > 1
-            ? const Duration(seconds: 5)
-            : const Duration(seconds: 4),
-      );
+      _liveSnackQueue.addAll(events);
+      _pumpLiveSnack();
     });
+  }
+
+  void _pumpLiveSnack() {
+    if (!mounted || _liveSnackBusy || _liveSnackQueue.isEmpty) return;
+    _liveSnackBusy = true;
+    final event = _liveSnackQueue.removeAt(0);
+    final lead = context.read<CalendarProvider>().notifyLeadMinutes;
+    final controller = NotificationHelper.show(
+      message: CalendarProvider.formatLiveEventsMessage(
+        [event],
+        leadMinutes: lead,
+      ),
+      icon: CalendarProvider.getLiveEventsIcon([event]),
+      hint: 'calendar_live_ok_hint'.tr(),
+      onAction: () => _openLiveSnackEvent(event),
+      duration: context.read<CalendarProvider>().liveSnackDuration,
+    );
+    controller?.closed.then((_) {
+      if (!mounted || _openingLiveSnackDialog) return;
+      _liveSnackBusy = false;
+      _pumpLiveSnack();
+    });
+  }
+
+  Future<void> _openLiveSnackEvent(CalendarEvent event) async {
+    if (!mounted) return;
+    _openingLiveSnackDialog = true;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    await showCalendarEventDetails(
+      context,
+      event,
+      onTuneChannel: (channel) {
+        context.read<ChannelProvider>().selectChannel(channel);
+        setState(() => _selectedIndex = _sectionTv);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _tvAreaKey.currentState?.selectChannel(channel);
+          _tvAreaKey.currentState?.requestViewerFocus();
+        });
+      },
+    );
+    if (!mounted) return;
+    _openingLiveSnackDialog = false;
+    _liveSnackBusy = false;
+    _pumpLiveSnack();
   }
 
   Future<void> _checkAutoUpdate() async {
@@ -120,6 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _calendarSubscriptionsFocus.dispose();
     _settingsTvFocus.dispose();
     _settingsGeneralFocus.dispose();
+    _settingsAgendaFocus.dispose();
     _settingsAboutFocus.dispose();
     super.dispose();
   }
@@ -158,6 +204,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _requestFocusWithRetry(_settingsTvFocus);
     } else if (SettingsPanelLayout.isConfigGeneralPanel(index)) {
       _requestFocusWithRetry(_settingsGeneralFocus);
+    } else if (SettingsPanelLayout.isConfigAgendaPanel(index)) {
+      _requestFocusWithRetry(_settingsAgendaFocus);
     } else if (SettingsPanelLayout.isAboutPanel(index)) {
       _requestFocusWithRetry(_settingsAboutFocus);
     }
@@ -258,6 +306,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   activePanelIndex: _activeSettingsPanelIndex,
                                   tvPanelFocus: _settingsTvFocus,
                                   generalPanelFocus: _settingsGeneralFocus,
+                                  agendaPanelFocus: _settingsAgendaFocus,
                                   aboutPanelFocus: _settingsAboutFocus,
                                   onPanelIndexChanged:
                                       _onSettingsPanelIndexChanged,

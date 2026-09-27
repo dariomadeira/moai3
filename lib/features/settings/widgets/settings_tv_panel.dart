@@ -4,10 +4,11 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/features/sources/screens/sources_screen.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
-import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_pin_dialog.dart';
+import 'package:moai3/widgets/dialogs/tv_voice_test_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
+import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 import 'package:provider/provider.dart';
 
 enum _SettingsTvItemType {
@@ -15,6 +16,7 @@ enum _SettingsTvItemType {
   adultContent,
   changePin,
   sources,
+  micTest,
 }
 
 class SettingsTvPanel extends StatefulWidget {
@@ -35,7 +37,7 @@ class SettingsTvPanel extends StatefulWidget {
 
 class SettingsTvPanelState extends State<SettingsTvPanel> {
   static const int _windowSize = 6;
-  static const double _itemExtent = 74.0;
+  static const double _itemExtent = 70.0;
 
   final _listKey = GlobalKey<TvWindowedListState<_SettingsTvItemType>>();
   int _selectedIndex = 0;
@@ -46,7 +48,6 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
     final tvSettings = context.watch<TvSettingsProvider>();
     final hasPin = tvSettings.hasParentalPin;
 
@@ -55,15 +56,12 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
       _SettingsTvItemType.adultContent,
       if (hasPin) _SettingsTvItemType.changePin,
       _SettingsTvItemType.sources,
+      _SettingsTvItemType.micTest,
     ];
 
     if (_selectedIndex >= items.length) {
       _selectedIndex = items.length - 1;
     }
-
-    final listAlign = items.length < _windowSize
-        ? Alignment.topCenter
-        : Alignment.bottomCenter;
 
     return Focus(
       focusNode: widget.focusNode,
@@ -82,67 +80,57 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 6, top: 4, bottom: 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'settings_tv_title'.tr(),
-                    style: MoaiText.display(
-                      context,
-                      color: scheme.onSurface,
-                      fontSize: 18,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'settings_tv_subtitle'.tr(),
-                    style: MoaiText.body(
-                      context,
-                      color: scheme.onSurfaceVariant,
-                      fontSize: 13,
-                      height: 1.2,
-                    ),
-                  ),
-                ],
-              ),
+            TvPanelHeader(
+              title: 'settings_tv_title'.tr(),
+              subtitle: 'settings_tv_subtitle'.tr(),
             ),
             Expanded(
-              child: Align(
-                alignment: listAlign,
-                child: TvWindowedList<_SettingsTvItemType>(
-                  key: _listKey,
-                  items: items,
-                  windowSize: _windowSize,
-                  itemExtent: _itemExtent,
-                  showScrollDots: true,
-                  initialGlobalIndex: _selectedIndex,
-                  onFocusedGlobalIndex: (idx) {
-                    _selectedIndex = idx;
-                  },
-                  itemBuilder: (
-                    context,
-                    item,
-                    focusNode,
-                    local,
-                    global,
-                    onKeyUp,
-                    onKeyDown,
-                  ) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: _buildItem(
-                        context: context,
-                        item: item,
-                        tvSettings: tvSettings,
-                        focusNode: focusNode,
-                        onKeyUp: onKeyUp,
-                        onKeyDown: onKeyDown,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final targetHeight = (_windowSize * _itemExtent)
+                      .clamp(0.0, constraints.maxHeight);
+                  return Align(
+                    alignment: Alignment.bottomCenter,
+                    child: SizedBox(
+                      height: targetHeight,
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: TvWindowedList<_SettingsTvItemType>(
+                          key: _listKey,
+                          items: items,
+                          windowSize: _windowSize,
+                          itemExtent: _itemExtent,
+                          showScrollDots: true,
+                          initialGlobalIndex: _selectedIndex,
+                          onFocusedGlobalIndex: (idx) {
+                            _selectedIndex = idx;
+                          },
+                          itemBuilder: (
+                            context,
+                            item,
+                            focusNode,
+                            local,
+                            global,
+                            onKeyUp,
+                            onKeyDown,
+                          ) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: _buildItem(
+                                context: context,
+                                item: item,
+                                tvSettings: tvSettings,
+                                focusNode: focusNode,
+                                onKeyUp: onKeyUp,
+                                onKeyDown: onKeyDown,
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
@@ -225,6 +213,20 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
                 builder: (context) => const SourcesScreen(),
               ),
             );
+          },
+          onKeyLeft: widget.onKeyLeft,
+          onKeyRight: widget.onKeyRight,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+        );
+      case _SettingsTvItemType.micTest:
+        return TvSettingsActionRow(
+          focusNode: focusNode,
+          icon: Icons.mic_outlined,
+          label: 'settings_tv_mic_test'.tr(),
+          description: 'settings_tv_mic_test_desc'.tr(),
+          onPressed: () {
+            TvVoiceTestDialog.show(context);
           },
           onKeyLeft: widget.onKeyLeft,
           onKeyRight: widget.onKeyRight,

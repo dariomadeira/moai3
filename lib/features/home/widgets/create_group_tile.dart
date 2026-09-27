@@ -63,17 +63,16 @@ class _CreateGroupTileState extends State<CreateGroupTile> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
+                ClipOval(
                   child: ColoredBox(
                     color: _isFocused
                         ? Colors.white.withValues(alpha: 0.2)
                         : scheme.onSurface.withValues(alpha: 0.08),
                     child: SizedBox(
-                      width: 48,
-                      height: 32,
+                      width: 36,
+                      height: 36,
                       child: Icon(
-                        Icons.add_rounded,
+                        Icons.add_outlined,
                         color: itemStyle.foregroundColor,
                         size: 22,
                       ),
@@ -181,7 +180,7 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
     final scheme = context.scheme;
 
     return TvDialog(
-      icon: Icons.bookmark_add_rounded,
+      icon: Icons.bookmark_add_outlined,
       title: 'groups_create_title'.tr(),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -194,7 +193,7 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
             hint: 'groups_name_hint'.tr(),
             keyboardType: TvKeyboardType.text,
             textInputAction: TvTextInputAction.done,
-            leadingIcon: Icons.playlist_add_rounded,
+            leadingIcon: Icons.playlist_add_outlined,
             onFocusDown: () => _createFocusNode.requestFocus(),
             onSubmitted: (_) => _createFocusNode.requestFocus(),
             onChanged: (_) {

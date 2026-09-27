@@ -21,7 +21,7 @@ class PanelListHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: TvPanelHeaderMetrics.topInset + 10),
+        const SizedBox(height: TvPanelHeaderMetrics.topInset + 4),
         Text(
           subtitle,
           style: MoaiText.body(
@@ -38,7 +38,7 @@ class PanelListHeader extends StatelessWidget {
             style: MoaiText.body(
               context,
               color: scheme.onSurfaceVariant,
-              fontSize: 10,
+              fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
           ),

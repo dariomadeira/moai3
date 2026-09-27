@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 
 /// Helper global para mostrar notificaciones estilo Pill unificado en toda la app.
@@ -17,33 +17,38 @@ class NotificationHelper {
   }
 
   /// Muestra un snackbar genérico estilo pill
-  static void show({
+  static ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? show({
     required String message,
     IconData? icon,
     Color? iconColor,
+    String? hint,
+    VoidCallback? onAction,
     Duration duration = MoaiSnackBar.defaultDuration,
     double bottomMargin = MoaiSnackBar.defaultBottomMargin,
   }) {
     final messenger = _scaffoldMessengerKey?.currentState;
     if (messenger == null) {
       debugPrint('⚠️ NotificationHelper: ScaffoldMessenger no está disponible');
-      return;
+      return null;
     }
 
     try {
       messenger.removeCurrentSnackBar();
-      messenger.showSnackBar(
+      return messenger.showSnackBar(
         MoaiSnackBar.buildSnackBar(
-          context: _context ?? _scaffoldMessengerKey?.currentContext,
+          context: _scaffoldMessengerKey?.currentContext ?? _context,
           message: message,
           icon: icon,
           iconColor: iconColor,
+          hint: hint,
+          onAction: onAction,
           bottomMargin: bottomMargin,
           duration: duration,
         ),
       );
     } catch (e) {
       debugPrint('🔔 NotificationHelper: Error al mostrar snackbar - $e');
+      return null;
     }
   }
 
@@ -81,7 +86,7 @@ class NotificationHelper {
   static void showWarning(String message) {
     show(
       message: message,
-      icon: Icons.warning_amber_rounded,
+      icon: Icons.warning_amber_outlined,
       iconColor: const Color(0xFFFBBF24),
       duration: const Duration(seconds: 3),
     );

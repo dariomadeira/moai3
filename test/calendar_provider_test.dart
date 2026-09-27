@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:moai3/models/calendar_event.dart';
+import 'package:moai3/services/calendar/argentina_time.dart';
 import 'package:moai3/services/calendar/f1_calendar_service.dart';
 import 'package:moai3/state/calendar_provider.dart';
 
@@ -236,17 +237,18 @@ void main() {
       final qualy = events.firstWhere((e) => e.sessionType == 'Qualy');
       final fp1 = events.firstWhere((e) => e.sessionType == 'Práctica 1');
 
-      // Carrera debe ser Domingo (weekday 7), día 27
-      expect(race.startDateTime.weekday, DateTime.sunday);
-      expect(race.startDateTime.day, 27);
+      // El instante se guarda en UTC y el día civil es el de Argentina.
+      final raceCivil = ArgentinaTime.toCivil(race.startDateTime);
+      expect(raceCivil.weekday, DateTime.sunday);
+      expect(raceCivil.day, 27);
 
-      // Clasificación debe ser Sábado (weekday 6), día 26
-      expect(qualy.startDateTime.weekday, DateTime.saturday);
-      expect(qualy.startDateTime.day, 26);
+      final qualyCivil = ArgentinaTime.toCivil(qualy.startDateTime);
+      expect(qualyCivil.weekday, DateTime.saturday);
+      expect(qualyCivil.day, 26);
 
-      // Práctica debe ser Viernes (weekday 5), día 25
-      expect(fp1.startDateTime.weekday, DateTime.friday);
-      expect(fp1.startDateTime.day, 25);
+      final fpCivil = ArgentinaTime.toCivil(fp1.startDateTime);
+      expect(fpCivil.weekday, DateTime.friday);
+      expect(fpCivil.day, 25);
     });
   });
 }

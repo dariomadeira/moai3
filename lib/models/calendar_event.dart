@@ -1,3 +1,5 @@
+import 'package:moai3/services/calendar/argentina_time.dart';
+
 enum CalendarEventStatus {
   upcoming,
   live,
@@ -89,36 +91,37 @@ class CalendarEvent {
     if (_explicitStatus == CalendarEventStatus.finished) {
       return CalendarEventStatus.finished;
     }
-    final now = DateTime.now();
-    if (now.isBefore(startDateTime)) {
+    final now = ArgentinaTime.utcNow();
+    final start = startDateTime.toUtc();
+    if (now.isBefore(start)) {
       return _explicitStatus ?? CalendarEventStatus.upcoming;
     }
-    final diff = now.difference(startDateTime);
+    final diff = now.difference(start);
     if (diff <= estimatedDuration) {
       return CalendarEventStatus.live;
     }
     return CalendarEventStatus.finished;
   }
 
-  /// Indica si el evento ocurre durante el día de hoy (hora local).
+  /// Indica si el evento ocurre durante el día de hoy en Argentina.
   bool get isToday {
-    final now = DateTime.now();
-    return startDateTime.year == now.year &&
-        startDateTime.month == now.month &&
-        startDateTime.day == now.day;
+    return ArgentinaTime.dateOnly(startDateTime) ==
+        ArgentinaTime.dateOnly(ArgentinaTime.utcNow());
   }
 
-  /// Retorna la fecha formateada dd/MM/yyyy.
+  /// Retorna la fecha formateada dd/MM/yyyy en hora de Argentina.
   String get formattedDate {
-    final day = startDateTime.day.toString().padLeft(2, '0');
-    final month = startDateTime.month.toString().padLeft(2, '0');
-    return '$day/$month/${startDateTime.year}';
+    final civil = ArgentinaTime.toCivil(startDateTime);
+    final day = civil.day.toString().padLeft(2, '0');
+    final month = civil.month.toString().padLeft(2, '0');
+    return '$day/$month/${civil.year}';
   }
 
-  /// Retorna la hora formateada HH:mm en hora local.
+  /// Retorna la hora formateada HH:mm en hora de Argentina.
   String get formattedTime {
-    final hour = startDateTime.hour.toString().padLeft(2, '0');
-    final minute = startDateTime.minute.toString().padLeft(2, '0');
+    final civil = ArgentinaTime.toCivil(startDateTime);
+    final hour = civil.hour.toString().padLeft(2, '0');
+    final minute = civil.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
   }
 

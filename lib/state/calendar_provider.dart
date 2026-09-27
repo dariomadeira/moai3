@@ -4,12 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/models/sport_subscription.dart';
+import 'package:moai3/services/calendar/argentina_time.dart';
 import 'package:moai3/services/calendar/f1_calendar_service.dart';
 import 'package:moai3/services/calendar/sports_schedule_service.dart';
 
 /// Proveedor de estado central para Suscripciones Deportivas y Calendario de Eventos en Moai TV.
 class CalendarProvider extends ChangeNotifier {
   static const String _prefsKey = 'moai_calendar_subscriptions';
+  static const String _notifyLeadKey = 'moai_calendar_notify_lead_minutes';
+  static const String _snackDurationKey = 'moai_calendar_snack_duration_seconds';
+  static const List<int> notifyLeadOptions = [0, 10, 15, 30];
+  static const List<int> snackDurationOptions = [2, 4, 8];
+  static const int defaultSnackDurationSeconds = 4;
 
   static final List<SportSubscription> defaultSubscriptions = [
     const SportSubscription(
@@ -98,6 +104,8 @@ class CalendarProvider extends ChangeNotifier {
   int _lastKnownDay = -1;
   final Set<String> _notifiedEventIds = {};
   bool _isFirstEventsLoad = true;
+  int _notifyLeadMinutes = 0;
+  int _snackDurationSeconds = defaultSnackDurationSeconds;
   final StreamController<List<CalendarEvent>> _liveEventsController =
       StreamController<List<CalendarEvent>>.broadcast();
 
@@ -126,12 +134,12 @@ class CalendarProvider extends ChangeNotifier {
 
   void _startTicker() {
     _statusTicker?.cancel();
-    final now = DateTime.now();
+    final now = ArgentinaTime.now();
     _lastKnownDay = now.day;
     _lastKnownTodayCount = todayEventCount;
 
     _statusTicker = Timer.periodic(const Duration(seconds: 60), (_) {
-      final currentNow = DateTime.now();
+      final currentNow = ArgentinaTime.now();
       final currentCount = todayEventCount;
 
       final dayChanged = currentNow.day != _lastKnownDay;
@@ -152,11 +160,18 @@ class CalendarProvider extends ChangeNotifier {
     _checkNewLiveEvents();
   }
 
+  bool _isInNotifyWindow(CalendarEvent event) {
+    if (event.status == CalendarEventStatus.finished) return false;
+    final now = ArgentinaTime.utcNow();
+    final start = event.startDateTime.toUtc();
+    final notifyAt = start.subtract(Duration(minutes: _notifyLeadMinutes));
+    return !now.isBefore(notifyAt);
+  }
+
   void _checkNewLiveEvents() {
     final newLive = subscribedEvents
         .where((e) =>
-            e.status == CalendarEventStatus.live &&
-            !_notifiedEventIds.contains(e.id))
+            _isInNotifyWindow(e) && !_notifiedEventIds.contains(e.id))
         .toList();
 
     if (newLive.isNotEmpty) {
@@ -165,6 +180,34 @@ class CalendarProvider extends ChangeNotifier {
       }
       _liveEventsController.add(newLive);
     }
+  }
+
+  /// Emite eventos en vivo falsos para probar el snack mientras se mira TV.
+  void simulateLiveEventStarted({int count = 1}) {
+    final stamp = DateTime.now().millisecondsSinceEpoch;
+    final now = ArgentinaTime.utcNow();
+    final events = <CalendarEvent>[
+      CalendarEvent(
+        id: 'sim_live_${stamp}_1',
+        subscriptionId: 'f1',
+        title: 'Azerbaijan Grand Prix — Práctica Libre 3',
+        competition: 'F1',
+        startDateTime: now,
+        sessionType: 'Práctica 3',
+        broadcaster: 'Fox Sports',
+      ),
+      CalendarEvent(
+        id: 'sim_live_${stamp}_2',
+        subscriptionId: 'lpf_ar',
+        title: 'Boca vs River',
+        competition: 'LPF',
+        startDateTime: now,
+        sessionType: 'Partido',
+        broadcaster: 'ESPN',
+      ),
+    ];
+    final n = count.clamp(1, events.length);
+    _liveEventsController.add(events.take(n).toList());
   }
 
   @override
@@ -203,7 +246,7 @@ class CalendarProvider extends ChangeNotifier {
   Map<DateTime, List<CalendarEvent>> get eventsGroupedByDay {
     final Map<DateTime, List<CalendarEvent>> map = {};
     for (final ev in subscribedEvents) {
-      final day = DateTime(ev.startDateTime.year, ev.startDateTime.month, ev.startDateTime.day);
+      final day = ArgentinaTime.dateOnly(ev.startDateTime);
       map.putIfAbsent(day, () => []).add(ev);
     }
     return map;
@@ -217,7 +260,7 @@ class CalendarProvider extends ChangeNotifier {
 
   /// Retorna los 7 días de la semana (Lunes a Domingo) para un determinado offset de semana (-1, 0, +1...).
   static List<DateTime> getDaysForWeekOffset(int offset, [DateTime? baseDate]) {
-    final now = baseDate ?? DateTime.now();
+    final now = baseDate ?? ArgentinaTime.now();
     final currentMonday = getMondayOfWeek(now);
     final targetMonday = currentMonday.add(Duration(days: offset * 7));
     return List.generate(7, (i) => targetMonday.add(Duration(days: i)));
@@ -226,10 +269,9 @@ class CalendarProvider extends ChangeNotifier {
   /// Retorna los eventos de las suscripciones activas para un día específico,
   /// ordenados con prioridad inteligente: LIVE primero, UPCOMING segundo, FINISHED al fondo.
   List<CalendarEvent> getEventsForDay(DateTime day) {
+    final target = DateTime(day.year, day.month, day.day);
     final events = subscribedEvents.where((e) {
-      return e.startDateTime.year == day.year &&
-          e.startDateTime.month == day.month &&
-          e.startDateTime.day == day.day;
+      return ArgentinaTime.dateOnly(e.startDateTime) == target;
     }).toList();
     events.sort(CalendarEvent.compareByStatusAndDate);
     return events;
@@ -237,7 +279,33 @@ class CalendarProvider extends ChangeNotifier {
 
   Future<void> _init() async {
     await _loadSubscriptions();
+    await _loadNotifyLead();
+    await _loadSnackDuration();
     await refreshEvents();
+  }
+
+  Future<void> _loadNotifyLead() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getInt(_notifyLeadKey);
+      if (saved != null && notifyLeadOptions.contains(saved)) {
+        _notifyLeadMinutes = saved;
+      }
+    } catch (e) {
+      debugPrint('[CalendarProvider] Error al leer aviso: $e');
+    }
+  }
+
+  Future<void> _loadSnackDuration() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getInt(_snackDurationKey);
+      if (saved != null && snackDurationOptions.contains(saved)) {
+        _snackDurationSeconds = saved;
+      }
+    } catch (e) {
+      debugPrint('[CalendarProvider] Error al leer duración del snack: $e');
+    }
   }
 
   Future<void> _loadSubscriptions() async {
@@ -300,7 +368,7 @@ class CalendarProvider extends ChangeNotifier {
       final sports = results[1];
 
       // Generar calendario de soporte para semanas -1 hasta +4
-      final now = DateTime.now();
+      final now = ArgentinaTime.now();
       final currentMonday = getMondayOfWeek(now);
       final List<CalendarEvent> generated = [];
       for (var offset = -1; offset <= 4; offset++) {
@@ -335,7 +403,7 @@ class CalendarProvider extends ChangeNotifier {
       if (_isFirstEventsLoad) {
         _isFirstEventsLoad = false;
         for (final ev in combined) {
-          if (ev.status == CalendarEventStatus.live ||
+          if (_isInNotifyWindow(ev) ||
               ev.status == CalendarEventStatus.finished) {
             _notifiedEventIds.add(ev.id);
           }
@@ -351,9 +419,54 @@ class CalendarProvider extends ChangeNotifier {
     }
   }
 
-  /// Formatea el mensaje agrupado para notificaciones de eventos en vivo.
-  static String formatLiveEventsMessage(List<CalendarEvent> events) {
+  int get notifyLeadMinutes => _notifyLeadMinutes;
+
+  int get snackDurationSeconds => _snackDurationSeconds;
+
+  Duration get liveSnackDuration => Duration(seconds: _snackDurationSeconds);
+
+  Future<void> setSnackDurationSeconds(int seconds) async {
+    final next = snackDurationOptions.contains(seconds)
+        ? seconds
+        : defaultSnackDurationSeconds;
+    if (next == _snackDurationSeconds) return;
+    _snackDurationSeconds = next;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_snackDurationKey, next);
+    } catch (e) {
+      debugPrint('[CalendarProvider] Error al guardar duración del snack: $e');
+    }
+    notifyListeners();
+  }
+
+  Future<void> setNotifyLeadMinutes(int minutes) async {
+    final next = notifyLeadOptions.contains(minutes) ? minutes : 0;
+    if (next == _notifyLeadMinutes) return;
+    _notifyLeadMinutes = next;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_notifyLeadKey, next);
+    } catch (e) {
+      debugPrint('[CalendarProvider] Error al guardar aviso: $e');
+    }
+    notifyListeners();
+  }
+
+  static String formatLiveEventsMessage(
+    List<CalendarEvent> events, {
+    int leadMinutes = 0,
+  }) {
     if (events.isEmpty) return '';
+    if (events.length == 1 && leadMinutes > 0) {
+      const key = 'calendar_live_notification_soon';
+      final res = tr(key, namedArgs: {
+        'minutes': '$leadMinutes',
+        'title': events.first.title,
+      });
+      if (res != key) return res;
+      return 'En $leadMinutes min: ${events.first.title}';
+    }
     if (events.length == 1) {
       const key = 'calendar_live_notification_single';
       final res = tr(key, namedArgs: {'title': events.first.title});
@@ -398,7 +511,7 @@ class CalendarProvider extends ChangeNotifier {
 
   /// Obtiene el ícono representativo para la notificación en vivo.
   static IconData getLiveEventsIcon(List<CalendarEvent> events) {
-    if (events.isEmpty) return Icons.live_tv_rounded;
+    if (events.isEmpty) return Icons.live_tv_outlined;
     if (events.length == 1) {
       return getSubscriptionIcon(events.first.subscriptionId);
     }
@@ -406,7 +519,7 @@ class CalendarProvider extends ChangeNotifier {
     if (events.every((e) => e.subscriptionId == firstSub)) {
       return getSubscriptionIcon(firstSub);
     }
-    return Icons.live_tv_rounded;
+    return Icons.live_tv_outlined;
   }
 
   /// Genera eventos representativos para una semana (del Lunes al Domingo dado).
@@ -414,13 +527,17 @@ class CalendarProvider extends ChangeNotifier {
     final cleanMonday = DateTime(monday.year, monday.month, monday.day);
     final List<CalendarEvent> fixtures = [];
 
+    DateTime kickoff(DateTime day, int hour, int minute) {
+      return ArgentinaTime.fromCivil(day.year, day.month, day.day, hour, minute);
+    }
+
     // Lunes
     fixtures.add(CalendarEvent(
       id: 'mock_lpf_mon_${cleanMonday.millisecondsSinceEpoch}',
       subscriptionId: 'lpf_ar',
       title: 'Estudiantes vs Gimnasia LP',
       competition: 'Liga Profesional',
-      startDateTime: cleanMonday.add(const Duration(hours: 20)),
+      startDateTime: kickoff(cleanMonday, 20, 0),
       sessionType: 'Fecha Regular',
       broadcaster: 'TNT Sports',
     ));
@@ -432,7 +549,7 @@ class CalendarProvider extends ChangeNotifier {
       subscriptionId: 'champions',
       title: 'Real Madrid vs Bayern Múnich',
       competition: 'UEFA Champions League',
-      startDateTime: tue.add(const Duration(hours: 16)),
+      startDateTime: kickoff(tue, 16, 0),
       sessionType: 'Fase de Grupos',
       broadcaster: 'ESPN / Disney+',
     ));
@@ -441,7 +558,7 @@ class CalendarProvider extends ChangeNotifier {
       subscriptionId: 'champions',
       title: 'PSG vs Juventus',
       competition: 'UEFA Champions League',
-      startDateTime: tue.add(const Duration(hours: 16)),
+      startDateTime: kickoff(tue, 16, 0),
       sessionType: 'Fase de Grupos',
       broadcaster: 'Fox Sports',
     ));
@@ -453,7 +570,7 @@ class CalendarProvider extends ChangeNotifier {
       subscriptionId: 'champions',
       title: 'Barcelona vs Inter de Milán',
       competition: 'UEFA Champions League',
-      startDateTime: wed.add(const Duration(hours: 16)),
+      startDateTime: kickoff(wed, 16, 0),
       sessionType: 'Fase de Grupos',
       broadcaster: 'ESPN / Disney+',
     ));
@@ -462,7 +579,7 @@ class CalendarProvider extends ChangeNotifier {
       subscriptionId: 'nba',
       title: 'Golden State Warriors vs Miami Heat',
       competition: 'NBA',
-      startDateTime: wed.add(const Duration(hours: 21, minutes: 30)),
+      startDateTime: kickoff(wed, 21, 30),
       sessionType: 'Temporada Regular',
       broadcaster: 'ESPN 2',
     ));
@@ -474,7 +591,7 @@ class CalendarProvider extends ChangeNotifier {
       subscriptionId: 'nfl',
       title: 'Kansas City Chiefs vs Baltimore Ravens',
       competition: 'NFL · Thursday Night',
-      startDateTime: thu.add(const Duration(hours: 21, minutes: 15)),
+      startDateTime: kickoff(thu, 21, 15),
       sessionType: 'Temporada Regular',
       broadcaster: 'ESPN',
     ));
@@ -486,7 +603,7 @@ class CalendarProvider extends ChangeNotifier {
       subscriptionId: 'lpf_ar',
       title: 'Racing Club vs Lanús',
       competition: 'Liga Profesional',
-      startDateTime: fri.add(const Duration(hours: 19, minutes: 0)),
+      startDateTime: kickoff(fri, 19, 0),
       sessionType: 'Fecha Regular',
       broadcaster: 'ESPN Premium',
     ));
@@ -495,7 +612,7 @@ class CalendarProvider extends ChangeNotifier {
       subscriptionId: 'lpf_ar',
       title: 'Newell\'s vs Rosario Central',
       competition: 'Liga Profesional',
-      startDateTime: fri.add(const Duration(hours: 21, minutes: 15)),
+      startDateTime: kickoff(fri, 21, 15),
       sessionType: 'Clásico',
       broadcaster: 'TNT Sports',
     ));
@@ -507,7 +624,7 @@ class CalendarProvider extends ChangeNotifier {
       subscriptionId: 'premier',
       title: 'Liverpool vs Chelsea',
       competition: 'Premier League',
-      startDateTime: sat.add(const Duration(hours: 8, minutes: 30)),
+      startDateTime: kickoff(sat, 8, 30),
       sessionType: 'Matchday',
       broadcaster: 'ESPN',
     ));
@@ -516,7 +633,7 @@ class CalendarProvider extends ChangeNotifier {
       subscriptionId: 'premier',
       title: 'Manchester City vs Arsenal',
       competition: 'Premier League',
-      startDateTime: sat.add(const Duration(hours: 13, minutes: 30)),
+      startDateTime: kickoff(sat, 13, 30),
       sessionType: 'Matchday',
       broadcaster: 'ESPN / Disney+',
     ));
@@ -525,7 +642,7 @@ class CalendarProvider extends ChangeNotifier {
       subscriptionId: 'lpf_ar',
       title: 'San Lorenzo vs Huracán',
       competition: 'Liga Profesional',
-      startDateTime: sat.add(const Duration(hours: 17, minutes: 0)),
+      startDateTime: kickoff(sat, 17, 0),
       sessionType: 'Clásico',
       broadcaster: 'TNT Sports',
     ));
@@ -534,7 +651,7 @@ class CalendarProvider extends ChangeNotifier {
       subscriptionId: 'lpf_ar',
       title: 'Boca Juniors vs Vélez Sarsfield',
       competition: 'Liga Profesional',
-      startDateTime: sat.add(const Duration(hours: 19, minutes: 30)),
+      startDateTime: kickoff(sat, 19, 30),
       sessionType: 'Fecha Regular',
       broadcaster: 'ESPN Premium',
     ));
@@ -546,7 +663,7 @@ class CalendarProvider extends ChangeNotifier {
       subscriptionId: 'premier',
       title: 'Tottenham vs Manchester United',
       competition: 'Premier League',
-      startDateTime: sun.add(const Duration(hours: 11, minutes: 30)),
+      startDateTime: kickoff(sun, 11, 30),
       sessionType: 'Super Sunday',
       broadcaster: 'ESPN',
     ));
@@ -555,7 +672,7 @@ class CalendarProvider extends ChangeNotifier {
       subscriptionId: 'lpf_ar',
       title: 'River Plate vs Independiente',
       competition: 'Liga Profesional',
-      startDateTime: sun.add(const Duration(hours: 17, minutes: 30)),
+      startDateTime: kickoff(sun, 17, 30),
       sessionType: 'Clásico',
       broadcaster: 'ESPN Premium / TNT Sports',
     ));
@@ -564,7 +681,7 @@ class CalendarProvider extends ChangeNotifier {
       subscriptionId: 'nba',
       title: 'Los Angeles Lakers vs Boston Celtics',
       competition: 'NBA · Sunday Game',
-      startDateTime: sun.add(const Duration(hours: 20, minutes: 0)),
+      startDateTime: kickoff(sun, 20, 0),
       sessionType: 'Temporada Regular',
       broadcaster: 'ESPN',
     ));
@@ -573,7 +690,7 @@ class CalendarProvider extends ChangeNotifier {
       subscriptionId: 'nfl',
       title: 'San Francisco 49ers vs Dallas Cowboys',
       competition: 'NFL · Sunday Night Football',
-      startDateTime: sun.add(const Duration(hours: 21, minutes: 20)),
+      startDateTime: kickoff(sun, 21, 20),
       sessionType: 'SNF',
       broadcaster: 'ESPN / Disney+',
     ));
@@ -582,7 +699,7 @@ class CalendarProvider extends ChangeNotifier {
       subscriptionId: 'nfl',
       title: 'Green Bay Packers vs Chicago Bears',
       competition: 'NFL · Sunday Afternoon',
-      startDateTime: sun.add(const Duration(hours: 14, minutes: 0)),
+      startDateTime: kickoff(sun, 14, 0),
       sessionType: 'Fecha Regular',
       broadcaster: 'Fox Sports',
     ));

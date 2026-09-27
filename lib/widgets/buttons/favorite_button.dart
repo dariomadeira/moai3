@@ -114,7 +114,7 @@ class _FavoriteButtonState extends State<FavoriteButton> {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
-              isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              isFav ? Icons.favorite : Icons.favorite_outline,
               color: iconColor,
               size: 20,
             ),

@@ -98,9 +98,7 @@ class CategoryListPanelState extends State<CategoryListPanel> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PanelListHeader(
-            subtitle: 'browser_category_subtitle'.tr(
-              namedArgs: {'country': widget.selectedCountry},
-            ),
+            subtitle: 'browser_category_subtitle'.tr(),
             showFilterText: widget.categories.length > 1,
           ),
           Expanded(

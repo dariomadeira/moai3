@@ -54,8 +54,8 @@ void main() {
     expect(find.text('DOM'), findsOneWidget);
 
     // Verify chevron navigation buttons exist
-    expect(find.byIcon(Icons.chevron_left_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+    expect(find.byIcon(Icons.chevron_right), findsOneWidget);
 
     focusNode.dispose();
   });
@@ -108,28 +108,28 @@ void main() {
     await tester.pump();
 
     // Initially on current week: return button is not needed
-    expect(find.byIcon(Icons.today_rounded), findsNothing);
+    expect(find.byIcon(Icons.today_outlined), findsNothing);
 
     // Tap Next week
-    final nextBtn = find.byIcon(Icons.chevron_right_rounded);
+    final nextBtn = find.byIcon(Icons.chevron_right);
     await tester.tap(nextBtn);
     await tester.pump();
 
     // In week +1, the "Semana actual" button appears in header actions
-    expect(find.byIcon(Icons.today_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.today_outlined), findsOneWidget);
     expect(find.text('calendar_week_current'), findsOneWidget);
 
     // Tap "Semana actual" to return
-    await tester.tap(find.byIcon(Icons.today_rounded));
+    await tester.tap(find.byIcon(Icons.today_outlined));
     await tester.pump();
 
     // Now tap Prev week to go to -1
-    final prevBtn = find.byIcon(Icons.chevron_left_rounded);
+    final prevBtn = find.byIcon(Icons.chevron_left);
     await tester.tap(prevBtn);
     await tester.pump();
 
     // At week -1 (limit), chevron_left should no longer be rendered
-    expect(find.byIcon(Icons.chevron_left_rounded), findsNothing);
+    expect(find.byIcon(Icons.chevron_left), findsNothing);
 
     focusNode.dispose();
   });
@@ -301,8 +301,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // In current week, Monday 21 20:00 (Estudiantes vs Gimnasia LP) is in the past
-    // It should render with Icons.check_circle_outline_rounded
-    expect(find.byIcon(Icons.check_circle_outline_rounded), findsWidgets);
+    // It should render with Icons.check_circle_outline
+    expect(find.byIcon(Icons.check_circle_outline), findsWidgets);
 
     // Verify the title is present
     expect(find.text('Estudiantes vs Gimnasia LP'), findsOneWidget);
@@ -360,7 +360,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // On Sunday, there are 5 events (> 4), so pill arrow is rendered
-    expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsWidgets);
+    expect(find.byIcon(Icons.keyboard_arrow_down), findsWidgets);
 
     focusNode.dispose();
   });

@@ -23,6 +23,11 @@ MoAI 3 implementa un mecanismo de protección para canales y contenidos cataloga
 4. **Política de Canal Seleccionado al Iniciar**:
    Si el último canal seleccionado guardado en preferencias es un canal de contenido adulto (`isAdult == true`) y la sesión inicia bloqueada (`isAdultUnlocked == false`), `ChannelProvider` descarta dicha selección y recurre al método de búsqueda segura `_findSafeFallbackChannel()`, seleccionando el último canal no adulto o el primer canal seguro del catálogo.
 
+### 1.3. Diálogo de PIN para Smart TV (`TvPinDialog`)
+- **Máquina de Estados Interna**: Las secuencias de creación (2 pasos) y cambio de PIN (3 pasos) operan dentro de una única sesión modal continua mediante `AnimatedSwitcher`. Se eliminan los parpadeos (*pantallazos*) ocasionados por cierres y reaperturas sucesivas de `showGeneralDialog`.
+- **Animación de Error (Shake)**: Ante discrepancias o PIN incorrecto, los casilleros ejecutan una sacudida horizontal de 5 oscilaciones (`_PinShakeCurve`) sin cerrar el diálogo.
+- **Matriz Numérica 4x3 y Colores Sólidos**: Teclado determinista para control remoto D-Pad y teclado numérico físico, con diseño sin bordes y badge de paso con tokens sólidos `tertiaryContainer` y `onTertiaryContainer`. *(Ver detalle en [SPEC-33](../features/tv_ui_components_and_layout.md))*.
+
 ---
 
 ## 2. Ajustes Físicos de Pantalla para Android TV

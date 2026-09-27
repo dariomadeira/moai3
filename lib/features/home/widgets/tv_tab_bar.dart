@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
 
@@ -16,6 +15,7 @@ class TvTabBar extends StatelessWidget {
   final String selectedTab;
   final ValueChanged<String> onTabChanged;
   final FocusNode exploreFocusNode;
+  final FocusNode searchFocusNode;
   final FocusNode groupsFocusNode;
   final VoidCallback onFocusDown;
   final VoidCallback onFocusLeft;
@@ -29,6 +29,7 @@ class TvTabBar extends StatelessWidget {
     required this.selectedTab,
     required this.onTabChanged,
     required this.exploreFocusNode,
+    required this.searchFocusNode,
     required this.groupsFocusNode,
     required this.onFocusDown,
     required this.onFocusLeft,
@@ -41,7 +42,7 @@ class TvTabBar extends StatelessWidget {
 
     return Padding(
       // Alineación vertical superior para sincronizar con NavigationRail M3.
-      padding: const EdgeInsets.only(top: 8, bottom: 8, right: 8),
+      padding: const EdgeInsets.only(top: 12, bottom: 12, right: 8),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
@@ -62,18 +63,30 @@ class TvTabBar extends StatelessWidget {
                 focusNode: exploreFocusNode,
                 onSelect: () => onTabChanged('explore'),
                 onKeyLeft: onFocusLeft,
+                onKeyRight: () => searchFocusNode.requestFocus(),
+                onKeyDown: onFocusDown,
+              ),
+              const SizedBox(width: 4),
+              _M3EFloatingTabPill(
+                title: 'home_tab_search'.tr(),
+                icon: Icons.search_outlined,
+                selectedIcon: Icons.search,
+                isSelected: selectedTab == 'search',
+                focusNode: searchFocusNode,
+                onSelect: () => onTabChanged('search'),
+                onKeyLeft: () => exploreFocusNode.requestFocus(),
                 onKeyRight: () => groupsFocusNode.requestFocus(),
                 onKeyDown: onFocusDown,
               ),
               const SizedBox(width: 4),
               _M3EFloatingTabPill(
                 title: 'home_tab_groups'.tr(),
-                icon: Symbols.bookmarks,
-                selectedIcon: Symbols.bookmarks,
+                icon: Icons.bookmarks_outlined,
+                selectedIcon: Icons.bookmarks,
                 isSelected: selectedTab == 'groups',
                 focusNode: groupsFocusNode,
                 onSelect: () => onTabChanged('groups'),
-                onKeyLeft: () => exploreFocusNode.requestFocus(),
+                onKeyLeft: () => searchFocusNode.requestFocus(),
                 onKeyRight: onFocusPlayer,
                 onKeyDown: onFocusDown,
               ),
@@ -131,7 +144,7 @@ class _M3EFloatingTabPillState extends State<_M3EFloatingTabPill> {
       fg = scheme.onPrimaryContainer;
     } else {
       bg = Colors.transparent;
-      fg = scheme.onSurface.withValues(alpha: 0.6);
+      fg = scheme.onSurfaceVariant;
     }
 
     return Focus(
@@ -179,9 +192,7 @@ class _M3EFloatingTabPillState extends State<_M3EFloatingTabPill> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                widget.isSelected || _focused
-                    ? widget.selectedIcon
-                    : widget.icon,
+                widget.isSelected ? widget.selectedIcon : widget.icon,
                 color: fg,
                 size: 18,
               ),

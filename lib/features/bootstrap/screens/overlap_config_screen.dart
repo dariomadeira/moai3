@@ -141,7 +141,7 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
                             child: Padding(
                               padding: const EdgeInsets.all(12),
                               child: Icon(
-                                Icons.aspect_ratio_rounded,
+                                Icons.aspect_ratio_outlined,
                                 color: scheme.onPrimaryContainer,
                                 size: 26,
                               ),
@@ -196,7 +196,7 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
                       TvFocusButton(
                         focusNode: _buttonFocus,
                         label: 'overlap_save'.tr(),
-                        icon: Icons.check_rounded,
+                        icon: Icons.check_outlined,
                         onPressed: _save,
                         onArrowUp: () => _yFocus.requestFocus(),
                       ),

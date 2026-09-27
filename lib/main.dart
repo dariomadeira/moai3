@@ -15,6 +15,7 @@ import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/debug_log_controller.dart';
 import 'package:moai3/services/moai_image_cache_manager.dart';
 import 'package:moai3/services/playback_stats_controller.dart';
+import 'package:moai3/state/agenda_clock_provider.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/favorites_provider.dart';
@@ -67,6 +68,7 @@ void main() async {
     isAdultUnlocked: () => tvSettingsProvider.isAdultUnlocked,
   );
   final favoritesProvider = FavoritesProvider(appPreferences);
+  final agendaClock = AgendaClockProvider(appPreferences);
   final calendarProvider = CalendarProvider();
   final playbackStats = PlaybackStatsController();
   final debugLog = DebugLogController();
@@ -79,6 +81,7 @@ void main() async {
     child: MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: themeProvider),
+        ChangeNotifierProvider.value(value: agendaClock),
         ChangeNotifierProvider.value(value: tvSettingsProvider),
         ChangeNotifierProvider.value(value: channelProvider),
         ChangeNotifierProvider.value(value: favoritesProvider),
@@ -144,7 +147,6 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     NotificationHelper.initialize(MyApp.scaffoldMessengerKey);
-    NotificationHelper.updateContext(context);
 
     final (themeMode, seed) = context.select<ThemeProvider, (ThemeMode, Color)>(
       (theme) => (theme.themeMode, theme.accentSeed),

@@ -3,13 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/features/home/widgets/panel_list_header.dart';
 import 'package:moai3/focus/focus_retry.dart';
-import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/models/channel.dart';
-import 'package:moai3/widgets/cards/new_channel_card.dart';
+import 'package:moai3/widgets/cards/channel_grid_tile.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
-import 'package:moai3/widgets/lists/tv_windowed_list.dart';
+import 'package:moai3/widgets/lists/tv_windowed_grid.dart';
 
-/// Panel Canales: mismo diseño windowed de 6 que Países / Categorías.
+/// Panel Canales: grilla windowed 2×3 con D-pad.
 class ChannelListPanel extends StatefulWidget {
   final String selectedCountry;
   final String selectedCategory;
@@ -35,7 +34,10 @@ class ChannelListPanel extends StatefulWidget {
 }
 
 class ChannelListPanelState extends State<ChannelListPanel> {
-  final _listKey = GlobalKey<TvWindowedListState<Channel>>();
+  static const int _windowSize = 6;
+  static const double _rowExtent = 120.0;
+
+  final _listKey = GlobalKey<TvWindowedGridState<Channel>>();
   final FocusNode _emptyFocusNode = FocusNode(debugLabel: 'channel_empty');
 
   @override
@@ -88,18 +90,9 @@ class ChannelListPanelState extends State<ChannelListPanel> {
 
   @override
   Widget build(BuildContext context) {
-    const windowSize = 6;
-    final listAlign = widget.channels.length < windowSize
+    final listAlign = widget.channels.length < _windowSize
         ? Alignment.topCenter
         : Alignment.bottomCenter;
-
-    final String target = widget.selectedCategory.isEmpty
-        ? widget.selectedCountry
-        : '${widget.selectedCountry} - ${widget.selectedCategory}';
-
-    final String subtitle = target.isEmpty
-        ? 'home_tv_viewer_no_channels'.tr()
-        : 'browser_channels_showing'.tr(namedArgs: {'target': target});
 
     return Container(
       padding: const EdgeInsets.only(
@@ -112,7 +105,7 @@ class ChannelListPanelState extends State<ChannelListPanel> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PanelListHeader(
-            subtitle: subtitle,
+            subtitle: 'browser_channels_showing'.tr(),
             showFilterText: widget.channels.length > 1,
           ),
           Expanded(
@@ -125,12 +118,13 @@ class ChannelListPanelState extends State<ChannelListPanel> {
                   )
                 : Align(
                     alignment: listAlign,
-                    child: TvWindowedList<Channel>(
+                    child: TvWindowedGrid<Channel>(
                       key: _listKey,
                       items: widget.channels,
-                      windowSize: windowSize,
+                      windowSize: _windowSize,
+                      crossAxisCount: 2,
                       initialGlobalIndex: _selectedIndex,
-                      itemExtent: TvLayoutConstants.channelItemHeight,
+                      itemExtent: _rowExtent,
                       onFocusUpFromFirst: widget.onFocusUp,
                       itemBuilder: (
                         context,
@@ -140,8 +134,10 @@ class ChannelListPanelState extends State<ChannelListPanel> {
                         global,
                         onKeyUp,
                         onKeyDown,
+                        onKeyLeft,
+                        onKeyRight,
                       ) {
-                        return NewChannelCard(
+                        return ChannelGridTile(
                           key: ValueKey(channel.id),
                           channel: channel,
                           isSelected: widget.selectedChannel?.id == channel.id,
@@ -149,6 +145,8 @@ class ChannelListPanelState extends State<ChannelListPanel> {
                           onLongPress: widget.onLongPress,
                           onKeyUp: onKeyUp,
                           onKeyDown: onKeyDown,
+                          onKeyLeft: onKeyLeft,
+                          onKeyRight: onKeyRight,
                           onTap: () => widget.onSelect(channel),
                         );
                       },
@@ -160,4 +158,3 @@ class ChannelListPanelState extends State<ChannelListPanel> {
     );
   }
 }
-

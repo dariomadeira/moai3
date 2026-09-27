@@ -111,8 +111,8 @@ void main() {
     expect(state.canScrollDown, isTrue);
 
     // At top: only down arrow is rendered
-    expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.keyboard_arrow_up_rounded), findsNothing);
+    expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+    expect(find.byIcon(Icons.keyboard_arrow_up), findsNothing);
 
     // Move to item 2 (middle/anchor): scroll down
     state.ensureVisible(2);
@@ -126,7 +126,7 @@ void main() {
     expect(state.canScrollDown, isFalse);
 
     // At bottom: only up arrow is rendered
-    expect(find.byIcon(Icons.keyboard_arrow_up_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsNothing);
+    expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
+    expect(find.byIcon(Icons.keyboard_arrow_down), findsNothing);
   });
 }

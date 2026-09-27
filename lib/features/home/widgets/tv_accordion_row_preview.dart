@@ -1,12 +1,8 @@
-﻿import 'package:flutter/material.dart';
-import 'package:moai3/features/home/widgets/collapsed_panel_tab.dart';
+import 'package:flutter/material.dart';
+import 'package:moai3/features/home/widgets/collapsed_panel_tab_preview.dart';
 
-/// Acordeón horizontal TV: un panel expandido + tabs colapsados (38px).
-///
-/// Compartido con Settings. Modelo Smart: si el ancho del contenido aún anima
-/// por debajo de 180px no monta hijos (evita overflow); el foco se recupera
-/// con [_requestFocusWithRetry] / [FocusScrollSync] en el caller.
-class TvAccordionRow extends StatelessWidget {
+/// Acordeón horizontal TV: un panel expandido + tabs colapsados.
+class TvAccordionRowPreview extends StatelessWidget {
   final int panelCount;
   final int activeIndex;
   final List<Color> colors;
@@ -18,7 +14,7 @@ class TvAccordionRow extends StatelessWidget {
   final ValueChanged<int> onPanelTap;
   final Widget Function(int index, String title) buildExpandedContent;
 
-  const TvAccordionRow({
+  const TvAccordionRowPreview({
     super.key,
     required this.panelCount,
     required this.activeIndex,
@@ -66,7 +62,7 @@ class TvAccordionRow extends StatelessWidget {
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     color: colors[index],
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(18),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -87,7 +83,7 @@ class TvAccordionRow extends StatelessWidget {
                             onTap: () => onPanelTap(index),
                             child: SizedBox(
                               width: collapsedWidth,
-                              child: CollapsedPanelTab(
+                              child: CollapsedPanelTabPreview(
                                 title: title,
                                 icon: icon,
                               ),
@@ -104,8 +100,6 @@ class TvAccordionRow extends StatelessWidget {
                               final content = ClipRect(
                                 child: buildExpandedContent(index, title),
                               );
-                              // Filtro alfabético: el listado no puede robar
-                              // foco ni disparar L/R de cambio de panel.
                               if (alphabetModePanelIndex != null) {
                                 return ExcludeFocus(child: content);
                               }
@@ -126,4 +120,3 @@ class TvAccordionRow extends StatelessWidget {
     );
   }
 }
-

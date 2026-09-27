@@ -164,7 +164,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                       child: Row(
                         children: [
                           Icon(
-                            Icons.error_outline_rounded,
+                            Icons.error_outline,
                             color: scheme.onErrorContainer,
                             size: 20,
                           ),
@@ -526,7 +526,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
             hint: 'sources_url_hint'.tr(),
             keyboardType: TvKeyboardType.text,
             doneLabel: 'sources_install'.tr(),
-            leadingIcon: Icons.link_rounded,
+            leadingIcon: Icons.link_outlined,
             onSubmitted: (val) => _install(val),
             onFocusLeft: () => _backFocus.requestFocus(),
             onFocusRight: () => _installFocus.requestFocus(),
@@ -661,7 +661,7 @@ class _BackButtonState extends State<_BackButton> {
               width: 52,
               height: 52,
               child: Icon(
-                Icons.arrow_back_rounded,
+                Icons.arrow_back_outlined,
                 color: fg,
                 size: 24,
               ),
@@ -869,8 +869,8 @@ class _SourceTileState extends State<_SourceTile> {
                     )
                   : 'sources_update'.tr(),
               icon: _availableVersion != null
-                  ? Symbols.system_update_rounded
-                  : Icons.sync_rounded,
+                  ? Symbols.system_update
+                  : Icons.sync_outlined,
               onPressed: () {
                 widget.onUpdate();
                 setState(() => _availableVersion = null);
@@ -884,7 +884,7 @@ class _SourceTileState extends State<_SourceTile> {
             _IconButtonAction(
               focusNode: widget.removeFocus,
               tooltip: 'sources_remove'.tr(),
-              icon: Icons.delete_outline_rounded,
+              icon: Icons.delete_outline,
               onPressed: widget.onRemove,
               parentFocused: isFocused,
               onKeyLeft: () => widget.updateFocus.requestFocus(),
@@ -1074,7 +1074,7 @@ class _PresetTileState extends State<_PresetTile> {
                       children: [
                         Icon(
                           widget.isInstalled
-                              ? Icons.check_circle_outline_rounded
+                              ? Icons.check_circle_outline
                               : Symbols.download,
                           size: 16,
                           color: widget.isInstalled

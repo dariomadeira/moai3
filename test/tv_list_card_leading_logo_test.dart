@@ -26,7 +26,7 @@ void main() {
       ),
     );
 
-    expect(find.byIcon(Icons.tv_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.tv_outlined), findsOneWidget);
   });
 
   testWidgets('TvListCardLeadingLogo usa BoxFit.contain y alignment center en CachedNetworkImage', (tester) async {

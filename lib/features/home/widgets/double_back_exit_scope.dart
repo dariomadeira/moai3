@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -73,7 +73,7 @@ class DoubleBackExitScopeState extends State<DoubleBackExitScope> {
     MoaiSnackBar.show(
       context,
       message: 'home_exit_double_back'.tr(),
-      icon: Icons.exit_to_app_rounded,
+      icon: Icons.exit_to_app_outlined,
       bottomMargin: _exitSnackBottomMargin,
       duration: widget.exitWindow,
     );

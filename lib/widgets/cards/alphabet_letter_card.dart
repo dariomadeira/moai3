@@ -79,18 +79,18 @@ class _AlphabetLetterCardState extends State<AlphabetLetterCard> {
             onTap: widget.onTap,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 28,
-              height: 28,
+              width: 26,
+              height: 26,
               decoration: BoxDecoration(
                 color: _isFocused ? scheme.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
+                shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
               child: Text(
                 widget.letter,
                 style: MoaiText.body(
                   context,
-                  fontSize: 14,
+                  fontSize: 13,
                   color: _isFocused ? scheme.onPrimary : scheme.onSurface,
                   fontWeight: _isFocused ? FontWeight.w700 : FontWeight.w600,
                 ),

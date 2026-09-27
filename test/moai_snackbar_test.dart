@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 
 void main() {
-  testWidgets('MoaiSnackBar construye un snackbar estilo pill sin sombras',
+  testWidgets('MoaiSnackBar construye un snackbar estilo pill con sombra',
       (tester) async {
     final snackBar = MoaiSnackBar.buildSnackBar(
       context: null,
@@ -12,8 +12,10 @@ void main() {
     );
 
     expect(snackBar.elevation, equals(0));
+    expect(snackBar.backgroundColor, equals(Colors.transparent));
     expect(snackBar.behavior, equals(SnackBarBehavior.floating));
-    expect(snackBar.shape, isA<StadiumBorder>());
+    expect(snackBar.shape, isA<RoundedRectangleBorder>());
+    expect(snackBar.content, isNotNull);
   });
 
   testWidgets('MoaiSnackBar.show muestra el mensaje y el icono en pantalla',

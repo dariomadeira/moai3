@@ -1,7 +1,8 @@
-﻿import 'package:easy_localization/easy_localization.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:moai3/features/home/widgets/tv_accordion_row.dart';
+import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/settings/widgets/settings_about_panel.dart';
+import 'package:moai3/features/settings/widgets/settings_agenda_panel.dart';
 import 'package:moai3/features/settings/widgets/settings_general_panel.dart';
 import 'package:moai3/features/settings/widgets/settings_tv_panel.dart';
 import 'package:moai3/layout/settings_panel_layout.dart';
@@ -12,6 +13,7 @@ class HomeSettingsArea extends StatelessWidget {
   final int activePanelIndex;
   final FocusNode tvPanelFocus;
   final FocusNode generalPanelFocus;
+  final FocusNode agendaPanelFocus;
   final FocusNode aboutPanelFocus;
   final ValueChanged<int> onPanelIndexChanged;
   final VoidCallback onExitLeft;
@@ -21,6 +23,7 @@ class HomeSettingsArea extends StatelessWidget {
     required this.activePanelIndex,
     required this.tvPanelFocus,
     required this.generalPanelFocus,
+    required this.agendaPanelFocus,
     required this.aboutPanelFocus,
     required this.onPanelIndexChanged,
     required this.onExitLeft,
@@ -28,7 +31,8 @@ class HomeSettingsArea extends StatelessWidget {
 
   static const icons = [
     Icons.settings_remote_outlined,
-    Icons.tune,
+    Icons.calendar_month_outlined,
+    Icons.tune_outlined,
     Icons.info_outline,
   ];
 
@@ -36,17 +40,19 @@ class HomeSettingsArea extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
     final panelColors = [
-      scheme.surface,
-      scheme.surface,
-      scheme.surface,
+      scheme.surface.withValues(alpha: 0.8),
+      scheme.surface.withValues(alpha: 0.8),
+      scheme.surface.withValues(alpha: 0.8),
+      scheme.surface.withValues(alpha: 0.8),
     ];
     final titles = [
       'settings_tv_title'.tr(),
+      'settings_agenda_title'.tr(),
       'settings_general_title'.tr(),
       'settings_about_title'.tr(),
     ];
 
-    return TvAccordionRow(
+    return TvAccordionRowPreview(
       panelCount: SettingsPanelLayout.panelCount,
       activeIndex: activePanelIndex,
       colors: panelColors,
@@ -59,6 +65,18 @@ class HomeSettingsArea extends StatelessWidget {
             focusNode: tvPanelFocus,
             onKeyLeft: onExitLeft,
             onKeyRight: () => onPanelIndexChanged(
+              SettingsPanelLayout.configAgendaPanelIndex,
+            ),
+          );
+        }
+
+        if (SettingsPanelLayout.isConfigAgendaPanel(index)) {
+          return SettingsAgendaPanel(
+            focusNode: agendaPanelFocus,
+            onKeyLeft: () => onPanelIndexChanged(
+              SettingsPanelLayout.configTvPanelIndex,
+            ),
+            onKeyRight: () => onPanelIndexChanged(
               SettingsPanelLayout.configGeneralPanelIndex,
             ),
           );
@@ -68,7 +86,7 @@ class HomeSettingsArea extends StatelessWidget {
           return SettingsGeneralPanel(
             focusNode: generalPanelFocus,
             onKeyLeft: () => onPanelIndexChanged(
-              SettingsPanelLayout.configTvPanelIndex,
+              SettingsPanelLayout.configAgendaPanelIndex,
             ),
             onKeyRight: () => onPanelIndexChanged(
               SettingsPanelLayout.aboutPanelIndex,
