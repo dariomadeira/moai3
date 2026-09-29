@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dynamic_color/dynamic_color.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemChrome, DeviceOrientation;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:moai3/config/app_config.dart';
 import 'package:moai3/config/constants.dart';
 import 'package:moai3/config/player_config.dart';
@@ -13,8 +15,10 @@ import 'package:moai3/helpers/notification_helper.dart';
 import 'package:moai3/routers/routers.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/debug_log_controller.dart';
+import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/moai_image_cache_manager.dart';
 import 'package:moai3/services/playback_stats_controller.dart';
+import 'package:moai3/services/supabase_presence_service.dart';
 import 'package:moai3/state/agenda_clock_provider.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/channel_provider.dart';
@@ -72,7 +76,29 @@ void main() async {
   final calendarProvider = CalendarProvider();
   final playbackStats = PlaybackStatsController();
   final debugLog = DebugLogController();
-  final router = createRouter(tvSettingsProvider);
+
+  final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
+  final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+  if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
+    try {
+      await Supabase.initialize(
+        url: supabaseUrl,
+        // ignore: deprecated_member_use
+        anonKey: supabaseAnonKey,
+      );
+    } catch (e) {
+      debugPrint('Error inicializando Supabase: $e');
+    }
+  }
+
+  final deviceIdentityService = DeviceIdentityService(appPreferences);
+  final supabasePresenceService = SupabasePresenceService();
+
+  final router = createRouter(
+    tvSettingsProvider,
+    identityService: deviceIdentityService,
+    presenceService: supabasePresenceService,
+  );
 
   runApp(EasyLocalization(
     path: kTranslationsPath,
@@ -89,16 +115,29 @@ void main() async {
         ChangeNotifierProvider.value(value: playbackStats),
         ChangeNotifierProvider.value(value: debugLog),
         ChangeNotifierProvider.value(value: channelProvider.pluginHost),
+        Provider<DeviceIdentityService>.value(value: deviceIdentityService),
+        Provider<SupabasePresenceService>.value(value: supabasePresenceService),
       ],
-      child: MyApp(router: router),
+      child: MyApp(
+        router: router,
+        identityService: deviceIdentityService,
+        presenceService: supabasePresenceService,
+      ),
     ),
   ));
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key, required this.router});
+  const MyApp({
+    super.key,
+    required this.router,
+    required this.identityService,
+    required this.presenceService,
+  });
 
   final GoRouter router;
+  final DeviceIdentityService identityService;
+  final SupabasePresenceService presenceService;
 
   static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
@@ -108,9 +147,67 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  AppLifecycleListener? _lifecycleListener;
+  Timer? _heartbeatTimer;
+  bool _isInForeground = true;
   Color? _lastSeed;
   ThemeData? _cachedLightTheme;
   ThemeData? _cachedDarkTheme;
+
+  static const Duration _heartbeatInterval = Duration(seconds: 45);
+
+  @override
+  void initState() {
+    super.initState();
+    final deviceId = widget.identityService.getOrCreateDeviceId();
+    _startHeartbeat(deviceId);
+
+    _lifecycleListener = AppLifecycleListener(
+      onResume: () => _handleForeground(deviceId),
+      onPause: () => _handleBackground(deviceId),
+      onDetach: () => _handleBackground(deviceId),
+      onHide: () => _handleBackground(deviceId),
+    );
+  }
+
+  void _handleForeground(String deviceId) {
+    if (_isInForeground) return;
+    _isInForeground = true;
+    widget.presenceService.updateOnlineStatus(
+      deviceId: deviceId,
+      online: true,
+    );
+    _startHeartbeat(deviceId);
+  }
+
+  void _handleBackground(String deviceId) {
+    if (!_isInForeground) return;
+    _isInForeground = false;
+    _stopHeartbeat();
+    widget.presenceService.updateOnlineStatus(
+      deviceId: deviceId,
+      online: false,
+    );
+  }
+
+  void _startHeartbeat(String deviceId) {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(_heartbeatInterval, (_) {
+      widget.presenceService.sendHeartbeat(deviceId: deviceId);
+    });
+  }
+
+  void _stopHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+  }
+
+  @override
+  void dispose() {
+    _stopHeartbeat();
+    _lifecycleListener?.dispose();
+    super.dispose();
+  }
 
   ThemeData _themeFor(ColorScheme scheme) {
     return ThemeData(

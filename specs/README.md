@@ -25,6 +25,8 @@ Todas las decisiones de diseño, contratos de plugins, modelos de datos y flujos
   *Estructura de entidades, IDs canónicos de plugins y normalización de textos/categorías.*
 - [SPEC-21: Preferencias del Sistema, Temas y Seguridad Parental](domain/preferences_and_security.md)  
   *Control parental con PIN de sesión efímero, calibración de overscan TV y temas M3 Expressive.*
+- [SPEC-22: Sistema de Control de Usuarios y Presencia](domain/user_control_and_presence.md)  
+  *Registro de dispositivos en Supabase, verificación de acceso, bloqueo y estado online/offline.*
 
 ### 4. Funcionalidades y Experiencia de Usuario
 - [SPEC-30: Motor de Navegación y Foco para Android TV (D-Pad)](features/tv_navigation_and_focus.md)  
@@ -39,6 +41,10 @@ Todas las decisiones de diseño, contratos de plugins, modelos de datos y flujos
   *Módulo empírico de prueba de micrófono físico de control remoto por software en Android TV.*
 - [SPEC-35: Agenda Deportiva de Eventos en Vivo y Notificaciones](features/sports_calendar_and_events.md)  
   *Grilla semanal de 7 días, gestión de suscripciones, matching determinista con canales activos y modal de sintonización directa.*
+- [SPEC-36: Panel "Miremos Juntos" en Ajustes](features/watch_party_settings.md)  
+  *Configuración de funcionalidad social, visualización de código MOAI-XXXX, lista de amigos y acceso a prueba de audio TV.*
+- [SPEC-37: Overlay de Voz "Miremos Juntos" y Control de Foco en Reproductor Fullscreen](features/watch_party_playback_overlay.md)  
+  *Icono flotante de micrófono en centro superior, visibilidad ligada a presencia de amigos, captura exclusiva de foco y retorno tras notificaciones.*
 
 ### 5. Verificación y Calidad
 - [SPEC-40: Matriz de Criterios de Aceptación (Baseline v3.0.14)](verification/baseline_acceptance_matrix.md)  
