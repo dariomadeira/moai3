@@ -7,6 +7,12 @@ import android.net.Uri
 import android.os.Build
 import androidx.core.content.FileProvider
 import java.io.File
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import javax.net.ssl.HttpsURLConnection
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 import android.util.Log
 import android.view.Surface
 import android.view.WindowManager
@@ -43,12 +49,49 @@ import io.flutter.view.TextureRegistry
 /** App Moai. */
 class MainActivity : FlutterActivity() {
 
+    companion object {
+        init {
+            configurePermissiveSsl()
+        }
+
+        @JvmStatic
+        fun configurePermissiveSsl() {
+            try {
+                val trustAllCerts = arrayOf<TrustManager>(
+                    object : X509TrustManager {
+                        override fun checkClientTrusted(
+                            chain: Array<out X509Certificate>?,
+                            authType: String?
+                        ) {}
+
+                        override fun checkServerTrusted(
+                            chain: Array<out X509Certificate>?,
+                            authType: String?
+                        ) {}
+
+                        override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+                    }
+                )
+
+                val sslContext = SSLContext.getInstance("TLS")
+                sslContext.init(null, trustAllCerts, SecureRandom())
+                HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.socketFactory)
+                HttpsURLConnection.setDefaultHostnameVerifier { _, _ -> true }
+                SSLContext.setDefault(sslContext)
+                Log.i("MainActivity", "SSL permisivo global configurado en Android native")
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error configurando SSL permisivo: ${e.message}", e)
+            }
+        }
+    }
+
     private val engine = PlayerEngine()
     private lateinit var pluginLoader: PluginLoader
     private var voiceManager: RemoteVoiceManager? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        configurePermissiveSsl()
         FlutterActivityHolder.current = this
         pluginLoader = PluginLoader(this)
         voiceManager = RemoteVoiceManager(this)

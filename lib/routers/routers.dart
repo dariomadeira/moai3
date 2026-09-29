@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:moai3/features/blocked/screens/blocked_screen.dart';
 import 'package:moai3/features/bootstrap/screens/overlap_config_screen.dart';
 import 'package:moai3/features/home/screens/home_screen.dart';
+import 'package:moai3/features/loading/screens/loading_screen.dart';
+import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/modal_route_tracker.dart';
+import 'package:moai3/services/supabase_presence_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 
 CustomTransitionPage<void> _fadePage({
@@ -19,28 +23,48 @@ CustomTransitionPage<void> _fadePage({
   );
 }
 
-/// Router offline de moai3. Abre directamente en /home con estado vacio.
-GoRouter createRouter(TvSettingsProvider tvSettingsProvider) {
+/// Router de moai3 con control de acceso, presencia y arranque (SPEC-22).
+GoRouter createRouter(
+  TvSettingsProvider tvSettingsProvider, {
+  required DeviceIdentityService identityService,
+  required SupabasePresenceService presenceService,
+}) {
   return GoRouter(
     observers: [ModalRouteTracker.instance],
-    initialLocation: tvSettingsProvider.hasOverlapConfig ? '/home' : '/overlap',
+    initialLocation: '/loading',
     refreshListenable: tvSettingsProvider,
     redirect: (context, state) {
       final loc = state.matchedLocation;
-      if (!tvSettingsProvider.hasOverlapConfig) {
-        if (loc != '/overlap') {
-          return '/overlap';
-        }
-        return null;
-      }
       if (loc == '/' || loc == '/boot' || loc == '/server') {
-        return '/home';
+        return '/loading';
       }
       return null;
     },
     routes: [
       GoRoute(
+        path: '/loading',
+        name: 'loading',
+        pageBuilder: (context, state) => _fadePage(
+          state: state,
+          child: LoadingScreen(
+            identityService: identityService,
+            presenceService: presenceService,
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/blocked',
+        name: 'blocked',
+        pageBuilder: (context, state) => _fadePage(
+          state: state,
+          child: BlockedScreen(
+            blockReason: state.extra as String?,
+          ),
+        ),
+      ),
+      GoRoute(
         path: '/overlap',
+        name: 'overlap',
         pageBuilder: (context, state) => _fadePage(
           state: state,
           child: const OverlapConfigScreen(),
@@ -54,11 +78,6 @@ GoRouter createRouter(TvSettingsProvider tvSettingsProvider) {
           child: const HomeScreen(),
         ),
       ),
-      GoRoute(
-        path: '/',
-        redirect: (_, _) => '/home',
-      ),
     ],
   );
 }
-
