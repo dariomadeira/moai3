@@ -11,7 +11,7 @@ abstract final class TvLayoutConstants {
   static const double viewerHorizontalPaddingStart = 20.0;
   static const double viewerHorizontalPaddingEnd = 20.0;
 
-  static const double viewerFavoriteTileWidth = 76.0;
+  static const double viewerFavoriteTileWidth = 80.0;
   static const double viewerFavoriteTileSpacing = 8.0;
   static const double viewerFavoriteTileStride =
       viewerFavoriteTileWidth + viewerFavoriteTileSpacing;

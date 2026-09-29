@@ -248,7 +248,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
     _engine = null;
     if (engine != null) {
       engine.removeListener(_onEngineEvent);
-      await engine.dispose();
+      engine.dispose();
     }
   }
 
@@ -311,7 +311,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
       if (!alive() || _engine != newController) {
         newController.removeListener(_onEngineEvent);
         if (_engine == newController) _engine = null;
-        await newController.dispose();
+        newController.dispose();
         return;
       }
       if (newController.event.hasError) {
@@ -328,7 +328,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
       if (newController != null) {
         newController.removeListener(_onEngineEvent);
         if (_engine == newController) _engine = null;
-        await newController.dispose();
+        newController.dispose();
       }
       if (!alive()) return;
       _scheduleReconnect(reason: '$e');

@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 
 enum _SettingsTvItemType {
   debugLog,
+  channelLabels,
   adultContent,
   changePin,
   sources,
@@ -53,6 +54,7 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
 
     final items = <_SettingsTvItemType>[
       _SettingsTvItemType.debugLog,
+      _SettingsTvItemType.channelLabels,
       _SettingsTvItemType.adultContent,
       if (hasPin) _SettingsTvItemType.changePin,
       _SettingsTvItemType.sources,
@@ -156,6 +158,19 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
           description: 'settings_tv_log_desc'.tr(),
           value: tvSettings.showTvLog,
           onChanged: (v) => tvSettings.setShowTvLog(v),
+          onKeyLeft: widget.onKeyLeft,
+          onKeyRight: widget.onKeyRight,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+        );
+      case _SettingsTvItemType.channelLabels:
+        return TvSettingsSwitchRow(
+          focusNode: focusNode,
+          icon: Icons.label_outline,
+          label: 'settings_tv_channel_labels'.tr(),
+          description: 'settings_tv_channel_labels_desc'.tr(),
+          value: tvSettings.showChannelLabels,
+          onChanged: (v) => tvSettings.setShowChannelLabels(v),
           onKeyLeft: widget.onKeyLeft,
           onKeyRight: widget.onKeyRight,
           onKeyUp: onKeyUp,

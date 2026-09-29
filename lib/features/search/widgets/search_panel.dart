@@ -5,6 +5,7 @@ import 'package:moai3/features/search/controllers/home_search_controller.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/cards/channel_grid_tile.dart';
+import 'package:moai3/widgets/lists/tv_fixed_window_viewport.dart';
 import 'package:moai3/widgets/lists/tv_windowed_grid.dart';
 import 'package:moai3/widgets/tv_input/tv_input.dart';
 
@@ -43,7 +44,9 @@ class SearchPanel extends StatefulWidget {
 
 class SearchPanelState extends State<SearchPanel> {
   static const int _windowSize = 6;
-  static const double _rowExtent = 120.0;
+  static const int _crossAxisCount = 2;
+  static const double _rowExtent = 114.0;
+  static const int _rowCount = _windowSize ~/ _crossAxisCount;
 
   final _listKey = GlobalKey<TvWindowedGridState<Channel>>();
 
@@ -115,9 +118,6 @@ class SearchPanelState extends State<SearchPanel> {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
     final hasQuery = widget.queryController.text.isNotEmpty;
-    final listAlign = widget.searchResults.length < _windowSize
-        ? Alignment.topCenter
-        : Alignment.bottomCenter;
 
     return Container(
       padding: const EdgeInsets.only(
@@ -200,15 +200,17 @@ class SearchPanelState extends State<SearchPanel> {
                           ],
                         ),
                       )
-                    : Align(
-                        alignment: listAlign,
+                    : TvFixedWindowViewport(
+                        slotCount: _rowCount,
+                        slotExtent: _rowExtent,
                         child: TvWindowedGrid<Channel>(
                           key: _listKey,
                           items: widget.searchResults,
                           windowSize: _windowSize,
-                          crossAxisCount: 2,
+                          crossAxisCount: _crossAxisCount,
                           initialGlobalIndex: _selectedIndex,
                           itemExtent: _rowExtent,
+                          showScrollDots: true,
                           onFocusUpFromFirst: _focusInputFromFirstResult,
                           itemBuilder: (
                             context,
@@ -310,7 +312,7 @@ class _SearchPanelChrome extends StatelessWidget {
             ],
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Text(
           resultsCapped
               ? 'search_results_capped'.tr()
@@ -322,7 +324,7 @@ class _SearchPanelChrome extends StatelessWidget {
           style: MoaiText.body(
             context,
             color: scheme.onSurfaceVariant,
-            fontSize: 10,
+            fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
         ),

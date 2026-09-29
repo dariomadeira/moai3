@@ -5,6 +5,7 @@ import 'package:moai3/focus/focus_retry.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/widgets/cards/category_card.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
+import 'package:moai3/widgets/lists/tv_fixed_window_viewport.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 
 /// Panel Categorías: mismo diseño windowed de 6 que Países.
@@ -83,13 +84,11 @@ class CategoryListPanelState extends State<CategoryListPanel> {
   @override
   Widget build(BuildContext context) {
     const windowSize = 6;
-    final listAlign = widget.categories.length < windowSize
-        ? Alignment.topCenter
-        : Alignment.bottomCenter;
+    const itemExtent = TvLayoutConstants.categoryItemHeight;
 
     return Container(
       padding: const EdgeInsets.only(
-        left: 4,
+        left: 0,
         right: 12,
         top: 8,
         bottom: 8,
@@ -109,14 +108,16 @@ class CategoryListPanelState extends State<CategoryListPanel> {
                     message: 'browser_categories_empty'.tr(),
                     onFocusUp: widget.onFocusUp,
                   )
-                : Align(
-                    alignment: listAlign,
+                : TvFixedWindowViewport(
+                    slotCount: windowSize,
+                    slotExtent: itemExtent,
                     child: TvWindowedList<String>(
                       key: _listKey,
                       items: widget.categories,
                       windowSize: windowSize,
                       initialGlobalIndex: _selectedIndex,
-                      itemExtent: TvLayoutConstants.categoryItemHeight,
+                      itemExtent: itemExtent,
+                      showScrollDots: true,
                       onFocusUpFromFirst: widget.onFocusUp,
                       itemBuilder: (
                         context,
@@ -146,4 +147,3 @@ class CategoryListPanelState extends State<CategoryListPanel> {
     );
   }
 }
-

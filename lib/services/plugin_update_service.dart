@@ -79,7 +79,9 @@ class PluginUpdateService {
       }
 
       final body = await response.transform(utf8.decoder).join();
-      final data = json.decode(body) as Map<String, dynamic>;
+      final decoded = json.decode(body);
+      if (decoded is! Map) return null;
+      final data = Map<String, dynamic>.from(decoded);
 
       final remoteVersion = (data['version'] as String? ?? '').trim();
       final remoteSha256 = (data['sha256'] as String? ?? '').trim();

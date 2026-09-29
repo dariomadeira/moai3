@@ -4,6 +4,7 @@ import 'package:moai3/services/app_preferences_service.dart';
 /// Provider responsable de los ajustes físicos de la TV (calibración overscan y logs en pantalla).
 class TvSettingsProvider extends ChangeNotifier {
   static const String _showTvLogKey = 'show_tv_log';
+  static const String _showChannelLabelsKey = 'show_channel_labels';
   static const String _overlapPaddingXKey = 'overlap_padding_x';
   static const String _overlapPaddingYKey = 'overlap_padding_y';
   static const String _hasOverlapConfigKey = 'has_overlap_config';
@@ -12,6 +13,7 @@ class TvSettingsProvider extends ChangeNotifier {
   final AppPreferences _prefs;
 
   late bool _showTvLog;
+  late bool _showChannelLabels;
   late double _overlapPaddingX;
   late double _overlapPaddingY;
   late bool _hasOverlapConfig;
@@ -21,6 +23,8 @@ class TvSettingsProvider extends ChangeNotifier {
 
   TvSettingsProvider(this._prefs) {
     _showTvLog = _prefs.readPreferenceBool(_showTvLogKey);
+    _showChannelLabels =
+        _prefs.readPreferenceBool(_showChannelLabelsKey); // default false
     _overlapPaddingX =
         _prefs.readPreferenceDouble(_overlapPaddingXKey, defaultValue: 20.0);
     _overlapPaddingY =
@@ -31,6 +35,7 @@ class TvSettingsProvider extends ChangeNotifier {
   }
 
   bool get showTvLog => _showTvLog;
+  bool get showChannelLabels => _showChannelLabels;
   double get overlapPaddingX => _overlapPaddingX;
   double get overlapPaddingY => _overlapPaddingY;
   bool get hasOverlapConfig => _hasOverlapConfig;
@@ -80,6 +85,13 @@ class TvSettingsProvider extends ChangeNotifier {
     if (_showTvLog == value) return;
     _showTvLog = value;
     await _prefs.saveBool(_showTvLogKey, value);
+    notifyListeners();
+  }
+
+  Future<void> setShowChannelLabels(bool value) async {
+    if (_showChannelLabels == value) return;
+    _showChannelLabels = value;
+    await _prefs.saveBool(_showChannelLabelsKey, value);
     notifyListeners();
   }
 }

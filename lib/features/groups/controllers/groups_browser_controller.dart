@@ -17,26 +17,37 @@ class GroupsBrowserController extends ChangeNotifier with SafeChangeNotifier {
   final List<FocusNode> channelFocusNodes = [];
 
   ChannelGroup? alphabetModeGroup;
+  /// `null` = off; `0` = alfabeto de grupos; `1` = alfabeto de canales.
+  int? alphabetModePanelIndex;
   List<String> alphabetLetters = [];
   final List<FocusNode> alphabetFocusNodes = [];
 
   bool isAdultUnlocked = false;
 
-  bool get isAlphabetMode => alphabetModeGroup != null;
+  bool get isAlphabetMode => alphabetModePanelIndex != null;
   bool get canDeleteAlphabetGroup =>
-      alphabetModeGroup != null && alphabetModeGroup!.isDeletable;
+      alphabetModePanelIndex == 0 &&
+      alphabetModeGroup != null &&
+      alphabetModeGroup!.isDeletable;
 
   final ScrollController groupScrollController = ScrollController();
   final ScrollController channelScrollController = ScrollController();
 
   bool activateAlphabetMode(ChannelGroup group) {
     alphabetModeGroup = group;
+    alphabetModePanelIndex = 0;
     alphabetLetters = groups
         .map((g) => g.name.isNotEmpty ? g.name[0].toUpperCase() : '')
         .where((l) => l.isNotEmpty)
         .toSet()
         .toList()
       ..sort();
+
+    if (alphabetLetters.isEmpty) {
+      alphabetModeGroup = null;
+      alphabetModePanelIndex = null;
+      return false;
+    }
 
     final count =
         canDeleteAlphabetGroup ? alphabetLetters.length + 1 : alphabetLetters.length;
@@ -53,15 +64,58 @@ class GroupsBrowserController extends ChangeNotifier with SafeChangeNotifier {
     return true;
   }
 
+  /// Alfabeto sobre los canales del grupo seleccionado (panel Canales).
+  bool activateChannelsAlphabetMode() {
+    alphabetModeGroup = null;
+    alphabetLetters = filteredChannels
+        .map((c) => c.name.isNotEmpty ? c.name[0].toUpperCase() : '')
+        .where((l) => l.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+
+    if (alphabetLetters.isEmpty) return false;
+
+    alphabetModePanelIndex = 1;
+    FocusScrollSync.syncFocusNodes(alphabetLetters.length, alphabetFocusNodes);
+    safeNotifyListeners();
+
+    try {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (alphabetFocusNodes.isNotEmpty) {
+          alphabetFocusNodes[0].requestFocus();
+        }
+      });
+    } catch (_) {}
+    return true;
+  }
+
   void clearAlphabetMode() {
     alphabetModeGroup = null;
+    alphabetModePanelIndex = null;
+    alphabetLetters = [];
     safeNotifyListeners();
   }
 
-  void jumpToLetter(
+  /// Devuelve el índice del canal saltado, o `null` si era salto de grupos.
+  int? jumpToLetter(
       String letter, List<Channel> allChannels, List<String> favoriteChannelIds) {
+    final panel = alphabetModePanelIndex;
     alphabetModeGroup = null;
+    alphabetModePanelIndex = null;
     safeNotifyListeners();
+
+    if (panel == 1) {
+      final idx = filteredChannels.indexWhere(
+        (c) =>
+            c.name.isNotEmpty &&
+            c.name.toUpperCase().startsWith(letter.toUpperCase()),
+      );
+      if (idx < 0) return null;
+      selectedChannel = filteredChannels[idx];
+      safeNotifyListeners();
+      return idx;
+    }
 
     final targetIdx = groups.indexWhere(
       (g) =>
@@ -70,9 +124,9 @@ class GroupsBrowserController extends ChangeNotifier with SafeChangeNotifier {
     );
 
     if (targetIdx != -1) {
-      // El panel windowed recentra vía selectedGroup + focusSelected() en Home.
       selectGroup(groups[targetIdx], allChannels, favoriteChannelIds);
     }
+    return null;
   }
 
   void syncFrom(

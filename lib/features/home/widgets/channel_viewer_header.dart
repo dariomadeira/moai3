@@ -44,7 +44,7 @@ class ChannelViewerHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: TvPanelHeaderMetrics.topInset),
+        const SizedBox(height: TvPanelHeaderMetrics.viewerTopInset),
         Text(
           channel.name,
           maxLines: 1,
@@ -65,7 +65,7 @@ class ChannelViewerHeader extends StatelessWidget {
             _MetaPill(
               color: scheme.tertiaryContainer,
               foreground: scheme.onTertiaryContainer,
-              icon: Icons.public_outlined,
+              icon: Icons.grid_view_outlined,
               label: channel.country,
               textStyle: metaStyle.copyWith(color: scheme.onTertiaryContainer),
             ),

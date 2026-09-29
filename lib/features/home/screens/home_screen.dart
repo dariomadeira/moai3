@@ -13,6 +13,7 @@ import 'package:moai3/focus/tv_shortcuts.dart';
 import 'package:moai3/helpers/notification_helper.dart';
 import 'package:moai3/layout/settings_panel_layout.dart';
 import 'package:moai3/models/calendar_event.dart';
+import 'package:moai3/services/modal_route_tracker.dart';
 import 'package:moai3/services/plugin_host_service.dart';
 import 'package:moai3/services/plugin_update_service.dart';
 import 'package:moai3/services/update_service.dart';
@@ -62,29 +63,81 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<CalendarEvent> _liveSnackQueue = [];
   bool _liveSnackBusy = false;
   bool _openingLiveSnackDialog = false;
+  CalendarEvent? _currentSnackEvent;
+  Timer? _modalClosedCooldownTimer;
 
   @override
   void initState() {
     super.initState();
+    ModalRouteTracker.instance.addListener(_onModalTrackerChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAutoUpdate();
       _listenToLiveEvents();
     });
   }
 
+  void _onModalTrackerChanged() {
+    if (!mounted) return;
+    if (ModalRouteTracker.instance.hasActiveModal) {
+      _modalClosedCooldownTimer?.cancel();
+      // Si se abre un modal mientras hay una notificación visible, ocultarla
+      // inmediatamente para no competir en pantalla ni por el foco del control remoto.
+      if (_currentSnackEvent != null) {
+        NotificationHelper.hideCurrent();
+        if (_currentSnackEvent!.status != CalendarEventStatus.finished &&
+            !_liveSnackQueue.any((e) => e.id == _currentSnackEvent!.id)) {
+          _liveSnackQueue.insert(0, _currentSnackEvent!);
+        }
+        _currentSnackEvent = null;
+        _liveSnackBusy = false;
+      }
+    } else {
+      // El modal se cerró: esperar un respiro (400ms) para que el foco de la pantalla
+      // principal se asiente y la animación termine antes de mostrar la siguiente notificación.
+      _modalClosedCooldownTimer?.cancel();
+      _modalClosedCooldownTimer = Timer(const Duration(milliseconds: 400), () {
+        if (!mounted || ModalRouteTracker.instance.hasActiveModal) return;
+        _cleanExpiredSnackQueue();
+        _pumpLiveSnack();
+      });
+    }
+  }
+
+  void _cleanExpiredSnackQueue() {
+    // Descartar notificaciones atrasadas cuyos eventos ya hayan finalizado
+    _liveSnackQueue.removeWhere((e) => e.status == CalendarEventStatus.finished);
+  }
+
   void _listenToLiveEvents() {
     final calendar = context.read<CalendarProvider>();
     _liveEventsSub = calendar.onLiveEventsStarted.listen((events) {
       if (!mounted || events.isEmpty) return;
-      _liveSnackQueue.addAll(events);
-      _pumpLiveSnack();
+      for (final ev in events) {
+        if (ev.status == CalendarEventStatus.finished) continue;
+        if (!_liveSnackQueue.any((item) => item.id == ev.id) &&
+            _currentSnackEvent?.id != ev.id) {
+          _liveSnackQueue.add(ev);
+        }
+      }
+      if (!ModalRouteTracker.instance.hasActiveModal) {
+        _pumpLiveSnack();
+      }
     });
   }
 
   void _pumpLiveSnack() {
-    if (!mounted || _liveSnackBusy || _liveSnackQueue.isEmpty) return;
+    if (!mounted ||
+        _liveSnackBusy ||
+        ModalRouteTracker.instance.hasActiveModal ||
+        _openingLiveSnackDialog) {
+      return;
+    }
+    _cleanExpiredSnackQueue();
+    if (_liveSnackQueue.isEmpty) return;
+
     _liveSnackBusy = true;
     final event = _liveSnackQueue.removeAt(0);
+    _currentSnackEvent = event;
     final lead = context.read<CalendarProvider>().notifyLeadMinutes;
     final controller = NotificationHelper.show(
       message: CalendarProvider.formatLiveEventsMessage(
@@ -96,17 +149,32 @@ class _HomeScreenState extends State<HomeScreen> {
       onAction: () => _openLiveSnackEvent(event),
       duration: context.read<CalendarProvider>().liveSnackDuration,
     );
-    controller?.closed.then((_) {
-      if (!mounted || _openingLiveSnackDialog) return;
+    if (controller == null) {
+      _currentSnackEvent = null;
       _liveSnackBusy = false;
-      _pumpLiveSnack();
+      return;
+    }
+    controller.closed.then((_) {
+      if (!mounted) return;
+      _currentSnackEvent = null;
+      _liveSnackBusy = false;
+      if (ModalRouteTracker.instance.hasActiveModal || _openingLiveSnackDialog) {
+        return;
+      }
+      // Intervalo de 800ms entre notificaciones consecutivas para no saturar al usuario
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (!mounted || ModalRouteTracker.instance.hasActiveModal) return;
+        _cleanExpiredSnackQueue();
+        _pumpLiveSnack();
+      });
     });
   }
 
   Future<void> _openLiveSnackEvent(CalendarEvent event) async {
     if (!mounted) return;
     _openingLiveSnackDialog = true;
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    NotificationHelper.hideCurrent();
+    _currentSnackEvent = null;
     await showCalendarEventDetails(
       context,
       event,
@@ -123,7 +191,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     _openingLiveSnackDialog = false;
     _liveSnackBusy = false;
-    _pumpLiveSnack();
   }
 
   Future<void> _checkAutoUpdate() async {
@@ -158,6 +225,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    ModalRouteTracker.instance.removeListener(_onModalTrackerChanged);
+    _modalClosedCooldownTimer?.cancel();
     _liveEventsSub?.cancel();
     _railFocusNode.dispose();
     _railScopeNode.dispose();
@@ -273,9 +342,25 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           },
-          child: Scaffold(
-            backgroundColor: scheme.surfaceContainer,
-            body: SafeArea(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: scheme.brightness == Brightness.dark
+                    ? [
+                        Color.lerp(scheme.surfaceContainerHigh, scheme.primary, 0.08)!,
+                        scheme.surfaceContainerLow,
+                      ]
+                    : [
+                        scheme.surfaceContainerLowest,
+                        scheme.surfaceContainerHigh,
+                      ],
+              ),
+            ),
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: SafeArea(
               child: Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: overlapX,
@@ -347,7 +432,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 

@@ -5,6 +5,7 @@ import 'package:moai3/focus/focus_retry.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/widgets/cards/country_card.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
+import 'package:moai3/widgets/lists/tv_fixed_window_viewport.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 
 /// Panel Países: lista por ventana de 6 (sin ListView).
@@ -81,14 +82,11 @@ class CountryListPanelState extends State<CountryListPanel> {
   @override
   Widget build(BuildContext context) {
     const windowSize = 6;
-    // Pocos ítems → arriba (junto al header). Ventana llena → abajo (margen inferior = lado).
-    final listAlign = widget.countries.length < windowSize
-        ? Alignment.topCenter
-        : Alignment.bottomCenter;
+    const itemExtent = TvLayoutConstants.countryItemHeight;
 
     return Container(
       padding: const EdgeInsets.only(
-        left: 4,
+        left: 0,
         right: 12,
         top: 8,
         bottom: 8,
@@ -108,14 +106,16 @@ class CountryListPanelState extends State<CountryListPanel> {
                     message: 'browser_countries_empty'.tr(),
                     onFocusUp: widget.onFocusUp,
                   )
-                : Align(
-                    alignment: listAlign,
+                : TvFixedWindowViewport(
+                    slotCount: windowSize,
+                    slotExtent: itemExtent,
                     child: TvWindowedList<String>(
                       key: _listKey,
                       items: widget.countries,
                       windowSize: windowSize,
                       initialGlobalIndex: _selectedIndex,
-                      itemExtent: TvLayoutConstants.countryItemHeight,
+                      itemExtent: itemExtent,
+                      showScrollDots: true,
                       onFocusUpFromFirst: widget.onFocusUp,
                       itemBuilder: (
                         context,
@@ -145,4 +145,3 @@ class CountryListPanelState extends State<CountryListPanel> {
     );
   }
 }
-

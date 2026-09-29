@@ -52,12 +52,21 @@ class NotificationHelper {
     }
   }
 
+  /// Oculta el snackbar actual animadamente si existe
+  static void hideCurrent() {
+    _scaffoldMessengerKey?.currentState?.hideCurrentSnackBar();
+  }
+
+  /// Remueve de inmediato el snackbar actual
+  static void removeCurrent() {
+    _scaffoldMessengerKey?.currentState?.removeCurrentSnackBar();
+  }
+
   /// Muestra un snackbar de error
   static void showError(String message) {
     show(
       message: message,
       icon: Icons.error_outline,
-      iconColor: const Color(0xFFF87171),
       duration: const Duration(seconds: 3),
     );
   }
@@ -67,7 +76,6 @@ class NotificationHelper {
     show(
       message: message,
       icon: Icons.check_circle_outline,
-      iconColor: const Color(0xFF4ADE80),
       duration: const Duration(seconds: 2),
     );
   }
@@ -77,7 +85,6 @@ class NotificationHelper {
     show(
       message: message,
       icon: Icons.info_outline,
-      iconColor: const Color(0xFF60A5FA),
       duration: const Duration(seconds: 2),
     );
   }
@@ -87,7 +94,6 @@ class NotificationHelper {
     show(
       message: message,
       icon: Icons.warning_amber_outlined,
-      iconColor: const Color(0xFFFBBF24),
       duration: const Duration(seconds: 3),
     );
   }

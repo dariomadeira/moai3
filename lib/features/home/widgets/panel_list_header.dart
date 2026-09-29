@@ -24,11 +24,11 @@ class PanelListHeader extends StatelessWidget {
         const SizedBox(height: TvPanelHeaderMetrics.topInset + 4),
         Text(
           subtitle,
-          style: MoaiText.body(
+          style: MoaiText.display(
             context,
-            color: scheme.onSurfaceVariant,
+            color: scheme.onSurface,
             fontSize: TvPanelHeaderMetrics.subtitleFontSize,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w700,
           ),
         ),
         if (showFilterText) ...[
@@ -50,4 +50,3 @@ class PanelListHeader extends StatelessWidget {
     );
   }
 }
-

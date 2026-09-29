@@ -31,6 +31,20 @@ class _FavoriteButtonState extends State<FavoriteButton> {
   bool _isFocused = false;
 
   @override
+  void initState() {
+    super.initState();
+    _isFocused = widget.focusNode.hasFocus;
+  }
+
+  @override
+  void didUpdateWidget(covariant FavoriteButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.focusNode != oldWidget.focusNode) {
+      _isFocused = widget.focusNode.hasFocus;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     if (widget.channel.isAdult) {
       return const SizedBox.shrink();
@@ -40,18 +54,19 @@ class _FavoriteButtonState extends State<FavoriteButton> {
     final isFav = context.select<FavoritesProvider, bool>(
       (state) => state.isFavorite(widget.channel),
     );
+    final isFocused = _isFocused || widget.focusNode.hasFocus;
 
     final Color bgColor;
     final Color iconColor;
 
-    if (_isFocused) {
+    if (isFocused) {
       bgColor = scheme.primary;
       iconColor = scheme.onPrimary;
     } else if (isFav) {
       bgColor = scheme.primaryContainer;
       iconColor = scheme.onPrimaryContainer;
     } else {
-      bgColor = scheme.surface;
+      bgColor = scheme.surfaceContainerHighest;
       iconColor = scheme.onSurfaceVariant;
     }
 
@@ -102,21 +117,23 @@ class _FavoriteButtonState extends State<FavoriteButton> {
           context.read<FavoritesProvider>().toggleFavorite(widget.channel);
         },
         child: AnimatedScale(
-          scale: _isFocused ? 1.08 : 1.0,
+          scale: isFocused ? 1.08 : 1.0,
           duration: const Duration(milliseconds: 150),
           curve: Curves.easeOutCubic,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 36,
-            height: 36,
+            duration: const Duration(milliseconds: 150),
+            width: 44,
+            height: 24,
             decoration: BoxDecoration(
               color: bgColor,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(999),
             ),
-            child: Icon(
-              isFav ? Icons.favorite : Icons.favorite_outline,
-              color: iconColor,
-              size: 20,
+            child: Center(
+              child: Icon(
+                isFav ? Icons.favorite : Icons.favorite_outline,
+                color: iconColor,
+                size: 15,
+              ),
             ),
           ),
         ),

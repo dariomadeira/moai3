@@ -24,7 +24,7 @@ class CollapsedPanelTabPreview extends StatelessWidget {
         : scheme.onSurfaceVariant.withValues(alpha: 0.85);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12, top: 12),
+      padding: const EdgeInsets.only(bottom: 14, top: 14),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [

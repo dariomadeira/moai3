@@ -199,34 +199,54 @@ class PluginLoader(private val context: Context) {
         }
     }
 
-    private fun download(url: String): ByteArray {
-        if (!url.startsWith("https://")) {
-            throw IllegalArgumentException("Solo HTTPS: $url")
-        }
-        val raw = URL(url).openConnection()
-        if (raw !is HttpURLConnection) {
-            throw IOException("Conexión no HTTP: $url")
-        }
-        val conn = raw as HttpURLConnection
-        if (conn is HttpsURLConnection) {
-            conn.sslSocketFactory = SSLContext.getDefault().socketFactory
-            conn.hostnameVerifier = HttpsURLConnection.getDefaultHostnameVerifier()
-        }
-        conn.connectTimeout = DOWNLOAD_TIMEOUT_MS
-        conn.readTimeout = DOWNLOAD_TIMEOUT_MS
-        conn.instanceFollowRedirects = true
-        conn.setRequestProperty("User-Agent", UA)
-        conn.setRequestProperty("Accept", "*/*")
-        try {
-            conn.connect()
-            val code = conn.responseCode
-            if (code !in 200..299) {
-                throw IOException("HTTP $code al descargar $url")
+    private fun download(initialUrl: String): ByteArray {
+        var currentUrl = initialUrl
+        var redirects = 0
+        val maxRedirects = 5
+
+        while (redirects < maxRedirects) {
+            if (!currentUrl.startsWith("https://")) {
+                throw IllegalArgumentException("Solo HTTPS: $currentUrl")
             }
-            return conn.inputStream.use { it.readBytes() }
-        } finally {
-            conn.disconnect()
+            val raw = URL(currentUrl).openConnection()
+            if (raw !is HttpURLConnection) {
+                throw IOException("Conexión no HTTP: $currentUrl")
+            }
+            val conn = raw as HttpURLConnection
+            if (conn is HttpsURLConnection) {
+                conn.sslSocketFactory = SSLContext.getDefault().socketFactory
+                conn.hostnameVerifier = HttpsURLConnection.getDefaultHostnameVerifier()
+            }
+            conn.connectTimeout = DOWNLOAD_TIMEOUT_MS
+            conn.readTimeout = DOWNLOAD_TIMEOUT_MS
+            conn.instanceFollowRedirects = true
+            conn.setRequestProperty("User-Agent", UA)
+            conn.setRequestProperty("Accept", "*/*")
+            try {
+                conn.connect()
+                val code = conn.responseCode
+                if (code in 301..308) {
+                    val location = conn.getHeaderField("Location")
+                    if (!location.isNullOrEmpty()) {
+                        val nextUrl = if (location.startsWith("http://") || location.startsWith("https://")) {
+                            location
+                        } else {
+                            URL(URL(currentUrl), location).toString()
+                        }
+                        currentUrl = nextUrl
+                        redirects++
+                        continue
+                    }
+                }
+                if (code !in 200..299) {
+                    throw IOException("HTTP $code al descargar $currentUrl")
+                }
+                return conn.inputStream.use { it.readBytes() }
+            } finally {
+                conn.disconnect()
+            }
         }
+        throw IOException("Demasiadas redirecciones al descargar $initialUrl")
     }
 
     private fun parseManifest(json: JSONObject): PluginManifest {

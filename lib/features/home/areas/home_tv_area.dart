@@ -17,6 +17,7 @@ import 'package:moai3/features/home/widgets/channel_viewer_header.dart';
 import 'package:moai3/features/home/widgets/empty_viewer_panel.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/home/widgets/tv_tab_bar.dart';
+import 'package:moai3/features/home/widgets/tv_clock_pill.dart';
 import 'package:moai3/features/home/widgets/viewer_favorites_bar.dart';
 import 'package:moai3/features/player/playback/channel_playback_helpers.dart';
 import 'package:moai3/features/search/controllers/home_search_controller.dart';
@@ -33,6 +34,8 @@ import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/buttons/clear_favorites_button.dart';
+import 'package:moai3/widgets/buttons/create_group_button.dart';
 import 'package:moai3/widgets/buttons/favorite_button.dart';
 import 'package:moai3/widgets/buttons/simulate_live_button.dart';
 import 'package:moai3/widgets/buttons/server_skip_button.dart';
@@ -80,6 +83,8 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
   );
   final _viewerFocus = FocusNode(debugLabel: 'tv_viewer');
   final _favoriteBtnFocus = FocusNode(debugLabel: 'tv_fav_btn');
+  final _createGroupFocus = FocusNode(debugLabel: 'tv_create_group_btn');
+  final _clearFavoritesFocus = FocusNode(debugLabel: 'tv_clear_fav_btn');
   final _simulateLiveFocus = FocusNode(debugLabel: 'tv_simulate_live');
   final _simulateLiveTwoFocus = FocusNode(debugLabel: 'tv_simulate_live_two');
   final _serverSkipFocus = FocusNode(debugLabel: 'tv_server_skip');
@@ -161,9 +166,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
       isAdultUnlocked: _lastIsAdultUnlocked,
     );
     _favoritesBar.syncFrom(
-      _favorites.favoriteChannels.isEmpty
-          ? 0
-          : _favorites.favoriteChannels.length + 2,
+      _favorites.favoriteChannels.length,
     );
     _groups.syncFrom(
       _channelProvider!.groups,
@@ -291,9 +294,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
       _favorites.syncFrom(channels, favIds, isAdultUnlocked: isAdultUnlocked);
       favProv.sanitizeAdultFavorites(channels);
       _favoritesBar.syncFrom(
-        _favorites.favoriteChannels.isEmpty
-            ? 0
-            : _favorites.favoriteChannels.length + 2,
+        _favorites.favoriteChannels.length,
       );
       _groups.syncFrom(channelProv.groups, channels, favIds,
           isAdultUnlocked: isAdultUnlocked);
@@ -350,6 +351,8 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     _groupsTabFocus.dispose();
     _viewerFocus.dispose();
     _favoriteBtnFocus.dispose();
+    _createGroupFocus.dispose();
+    _clearFavoritesFocus.dispose();
     _simulateLiveFocus.dispose();
     _simulateLiveTwoFocus.dispose();
     _serverSkipFocus.dispose();
@@ -536,10 +539,14 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     returnFocusToActivePanel();
   }
 
-  /// Smart: ↑ desde ♥/Skip enfoca el fav que está on-air.
+  /// Smart: enfoca el fav que está on-air o el botón de favoritos si la lista está vacía.
   void _focusViewerFavoritesBar(List<Channel> favChannels, Channel? playing) {
     if (favChannels.isEmpty) {
-      _viewerFocus.requestFocus();
+      if (_favoriteBtnFocus.canRequestFocus) {
+        _favoriteBtnFocus.requestFocus();
+      } else {
+        _viewerFocus.requestFocus();
+      }
       return;
     }
     _afterFrame(() {
@@ -813,8 +820,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
         'home_panel_channels'.tr(),
       ],
       icons: const [Symbols.bookmarks, Icons.live_tv_outlined],
-      alphabetModePanelIndex:
-          _groups.isAlphabetMode ? _groupsPanelIndex : null,
+      alphabetModePanelIndex: _groups.alphabetModePanelIndex,
       alphabetPanelBuilder: (_) => AlphabetJumpPanel(
         letters: _groups.alphabetLetters,
         focusNodes: _groups.alphabetFocusNodes,
@@ -831,13 +837,19 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
           setState(() {});
         },
         onLetterTap: (letter) {
-          _groups.jumpToLetter(
+          final channelIdx = _groups.jumpToLetter(
             letter,
             channelProv.allChannels,
             favProv.favoriteChannelIds,
           );
           setState(() {});
-          _focusSelectedGroup();
+          if (channelIdx != null) {
+            _afterFrame(() {
+              _groupsChannelPanelKey.currentState?.focusGlobalIndex(channelIdx);
+            });
+          } else {
+            _focusSelectedGroup();
+          }
         },
       ),
       onPanelTap: (i) {
@@ -908,7 +920,15 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
             channels: _groups.filteredChannels,
             selectedChannel: _groups.selectedChannel,
             onSelect: _selectChannel,
-            onLongPress: () {},
+            onLongPress: () {
+              if (_groups.activateChannelsAlphabetMode()) {
+                setState(() {});
+                FocusScrollSync.requestFocusAtIndex(
+                  _groups.alphabetFocusNodes,
+                  0,
+                );
+              }
+            },
             onFocusUp: _focusCurrentTab,
           ),
         );
@@ -989,6 +1009,10 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
         context.select((ChannelProvider s) => s.isPuppeteerEngine);
 
     final favChannels = _favorites.favoriteChannels;
+    final showServerSkip = channel != null &&
+        ChannelPlaybackHelpers.playableUrls(channel).length > 1 &&
+        !isPuppeteer;
+    final showBottomControls = showServerSkip || _showSimulateLiveButtons;
 
     final panelCount = TvPanelLayout.panelCount(showTvLog);
     final active = _activePanelIndex.clamp(0, panelCount - 1);
@@ -1054,7 +1078,15 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
             Expanded(
               flex: 5,
               child: RepaintBoundary(
-                child: channel == null
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Align(
+                      alignment: Alignment.centerRight,
+                      child: TvClockPill(),
+                    ),
+                    Expanded(
+                      child: channel == null
                     ? EmptyViewerPanel(
                         focusNode: _viewerFocus,
                         hasChannels: allChannels.isNotEmpty,
@@ -1095,6 +1127,56 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                             selectedChannel: channel,
                             scrollController: _favoritesBar.scrollController,
                             focusNodes: _favoritesBar.focusNodes,
+                            headerAction: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (favChannels.isNotEmpty) ...[
+                                  CreateGroupButton(
+                                    focusNode: _createGroupFocus,
+                                    onKeyLeft: _focusActiveContent,
+                                    onKeyRight: () =>
+                                        _clearFavoritesFocus.requestFocus(),
+                                    onKeyUp: () => _viewerFocus.requestFocus(),
+                                    onKeyDown: () => _focusViewerFavoritesBar(
+                                      favChannels,
+                                      channel,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  ClearFavoritesButton(
+                                    focusNode: _clearFavoritesFocus,
+                                    onKeyLeft: () =>
+                                        _createGroupFocus.requestFocus(),
+                                    onKeyRight: !channel.isAdult
+                                        ? () =>
+                                            _favoriteBtnFocus.requestFocus()
+                                        : null,
+                                    onKeyUp: () => _viewerFocus.requestFocus(),
+                                    onKeyDown: () => _focusViewerFavoritesBar(
+                                      favChannels,
+                                      channel,
+                                    ),
+                                  ),
+                                  if (!channel.isAdult)
+                                    const SizedBox(width: 6),
+                                ],
+                                if (!channel.isAdult)
+                                  FavoriteButton(
+                                    channel: channel,
+                                    focusNode: _favoriteBtnFocus,
+                                    onKeyUp: () => _viewerFocus.requestFocus(),
+                                    onKeyDown: () => _focusViewerFavoritesBar(
+                                      favChannels,
+                                      channel,
+                                    ),
+                                    onKeyLeft: favChannels.isNotEmpty
+                                        ? () =>
+                                            _clearFavoritesFocus.requestFocus()
+                                        : _focusActiveContent,
+                                    onKeyRight: () {},
+                                  ),
+                              ],
+                            ),
                             onSelect: _selectChannel,
                             onFocusPrevious: _favoritesBar.focusPrevious,
                             onFocusNext: (i) => _favoritesBar.focusNext(
@@ -1103,143 +1185,109 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                             ),
                             onFocusLeft: _focusSelectedChannel,
                             onFocusRight: () => _viewerFocus.requestFocus(),
-                            onKeyUp: () => _viewerFocus.requestFocus(),
-                            onKeyDown: () {
-                              if (channel.isAdult) {
-                                _viewerFocus.requestFocus();
-                              } else {
+                            onKeyUp: () {
+                              if (!channel.isAdult &&
+                                  _favoriteBtnFocus.canRequestFocus) {
                                 _favoriteBtnFocus.requestFocus();
+                              } else if (favChannels.isNotEmpty &&
+                                  _clearFavoritesFocus.canRequestFocus) {
+                                _clearFavoritesFocus.requestFocus();
+                              } else if (favChannels.isNotEmpty &&
+                                  _createGroupFocus.canRequestFocus) {
+                                _createGroupFocus.requestFocus();
+                              } else {
+                                _viewerFocus.requestFocus();
+                              }
+                            },
+                            onKeyDown: () {
+                              if (showServerSkip) {
+                                _serverSkipFocus.requestFocus();
+                              } else {
+                                _viewerFocus.requestFocus();
                               }
                             },
                           ),
-                          const SizedBox(
-                            height: TvLayoutConstants.viewerSectionGap,
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(
-                              left: TvLayoutConstants
-                                  .viewerHorizontalPaddingStart,
-                              right: TvLayoutConstants
-                                  .viewerHorizontalPaddingEnd,
-                              bottom: 8,
+                          if (showBottomControls) ...[
+                            const SizedBox(
+                              height: TvLayoutConstants.viewerSectionGap,
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                if (ChannelPlaybackHelpers.playableUrls(
-                                                channel)
-                                            .length >
-                                        1 &&
-                                    !isPuppeteer)
-                                  ServerSkipButton(
-                                    focusNode: _serverSkipFocus,
-                                    onKeyLeft: _focusActiveContent,
-                                    onKeyRight: () {
-                                      if (_showSimulateLiveButtons) {
-                                        _simulateLiveFocus.requestFocus();
-                                      } else if (channel.isAdult) {
-                                        _viewerFocus.requestFocus();
-                                      } else {
-                                        _favoriteBtnFocus.requestFocus();
-                                      }
-                                    },
-                                    onKeyUp: () => _focusViewerFavoritesBar(
-                                      favChannels,
-                                      channel,
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                left: TvLayoutConstants
+                                    .viewerHorizontalPaddingStart,
+                                right: TvLayoutConstants
+                                    .viewerHorizontalPaddingEnd,
+                                bottom: 8,
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  if (showServerSkip)
+                                    ServerSkipButton(
+                                      focusNode: _serverSkipFocus,
+                                      onKeyLeft: _focusActiveContent,
+                                      onKeyRight: () {
+                                        if (_showSimulateLiveButtons) {
+                                          _simulateLiveFocus.requestFocus();
+                                        } else {
+                                          _viewerFocus.requestFocus();
+                                        }
+                                      },
+                                      onKeyUp: () => _focusViewerFavoritesBar(
+                                        favChannels,
+                                        channel,
+                                      ),
+                                      onKeyDown: () =>
+                                          _viewerFocus.requestFocus(),
+                                    )
+                                  else
+                                    const SizedBox.shrink(),
+                                  if (_showSimulateLiveButtons) ...[
+                                    SimulateLiveButton(
+                                      focusNode: _simulateLiveFocus,
+                                      onKeyUp: () => _focusViewerFavoritesBar(
+                                        favChannels,
+                                        channel,
+                                      ),
+                                      onKeyLeft: () {
+                                        if (showServerSkip) {
+                                          _serverSkipFocus.requestFocus();
+                                        } else {
+                                          _focusActiveContent();
+                                        }
+                                      },
+                                      onKeyRight: () => _simulateLiveTwoFocus
+                                          .requestFocus(),
+                                      onKeyDown: () =>
+                                          _viewerFocus.requestFocus(),
                                     ),
-                                    onKeyDown: () =>
-                                        _viewerFocus.requestFocus(),
-                                  )
-                                else
-                                  const SizedBox.shrink(),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (_showSimulateLiveButtons) ...[
-                                      SimulateLiveButton(
-                                        focusNode: _simulateLiveFocus,
-                                        onKeyUp: () =>
-                                            _focusViewerFavoritesBar(
-                                          favChannels,
-                                          channel,
-                                        ),
-                                        onKeyLeft: () {
-                                          if (ChannelPlaybackHelpers
-                                                      .playableUrls(channel)
-                                                  .length >
-                                              1 &&
-                                              !isPuppeteer) {
-                                            _serverSkipFocus.requestFocus();
-                                          } else {
-                                            _focusActiveContent();
-                                          }
-                                        },
-                                        onKeyRight: () =>
-                                            _simulateLiveTwoFocus.requestFocus(),
-                                        onKeyDown: () =>
-                                            _viewerFocus.requestFocus(),
+                                    const SizedBox(width: 8),
+                                    SimulateLiveButton(
+                                      focusNode: _simulateLiveTwoFocus,
+                                      eventCount: 2,
+                                      icon: Icons.filter_2,
+                                      onKeyUp: () => _focusViewerFavoritesBar(
+                                        favChannels,
+                                        channel,
                                       ),
-                                      const SizedBox(width: 8),
-                                      SimulateLiveButton(
-                                        focusNode: _simulateLiveTwoFocus,
-                                        eventCount: 2,
-                                        icon: Icons.filter_2,
-                                        onKeyUp: () =>
-                                            _focusViewerFavoritesBar(
-                                          favChannels,
-                                          channel,
-                                        ),
-                                        onKeyLeft: () =>
-                                            _simulateLiveFocus.requestFocus(),
-                                        onKeyRight: () {
-                                          if (channel.isAdult) {
-                                            _viewerFocus.requestFocus();
-                                          } else {
-                                            _favoriteBtnFocus.requestFocus();
-                                          }
-                                        },
-                                        onKeyDown: () =>
-                                            _viewerFocus.requestFocus(),
-                                      ),
-                                      if (!channel.isAdult)
-                                        const SizedBox(width: 8),
-                                    ],
-                                    if (!channel.isAdult)
-                                      FavoriteButton(
-                                        channel: channel,
-                                        focusNode: _favoriteBtnFocus,
-                                        onKeyUp: () =>
-                                            _focusViewerFavoritesBar(
-                                          favChannels,
-                                          channel,
-                                        ),
-                                        onKeyLeft: () {
-                                          if (_showSimulateLiveButtons) {
-                                            _simulateLiveTwoFocus.requestFocus();
-                                          } else if (ChannelPlaybackHelpers
-                                                      .playableUrls(channel)
-                                                  .length >
-                                              1 &&
-                                              !isPuppeteer) {
-                                            _serverSkipFocus.requestFocus();
-                                          } else {
-                                            _focusActiveContent();
-                                          }
-                                        },
-                                        onKeyRight: () =>
-                                            _viewerFocus.requestFocus(),
-                                        onKeyDown: () =>
-                                            _viewerFocus.requestFocus(),
-                                      )
-                                    else
-                                      const SizedBox.shrink(),
+                                      onKeyLeft: () =>
+                                          _simulateLiveFocus.requestFocus(),
+                                      onKeyRight: () =>
+                                          _viewerFocus.requestFocus(),
+                                      onKeyDown: () =>
+                                          _viewerFocus.requestFocus(),
+                                    ),
                                   ],
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
+                          ],
                         ],
                       ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
