@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/models/channel.dart';
+import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/cards/tv_list_card_leading_logo.dart';
 import 'package:moai3/widgets/cards/tv_list_card_style.dart';
+import 'package:provider/provider.dart';
 
 /// Tile de canal para grilla 2 columnas: logo arriba, nombre abajo.
 class ChannelGridTile extends StatefulWidget {
@@ -41,11 +43,14 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
   Timer? _longPressTimer;
   bool _longPressTriggered = false;
   bool _isKeyDown = false;
+  /// Optimistic: URL no vacía hasta que el logo confirme error/éxito.
+  late bool _logoOk;
 
   @override
   void initState() {
     super.initState();
     _isFocused = widget.focusNode?.hasFocus ?? false;
+    _logoOk = widget.channel.logoUrl.trim().isNotEmpty;
   }
 
   @override
@@ -53,6 +58,10 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
     super.didUpdateWidget(oldWidget);
     if (widget.focusNode != oldWidget.focusNode) {
       _isFocused = widget.focusNode?.hasFocus ?? false;
+    }
+    if (widget.channel.id != oldWidget.channel.id ||
+        widget.channel.logoUrl != oldWidget.channel.logoUrl) {
+      _logoOk = widget.channel.logoUrl.trim().isNotEmpty;
     }
   }
 
@@ -65,12 +74,25 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
+    final showLabelSetting =
+        context.select((TvSettingsProvider s) => s.showChannelLabels);
+    final showLabel = showLabelSetting || !_logoOk;
     final isFocused = _isFocused || (widget.focusNode?.hasFocus ?? false);
-    final itemStyle = TvListCardStyle.resolve(
+    // Foco en grilla: sin relleno primary; borde = color que antes era el fondo.
+    final baseStyle = TvListCardStyle.resolve(
       scheme: scheme,
-      focused: isFocused,
+      focused: false,
       selected: widget.isSelected,
     );
+    final itemStyle = isFocused
+        ? TvListCardStyle(
+            backgroundColor: baseStyle.backgroundColor,
+            foregroundColor: baseStyle.foregroundColor,
+            iconColor: baseStyle.iconColor,
+            fontWeight: FontWeight.w700,
+            border: Border.all(color: scheme.primary, width: 2),
+          )
+        : baseStyle;
 
     final rawTag = widget.channel.pluginTag?.trim();
     final tag = (rawTag != null && rawTag.isNotEmpty)
@@ -170,25 +192,31 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
                           width: side,
                           height: logoH,
                           isFocused: isFocused,
+                          onLogoResolved: (ok) {
+                            if (!mounted || _logoOk == ok) return;
+                            setState(() => _logoOk = ok);
+                          },
                         ),
                       );
                     },
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  widget.channel.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: MoaiText.body(
-                    context,
-                    fontSize: 11.5,
-                    height: 1.15,
-                    color: itemStyle.foregroundColor,
-                    fontWeight: itemStyle.fontWeight,
+                if (showLabel) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    widget.channel.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: MoaiText.body(
+                      context,
+                      fontSize: 11.5,
+                      height: 1.15,
+                      color: itemStyle.foregroundColor,
+                      fontWeight: itemStyle.fontWeight,
+                    ),
                   ),
-                ),
+                ],
                 if (tag != null) ...[
                   const SizedBox(height: 4),
                   Center(

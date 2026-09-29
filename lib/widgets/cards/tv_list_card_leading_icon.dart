@@ -22,7 +22,10 @@ class TvListCardLeadingIcon extends StatelessWidget {
     // final iconBg = isFocused
     //     ? scheme.onPrimary.withValues(alpha: 0.18)
     //     : scheme.primaryContainer;
-    final iconColor = isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
+    final focusedIconColor =
+        Color.lerp(scheme.onPrimary, scheme.onPrimaryContainer, 0.38) ??
+            scheme.onPrimary;
+    final iconColor = isFocused ? focusedIconColor : scheme.onPrimaryContainer;
 
     // Settings: padding 10 + icon 22. Compact: 6 + 18 para caber en itemExtent 56.
     final pad = compact ? 8.0 : 10.0;

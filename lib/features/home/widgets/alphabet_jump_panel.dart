@@ -119,7 +119,7 @@ class AlphabetJumpPanel extends StatelessWidget {
     final items = showDeleteTile ? ['__delete__', ...letters] : letters;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 27),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final maxH = constraints.maxHeight;
@@ -127,31 +127,35 @@ class AlphabetJumpPanel extends StatelessWidget {
           final computedWindowSize =
               (maxH > 0 && maxH.isFinite) ? (maxH / extent).floor().clamp(4, 30) : 10;
 
-          return TvWindowedList<String>(
-            items: items,
-            windowSize: computedWindowSize,
-            itemExtent: extent,
-            itemBuilder: (context, item, focusNode, localIndex, globalIndex, onKeyUp, onKeyDown) {
-              if (showDeleteTile && globalIndex == 0) {
-                return AlphabetDeleteCard(
-                  key: const ValueKey('alpha-delete'),
+          // Ventana según alto disponible; si hay menos letras, centra el bloque.
+          return Align(
+            alignment: Alignment.center,
+            child: TvWindowedList<String>(
+              items: items,
+              windowSize: computedWindowSize,
+              itemExtent: extent,
+              itemBuilder: (context, item, focusNode, localIndex, globalIndex, onKeyUp, onKeyDown) {
+                if (showDeleteTile && globalIndex == 0) {
+                  return AlphabetDeleteCard(
+                    key: const ValueKey('alpha-delete'),
+                    focusNode: focusNode,
+                    onTap: onDeleteTap ?? () {},
+                    onKeyUp: onKeyUp,
+                    onKeyDown: onKeyDown,
+                  );
+                }
+
+                final letter = item;
+                return AlphabetLetterCard(
+                  key: ValueKey('alpha-$letter'),
+                  letter: letter,
                   focusNode: focusNode,
-                  onTap: onDeleteTap ?? () {},
+                  onTap: () => onLetterTap(letter),
                   onKeyUp: onKeyUp,
                   onKeyDown: onKeyDown,
                 );
-              }
-
-              final letter = item;
-              return AlphabetLetterCard(
-                key: ValueKey('alpha-$letter'),
-                letter: letter,
-                focusNode: focusNode,
-                onTap: () => onLetterTap(letter),
-                onKeyUp: onKeyUp,
-                onKeyDown: onKeyDown,
-              );
-            },
+              },
+            ),
           );
         },
       ),

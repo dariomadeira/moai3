@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 
@@ -41,6 +41,36 @@ void main() {
     expect(find.byType(SnackBar), findsOneWidget);
     expect(find.text('Operación exitosa'), findsOneWidget);
     expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+  });
+
+  testWidgets(
+      'MoaiSnackBar.showSuccess usa el color del theme (onPrimary) y no colores hardcodeados',
+      (tester) async {
+    const customOnPrimary = Color(0xFF123456);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          colorScheme: const ColorScheme.light(onPrimary: customOnPrimary),
+        ),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () {
+                MoaiSnackBar.showSuccess(context, message: 'Operación exitosa');
+              },
+              child: const Text('Mostrar'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Mostrar'));
+    await tester.pump();
+
+    final iconWidget =
+        tester.widget<Icon>(find.byIcon(Icons.check_circle_outline));
+    expect(iconWidget.color, equals(customOnPrimary));
   });
 }
 

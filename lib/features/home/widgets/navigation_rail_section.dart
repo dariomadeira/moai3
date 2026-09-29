@@ -51,7 +51,7 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final railBg = scheme.surfaceContainer;
+    const railBg = Colors.transparent;
 
     final todayEvents = context.select(
       (CalendarProvider p) => p.todayEventCount,

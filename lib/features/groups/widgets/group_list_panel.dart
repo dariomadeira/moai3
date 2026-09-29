@@ -6,9 +6,10 @@ import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/models/channel_group.dart';
 import 'package:moai3/widgets/cards/group_card.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
+import 'package:moai3/widgets/lists/tv_fixed_window_viewport.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 
-/// Panel Grupos: mismo diseño windowed de 6 que Países / Categorías.
+/// Panel Marcadores: mismo diseño windowed de 6 que Países / Categorías.
 class GroupListPanel extends StatefulWidget {
   final List<ChannelGroup> groups;
   final ChannelGroup? selectedGroup;
@@ -47,6 +48,7 @@ class GroupListPanelState extends State<GroupListPanel> {
     return 0;
   }
 
+  /// Lo llama HomeTvArea (rail → / ← desde canales / alfabeto).
   void focusSelected() {
     if (widget.groups.isEmpty) {
       requestFocusWithRetry(_emptyFocusNode, isMounted: () => mounted);
@@ -67,9 +69,7 @@ class GroupListPanelState extends State<GroupListPanel> {
   void didUpdateWidget(covariant GroupListPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     final selChanged = oldWidget.selectedGroup?.id != widget.selectedGroup?.id;
-    final listChanged = !identical(oldWidget.groups, widget.groups) ||
-        oldWidget.groups.length != widget.groups.length;
-    if ((selChanged || listChanged) && widget.groups.isNotEmpty) {
+    if (selChanged && widget.groups.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _listKey.currentState?.ensureVisible(
@@ -83,13 +83,11 @@ class GroupListPanelState extends State<GroupListPanel> {
   @override
   Widget build(BuildContext context) {
     const windowSize = 6;
-    final listAlign = widget.groups.length < windowSize
-        ? Alignment.topCenter
-        : Alignment.bottomCenter;
+    const itemExtent = TvLayoutConstants.countryItemHeight;
 
     return Container(
       padding: const EdgeInsets.only(
-        left: 4,
+        left: 0,
         right: 12,
         top: 8,
         bottom: 8,
@@ -99,24 +97,26 @@ class GroupListPanelState extends State<GroupListPanel> {
         children: [
           PanelListHeader(
             subtitle: 'groups_list_subtitle'.tr(),
-            showFilterText: widget.groups.length > 1,
+            showFilterText: widget.groups.isNotEmpty,
           ),
           Expanded(
             child: widget.groups.isEmpty
                 ? TvEmptyStateCard(
                     focusNode: _emptyFocusNode,
-                    icon: Icons.search_outlined,
+                    icon: Icons.bookmarks_outlined,
                     message: 'browser_groups_empty'.tr(),
                     onFocusUp: widget.onFocusUp,
                   )
-                : Align(
-                    alignment: listAlign,
+                : TvFixedWindowViewport(
+                    slotCount: windowSize,
+                    slotExtent: itemExtent,
                     child: TvWindowedList<ChannelGroup>(
                       key: _listKey,
                       items: widget.groups,
                       windowSize: windowSize,
                       initialGlobalIndex: _selectedIndex,
-                      itemExtent: TvLayoutConstants.categoryItemHeight,
+                      itemExtent: itemExtent,
+                      showScrollDots: true,
                       onFocusUpFromFirst: widget.onFocusUp,
                       itemBuilder: (
                         context,

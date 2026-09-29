@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 
 /// Grilla TV por ventana fija (sin scroll continuo).
 ///
@@ -13,6 +14,9 @@ class TvWindowedGrid<T> extends StatefulWidget {
   /// Alto de cada fila (tile + gap vertical).
   final double itemExtent;
   final double crossAxisSpacing;
+  final TvScrollIndicator scrollIndicator;
+  final bool showScrollDots;
+  final bool showScrollArrows;
   final VoidCallback? onFocusUpFromFirst;
   final VoidCallback? onExitLeft;
   final VoidCallback? onExitRight;
@@ -38,6 +42,9 @@ class TvWindowedGrid<T> extends StatefulWidget {
     this.initialGlobalIndex = 0,
     this.itemExtent = 96,
     this.crossAxisSpacing = 8,
+    this.scrollIndicator = TvScrollIndicator.none,
+    this.showScrollDots = false,
+    this.showScrollArrows = false,
     this.onFocusUpFromFirst,
     this.onExitLeft,
     this.onExitRight,
@@ -88,6 +95,32 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
   }
 
   int get focusedGlobalIndex => _windowStart + _activeLocal;
+
+  int get pageCount =>
+      widget.items.isEmpty ? 0 : (widget.items.length / windowSize).ceil();
+
+  int get activeDotIndex => pageCount <= 1
+      ? 0
+      : (focusedGlobalIndex / windowSize).floor().clamp(0, pageCount - 1);
+
+  bool get canScrollUp => _windowStart > 0;
+
+  bool get canScrollDown {
+    if (widget.items.isEmpty) return false;
+    return _windowStart + windowSize < widget.items.length;
+  }
+
+  TvScrollIndicator get effectiveIndicator {
+    if (widget.showScrollArrows ||
+        widget.scrollIndicator == TvScrollIndicator.arrows) {
+      return TvScrollIndicator.arrows;
+    }
+    if (widget.showScrollDots ||
+        widget.scrollIndicator == TvScrollIndicator.dots) {
+      return TvScrollIndicator.dots;
+    }
+    return TvScrollIndicator.none;
+  }
 
   int _maxAlignedStart() {
     if (widget.items.isEmpty) return 0;
@@ -386,11 +419,69 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
       ],
     );
 
+    Widget content = grid;
+
+    if (effectiveIndicator == TvScrollIndicator.arrows) {
+      final scheme = Theme.of(context).colorScheme;
+      content = Stack(
+        alignment: Alignment.center,
+        children: [
+          grid,
+          if (canScrollUp)
+            Positioned(
+              top: 4,
+              child: IgnorePointer(
+                child: _buildArrowPill(context, scheme, isUp: true),
+              ),
+            ),
+          if (canScrollDown)
+            Positioned(
+              bottom: 4,
+              child: IgnorePointer(
+                child: _buildArrowPill(context, scheme, isUp: false),
+              ),
+            ),
+        ],
+      );
+    } else if (effectiveIndicator == TvScrollIndicator.dots && pageCount > 1) {
+      final scheme = Theme.of(context).colorScheme;
+      final activeDot = activeDotIndex;
+
+      content = Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(child: grid),
+          const SizedBox(width: 10),
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(pageCount, (dotIdx) {
+                final isActive = dotIdx == activeDot;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOutCubic,
+                  margin: const EdgeInsets.symmetric(vertical: 2.5),
+                  width: 5.0,
+                  height: 5.0,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isActive ? scheme.primary : scheme.outlineVariant,
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      );
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final maxH = constraints.maxHeight;
         if (!maxH.isFinite || maxH >= needed) {
-          return grid;
+          return content;
         }
         return SizedBox(
           height: maxH,
@@ -399,11 +490,30 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
               alignment: Alignment.bottomCenter,
               minHeight: needed,
               maxHeight: needed,
-              child: grid,
+              child: content,
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildArrowPill(
+    BuildContext context,
+    ColorScheme scheme, {
+    required bool isUp,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      decoration: BoxDecoration(
+        color: scheme.tertiaryContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Icon(
+        isUp ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+        size: 16,
+        color: scheme.onTertiaryContainer,
+      ),
     );
   }
 }

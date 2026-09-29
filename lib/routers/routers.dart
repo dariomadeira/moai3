@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:moai3/features/bootstrap/screens/overlap_config_screen.dart';
 import 'package:moai3/features/home/screens/home_screen.dart';
+import 'package:moai3/services/modal_route_tracker.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 
 CustomTransitionPage<void> _fadePage({
@@ -21,6 +22,7 @@ CustomTransitionPage<void> _fadePage({
 /// Router offline de moai3. Abre directamente en /home con estado vacio.
 GoRouter createRouter(TvSettingsProvider tvSettingsProvider) {
   return GoRouter(
+    observers: [ModalRouteTracker.instance],
     initialLocation: tvSettingsProvider.hasOverlapConfig ? '/home' : '/overlap',
     refreshListenable: tvSettingsProvider,
     redirect: (context, state) {

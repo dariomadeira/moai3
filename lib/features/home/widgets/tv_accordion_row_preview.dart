@@ -33,7 +33,7 @@ class TvAccordionRowPreview extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final totalWidth = constraints.maxWidth;
-        const collapsedWidth = 38.0;
+        const collapsedWidth = 44.0;
         const gap = 6.0;
         final totalGaps = gap * (panelCount - 1);
         final expandedWidth =

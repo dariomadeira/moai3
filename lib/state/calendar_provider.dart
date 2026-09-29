@@ -108,6 +108,13 @@ class CalendarProvider extends ChangeNotifier {
   int _snackDurationSeconds = defaultSnackDurationSeconds;
   final StreamController<List<CalendarEvent>> _liveEventsController =
       StreamController<List<CalendarEvent>>.broadcast();
+  bool _disposed = false;
+
+  void _notify() {
+    if (!_disposed) {
+      notifyListeners();
+    }
+  }
 
   /// Stream que emite los nuevos eventos en vivo que comenzaron (1 evento o múltiples agrupados).
   Stream<List<CalendarEvent>> get onLiveEventsStarted =>
@@ -150,7 +157,7 @@ class CalendarProvider extends ChangeNotifier {
       if (dayChanged || countChanged) {
         _lastKnownDay = currentNow.day;
         _lastKnownTodayCount = currentCount;
-        notifyListeners();
+        _notify();
       }
     });
   }
@@ -178,7 +185,9 @@ class CalendarProvider extends ChangeNotifier {
       for (final e in newLive) {
         _notifiedEventIds.add(e.id);
       }
-      _liveEventsController.add(newLive);
+      if (!_disposed && !_liveEventsController.isClosed) {
+        _liveEventsController.add(newLive);
+      }
     }
   }
 
@@ -207,14 +216,19 @@ class CalendarProvider extends ChangeNotifier {
       ),
     ];
     final n = count.clamp(1, events.length);
-    _liveEventsController.add(events.take(n).toList());
+    if (!_disposed && !_liveEventsController.isClosed) {
+      _liveEventsController.add(events.take(n).toList());
+    }
   }
 
   @override
   void dispose() {
+    _disposed = true;
     _statusTicker?.cancel();
     _statusTicker = null;
-    _liveEventsController.close();
+    if (!_liveEventsController.isClosed) {
+      _liveEventsController.close();
+    }
     super.dispose();
   }
 
@@ -321,7 +335,7 @@ class CalendarProvider extends ChangeNotifier {
           return s.copyWith(isSubscribed: activeSet.contains(s.id));
         }).toList();
       }
-      notifyListeners();
+      _notify();
     } catch (e) {
       _subscriptions = List.from(defaultSubscriptions);
     }
@@ -334,7 +348,7 @@ class CalendarProvider extends ChangeNotifier {
     final current = _subscriptions[index];
     final updated = current.copyWith(isSubscribed: !current.isSubscribed);
     _subscriptions[index] = updated;
-    notifyListeners();
+    _notify();
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -357,7 +371,7 @@ class CalendarProvider extends ChangeNotifier {
     }
 
     _isLoading = true;
-    notifyListeners();
+    _notify();
 
     try {
       final f1EventsFuture = F1CalendarService.fetchF1Events();
@@ -415,7 +429,7 @@ class CalendarProvider extends ChangeNotifier {
       debugPrint('[CalendarProvider] Error al actualizar eventos: $e');
     } finally {
       _isLoading = false;
-      notifyListeners();
+      _notify();
     }
   }
 
@@ -437,7 +451,7 @@ class CalendarProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('[CalendarProvider] Error al guardar duración del snack: $e');
     }
-    notifyListeners();
+    _notify();
   }
 
   Future<void> setNotifyLeadMinutes(int minutes) async {
@@ -450,7 +464,7 @@ class CalendarProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('[CalendarProvider] Error al guardar aviso: $e');
     }
-    notifyListeners();
+    _notify();
   }
 
   static String formatLiveEventsMessage(
@@ -458,7 +472,9 @@ class CalendarProvider extends ChangeNotifier {
     int leadMinutes = 0,
   }) {
     if (events.isEmpty) return '';
-    if (events.length == 1 && leadMinutes > 0) {
+    if (events.length == 1 &&
+        leadMinutes > 0 &&
+        events.first.status == CalendarEventStatus.upcoming) {
       const key = 'calendar_live_notification_soon';
       final res = tr(key, namedArgs: {
         'minutes': '$leadMinutes',

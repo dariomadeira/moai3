@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
+import 'package:moai3/services/modal_route_tracker.dart';
 import 'package:moai3/theme/moai_text.dart';
 
 /// Sistema unificado de SnackBar estilo Pill para Moai.
@@ -95,7 +96,6 @@ class MoaiSnackBar {
       context,
       message: message,
       icon: Icons.check_circle_outline,
-      iconColor: const Color(0xFF4ADE80),
       bottomMargin: bottomMargin,
       duration: duration,
     );
@@ -112,7 +112,6 @@ class MoaiSnackBar {
       context,
       message: message,
       icon: Icons.error_outline,
-      iconColor: const Color(0xFFF87171),
       bottomMargin: bottomMargin,
       duration: duration,
     );
@@ -129,7 +128,6 @@ class MoaiSnackBar {
       context,
       message: message,
       icon: Icons.info_outline,
-      iconColor: const Color(0xFF60A5FA),
       bottomMargin: bottomMargin,
       duration: duration,
     );
@@ -146,7 +144,6 @@ class MoaiSnackBar {
       context,
       message: message,
       icon: Icons.warning_amber_outlined,
-      iconColor: const Color(0xFFFBBF24),
       bottomMargin: bottomMargin,
       duration: duration,
     );
@@ -180,19 +177,31 @@ class _MoaiSnackBarBody extends StatefulWidget {
 
 class _MoaiSnackBarBodyState extends State<_MoaiSnackBarBody> {
   final FocusNode _focusNode = FocusNode(skipTraversal: true);
+  FocusNode? _previouslyFocusedNode;
+  bool _tookFocus = false;
 
   @override
   void initState() {
     super.initState();
     if (widget.onAction != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _focusNode.requestFocus();
+        if (!mounted) return;
+        // Si hay un modal o diálogo activo, nunca robar el foco bajo ninguna circunstancia
+        if (ModalRouteTracker.instance.hasActiveModal) return;
+        _previouslyFocusedNode = FocusManager.instance.primaryFocus;
+        _focusNode.requestFocus();
+        _tookFocus = true;
       });
     }
   }
 
   @override
   void dispose() {
+    if (_tookFocus &&
+        _previouslyFocusedNode != null &&
+        (_previouslyFocusedNode!.context?.mounted ?? false)) {
+      _previouslyFocusedNode!.requestFocus();
+    }
     _focusNode.dispose();
     super.dispose();
   }

@@ -56,3 +56,25 @@ Cuando un canal proviene de un plugin:
 2. El resultado entrega una URL directa junto a cabeceras HTTP personalizadas (User-Agent, Referer) y esquema DRM (Widevine o ClearKey si aplica).
 3. Se ensambla un `MoaiMediaSpec` y se envía a `controller.prepare(spec)`.
 4. Si ExoPlayer reporta error o timeout, el controlador solicita una nueva resolución incrementando `fallbackIndex`, permitiendo al plugin regenerar tokens de sesión o conmutar a espejos de respaldo.
+
+---
+
+## 4. Gestión de Ciclo de Vida y Liberación Segura (`Safe Disposal`)
+
+### 4.1. Sincronía Estricta en `void dispose()`
+- En Flutter, sobreescribir `dispose()` como un método asíncrono (`Future<void> dispose() async`) rompe el contrato canónico del framework, impidiendo que el recolector de basura libere los recursos inmediatamente y generando condiciones de carrera al destruir y recrear widgets rápidamente (por ejemplo, al alternar canales o navegar entre paneles).
+- `MoaiEnginePlayer` y `TvViewer` implementan un `void dispose()` completamente sincrónico:
+  - Las tareas asíncronas de liberación en la capa nativa (`MethodChannel.invokeMethod('release')`) se delegan en segundo plano mediante `unawaited()` sin bloquear ni convertir a `dispose()` en `async`.
+  - Los controladores de eventos y suscripciones a streams (`StreamSubscription`) se cancelan de inmediato.
+
+### 4.2. Protección Antirregresión con `SafeChangeNotifier`
+- En entornos de televisión con transiciones de navegación rápidas, pueden recibirse respuestas HTTP o eventos de socket después de que un `ChangeNotifier` haya sido desmontado.
+- Para prevenir la excepción de depuración `A ChangeNotifier was used after being disposed`:
+  - `SafeChangeNotifier` intercepta las invocaciones a `notifyListeners()`.
+  - Si el objeto ya fue marcado como dispuesto (`_isDisposed == true` o bandera interna de Flutter), la notificación se descarta de forma silenciosa y segura, protegiendo a `CalendarProvider` y a los controladores de estado.
+
+### 4.3. Cierre Defensivo de E/S en Actualizaciones (`UpdateService`)
+- Al descargar APKs o paquetes binarios OTA:
+  - Se garantiza el cierre ordenado de `IOSink` y `HttpClient` dentro de bloques `try / finally`.
+  - Si una descarga es abortada o sufre una excepción de socket a mitad de transmisión, los descriptores de archivo temporales se limpian y se cierran sin dejar fugas de handles en el sistema operativo.
+

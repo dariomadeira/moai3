@@ -6,6 +6,7 @@ import 'package:moai3/focus/focus_retry.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/widgets/cards/channel_grid_tile.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
+import 'package:moai3/widgets/lists/tv_fixed_window_viewport.dart';
 import 'package:moai3/widgets/lists/tv_windowed_grid.dart';
 
 /// Panel Canales: grilla windowed 2×3 con D-pad.
@@ -35,7 +36,9 @@ class ChannelListPanel extends StatefulWidget {
 
 class ChannelListPanelState extends State<ChannelListPanel> {
   static const int _windowSize = 6;
-  static const double _rowExtent = 120.0;
+  static const int _crossAxisCount = 2;
+  static const double _rowExtent = 114.0;
+  static const int _rowCount = _windowSize ~/ _crossAxisCount;
 
   final _listKey = GlobalKey<TvWindowedGridState<Channel>>();
   final FocusNode _emptyFocusNode = FocusNode(debugLabel: 'channel_empty');
@@ -90,10 +93,6 @@ class ChannelListPanelState extends State<ChannelListPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final listAlign = widget.channels.length < _windowSize
-        ? Alignment.topCenter
-        : Alignment.bottomCenter;
-
     return Container(
       padding: const EdgeInsets.only(
         left: 4,
@@ -116,15 +115,17 @@ class ChannelListPanelState extends State<ChannelListPanel> {
                     message: 'browser_channels_empty'.tr(),
                     onFocusUp: widget.onFocusUp,
                   )
-                : Align(
-                    alignment: listAlign,
+                : TvFixedWindowViewport(
+                    slotCount: _rowCount,
+                    slotExtent: _rowExtent,
                     child: TvWindowedGrid<Channel>(
                       key: _listKey,
                       items: widget.channels,
                       windowSize: _windowSize,
-                      crossAxisCount: 2,
+                      crossAxisCount: _crossAxisCount,
                       initialGlobalIndex: _selectedIndex,
                       itemExtent: _rowExtent,
+                      showScrollDots: true,
                       onFocusUpFromFirst: widget.onFocusUp,
                       itemBuilder: (
                         context,

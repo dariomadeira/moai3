@@ -52,3 +52,21 @@ Para no saturar el ancho de banda ni los hilos de red en decodificadores de tele
    - El checksum `sha256` remoto no coincide con el binario local instalado.
 4. **Notificación en UI**:
    La presencia de actualizaciones se expone como un indicador visual en el panel de fuentes (`SettingsTvPanel` / `SourceManagement`), permitiendo al usuario actualizar cada fuente con un solo clic de control remoto.
+
+---
+
+## 4. Resiliencia de Red y Descargas en el Cargador Nativo (`PluginLoader.kt`)
+
+### 4.1. Seguimiento de Redirecciones HTTP (Códigos 301..308)
+- Muchos servidores de distribución de plugins (como GitHub Releases, Cloudflare R2 o servicios CDN con firmas temporales) responden con códigos de redirección `301`, `302`, `303`, `307` o `308`.
+- Por defecto, `HttpURLConnection` en Android no sigue automáticamente redirecciones entre protocolos distintos (`http` a `https`) ni propaga headers de forma transparente en códigos 307/308.
+- `PluginLoader.kt` implementa un ciclo de seguimiento manual de hasta 5 saltos (*hops*):
+  - Verifica si `responseCode in 301..308`.
+  - Extrae el encabezado `Location` y reconstruye la URL de destino (absoluta o relativa).
+  - Cierra la conexión previa y reabre la petición con los mismos headers de agente y timeouts.
+  - Previene bucles infinitos abortando con error si se superan los 5 saltos.
+
+### 4.2. Tipado Defensivo de Manifiestos (`PluginUpdateService`)
+- Al parsear el JSON de un manifiesto remoto, no se asume que todos los campos sean del tipo primitivo esperado.
+- Se aplican conversiones seguras con `as? Map<String, dynamic>` y casting defensivo para evitar caídas en producción si un manifiesto remoto incluye campos nulos o con estructuras anidadas inesperadas.
+

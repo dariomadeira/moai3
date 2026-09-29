@@ -172,10 +172,12 @@ class UpdateService {
 
     final sink = file.openWrite();
     var received = 0;
+    var sinkClosed = false;
 
     try {
       await for (final chunk in response) {
         if (isCancelled?.call() == true) {
+          sinkClosed = true;
           await sink.close();
           if (await file.exists()) await file.delete();
           throw Exception('Descarga cancelada');
@@ -192,8 +194,11 @@ class UpdateService {
         }
       }
     } finally {
-      await sink.flush();
-      await sink.close();
+      if (!sinkClosed) {
+        await sink.flush();
+        await sink.close();
+      }
+      client.close(force: true);
     }
 
     return filePath;

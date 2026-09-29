@@ -25,13 +25,37 @@ class _ClearFavoritesTileState extends State<ClearFavoritesTile> {
   bool _isFocused = false;
 
   @override
+  void initState() {
+    super.initState();
+    _isFocused = widget.focusNode?.hasFocus ?? false;
+  }
+
+  @override
+  void didUpdateWidget(covariant ClearFavoritesTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.focusNode != oldWidget.focusNode) {
+      _isFocused = widget.focusNode?.hasFocus ?? false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final itemStyle = TvListCardStyle.resolve(
+    final isFocused = _isFocused || (widget.focusNode?.hasFocus ?? false);
+    final baseStyle = TvListCardStyle.resolve(
       scheme: scheme,
-      focused: _isFocused,
+      focused: false,
       selected: false,
     );
+    final itemStyle = isFocused
+        ? TvListCardStyle(
+            backgroundColor: baseStyle.backgroundColor,
+            foregroundColor: baseStyle.foregroundColor,
+            iconColor: Colors.redAccent,
+            fontWeight: FontWeight.w700,
+            border: Border.all(color: scheme.primary, width: 2),
+          )
+        : baseStyle;
 
     return SizedBox(
       width: TvLayoutConstants.viewerFavoriteTileWidth,
@@ -52,24 +76,27 @@ class _ClearFavoritesTileState extends State<ClearFavoritesTile> {
         child: GestureDetector(
           onTap: () => _showClearConfirmDialog(context),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: const Duration(milliseconds: 120),
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             decoration: BoxDecoration(
               color: itemStyle.backgroundColor,
               borderRadius: BorderRadius.circular(10),
+              border: itemStyle.border,
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ClipOval(
                   child: ColoredBox(
-                    color: Colors.red.withValues(alpha: 0.15),
-                    child: SizedBox(
+                    color: isFocused
+                        ? Colors.redAccent.withValues(alpha: 0.25)
+                        : Colors.red.withValues(alpha: 0.15),
+                    child: const SizedBox(
                       width: 36,
                       height: 36,
                       child: Icon(
                         Icons.delete_outline,
-                        color: _isFocused ? scheme.onPrimary : Colors.redAccent,
+                        color: Colors.redAccent,
                         size: 22,
                       ),
                     ),
@@ -84,7 +111,7 @@ class _ClearFavoritesTileState extends State<ClearFavoritesTile> {
                   style: MoaiText.body(
                     context,
                     color: itemStyle.foregroundColor,
-                    fontSize: 11,
+                    fontSize: 9.5,
                     fontWeight: itemStyle.fontWeight,
                   ),
                 ),

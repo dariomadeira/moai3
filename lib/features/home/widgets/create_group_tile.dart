@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
-import 'package:moai3/helpers/notification_helper.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/cards/tv_list_card_style.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
+import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/tv_input/tv_input.dart';
 
 class CreateGroupTile extends StatefulWidget {
@@ -27,13 +27,37 @@ class _CreateGroupTileState extends State<CreateGroupTile> {
   bool _isFocused = false;
 
   @override
+  void initState() {
+    super.initState();
+    _isFocused = widget.focusNode?.hasFocus ?? false;
+  }
+
+  @override
+  void didUpdateWidget(covariant CreateGroupTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.focusNode != oldWidget.focusNode) {
+      _isFocused = widget.focusNode?.hasFocus ?? false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final itemStyle = TvListCardStyle.resolve(
+    final isFocused = _isFocused || (widget.focusNode?.hasFocus ?? false);
+    final baseStyle = TvListCardStyle.resolve(
       scheme: scheme,
-      focused: _isFocused,
+      focused: false,
       selected: false,
     );
+    final itemStyle = isFocused
+        ? TvListCardStyle(
+            backgroundColor: baseStyle.backgroundColor,
+            foregroundColor: scheme.primary,
+            iconColor: scheme.primary,
+            fontWeight: FontWeight.w700,
+            border: Border.all(color: scheme.primary, width: 2),
+          )
+        : baseStyle;
 
     return SizedBox(
       width: TvLayoutConstants.viewerFavoriteTileWidth,
@@ -54,26 +78,27 @@ class _CreateGroupTileState extends State<CreateGroupTile> {
         child: GestureDetector(
           onTap: () => _showCreateGroupDialog(context),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: const Duration(milliseconds: 120),
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             decoration: BoxDecoration(
               color: itemStyle.backgroundColor,
               borderRadius: BorderRadius.circular(10),
+              border: itemStyle.border,
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ClipOval(
                   child: ColoredBox(
-                    color: _isFocused
-                        ? Colors.white.withValues(alpha: 0.2)
+                    color: isFocused
+                        ? scheme.primary.withValues(alpha: 0.18)
                         : scheme.onSurface.withValues(alpha: 0.08),
                     child: SizedBox(
                       width: 36,
                       height: 36,
                       child: Icon(
                         Icons.add_outlined,
-                        color: itemStyle.foregroundColor,
+                        color: isFocused ? scheme.primary : itemStyle.foregroundColor,
                         size: 22,
                       ),
                     ),
@@ -87,8 +112,8 @@ class _CreateGroupTileState extends State<CreateGroupTile> {
                   textAlign: TextAlign.center,
                   style: MoaiText.body(
                     context,
-                    color: itemStyle.foregroundColor,
-                    fontSize: 11,
+                    color: isFocused ? scheme.primary : itemStyle.foregroundColor,
+                    fontSize: 9.5,
                     fontWeight: itemStyle.fontWeight,
                   ),
                 ),
@@ -162,14 +187,18 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
     try {
       await widget.tileContext.read<ChannelProvider>().createGroup(name, favIds);
       if (widget.tileContext.mounted) {
-        NotificationHelper.showSuccess(
-          'groups_created_success'.tr(namedArgs: {'name': name}),
+        MoaiSnackBar.show(
+          widget.tileContext,
+          message: 'groups_created_success'.tr(namedArgs: {'name': name}),
+          icon: Icons.bookmark_add_outlined,
         );
       }
     } catch (e) {
       if (widget.tileContext.mounted) {
-        NotificationHelper.showError(
-          'groups_create_error'.tr(namedArgs: {'error': '$e'}),
+        MoaiSnackBar.show(
+          widget.tileContext,
+          message: 'groups_create_error'.tr(namedArgs: {'error': '$e'}),
+          icon: Icons.error_outline,
         );
       }
     }

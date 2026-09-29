@@ -37,7 +37,10 @@ Todas las decisiones de diseño, contratos de plugins, modelos de datos y flujos
   *Navigation Rail con Ajustes al fondo, pestañas (Explorar/Buscar/Marcadores), modal PIN continuo sin parpadeos y colores sólidos.*
 - [SPEC-34: Diagnóstico y Captura de Voz del Control Remoto (PoC)](features/tv_remote_voice_input.md)  
   *Módulo empírico de prueba de micrófono físico de control remoto por software en Android TV.*
+- [SPEC-35: Agenda Deportiva de Eventos en Vivo y Notificaciones](features/sports_calendar_and_events.md)  
+  *Grilla semanal de 7 días, gestión de suscripciones, matching determinista con canales activos y modal de sintonización directa.*
 
 ### 5. Verificación y Calidad
-- [SPEC-40: Matriz de Criterios de Aceptación (Baseline v3.0.11)](verification/baseline_acceptance_matrix.md)  
+- [SPEC-40: Matriz de Criterios de Aceptación (Baseline v3.0.14)](verification/baseline_acceptance_matrix.md)  
   *Casos de prueba Given-When-Then verificables para validar el comportamiento del sistema.*
+

@@ -242,20 +242,16 @@ class MoaiEngineController extends ChangeNotifier {
   }
 
   @override
-  Future<void> dispose() async {
+  void dispose() {
     _stopWatchdog();
     final handle = _handle;
     _handle = null;
     _textureId = null;
     debugPrint('[MoaiEngine] dispose handle=$handle');
-    await _eventsSub?.cancel();
+    unawaited(_eventsSub?.cancel());
     _eventsSub = null;
     if (handle != null) {
-      try {
-        await _control.invokeMethod<void>('dispose', {'handle': handle});
-      } catch (_) {
-        // El motor ya puede estar cerrado (app en destrucción).
-      }
+      unawaited(_control.invokeMethod<void>('dispose', {'handle': handle}));
     }
     super.dispose();
   }
