@@ -19,12 +19,14 @@ import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/moai_image_cache_manager.dart';
 import 'package:moai3/services/playback_stats_controller.dart';
 import 'package:moai3/services/supabase_presence_service.dart';
+import 'package:moai3/services/watch_party_service.dart';
 import 'package:moai3/state/agenda_clock_provider.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/state/theme_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
+import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:provider/provider.dart';
 
@@ -93,6 +95,12 @@ void main() async {
 
   final deviceIdentityService = DeviceIdentityService(appPreferences);
   final supabasePresenceService = SupabasePresenceService();
+  final watchPartyService = WatchPartyService();
+  final watchPartyProvider = WatchPartyProvider(
+    preferences: appPreferences,
+    service: watchPartyService,
+    identityService: deviceIdentityService,
+  );
 
   final router = createRouter(
     tvSettingsProvider,
@@ -115,8 +123,10 @@ void main() async {
         ChangeNotifierProvider.value(value: playbackStats),
         ChangeNotifierProvider.value(value: debugLog),
         ChangeNotifierProvider.value(value: channelProvider.pluginHost),
+        ChangeNotifierProvider.value(value: watchPartyProvider),
         Provider<DeviceIdentityService>.value(value: deviceIdentityService),
         Provider<SupabasePresenceService>.value(value: supabasePresenceService),
+        Provider<WatchPartyService>.value(value: watchPartyService),
       ],
       child: MyApp(
         router: router,

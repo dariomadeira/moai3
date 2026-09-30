@@ -1,30 +1,25 @@
 import 'dart:async';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/services/remote_voice_test_service.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 
-/// Diálogo de prueba empírica para verificar la captura de audio
-/// desde el micrófono del control remoto en Android TV.
+/// Diálogo modal estándar de TV para diagnosticar el micrófono del control remoto.
+///
+/// Permite capturar audio vía Voice-over-BLE por software, validar la señal
+/// y reproducirla por los altavoces de la televisión con amplificación digital (+18 dB).
+/// Diseñado para Leanback / Android TV con accesibilidad D-Pad completa.
 class TvVoiceTestDialog extends StatefulWidget {
   const TvVoiceTestDialog({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showGeneralDialog(
+    return showTvGeneralDialog(
       context: context,
       barrierDismissible: true,
       barrierLabel: 'TvVoiceTestDialog',
-      barrierColor: Colors.black.withValues(alpha: 0.75),
-      transitionDuration: const Duration(milliseconds: 220),
-      pageBuilder: (context, _, _) => const TvVoiceTestDialog(),
-      transitionBuilder: (context, anim, _, child) {
-        final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
-        return ScaleTransition(
-          scale: Tween<double>(begin: 0.94, end: 1.0).animate(curved),
-          child: FadeTransition(opacity: curved, child: child),
-        );
-      },
+      builder: (dialogContext) => const TvVoiceTestDialog(),
     );
   }
 
@@ -32,7 +27,8 @@ class TvVoiceTestDialog extends StatefulWidget {
   State<TvVoiceTestDialog> createState() => _TvVoiceTestDialogState();
 }
 
-class _TvVoiceTestDialogState extends State<TvVoiceTestDialog> {
+class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
+    with SingleTickerProviderStateMixin {
   bool _isLoading = true;
   bool _hasPermission = false;
   List<Map<String, dynamic>> _devices = [];
@@ -42,19 +38,28 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog> {
   Timer? _recordTimer;
 
   String? _recordedPath;
-  String? _statusMessage;
-  bool _isError = false;
+  int _recordedBytes = 0;
+  String? _errorMessage;
+
+  late final AnimationController _waveController;
 
   final _recordFocus = FocusNode(debugLabel: 'mic_test_record');
   final _playFocus = FocusNode(debugLabel: 'mic_test_play');
+  final _rerecordFocus = FocusNode(debugLabel: 'mic_test_rerecord');
   final _closeFocus = FocusNode(debugLabel: 'mic_test_close');
 
   @override
   void initState() {
     super.initState();
+    _waveController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+
     RemoteVoiceTestService.initialize();
     RemoteVoiceTestService.onPlaybackFinished = () {
       if (mounted) {
+        _waveController.stop();
         setState(() => _isPlaying = false);
       }
     };
@@ -63,10 +68,12 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog> {
 
   @override
   void dispose() {
+    _waveController.dispose();
     _recordTimer?.cancel();
     RemoteVoiceTestService.stopPlayback();
     _recordFocus.dispose();
     _playFocus.dispose();
+    _rerecordFocus.dispose();
     _closeFocus.dispose();
     super.dispose();
   }
@@ -103,21 +110,17 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog> {
     setState(() => _hasPermission = hasPerm);
   }
 
-  Future<void> _toggleRecording() async {
-    if (_isRecording) {
-      await _stopRecording();
-    } else {
-      await _startRecording();
-    }
-  }
-
   Future<void> _startRecording() async {
+    if (_isPlaying) {
+      await RemoteVoiceTestService.stopPlayback();
+      _isPlaying = false;
+    }
+
     if (!_hasPermission) {
       await _requestPermission();
       if (!_hasPermission) {
         setState(() {
-          _isError = true;
-          _statusMessage = 'Permiso RECORD_AUDIO denegado por el sistema.';
+          _errorMessage = 'mic_test_perm_denied'.tr();
         });
         return;
       }
@@ -126,17 +129,19 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog> {
     setState(() {
       _isRecording = true;
       _recordSeconds = 0;
-      _statusMessage = 'Grabando... Habla hacia la punta del control remoto.';
-      _isError = false;
+      _errorMessage = null;
     });
+    _waveController.repeat(reverse: true);
 
     final res = await RemoteVoiceTestService.startRecording();
     if (res['success'] != true) {
       if (!mounted) return;
+      _waveController.stop();
       setState(() {
         _isRecording = false;
-        _isError = true;
-        _statusMessage = 'Error al iniciar grabación: ${res['error']}';
+        _errorMessage = 'mic_test_err_start'.tr(
+          namedArgs: {'error': '${res['error'] ?? ''}'},
+        );
       });
       return;
     }
@@ -147,7 +152,6 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog> {
         return;
       }
       setState(() => _recordSeconds++);
-      // Auto-stop a los 6 segundos para mayor comodidad en TV
       if (_recordSeconds >= 6) {
         _stopRecording();
       }
@@ -157,6 +161,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog> {
   Future<void> _stopRecording() async {
     _recordTimer?.cancel();
     _recordTimer = null;
+    _waveController.stop();
 
     final res = await RemoteVoiceTestService.stopRecording();
     if (!mounted) return;
@@ -167,15 +172,8 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog> {
       setState(() {
         _isRecording = false;
         _recordedPath = path;
-        if (bytes > 1024) {
-          _isError = false;
-          _statusMessage =
-              'Grabación exitosa: ${(bytes / 1024).toStringAsFixed(1)} KB (AAC 16 kHz Mono). ¡Dale a reproducir!';
-        } else {
-          _isError = true;
-          _statusMessage =
-              'El archivo se creó pero tiene solo $bytes bytes. Es posible que el control no haya enviado paquetes de voz.';
-        }
+        _recordedBytes = bytes;
+        _errorMessage = null;
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _playFocus.canRequestFocus) {
@@ -185,8 +183,9 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog> {
     } else {
       setState(() {
         _isRecording = false;
-        _isError = true;
-        _statusMessage = 'Fallo al detener: ${res['error']}';
+        _errorMessage = 'mic_test_err_stop'.tr(
+          namedArgs: {'error': '${res['error'] ?? ''}'},
+        );
       });
     }
   }
@@ -194,16 +193,23 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog> {
   Future<void> _togglePlayback() async {
     if (_isPlaying) {
       await RemoteVoiceTestService.stopPlayback();
+      _waveController.stop();
       setState(() => _isPlaying = false);
     } else {
-      setState(() => _isPlaying = true);
+      setState(() {
+        _isPlaying = true;
+        _errorMessage = null;
+      });
+      _waveController.repeat(reverse: true);
       final res = await RemoteVoiceTestService.playRecording();
       if (!mounted) return;
       if (res['success'] != true) {
+        _waveController.stop();
         setState(() {
           _isPlaying = false;
-          _isError = true;
-          _statusMessage = 'Error al reproducir: ${res['error']}';
+          _errorMessage = 'mic_test_err_play'.tr(
+            namedArgs: {'error': '${res['error'] ?? ''}'},
+          );
         });
       }
     }
@@ -214,49 +220,59 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog> {
     final scheme = Theme.of(context).colorScheme;
 
     return TvDialog(
-      width: 520,
+      width: 580,
       icon: Icons.mic_outlined,
-      iconBgColor: _isRecording ? scheme.error : scheme.primary,
-      iconColor: _isRecording ? scheme.onError : scheme.onPrimary,
-      title: 'Diagnóstico: Micrófono del Control',
-      subtitle:
-          'Prueba empírica de captura Voice-over-BLE por software en Android TV.',
+      iconBgColor: _isRecording
+          ? scheme.error
+          : _isPlaying
+              ? scheme.tertiary
+              : scheme.primaryContainer,
+      iconColor: _isRecording
+          ? scheme.onError
+          : _isPlaying
+              ? scheme.onTertiary
+              : scheme.onPrimaryContainer,
+      title: 'mic_test_title'.tr(),
+      subtitle: 'mic_test_subtitle'.tr(),
       content: _isLoading
           ? const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
+              padding: EdgeInsets.symmetric(vertical: 36),
               child: Center(child: CircularProgressIndicator()),
             )
           : Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 1. Estado del hardware detectado
-                _buildHardwareCard(scheme),
-                const SizedBox(height: 12),
+                // 1. Banner de recomendación ergonómica
+                _buildTipBanner(scheme),
+                const SizedBox(height: 14),
 
-                // 2. Zona central de acción: Grabar y Reproducir
-                _buildRecordingCard(scheme),
+                // 2. Tarjeta interactiva central (Estado, Olas de audio y Controles)
+                _buildMainCard(scheme),
+                const SizedBox(height: 14),
 
-                // 3. Mensaje de estado o resultado
-                if (_statusMessage != null) ...[
+                // 3. Ficha compacta de hardware detectado
+                _buildHardwareFooter(scheme),
+
+                // 4. Mensaje de error si ocurre alguno
+                if (_errorMessage != null) ...[
                   const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
-                      color: _isError
-                          ? scheme.errorContainer
-                          : scheme.secondaryContainer,
+                      color: scheme.errorContainer,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      _statusMessage!,
+                      _errorMessage!,
                       style: MoaiText.body(
                         context,
                         fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: _isError
-                            ? scheme.onErrorContainer
-                            : scheme.onSecondaryContainer,
+                        fontWeight: FontWeight.bold,
+                        color: scheme.onErrorContainer,
                       ),
                     ),
                   ),
@@ -266,242 +282,510 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog> {
       actions: [
         TvDialogButton(
           focusNode: _closeFocus,
-          label: 'Cerrar',
+          label: 'common_close'.tr(),
           variant: TvDialogButtonVariant.neutral,
+          onKeyUp: () {
+            if (_recordedPath != null && !_isRecording) {
+              _playFocus.requestFocus();
+            } else {
+              _recordFocus.requestFocus();
+            }
+          },
           onPressed: () => Navigator.of(context).pop(),
         ),
       ],
     );
   }
 
-  Widget _buildHardwareCard(ColorScheme scheme) {
-    final micDevices = _devices.where((d) => true).toList();
-
+  Widget _buildTipBanner(ColorScheme scheme) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.25),
+          width: 1,
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(Icons.settings_remote_outlined, size: 16, color: scheme.primary),
-              const SizedBox(width: 6),
-              Text(
-                'Entradas de audio detectadas:',
-                style: MoaiText.body(
-                  context,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.onSurface,
-                ),
-              ),
-            ],
+          Icon(
+            Icons.lightbulb_outline,
+            size: 18,
+            color: scheme.primary,
           ),
-          const SizedBox(height: 6),
-          if (micDevices.isEmpty)
-            Text(
-              'No se reportan entradas de audio explícitas (normal si el control BLE solo conecta por comando).',
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'mic_test_tip'.tr(),
               style: MoaiText.body(
                 context,
-                fontSize: 10.5,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
                 color: scheme.onSurfaceVariant,
               ),
-            )
-          else
-            ...micDevices.map((d) {
-              final name = d['name'] ?? 'Desconocido';
-              final typeName = d['typeName'] ?? '';
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: Text(
-                  '• $name — $typeName',
-                  style: MoaiText.body(
-                    context,
-                    fontSize: 10.5,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              );
-            }),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildRecordingCard(ColorScheme scheme) {
+  Widget _buildMainCard(ColorScheme scheme) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
-          // Botón de Grabar / Detener
-          Focus(
-            focusNode: _recordFocus,
-            onKeyEvent: (node, event) {
-              if (event is! KeyDownEvent) return KeyEventResult.ignored;
-              if (event.logicalKey == LogicalKeyboardKey.select ||
-                  event.logicalKey == LogicalKeyboardKey.enter ||
-                  event.logicalKey == LogicalKeyboardKey.space) {
-                _toggleRecording();
-                return KeyEventResult.handled;
-              }
-              if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-                if (_recordedPath != null && _playFocus.canRequestFocus) {
-                  _playFocus.requestFocus();
-                  return KeyEventResult.handled;
-                }
-                _closeFocus.requestFocus();
-                return KeyEventResult.handled;
-              }
-              return KeyEventResult.ignored;
-            },
-            child: Builder(
-              builder: (context) {
-                final isFocused = Focus.of(context).hasFocus;
-                final Color bg;
-                final Color fg;
+          if (_isRecording)
+            _buildRecordingState(scheme)
+          else if (_recordedPath != null)
+            _buildRecordedState(scheme)
+          else
+            _buildIdleState(scheme),
+        ],
+      ),
+    );
+  }
 
-                if (_isRecording) {
-                  bg = scheme.error;
-                  fg = scheme.onError;
-                } else if (isFocused) {
-                  bg = scheme.primary;
-                  fg = scheme.onPrimary;
-                } else {
-                  bg = scheme.surfaceContainerHigh;
-                  fg = scheme.onSurface;
-                }
-
-                return InkWell(
-                  onTap: _toggleRecording,
-                  borderRadius: BorderRadius.circular(12),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 140),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: bg,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _isRecording
-                              ? Icons.stop_circle_outlined
-                              : Icons.mic_outlined,
-                          color: fg,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _isRecording
-                              ? 'Detener grabación (${_recordSeconds}s / 6s)'
-                              : 'Presionar [OK] para Grabar',
-                          style: MoaiText.display(
-                            context,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: fg,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+  Widget _buildIdleState(ColorScheme scheme) {
+    return Column(
+      children: [
+        Container(
+          width: 58,
+          height: 58,
+          decoration: BoxDecoration(
+            color: scheme.primaryContainer,
+            shape: BoxShape.circle,
           ),
+          child: Icon(
+            Icons.mic_none_outlined,
+            size: 32,
+            color: scheme.onPrimaryContainer,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'mic_test_ready_hint'.tr(),
+          style: MoaiText.body(
+            context,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurface,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        _buildActionButton(
+          focusNode: _recordFocus,
+          icon: Icons.fiber_manual_record,
+          label: 'mic_test_btn_record'.tr(),
+          isPrimary: true,
+          onPressed: _startRecording,
+          onKeyDown: () => _closeFocus.requestFocus(),
+        ),
+      ],
+    );
+  }
 
-          // Botón de Reproducir (solo si hay archivo grabado)
-          if (_recordedPath != null && !_isRecording) ...[
-            const SizedBox(height: 10),
-            Focus(
-              focusNode: _playFocus,
-              onKeyEvent: (node, event) {
-                if (event is! KeyDownEvent) return KeyEventResult.ignored;
-                if (event.logicalKey == LogicalKeyboardKey.select ||
-                    event.logicalKey == LogicalKeyboardKey.enter ||
-                    event.logicalKey == LogicalKeyboardKey.space) {
-                  _togglePlayback();
-                  return KeyEventResult.handled;
-                }
-                if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-                  _recordFocus.requestFocus();
-                  return KeyEventResult.handled;
-                }
-                if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-                  _closeFocus.requestFocus();
-                  return KeyEventResult.handled;
-                }
-                return KeyEventResult.ignored;
-              },
-              child: Builder(
-                builder: (context) {
-                  final isFocused = Focus.of(context).hasFocus;
-                  final Color bg;
-                  final Color fg;
-
-                  if (_isPlaying) {
-                    bg = scheme.tertiaryContainer;
-                    fg = scheme.onTertiaryContainer;
-                  } else if (isFocused) {
-                    bg = scheme.primary;
-                    fg = scheme.onPrimary;
-                  } else {
-                    bg = scheme.surfaceContainerHigh;
-                    fg = scheme.onSurface;
-                  }
-
-                  return InkWell(
-                    onTap: _togglePlayback,
-                    borderRadius: BorderRadius.circular(12),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 140),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: bg,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            _isPlaying
-                                ? Icons.volume_up
-                                : Icons.play_arrow_outlined,
-                            color: fg,
-                            size: 19,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _isPlaying
-                                ? 'Reproduciendo por la TV...'
-                                : 'Reproducir Audio Grabado',
-                            style: MoaiText.display(
-                              context,
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: fg,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+  Widget _buildRecordingState(ColorScheme scheme) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: scheme.error,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: scheme.error.withValues(alpha: 0.6),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              '0:0$_recordSeconds / 0:06',
+              style: MoaiText.display(
+                context,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: scheme.error,
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 12),
+        _buildWaveVisualizer(scheme, color: scheme.error),
+        const SizedBox(height: 10),
+        Text(
+          'mic_test_recording_active'.tr(),
+          style: MoaiText.body(
+            context,
+            fontSize: 12.5,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildActionButton(
+          focusNode: _recordFocus,
+          icon: Icons.stop_circle_outlined,
+          label: 'mic_test_btn_stop'.tr(
+            namedArgs: {'seconds': '$_recordSeconds'},
+          ),
+          isPrimary: false,
+          customBg: scheme.error,
+          customFg: scheme.onError,
+          onPressed: _stopRecording,
+          onKeyDown: () => _closeFocus.requestFocus(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecordedState(ColorScheme scheme) {
+    final isAudioValid = _recordedBytes > 1024;
+    final kbStr = (_recordedBytes / 1024).toStringAsFixed(1);
+
+    return Column(
+      children: [
+        if (isAudioValid) ...[
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'mic_test_badge_ready'.tr(),
+                  style: MoaiText.body(
+                    context,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: scheme.onPrimaryContainer,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: scheme.tertiaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.volume_up,
+                      size: 14,
+                      color: scheme.onTertiaryContainer,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'mic_test_badge_amplified'.tr(),
+                      style: MoaiText.body(
+                        context,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: scheme.onTertiaryContainer,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_isPlaying) ...[
+            _buildWaveVisualizer(scheme, color: scheme.tertiary),
+            const SizedBox(height: 8),
+            Text(
+              'mic_test_playing_active'.tr(),
+              style: MoaiText.body(
+                context,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: scheme.primary,
+              ),
+            ),
+          ] else ...[
+            Text(
+              'mic_test_success_desc'.tr(namedArgs: {'kb': kbStr}),
+              style: MoaiText.body(
+                context,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ] else ...[
+          Icon(Icons.warning_amber_rounded, size: 36, color: scheme.error),
+          const SizedBox(height: 6),
+          Text(
+            'mic_test_empty_desc'.tr(
+              namedArgs: {'bytes': '$_recordedBytes'},
+            ),
+            style: MoaiText.body(
+              context,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: scheme.error,
+            ),
+            textAlign: TextAlign.center,
+          ),
         ],
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isAudioValid) ...[
+              Expanded(
+                child: _buildActionButton(
+                  focusNode: _playFocus,
+                  icon: _isPlaying ? Icons.stop : Icons.volume_up_outlined,
+                  label: _isPlaying
+                      ? 'mic_test_btn_stop_play'.tr()
+                      : 'mic_test_btn_play'.tr(),
+                  isPrimary: true,
+                  customBg: _isPlaying ? scheme.tertiary : null,
+                  customFg: _isPlaying ? scheme.onTertiary : null,
+                  onPressed: _togglePlayback,
+                  onKeyRight: () => _rerecordFocus.requestFocus(),
+                  onKeyDown: () => _closeFocus.requestFocus(),
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: _buildActionButton(
+                focusNode: _rerecordFocus,
+                icon: Icons.refresh_outlined,
+                label: 'mic_test_btn_rerecord'.tr(),
+                isPrimary: !isAudioValid,
+                onPressed: _startRecording,
+                onKeyLeft: () {
+                  if (isAudioValid) _playFocus.requestFocus();
+                },
+                onKeyDown: () => _closeFocus.requestFocus(),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWaveVisualizer(ColorScheme scheme, {required Color color}) {
+    return AnimatedBuilder(
+      animation: _waveController,
+      builder: (context, _) {
+        final progress = _waveController.value;
+        const barHeights = [14.0, 26.0, 36.0, 22.0, 32.0, 18.0, 28.0];
+
+        return SizedBox(
+          height: 40,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: List.generate(barHeights.length, (index) {
+              final offset = (index * 0.18) % 1.0;
+              final factor = ((progress + offset) % 1.0);
+              final dynamicHeight =
+                  (barHeights[index] * (0.4 + 0.6 * factor)).clamp(8.0, 38.0);
+
+              return Container(
+                width: 5,
+                height: dynamicHeight,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.8 + 0.2 * factor),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            }),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHardwareFooter(ColorScheme scheme) {
+    final devNames = _devices
+        .map((d) => d['name']?.toString() ?? '')
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    final infoText = devNames.isNotEmpty
+        ? devNames.join(', ')
+        : 'mic_test_no_devices'.tr();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHigh.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.settings_remote_outlined,
+            size: 15,
+            color: scheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '${'mic_test_devices_header'.tr()}: $infoText',
+              style: MoaiText.body(
+                context,
+                fontSize: 11,
+                color: scheme.onSurfaceVariant,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required FocusNode focusNode,
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+    bool isPrimary = false,
+    Color? customBg,
+    Color? customFg,
+    VoidCallback? onKeyLeft,
+    VoidCallback? onKeyRight,
+    VoidCallback? onKeyUp,
+    VoidCallback? onKeyDown,
+  }) {
+    return Focus(
+      focusNode: focusNode,
+      onKeyEvent: (node, event) {
+        if (event is! KeyDownEvent) return KeyEventResult.ignored;
+        final key = event.logicalKey;
+        if (key == LogicalKeyboardKey.select ||
+            key == LogicalKeyboardKey.enter ||
+            key == LogicalKeyboardKey.space) {
+          onPressed();
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.arrowLeft && onKeyLeft != null) {
+          onKeyLeft();
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.arrowRight && onKeyRight != null) {
+          onKeyRight();
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.arrowUp && onKeyUp != null) {
+          onKeyUp();
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.arrowDown && onKeyDown != null) {
+          onKeyDown();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Builder(
+        builder: (context) {
+          final isFocused = Focus.of(context).hasFocus;
+          final scheme = Theme.of(context).colorScheme;
+
+          Color bg;
+          Color fg;
+
+          if (customBg != null) {
+            bg = isFocused
+                ? customBg.withValues(alpha: 0.9)
+                : customBg.withValues(alpha: 0.7);
+            fg = customFg ?? Colors.white;
+          } else if (isPrimary) {
+            bg = isFocused ? scheme.primary : scheme.primaryContainer;
+            fg = isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
+          } else {
+            bg = isFocused
+                ? scheme.surfaceContainerHighest
+                : scheme.surfaceContainerHigh;
+            fg = isFocused ? scheme.onSurface : scheme.onSurfaceVariant;
+          }
+
+          return InkWell(
+            onTap: onPressed,
+            borderRadius: BorderRadius.circular(12),
+            child: AnimatedScale(
+              scale: isFocused ? 1.04 : 1.0,
+              duration: const Duration(milliseconds: 140),
+              curve: Curves.easeOutCubic,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 140),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: bg,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: isFocused
+                      ? [
+                          BoxShadow(
+                            color: (customBg ?? scheme.primary)
+                                .withValues(alpha: 0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 18, color: fg),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        label,
+                        style: MoaiText.body(
+                          context,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: fg,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/supabase_presence_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
+import 'package:moai3/state/watch_party_provider.dart';
 import 'package:provider/provider.dart';
 
 /// Pantalla inicial de verificación de presencia y carga (SPEC-22 §4.1).
@@ -47,6 +49,22 @@ class _LoadingScreenState extends State<LoadingScreen> {
       if (!mounted) return;
 
       final record = result.record;
+      if (record.userCode != null) {
+        await widget.identityService.saveUserCode(record.userCode!);
+      }
+      if (record.nickname != null) {
+        await widget.identityService.saveNickname(record.nickname!);
+      }
+
+      if (!mounted) return;
+
+      try {
+        final watchParty = context.read<WatchPartyProvider>();
+        if (record.userCode != null) {
+          watchParty.updateUserCode(record.userCode!);
+        }
+      } catch (_) {}
+
       if (!record.isActive) {
         // Dispositivo bloqueado (RB-04 / CASO-UC-02)
         context.go('/blocked', extra: record.blockReason);
@@ -63,13 +81,13 @@ class _LoadingScreenState extends State<LoadingScreen> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = 'No se pudo conectar. Verifica tu conexión.';
+        _errorMessage = 'loading_error_connection'.tr();
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = 'No se pudo conectar. Verifica tu conexión.';
+        _errorMessage = 'loading_error_connection'.tr();
       });
     }
   }
@@ -95,7 +113,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Conectando...',
+                  'loading_connecting'.tr(),
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: colorScheme.onSurface,
                   ),
@@ -108,7 +126,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  _errorMessage ?? 'No se pudo conectar.',
+                  _errorMessage ?? 'loading_error_connection'.tr(),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: colorScheme.onSurface,
@@ -119,7 +137,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
                   autofocus: true,
                   onPressed: _startVerification,
                   icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Reintentar'),
+                  label: Text('update_action_retry'.tr()),
                 ),
               ],
             ],

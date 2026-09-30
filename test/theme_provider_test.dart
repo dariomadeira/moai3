@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/state/theme_provider.dart';
+import 'package:moai3/theme/moai_accent_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -53,7 +54,7 @@ void main() {
       // Turn on auto accent
       await themeProvider.setAutoAccent(true);
       expect(themeProvider.autoAccent, isTrue);
-      expect(themeProvider.accentColorIndex, inInclusiveRange(0, 11));
+      expect(themeProvider.accentColorIndex, inInclusiveRange(0, MoaiAccentColors.seeds.length - 1));
 
       // Turn off auto accent, should restore manual color index 3
       await themeProvider.setAutoAccent(false);
@@ -70,7 +71,7 @@ void main() {
       final themeProvider = ThemeProvider(prefs);
 
       expect(themeProvider.autoAccent, isTrue);
-      expect(themeProvider.accentColorIndex, inInclusiveRange(0, 11));
+      expect(themeProvider.accentColorIndex, inInclusiveRange(0, MoaiAccentColors.seeds.length - 1));
     });
   });
 }
