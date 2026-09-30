@@ -51,10 +51,12 @@ class _HomeScreenState extends State<HomeScreen> {
   int _activeCalendarPanelIndex = 0;
 
   final FocusNode _settingsTvFocus = FocusNode(debugLabel: 'settings_tv');
-  final FocusNode _settingsGeneralFocus =
-      FocusNode(debugLabel: 'settings_general');
   final FocusNode _settingsAgendaFocus =
       FocusNode(debugLabel: 'settings_agenda');
+  final FocusNode _settingsWatchPartyFocus =
+      FocusNode(debugLabel: 'settings_watch_party');
+  final FocusNode _settingsGeneralFocus =
+      FocusNode(debugLabel: 'settings_general');
   final FocusNode _settingsAboutFocus = FocusNode(debugLabel: 'settings_about');
 
   int _selectedIndex = _sectionTv;
@@ -233,8 +235,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _calendarEventsFocus.dispose();
     _calendarSubscriptionsFocus.dispose();
     _settingsTvFocus.dispose();
-    _settingsGeneralFocus.dispose();
     _settingsAgendaFocus.dispose();
+    _settingsWatchPartyFocus.dispose();
+    _settingsGeneralFocus.dispose();
     _settingsAboutFocus.dispose();
     super.dispose();
   }
@@ -271,10 +274,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void _focusSettingsPanelByIndex(int index) {
     if (SettingsPanelLayout.isConfigTvPanel(index)) {
       _requestFocusWithRetry(_settingsTvFocus);
-    } else if (SettingsPanelLayout.isConfigGeneralPanel(index)) {
-      _requestFocusWithRetry(_settingsGeneralFocus);
     } else if (SettingsPanelLayout.isConfigAgendaPanel(index)) {
       _requestFocusWithRetry(_settingsAgendaFocus);
+    } else if (SettingsPanelLayout.isWatchPartyPanel(index)) {
+      _requestFocusWithRetry(_settingsWatchPartyFocus);
+    } else if (SettingsPanelLayout.isConfigGeneralPanel(index)) {
+      _requestFocusWithRetry(_settingsGeneralFocus);
     } else if (SettingsPanelLayout.isAboutPanel(index)) {
       _requestFocusWithRetry(_settingsAboutFocus);
     }
@@ -390,8 +395,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               ? HomeSettingsArea(
                                   activePanelIndex: _activeSettingsPanelIndex,
                                   tvPanelFocus: _settingsTvFocus,
-                                  generalPanelFocus: _settingsGeneralFocus,
                                   agendaPanelFocus: _settingsAgendaFocus,
+                                  watchPartyPanelFocus:
+                                      _settingsWatchPartyFocus,
+                                  generalPanelFocus: _settingsGeneralFocus,
                                   aboutPanelFocus: _settingsAboutFocus,
                                   onPanelIndexChanged:
                                       _onSettingsPanelIndexChanged,

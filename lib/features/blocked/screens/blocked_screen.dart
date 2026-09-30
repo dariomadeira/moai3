@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -18,7 +19,7 @@ class BlockedScreen extends StatelessWidget {
     final hasReason = blockReason != null && blockReason!.trim().isNotEmpty;
     final message = hasReason
         ? blockReason!.trim()
-        : 'Este dispositivo ha sido deshabilitado. Contacta al administrador para más información.';
+        : 'blocked_default_message'.tr();
 
     return PopScope(
       canPop: false,
@@ -41,7 +42,7 @@ class BlockedScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Dispositivo Bloqueado',
+                    'blocked_title'.tr(),
                     textAlign: TextAlign.center,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       color: colorScheme.onSurface,
@@ -68,7 +69,7 @@ class BlockedScreen extends StatelessWidget {
                         vertical: 16,
                       ),
                     ),
-                    child: const Text('Aceptar'),
+                    child: Text('common_close'.tr()),
                   ),
                 ],
               ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 abstract final class MoaiAccentColors {
   static const List<Color> seeds = [
     Color(0xFF4A90D9), // Azul (default)
+    Color(0xFF0D47A1), // Azul Oscuro (Fuerte)
     Color(0xFF00897B), // Teal
     Color(0xFF43A047), // Verde
     Color(0xFF10B981), // Esmeralda
@@ -19,6 +20,7 @@ abstract final class MoaiAccentColors {
 
   static const List<String> labelKeys = [
     'settings_accent_blue',
+    'settings_accent_dark_blue',
     'settings_accent_teal',
     'settings_accent_green',
     'settings_accent_emerald',

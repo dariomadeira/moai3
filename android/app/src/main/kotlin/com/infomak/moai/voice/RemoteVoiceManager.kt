@@ -4,10 +4,12 @@ import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
+import android.media.AudioAttributes
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.MediaRecorder
+import android.media.audiofx.LoudnessEnhancer
 import android.os.Build
 import android.util.Log
 import androidx.core.app.ActivityCompat
@@ -19,11 +21,13 @@ import java.io.File
  *
  * Utiliza AudioSource.VOICE_RECOGNITION para despertar el enlace Voice-over-BLE del control remoto
  * y almacena la muestra de audio en formato AAC (.m4a) a 16 kHz Mono.
+ * Aplica normalización y ganancia digital (+18 dB vía LoudnessEnhancer) al reproducir en la TV.
  */
 class RemoteVoiceManager(private val activity: Activity) {
 
     private var mediaRecorder: MediaRecorder? = null
     private var mediaPlayer: MediaPlayer? = null
+    private var loudnessEnhancer: LoudnessEnhancer? = null
     private var currentOutputFile: File? = null
 
     var isRecording: Boolean = false
@@ -108,7 +112,7 @@ class RemoteVoiceManager(private val activity: Activity) {
                 setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
                 setAudioSamplingRate(16000)
                 setAudioChannels(1)
-                setAudioEncodingBitRate(32000)
+                setAudioEncodingBitRate(64000)
                 setOutputFile(outputFile.absolutePath)
                 prepare()
                 start()
@@ -166,25 +170,46 @@ class RemoteVoiceManager(private val activity: Activity) {
 
         return try {
             val player = MediaPlayer().apply {
+                val audioAttributes = AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .build()
+                setAudioAttributes(audioAttributes)
                 setDataSource(file.absolutePath)
                 prepare()
                 setOnCompletionListener {
                     stopPlayback()
                     onComplete()
                 }
-                start()
             }
+
+            try {
+                loudnessEnhancer = LoudnessEnhancer(player.audioSessionId).apply {
+                    setTargetGain(1800) // +18 dB boost para igualar el nivel de la TV
+                    enabled = true
+                }
+            } catch (e: Exception) {
+                Log.w("RemoteVoiceManager", "LoudnessEnhancer no disponible: ${e.message}")
+            }
+
+            player.start()
             mediaPlayer = player
             isPlaying = true
             mapOf("success" to true, "durationMs" to player.duration)
         } catch (e: Exception) {
             Log.e("RemoteVoiceManager", "Error al reproducir audio", e)
-            isPlaying = false
+            stopPlayback()
             mapOf("success" to false, "error" to (e.message ?: "Error al reproducir"))
         }
     }
 
     fun stopPlayback() {
+        try {
+            loudnessEnhancer?.enabled = false
+            loudnessEnhancer?.release()
+        } catch (_: Exception) {}
+        loudnessEnhancer = null
+
         try {
             mediaPlayer?.stop()
             mediaPlayer?.release()

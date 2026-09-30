@@ -101,7 +101,18 @@ class SupabasePresenceService {
           .select()
           .single();
 
-      final record = DeviceRecord.fromJson(insertedResponse);
+      var record = DeviceRecord.fromJson(insertedResponse);
+      if (record.userCode == null || record.userCode!.isEmpty) {
+        final retry = await client
+            .from(tableDevices)
+            .select()
+            .eq('device_id', deviceId)
+            .maybeSingle();
+        if (retry != null && retry['user_code'] != null) {
+          record = DeviceRecord.fromJson(retry);
+        }
+      }
+
       return DeviceVerificationResult(
         record: record,
         isNewRegistration: true,

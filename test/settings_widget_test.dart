@@ -3,11 +3,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/config/app_config.dart';
 import 'package:moai3/features/settings/widgets/settings_general_panel.dart';
 import 'package:moai3/features/settings/widgets/settings_tv_panel.dart';
+import 'package:moai3/features/settings/widgets/settings_watch_party_panel.dart';
 import 'package:moai3/services/app_preferences_service.dart';
+import 'package:moai3/services/device_identity_service.dart';
+import 'package:moai3/services/watch_party_service.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/state/theme_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
+import 'package:moai3/state/watch_party_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -33,6 +37,13 @@ void main() {
         ),
         ChangeNotifierProvider<FavoritesProvider>.value(
           value: FavoritesProvider(prefs),
+        ),
+        ChangeNotifierProvider<WatchPartyProvider>.value(
+          value: WatchPartyProvider(
+            preferences: prefs,
+            service: WatchPartyService(),
+            identityService: DeviceIdentityService(prefs),
+          ),
         ),
       ],
       child: MaterialApp(
@@ -65,6 +76,23 @@ void main() {
     await tester.pump();
 
     expect(find.text('settings_tv_title'), findsOneWidget);
+    focusNode.dispose();
+  });
+
+  testWidgets('renders SettingsWatchPartyPanel', (tester) async {
+    final focusNode = FocusNode();
+    await tester.pumpWidget(
+      wrap(
+        SettingsWatchPartyPanel(
+          focusNode: focusNode,
+          onKeyLeft: () {},
+          onKeyRight: () {},
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('settings_watch_party_title'), findsOneWidget);
     focusNode.dispose();
   });
 

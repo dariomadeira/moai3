@@ -8,6 +8,8 @@ import 'package:moai3/services/app_preferences_service.dart';
 class DeviceIdentityService {
   static const String keyDeviceId = 'device_id';
   static const String keyFirstLaunch = 'device_first_launch';
+  static const String keyUserCode = 'device_user_code';
+  static const String keyNickname = 'device_nickname';
 
   final AppPreferences _preferences;
   final Uuid _uuid;
@@ -62,4 +64,16 @@ class DeviceIdentityService {
       firstLaunch: firstLaunch,
     );
   }
+
+  /// Obtiene el código de usuario (`MOAI-XXXX`) guardado localmente.
+  String? getUserCode() => _preferences.readOptionalString(keyUserCode);
+
+  /// Guarda el código de usuario (`MOAI-XXXX`) en preferencias.
+  Future<void> saveUserCode(String code) => _preferences.saveString(keyUserCode, code);
+
+  /// Obtiene el nickname guardado localmente.
+  String? getNickname() => _preferences.readOptionalString(keyNickname);
+
+  /// Guarda el nickname en preferencias.
+  Future<void> saveNickname(String nickname) => _preferences.saveString(keyNickname, nickname);
 }
