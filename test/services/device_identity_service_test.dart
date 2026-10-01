@@ -89,5 +89,31 @@ void main() {
       final deviceId = service.getOrCreateDeviceId();
       expect(deviceId, equals('pre-existing-device-id'));
     });
+
+    test('initialize resuelve identidad de forma determinista y consistente', () async {
+      final service = DeviceIdentityService(appPreferences);
+
+      final id1 = await service.initialize();
+      expect(id1.isNotEmpty, isTrue);
+
+      final id2 = service.getOrCreateDeviceId();
+      expect(id2, equals(id1));
+
+      final identity = await service.getIdentity();
+      expect(identity.deviceId, equals(id1));
+    });
+
+    test('persiste y recupera user_code y nickname', () async {
+      final service = DeviceIdentityService(appPreferences);
+
+      expect(service.getUserCode(), isNull);
+      expect(service.getNickname(), isNull);
+
+      await service.saveUserCode('MOAI-9988');
+      await service.saveNickname('Dario Living');
+
+      expect(service.getUserCode(), equals('MOAI-9988'));
+      expect(service.getNickname(), equals('Dario Living'));
+    });
   });
 }

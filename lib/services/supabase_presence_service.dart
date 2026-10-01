@@ -33,11 +33,13 @@ class SupabasePresenceService {
   Future<DeviceVerificationResult> verifyAndRegisterDevice({
     required String deviceId,
     required String appVersion,
+    String? nickname,
     Duration timeout = defaultTimeout,
   }) async {
     return _executeVerification(
       deviceId: deviceId,
       appVersion: appVersion,
+      nickname: nickname,
     ).timeout(
       timeout,
       onTimeout: () => throw TimeoutException(
@@ -50,6 +52,7 @@ class SupabasePresenceService {
   Future<DeviceVerificationResult> _executeVerification({
     required String deviceId,
     required String appVersion,
+    String? nickname,
   }) async {
     final client = _effectiveClient;
     final nowIso = DateTime.now().toUtc().toIso8601String();
@@ -63,12 +66,19 @@ class SupabasePresenceService {
 
     if (response != null) {
       // Registro existente: actualizar last_seen, app_version y online = true
-      final updateData = {
+      final updateData = <String, dynamic>{
         'app_version': appVersion,
         'online': true,
         'last_seen': nowIso,
         'updated_at': nowIso,
       };
+
+      // Si en Supabase el nickname estaba null pero localmente la TV tiene uno, sincronizarlo
+      if ((response['nickname'] == null || (response['nickname'] as String).trim().isEmpty) &&
+          nickname != null &&
+          nickname.trim().isNotEmpty) {
+        updateData['nickname'] = nickname.trim();
+      }
 
       final updatedResponse = await client
           .from(tableDevices)
@@ -84,7 +94,7 @@ class SupabasePresenceService {
       );
     } else {
       // No existe: crear nuevo registro (is_active = true, online = true)
-      final insertData = {
+      final insertData = <String, dynamic>{
         'device_id': deviceId,
         'app_version': appVersion,
         'is_active': true,
@@ -94,6 +104,9 @@ class SupabasePresenceService {
         'created_at': nowIso,
         'updated_at': nowIso,
       };
+      if (nickname != null && nickname.trim().isNotEmpty) {
+        insertData['nickname'] = nickname.trim();
+      }
 
       final insertedResponse = await client
           .from(tableDevices)
