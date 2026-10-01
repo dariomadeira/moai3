@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.core.content.FileProvider
 import java.io.File
 import java.security.SecureRandom
@@ -126,6 +127,18 @@ class MainActivity : FlutterActivity() {
                     activityManager.getMemoryInfo(memoryInfo)
                     val totalRamMb = (memoryInfo.totalMem / (1024 * 1024)).toInt()
                     result.success(totalRamMb)
+                }
+                "getHardwareDeviceId" -> {
+                    try {
+                        val androidId = Settings.Secure.getString(
+                            contentResolver,
+                            Settings.Secure.ANDROID_ID
+                        )
+                        result.success(androidId ?: "")
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Error getting ANDROID_ID: ${e.message}", e)
+                        result.success("")
+                    }
                 }
                 "isEmulator" -> {
                     val isEmu = (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic")

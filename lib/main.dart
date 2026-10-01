@@ -95,6 +95,7 @@ void main() async {
   }
 
   final deviceIdentityService = DeviceIdentityService(appPreferences);
+  await deviceIdentityService.initialize();
   final supabasePresenceService = SupabasePresenceService();
   final watchPartyService = WatchPartyService();
   final watchPartyProvider = WatchPartyProvider(

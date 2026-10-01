@@ -41,9 +41,11 @@ class _LoadingScreenState extends State<LoadingScreen> {
 
     try {
       final identity = await widget.identityService.getIdentity();
+      final localNickname = widget.identityService.getNickname();
       final result = await widget.presenceService.verifyAndRegisterDevice(
         deviceId: identity.deviceId,
         appVersion: identity.appVersion,
+        nickname: localNickname,
       );
 
       if (!mounted) return;
@@ -52,8 +54,10 @@ class _LoadingScreenState extends State<LoadingScreen> {
       if (record.userCode != null) {
         await widget.identityService.saveUserCode(record.userCode!);
       }
-      if (record.nickname != null) {
-        await widget.identityService.saveNickname(record.nickname!);
+      if (record.nickname != null && record.nickname!.trim().isNotEmpty) {
+        await widget.identityService.saveNickname(record.nickname!.trim());
+      } else if (localNickname != null && localNickname.trim().isNotEmpty) {
+        await widget.identityService.saveNickname(localNickname.trim());
       }
 
       if (!mounted) return;
