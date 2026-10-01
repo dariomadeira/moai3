@@ -37,6 +37,8 @@ class FriendInfo {
   final String? nickname;
   final bool isOnline;
   final DateTime? lastSeen;
+  final String? currentChannelId;
+  final String? currentChannelName;
 
   FriendInfo({
     required this.deviceId,
@@ -44,6 +46,8 @@ class FriendInfo {
     this.nickname,
     required this.isOnline,
     this.lastSeen,
+    this.currentChannelId,
+    this.currentChannelName,
   });
 
   factory FriendInfo.fromDeviceJson(Map<String, dynamic> json) {
@@ -55,7 +59,41 @@ class FriendInfo {
       lastSeen: json['last_seen'] != null
           ? DateTime.tryParse(json['last_seen'] as String)?.toLocal()
           : null,
+      currentChannelId: json['current_channel_id'] as String?,
+      currentChannelName: json['current_channel_name'] as String?,
     );
+  }
+
+  /// Comprueba si este amigo está mirando el mismo canal (SPEC-37).
+  /// Primero intenta coincidencia exacta de ID (ej. 'plugin:ar:tyc_sports').
+  /// Si no coincide el ID pero ambos tienen nombre, compara nombres normalizados (ej. 'ESPN').
+  bool isWatchingSameChannel(String? myChannelId, [String? myChannelName]) {
+    if (!isOnline) return false;
+    if (currentChannelId == null || currentChannelId!.trim().isEmpty) return false;
+
+    // 1. Coincidencia exacta de ID
+    if (myChannelId != null && myChannelId.isNotEmpty && currentChannelId == myChannelId) {
+      return true;
+    }
+
+    // 2. Coincidencia por nombre normalizado (Cross-plugin fallback)
+    if (myChannelName != null && currentChannelName != null) {
+      final a = _normalizeChannelName(currentChannelName!);
+      final b = _normalizeChannelName(myChannelName);
+      if (a.isNotEmpty && a == b) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  static String _normalizeChannelName(String name) {
+    return name
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'\b(hd|fhd|sd|4k|argentina|arg)\b', caseSensitive: false), '')
+        .replaceAll(RegExp(r'[^a-z0-9]'), '');
   }
 
   FriendInfo copyWith({
@@ -64,6 +102,8 @@ class FriendInfo {
     String? nickname,
     bool? isOnline,
     DateTime? lastSeen,
+    String? currentChannelId,
+    String? currentChannelName,
   }) {
     return FriendInfo(
       deviceId: deviceId ?? this.deviceId,
@@ -71,6 +111,8 @@ class FriendInfo {
       nickname: nickname ?? this.nickname,
       isOnline: isOnline ?? this.isOnline,
       lastSeen: lastSeen ?? this.lastSeen,
+      currentChannelId: currentChannelId ?? this.currentChannelId,
+      currentChannelName: currentChannelName ?? this.currentChannelName,
     );
   }
 }

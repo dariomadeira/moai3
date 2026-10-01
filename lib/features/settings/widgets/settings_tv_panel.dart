@@ -5,7 +5,6 @@ import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/features/sources/screens/sources_screen.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/widgets/dialogs/tv_pin_dialog.dart';
-import 'package:moai3/widgets/dialogs/tv_voice_test_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
@@ -17,7 +16,6 @@ enum _SettingsTvItemType {
   adultContent,
   changePin,
   sources,
-  micTest,
 }
 
 class SettingsTvPanel extends StatefulWidget {
@@ -58,7 +56,6 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
       _SettingsTvItemType.adultContent,
       if (hasPin) _SettingsTvItemType.changePin,
       _SettingsTvItemType.sources,
-      _SettingsTvItemType.micTest,
     ];
 
     if (_selectedIndex >= items.length) {
@@ -228,20 +225,6 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
                 builder: (context) => const SourcesScreen(),
               ),
             );
-          },
-          onKeyLeft: widget.onKeyLeft,
-          onKeyRight: widget.onKeyRight,
-          onKeyUp: onKeyUp,
-          onKeyDown: onKeyDown,
-        );
-      case _SettingsTvItemType.micTest:
-        return TvSettingsActionRow(
-          focusNode: focusNode,
-          icon: Icons.mic_outlined,
-          label: 'settings_tv_mic_test'.tr(),
-          description: 'settings_tv_mic_test_desc'.tr(),
-          onPressed: () {
-            TvVoiceTestDialog.show(context);
           },
           onKeyLeft: widget.onKeyLeft,
           onKeyRight: widget.onKeyRight,

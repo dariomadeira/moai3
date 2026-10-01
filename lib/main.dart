@@ -20,6 +20,7 @@ import 'package:moai3/services/moai_image_cache_manager.dart';
 import 'package:moai3/services/playback_stats_controller.dart';
 import 'package:moai3/services/supabase_presence_service.dart';
 import 'package:moai3/services/watch_party_service.dart';
+import 'package:moai3/services/watch_party_voice_coordinator.dart';
 import 'package:moai3/state/agenda_clock_provider.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/channel_provider.dart';
@@ -101,6 +102,11 @@ void main() async {
     service: watchPartyService,
     identityService: deviceIdentityService,
   );
+  final watchPartyVoiceCoordinator = WatchPartyVoiceCoordinator(
+    watchPartyProvider: watchPartyProvider,
+    watchPartyService: watchPartyService,
+    identityService: deviceIdentityService,
+  );
 
   final router = createRouter(
     tvSettingsProvider,
@@ -124,6 +130,7 @@ void main() async {
         ChangeNotifierProvider.value(value: debugLog),
         ChangeNotifierProvider.value(value: channelProvider.pluginHost),
         ChangeNotifierProvider.value(value: watchPartyProvider),
+        ChangeNotifierProvider.value(value: watchPartyVoiceCoordinator),
         Provider<DeviceIdentityService>.value(value: deviceIdentityService),
         Provider<SupabasePresenceService>.value(value: supabasePresenceService),
         Provider<WatchPartyService>.value(value: watchPartyService),

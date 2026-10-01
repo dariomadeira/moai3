@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 /// D-pad focus wrapper for the player area.
@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 class TvViewerFocusWrapper extends StatelessWidget {
   final FocusNode? focusNode;
   final bool effectiveFullScreen;
+  final bool isWatchPartyActive;
   final ValueChanged<bool>? onFullScreenChanged;
   final VoidCallback? onExitFullScreen;
   final VoidCallback? onRequestListFocus;
@@ -19,6 +20,7 @@ class TvViewerFocusWrapper extends StatelessWidget {
     super.key,
     this.focusNode,
     required this.effectiveFullScreen,
+    this.isWatchPartyActive = false,
     this.onFullScreenChanged,
     this.onExitFullScreen,
     this.onRequestListFocus,
@@ -29,6 +31,20 @@ class TvViewerFocusWrapper extends StatelessWidget {
 
   KeyEventResult _handleKey(LogicalKeyboardKey key) {
     if (effectiveFullScreen) {
+      if (isWatchPartyActive) {
+        // En Watch Party activo, solo la tecla Atrás / Escape sale de pantalla completa
+        if (key == LogicalKeyboardKey.escape ||
+            key == LogicalKeyboardKey.goBack) {
+          if (onFullScreenChanged != null) {
+            onFullScreenChanged!(false);
+          } else {
+            onExitFullScreen?.call();
+          }
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      }
+
       if (key == LogicalKeyboardKey.arrowUp ||
           key == LogicalKeyboardKey.arrowDown ||
           key == LogicalKeyboardKey.arrowLeft ||

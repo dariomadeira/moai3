@@ -43,9 +43,8 @@ class SearchPanel extends StatefulWidget {
 }
 
 class SearchPanelState extends State<SearchPanel> {
-  static const int _windowSize = 6;
-  static const int _crossAxisCount = 2;
-  static const double _rowExtent = 114.0;
+  static const int _windowSize = 9;
+  static const int _crossAxisCount = 3;
   static const int _rowCount = _windowSize ~/ _crossAxisCount;
 
   final _listKey = GlobalKey<TvWindowedGridState<Channel>>();
@@ -123,13 +122,13 @@ class SearchPanelState extends State<SearchPanel> {
       padding: const EdgeInsets.only(
         left: 12,
         right: 12,
-        top: 6,
-        bottom: 8,
+        top: 4,
+        bottom: 6,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header compacto propio de Buscar (libera alto para 6 ítems).
+          // Header compacto propio de Buscar (libera alto para 9 ítems 3x3).
           _SearchPanelChrome(
             queryController: widget.queryController,
             searchFocusNode: widget.searchFocusNode,
@@ -144,7 +143,7 @@ class SearchPanelState extends State<SearchPanel> {
               widget.searchFocusNode.requestFocus();
             },
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Expanded(
             child: widget.showSearchPrompt
                 ? Center(
@@ -200,44 +199,53 @@ class SearchPanelState extends State<SearchPanel> {
                           ],
                         ),
                       )
-                    : TvFixedWindowViewport(
-                        slotCount: _rowCount,
-                        slotExtent: _rowExtent,
-                        child: TvWindowedGrid<Channel>(
-                          key: _listKey,
-                          items: widget.searchResults,
-                          windowSize: _windowSize,
-                          crossAxisCount: _crossAxisCount,
-                          initialGlobalIndex: _selectedIndex,
-                          itemExtent: _rowExtent,
-                          showScrollDots: true,
-                          onFocusUpFromFirst: _focusInputFromFirstResult,
-                          itemBuilder: (
-                            context,
-                            channel,
-                            focusNode,
-                            local,
-                            global,
-                            onKeyUp,
-                            onKeyDown,
-                            onKeyLeft,
-                            onKeyRight,
-                          ) {
-                            return ChannelGridTile(
-                              key: ValueKey(channel.id),
-                              channel: channel,
-                              isSelected:
-                                  widget.selectedChannel?.id == channel.id,
-                              focusNode: focusNode,
-                              onLongPress: widget.onLongPress,
-                              onKeyUp: onKeyUp,
-                              onKeyDown: onKeyDown,
-                              onKeyLeft: onKeyLeft,
-                              onKeyRight: onKeyRight,
-                              onTap: () => widget.onSelectChannel(channel),
-                            );
-                          },
-                        ),
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          final dynamicRowExtent =
+                              (constraints.maxHeight / _rowCount)
+                                  .floorToDouble()
+                                  .clamp(92.0, 108.0);
+                          return TvFixedWindowViewport(
+                            slotCount: _rowCount,
+                            slotExtent: dynamicRowExtent,
+                            alignment: Alignment.bottomCenter,
+                            child: TvWindowedGrid<Channel>(
+                              key: _listKey,
+                              items: widget.searchResults,
+                              windowSize: _windowSize,
+                              crossAxisCount: _crossAxisCount,
+                              initialGlobalIndex: _selectedIndex,
+                              itemExtent: dynamicRowExtent,
+                              showScrollDots: true,
+                              onFocusUpFromFirst: _focusInputFromFirstResult,
+                              itemBuilder: (
+                                context,
+                                channel,
+                                focusNode,
+                                local,
+                                global,
+                                onKeyUp,
+                                onKeyDown,
+                                onKeyLeft,
+                                onKeyRight,
+                              ) {
+                                return ChannelGridTile(
+                                  key: ValueKey(channel.id),
+                                  channel: channel,
+                                  isSelected:
+                                      widget.selectedChannel?.id == channel.id,
+                                  focusNode: focusNode,
+                                  onLongPress: widget.onLongPress,
+                                  onKeyUp: onKeyUp,
+                                  onKeyDown: onKeyDown,
+                                  onKeyLeft: onKeyLeft,
+                                  onKeyRight: onKeyRight,
+                                  onTap: () => widget.onSelectChannel(channel),
+                                );
+                              },
+                            ),
+                          );
+                        },
                       ),
           ),
         ],
@@ -277,7 +285,7 @@ class _SearchPanelChrome extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -312,7 +320,7 @@ class _SearchPanelChrome extends StatelessWidget {
             ],
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 5),
         Text(
           resultsCapped
               ? 'search_results_capped'.tr()
@@ -324,7 +332,7 @@ class _SearchPanelChrome extends StatelessWidget {
           style: MoaiText.body(
             context,
             color: scheme.onSurfaceVariant,
-            fontSize: 14,
+            fontSize: 12.5,
             fontWeight: FontWeight.w500,
           ),
         ),

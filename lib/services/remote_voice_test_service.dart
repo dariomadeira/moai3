@@ -6,11 +6,25 @@ class RemoteVoiceTestService {
       MethodChannel('com.infomak.moai.tv/remote_voice');
 
   static Function()? onPlaybackFinished;
+  static final List<void Function()> _playbackListeners = [];
+
+  static void addPlaybackListener(void Function() listener) {
+    _playbackListeners.add(listener);
+  }
+
+  static void removePlaybackListener(void Function() listener) {
+    _playbackListeners.remove(listener);
+  }
 
   static void initialize() {
     _channel.setMethodCallHandler((call) async {
       if (call.method == 'onPlaybackComplete') {
         onPlaybackFinished?.call();
+        for (final l in List<void Function()>.from(_playbackListeners)) {
+          try {
+            l();
+          } catch (_) {}
+        }
       }
     });
   }
@@ -69,6 +83,19 @@ class RemoteVoiceTestService {
     try {
       final res =
           await _channel.invokeMapMethod<String, dynamic>('playRecording');
+      return res ?? {'success': false, 'error': 'Respuesta nula'};
+    } on PlatformException catch (e) {
+      return {'success': false, 'error': e.message};
+    }
+  }
+
+  /// Reproduce un archivo o URL de audio por los altavoces de la TV con LoudnessEnhancer (+18 dB).
+  static Future<Map<String, dynamic>> playAudio(String source) async {
+    try {
+      final res = await _channel.invokeMapMethod<String, dynamic>(
+        'playAudio',
+        {'source': source},
+      );
       return res ?? {'success': false, 'error': 'Respuesta nula'};
     } on PlatformException catch (e) {
       return {'success': false, 'error': e.message};

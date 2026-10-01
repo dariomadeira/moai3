@@ -11,6 +11,9 @@ class DeviceRecord {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  final String? currentChannelId;
+  final String? currentChannelName;
+
   DeviceRecord({
     required this.deviceId,
     this.userCode,
@@ -23,6 +26,8 @@ class DeviceRecord {
     required this.firstSeen,
     required this.createdAt,
     required this.updatedAt,
+    this.currentChannelId,
+    this.currentChannelName,
   });
 
   factory DeviceRecord.fromJson(Map<String, dynamic> json) {
@@ -46,6 +51,8 @@ class DeviceRecord {
       updatedAt: json['updated_at'] != null
           ? DateTime.tryParse(json['updated_at'].toString())?.toLocal() ?? DateTime.now()
           : DateTime.now(),
+      currentChannelId: json['current_channel_id'] as String?,
+      currentChannelName: json['current_channel_name'] as String?,
     );
   }
 
@@ -59,6 +66,8 @@ class DeviceRecord {
       'block_reason': blockReason,
       'online': online,
       if (lastSeen != null) 'last_seen': lastSeen!.toUtc().toIso8601String(),
+      if (currentChannelId != null) 'current_channel_id': currentChannelId,
+      if (currentChannelName != null) 'current_channel_name': currentChannelName,
     };
   }
 }

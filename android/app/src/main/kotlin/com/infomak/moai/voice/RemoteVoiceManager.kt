@@ -165,6 +165,13 @@ class RemoteVoiceManager(private val activity: Activity) {
         if (!file.exists() || file.length() == 0L) {
             return mapOf("success" to false, "error" to "No hay audio grabado disponible")
         }
+        return playAudio(file.absolutePath, onComplete)
+    }
+
+    fun playAudio(source: String, onComplete: () -> Unit): Map<String, Any> {
+        if (source.isBlank()) {
+            return mapOf("success" to false, "error" to "Fuente de audio vacía")
+        }
 
         stopPlayback()
 
@@ -175,7 +182,7 @@ class RemoteVoiceManager(private val activity: Activity) {
                     .setUsage(AudioAttributes.USAGE_MEDIA)
                     .build()
                 setAudioAttributes(audioAttributes)
-                setDataSource(file.absolutePath)
+                setDataSource(source)
                 prepare()
                 setOnCompletionListener {
                     stopPlayback()
@@ -197,7 +204,7 @@ class RemoteVoiceManager(private val activity: Activity) {
             isPlaying = true
             mapOf("success" to true, "durationMs" to player.duration)
         } catch (e: Exception) {
-            Log.e("RemoteVoiceManager", "Error al reproducir audio", e)
+            Log.e("RemoteVoiceManager", "Error al reproducir audio: $source", e)
             stopPlayback()
             mapOf("success" to false, "error" to (e.message ?: "Error al reproducir"))
         }

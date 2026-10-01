@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/services/remote_voice_test_service.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
@@ -221,7 +222,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
 
     return TvDialog(
       width: 580,
-      icon: Icons.mic_outlined,
+      icon: Symbols.mic_gear,
       iconBgColor: _isRecording
           ? scheme.error
           : _isPlaying

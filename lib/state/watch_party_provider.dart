@@ -4,6 +4,7 @@ import 'package:moai3/models/friend_info.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/watch_party_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Gestor de estado para la funcionalidad "Miremos Juntos" (Watch Party) (SPEC-36 y SPEC-37).
 class WatchPartyProvider extends ChangeNotifier {
@@ -21,6 +22,10 @@ class WatchPartyProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   Timer? _presenceRefreshTimer;
+  String? _currentChannelId;
+  String? _currentChannelName;
+  Timer? _channelReportDebounceTimer;
+  RealtimeChannel? _devicesRealtimeChannel;
 
   WatchPartyProvider({
     required this.preferences,
@@ -60,6 +65,28 @@ class WatchPartyProvider extends ChangeNotifier {
   /// Cantidad de amigos conectados en tiempo real.
   int get onlineFriendsCount => _friends.where((f) => f.isOnline).length;
 
+  /// ID del canal actualmente sintonizado y confirmado tras debounce (SPEC-37).
+  String? get currentChannelId => _currentChannelId;
+
+  /// Nombre del canal actualmente sintonizado.
+  String? get currentChannelName => _currentChannelName;
+
+  /// Lista de amigos que están mirando el mismo canal actualmente (SPEC-37).
+  List<FriendInfo> get friendsWatchingCurrentChannel {
+    if (!_enabled || _currentChannelId == null || _currentChannelId!.isEmpty) {
+      return const [];
+    }
+    return _friends
+        .where((f) => f.isWatchingSameChannel(_currentChannelId, _currentChannelName))
+        .toList();
+  }
+
+  /// Cantidad de amigos mirando el mismo canal.
+  int get friendsWatchingCurrentChannelCount => friendsWatchingCurrentChannel.length;
+
+  /// Indica si hay al menos un amigo mirando el mismo canal.
+  bool get hasFriendsInSameChannel => friendsWatchingCurrentChannel.isNotEmpty;
+
   void _init() {
     _deviceId = identityService.getOrCreateDeviceId();
     _enabled = preferences.readPreferenceBool(keyWatchPartyEnabled, defaultValue: false);
@@ -70,6 +97,7 @@ class WatchPartyProvider extends ChangeNotifier {
       ensureUserCode();
       loadFriends();
       _startPresenceTimer();
+      _subscribeToDevicesRealtime();
     }
   }
 
@@ -149,10 +177,25 @@ class WatchPartyProvider extends ChangeNotifier {
       await ensureUserCode();
       await loadFriends();
       _startPresenceTimer();
+      _subscribeToDevicesRealtime();
     } else {
-      // Al desactivar, detener timer
+      // Al desactivar, detener timers, desuscribir realtime y limpiar canal
       _presenceRefreshTimer?.cancel();
       _presenceRefreshTimer = null;
+      _channelReportDebounceTimer?.cancel();
+      _channelReportDebounceTimer = null;
+      _unsubscribeFromDevicesRealtime();
+      if (_currentChannelId != null) {
+        _currentChannelId = null;
+        _currentChannelName = null;
+        if (_deviceId.isNotEmpty) {
+          service.reportCurrentChannel(
+            deviceId: _deviceId,
+            channelId: null,
+            channelName: null,
+          );
+        }
+      }
     }
 
     notifyListeners();
@@ -234,6 +277,53 @@ class WatchPartyProvider extends ChangeNotifier {
     }
   }
 
+  /// Reporta el canal sintonizado con debounce de 3 segundos contra el zapping (SPEC-37).
+  /// Si [channelId] es null, cancela cualquier debounce previo y limpia de inmediato en Supabase.
+  void reportCurrentChannel({String? channelId, String? channelName}) {
+    if (!_enabled) return;
+
+    // Cancelar debounce previo
+    _channelReportDebounceTimer?.cancel();
+    _channelReportDebounceTimer = null;
+
+    if (channelId == null || channelId.isEmpty) {
+      // Salida de canal / fullscreen / pausa -> Limpieza inmediata
+      if (_currentChannelId != null) {
+        _currentChannelId = null;
+        _currentChannelName = null;
+        notifyListeners();
+        if (_deviceId.isNotEmpty) {
+          service.reportCurrentChannel(
+            deviceId: _deviceId,
+            channelId: null,
+            channelName: null,
+          );
+        }
+      }
+      return;
+    }
+
+    // Si ya está exactamente en este canal reportado, no reiniciar debounce
+    if (_currentChannelId == channelId && _currentChannelName == channelName) {
+      return;
+    }
+
+    // Iniciar debounce de 3 segundos para proteger contra zapping rápido
+    _channelReportDebounceTimer = Timer(const Duration(seconds: 3), () async {
+      _currentChannelId = channelId;
+      _currentChannelName = channelName;
+      notifyListeners();
+
+      if (_deviceId.isNotEmpty) {
+        await service.reportCurrentChannel(
+          deviceId: _deviceId,
+          channelId: channelId,
+          channelName: channelName,
+        );
+      }
+    });
+  }
+
   void _sortFriends() {
     _friends.sort((a, b) {
       if (a.isOnline != b.isOnline) {
@@ -255,9 +345,49 @@ class WatchPartyProvider extends ChangeNotifier {
     });
   }
 
+  void _subscribeToDevicesRealtime() {
+    try {
+      _devicesRealtimeChannel = service.subscribeToDevicesUpdates(
+        onDeviceUpdated: _onDeviceRecordUpdated,
+      );
+    } catch (_) {}
+  }
+
+  void _unsubscribeFromDevicesRealtime() {
+    try {
+      _devicesRealtimeChannel?.unsubscribe();
+    } catch (_) {}
+    _devicesRealtimeChannel = null;
+  }
+
+  void _onDeviceRecordUpdated(Map<String, dynamic> record) {
+    final updatedDeviceId = record['device_id'] as String?;
+    if (updatedDeviceId == null || updatedDeviceId.isEmpty) return;
+
+    final index = _friends.indexWhere((f) => f.deviceId == updatedDeviceId);
+    if (index != -1) {
+      final old = _friends[index];
+      final updated = old.copyWith(
+        nickname: record['nickname'] as String? ?? old.nickname,
+        userCode: record['user_code'] as String? ?? old.userCode,
+        isOnline: record['online'] as bool? ?? old.isOnline,
+        lastSeen: record['last_seen'] != null
+            ? DateTime.tryParse(record['last_seen'].toString())?.toLocal()
+            : old.lastSeen,
+        currentChannelId: record['current_channel_id'] as String?,
+        currentChannelName: record['current_channel_name'] as String?,
+      );
+      _friends[index] = updated;
+      _sortFriends();
+      notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
     _presenceRefreshTimer?.cancel();
+    _channelReportDebounceTimer?.cancel();
+    _unsubscribeFromDevicesRealtime();
     super.dispose();
   }
 }

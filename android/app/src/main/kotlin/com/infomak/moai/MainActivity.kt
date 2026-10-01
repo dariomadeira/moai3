@@ -221,6 +221,18 @@ class MainActivity : FlutterActivity() {
                     }
                     result.success(res)
                 }
+                "playAudio" -> {
+                    val source = call.argument<String>("source") ?: run {
+                        result.error("INVALID_ARG", "Parametro 'source' requerido", null)
+                        return@setMethodCallHandler
+                    }
+                    val res = vm.playAudio(source) {
+                        runOnUiThread {
+                            channel.invokeMethod("onPlaybackComplete", null)
+                        }
+                    }
+                    result.success(res)
+                }
                 "stopPlayback" -> {
                     vm.stopPlayback()
                     result.success(true)
