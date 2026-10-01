@@ -100,7 +100,7 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
         : null;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Focus(
         focusNode: widget.focusNode,
         onFocusChange: (focus) => setState(() => _isFocused = focus),
@@ -172,7 +172,7 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
           onLongPress: widget.onLongPress,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 120),
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
+            padding: const EdgeInsets.fromLTRB(6, 6, 6, 4),
             decoration: BoxDecoration(
               color: itemStyle.backgroundColor,
               borderRadius: BorderRadius.circular(12),
@@ -202,7 +202,7 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
                   ),
                 ),
                 if (showLabel) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 3),
                   Text(
                     widget.channel.name,
                     maxLines: 2,
@@ -210,15 +210,15 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
                     textAlign: TextAlign.center,
                     style: MoaiText.body(
                       context,
-                      fontSize: 11.5,
-                      height: 1.15,
+                      fontSize: 11,
+                      height: 1.12,
                       color: itemStyle.foregroundColor,
                       fontWeight: itemStyle.fontWeight,
                     ),
                   ),
                 ],
                 if (tag != null) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   Center(
                     child: Container(
                       padding: const EdgeInsets.symmetric(

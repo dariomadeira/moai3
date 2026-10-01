@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 class TvFixedWindowViewport extends StatelessWidget {
   final int slotCount;
   final double slotExtent;
+  final AlignmentGeometry alignment;
   final Widget child;
 
   const TvFixedWindowViewport({
@@ -15,6 +16,7 @@ class TvFixedWindowViewport extends StatelessWidget {
     required this.slotCount,
     required this.slotExtent,
     required this.child,
+    this.alignment = Alignment.bottomCenter,
   });
 
   @override
@@ -24,7 +26,7 @@ class TvFixedWindowViewport extends StatelessWidget {
         final targetHeight =
             (slotCount * slotExtent).clamp(0.0, constraints.maxHeight);
         return Align(
-          alignment: Alignment.bottomCenter,
+          alignment: alignment,
           child: SizedBox(
             height: targetHeight,
             width: double.infinity,

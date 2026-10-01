@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/features/settings/screens/friends_screen.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/features/settings/widgets/tv_tile.dart';
@@ -174,7 +175,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
       case _SettingsWatchPartyItemType.watchPartySwitch:
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: Icons.group_outlined,
+          icon: Symbols.voice_selection,
           label: 'settings_tv_watch_party'.tr(),
           description: 'settings_tv_watch_party_desc'.tr(),
           value: watchParty?.enabled ?? false,
@@ -282,7 +283,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
       case _SettingsWatchPartyItemType.micTest:
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: Icons.mic_outlined,
+          icon: Symbols.mic_gear,
           label: 'settings_tv_mic_test'.tr(),
           description: 'settings_tv_mic_test_desc'.tr(),
           onPressed: () {

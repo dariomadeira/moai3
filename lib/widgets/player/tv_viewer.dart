@@ -12,9 +12,11 @@ import 'package:moai3/models/channel.dart';
 import 'package:moai3/services/debug_log_controller.dart';
 import 'package:moai3/services/playback_stats_controller.dart';
 import 'package:moai3/services/plugin_host_service.dart';
+import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/player/tv_viewer_focus_wrapper.dart';
 import 'package:moai3/widgets/player/viewer_error_display.dart';
+import 'package:moai3/widgets/player/watch_party_overlay.dart';
 
 /// Visor TV usando el motor Kotlin nativo (ExoPlayer) con widget `Texture`.
 class TvViewer extends StatefulWidget {
@@ -90,6 +92,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
         );
 
   PluginHostController? _pluginHost;
+  WatchPartyProvider? _watchParty;
 
   @override
   void initState() {
@@ -146,6 +149,9 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
     super.didChangeDependencies();
     _stats ??= context.read<PlaybackStatsController>();
     _pluginHost ??= context.read<PluginHostController>();
+    try {
+      _watchParty ??= context.read<WatchPartyProvider>();
+    } catch (_) {}
   }
 
   @override
@@ -173,6 +179,17 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
             _hasFirstFrame = false;
           });
         }));
+      }
+    }
+
+    if (oldWidget.isFullScreen != widget.isFullScreen) {
+      if (widget.isFullScreen == true && widget.channel != null) {
+        _watchParty?.reportCurrentChannel(
+          channelId: widget.channel!.id,
+          channelName: widget.channel!.name,
+        );
+      } else if (widget.isFullScreen == false) {
+        _watchParty?.reportCurrentChannel(channelId: null);
       }
     }
   }
@@ -250,6 +267,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
       engine.removeListener(_onEngineEvent);
       engine.dispose();
     }
+    _watchParty?.reportCurrentChannel(channelId: null);
   }
 
   Future<void> _playChannel(Channel channel, {bool isRetry = false}) async {
@@ -324,6 +342,12 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
         '${ChannelPlaybackHelpers.playbackSourceLabel(channel, _reconnect.fallbackIndex)}',
       );
       await newController.play();
+      if (_effectiveFullScreen) {
+        _watchParty?.reportCurrentChannel(
+          channelId: channel.id,
+          channelName: channel.name,
+        );
+      }
     } catch (e) {
       if (newController != null) {
         newController.removeListener(_onEngineEvent);
@@ -345,12 +369,14 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  bool get _effectiveFullScreen => widget.onFullScreenChanged != null
+      ? widget.isFullScreen
+      : _isFullScreen;
+
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final effectiveFullScreen = widget.onFullScreenChanged != null
-        ? widget.isFullScreen
-        : _isFullScreen;
+    final effectiveFullScreen = _effectiveFullScreen;
 
     final engine = _engine;
     Widget content = _errorMessage != null
@@ -387,6 +413,17 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
                 ],
               );
 
+    WatchPartyProvider? watchParty;
+    try {
+      watchParty = context.watch<WatchPartyProvider>();
+    } catch (_) {
+      watchParty = _watchParty;
+    }
+
+    final isWatchPartyActive = effectiveFullScreen &&
+        (watchParty?.enabled ?? false) &&
+        (watchParty?.hasFriendsInSameChannel ?? false);
+
     Widget playerWidget = GestureDetector(
       onTap: () {
         if (widget.onFullScreenChanged != null) {
@@ -397,7 +434,14 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
         }
       },
       child: effectiveFullScreen
-          ? ColoredBox(color: scheme.surface, child: content)
+          ? Stack(
+              fit: StackFit.expand,
+              children: [
+                ColoredBox(color: scheme.surface, child: content),
+                if (isWatchPartyActive)
+                  const WatchPartyOverlay(),
+              ],
+            )
           : AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               decoration: BoxDecoration(
@@ -422,6 +466,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
     return TvViewerFocusWrapper(
       focusNode: widget.focusNode,
       effectiveFullScreen: effectiveFullScreen,
+      isWatchPartyActive: isWatchPartyActive,
       onFullScreenChanged: widget.onFullScreenChanged != null
           ? (full) => widget.onFullScreenChanged!(full)
           : null,
