@@ -41,7 +41,7 @@ class DeviceIdentityService {
     // 1. Intentar resolver mediante hardware inmutable (RB-01: unívoco por dispositivo físico)
     final hardwareId = await _getHardwareId();
     if (hardwareId != null && hardwareId.isNotEmpty) {
-      final hardwareUuid = _uuid.v5(Uuid.NAMESPACE_URL, 'moai:device:$hardwareId');
+      final hardwareUuid = _uuid.v5(Namespace.url.value, 'moai:device:$hardwareId');
       _cachedDeviceId = hardwareUuid;
       await _preferences.saveString(keyDeviceId, hardwareUuid);
       await _saveDeviceIdToFile(hardwareUuid);

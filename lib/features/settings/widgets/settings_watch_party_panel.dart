@@ -53,8 +53,10 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
       if (mounted) {
         try {
           final wp = context.read<WatchPartyProvider>();
-          wp.ensureUserCode();
-          wp.fetchNickname();
+          if (wp.enabled) {
+            wp.ensureUserCode();
+            wp.fetchNickname();
+          }
         } catch (_) {}
       }
     });
@@ -304,6 +306,9 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
   ) async {
     if (watchParty == null) return;
     if (!value) {
+      setState(() {
+        _selectedIndex = 0;
+      });
       await watchParty.setEnabled(false);
       return;
     }

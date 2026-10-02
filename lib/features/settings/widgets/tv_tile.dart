@@ -118,11 +118,8 @@ class _TvTileState extends State<TvTile> {
       },
       child: GestureDetector(
         onTap: () {
-          if (isFocused) {
-            widget.onPressed?.call();
-          } else {
-            widget.focusNode.requestFocus();
-          }
+          widget.focusNode.requestFocus();
+          widget.onPressed?.call();
         },
         child: _TvTileChrome(
           isFocused: isFocused,

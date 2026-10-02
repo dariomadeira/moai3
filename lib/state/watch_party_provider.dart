@@ -170,6 +170,7 @@ class WatchPartyProvider extends ChangeNotifier {
   Future<void> setEnabled(bool value) async {
     if (_enabled == value) return;
     _enabled = value;
+    notifyListeners();
     await preferences.saveBool(keyWatchPartyEnabled, value);
 
     if (_enabled) {
