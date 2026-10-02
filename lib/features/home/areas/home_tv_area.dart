@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -18,7 +19,11 @@ import 'package:moai3/features/home/widgets/empty_viewer_panel.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/home/widgets/tv_tab_bar.dart';
 import 'package:moai3/features/home/widgets/tv_clock_pill.dart';
+import 'package:moai3/features/home/widgets/tv_watch_party_header_bar.dart';
 import 'package:moai3/features/home/widgets/viewer_favorites_bar.dart';
+import 'package:moai3/state/watch_party_provider.dart';
+import 'package:moai3/widgets/feedback/moai_snackbar.dart';
+import 'package:moai3/widgets/dialogs/tv_friends_dialog.dart';
 import 'package:moai3/features/player/playback/channel_playback_helpers.dart';
 import 'package:moai3/features/search/controllers/home_search_controller.dart';
 import 'package:moai3/features/search/widgets/search_panel.dart';
@@ -89,6 +94,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
   final _simulateLiveTwoFocus = FocusNode(debugLabel: 'tv_simulate_live_two');
   final _serverSkipFocus = FocusNode(debugLabel: 'tv_server_skip');
   final _logFocus = FocusNode(debugLabel: 'tv_log');
+  final _watchPartyMicFocusNode = FocusNode(debugLabel: 'tv_header_mic');
   final _countryPanelKey = GlobalKey<CountryListPanelState>();
   final _categoryPanelKey = GlobalKey<CategoryListPanelState>();
   final _channelPanelKey = GlobalKey<ChannelListPanelState>();
@@ -111,6 +117,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
   ChannelProvider? _channelProvider;
   TvSettingsProvider? _tvSettingsProvider;
   FavoritesProvider? _favoritesProvider;
+  StreamSubscription<String>? _joinedNotificationsSubscription;
 
   @override
   void initState() {
@@ -135,6 +142,20 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     _channelProvider = context.read<ChannelProvider>();
     _tvSettingsProvider = context.read<TvSettingsProvider>();
     _favoritesProvider = context.read<FavoritesProvider>();
+
+    final wp = context.read<WatchPartyProvider?>();
+    if (wp != null) {
+      _joinedNotificationsSubscription?.cancel();
+      _joinedNotificationsSubscription =
+          wp.joinedChannelNotificationsStream.listen((friendName) {
+        if (!mounted) return;
+        MoaiSnackBar.show(
+          context,
+          message: 'watch_party_friend_joined'.tr(namedArgs: {'name': friendName}),
+          icon: Symbols.person,
+        );
+      });
+    }
 
     _channelProvider!.addListener(_onStateChanged);
     _tvSettingsProvider!.addListener(_onStateChanged);
@@ -331,6 +352,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
 
   @override
   void dispose() {
+    _joinedNotificationsSubscription?.cancel();
     _channelProvider?.removeListener(_onStateChanged);
     _tvSettingsProvider?.removeListener(_onStateChanged);
     _favoritesProvider?.removeListener(_onStateChanged);
@@ -353,6 +375,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     _favoriteBtnFocus.dispose();
     _createGroupFocus.dispose();
     _clearFavoritesFocus.dispose();
+    _watchPartyMicFocusNode.dispose();
     _simulateLiveFocus.dispose();
     _simulateLiveTwoFocus.dispose();
     _serverSkipFocus.dispose();
@@ -376,6 +399,10 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
   }
 
   VoidCallback get _focusCurrentTab => () {
+    if (_watchPartyMicFocusNode.canRequestFocus) {
+      _watchPartyMicFocusNode.requestFocus();
+      return;
+    }
     if (_tvTab == 'groups') {
       _groupsTabFocus.requestFocus();
     } else if (_tvTab == 'search') {
@@ -554,8 +581,12 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     });
   }
 
-  /// Smart: ↑ desde player → botón ♥ (no la barra). Si es canal adulto, salta a control disponible.
+  /// Smart: ↑ desde player → Micrófono (si está disponible) / botón ♥ (no la barra). Si es canal adulto, salta a control disponible.
   void _handlePlayerUpKey() {
+    if (_watchPartyMicFocusNode.canRequestFocus) {
+      _watchPartyMicFocusNode.requestFocus();
+      return;
+    }
     final channel =
         (_channelProvider ?? context.read<ChannelProvider>()).selectedChannel;
     if (channel != null && channel.isAdult) {
@@ -1041,7 +1072,13 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                       groupsFocusNode: _groupsTabFocus,
                       onFocusDown: _focusActiveContent,
                       onFocusLeft: widget.onExitLeft,
-                      onFocusPlayer: () => _viewerFocus.requestFocus(),
+                      onFocusPlayer: () {
+                        if (_watchPartyMicFocusNode.canRequestFocus) {
+                          _watchPartyMicFocusNode.requestFocus();
+                        } else {
+                          _viewerFocus.requestFocus();
+                        }
+                      },
                     ),
                     Expanded(
                       child: _tvTab == 'explore'
@@ -1081,9 +1118,38 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Align(
+                    Align(
                       alignment: Alignment.centerRight,
-                      child: TvClockPill(),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: TvWatchPartyHeaderBar(
+                              micFocusNode: _watchPartyMicFocusNode,
+                              onLongPressMic: () => TvFriendsDialog.show(context),
+                              onKeyLeft: () {
+                                if (_groupsTabFocus.canRequestFocus) {
+                                  _groupsTabFocus.requestFocus();
+                                } else if (_searchTabFocus.canRequestFocus) {
+                                  _searchTabFocus.requestFocus();
+                                } else {
+                                  _exploreTabFocus.requestFocus();
+                                }
+                              },
+                              onKeyUp: () {
+                                if (_groupsTabFocus.canRequestFocus) {
+                                  _groupsTabFocus.requestFocus();
+                                } else {
+                                  _exploreTabFocus.requestFocus();
+                                }
+                              },
+                              onKeyDown: () => _viewerFocus.requestFocus(),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const TvClockPill(),
+                        ],
+                      ),
                     ),
                     Expanded(
                       child: channel == null

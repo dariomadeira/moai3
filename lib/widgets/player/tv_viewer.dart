@@ -408,8 +408,9 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
     }
 
     final isWatchPartyActive = effectiveFullScreen &&
-        (watchParty?.enabled ?? false) &&
-        (watchParty?.hasFriendsInSameChannel ?? false);
+        (WatchPartyOverlay.debugForceVisible ||
+            ((watchParty?.enabled ?? false) &&
+                (watchParty?.hasFriendsInSameChannel ?? false)));
 
     Widget playerWidget = GestureDetector(
       onTap: () {

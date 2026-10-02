@@ -8,7 +8,6 @@ import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_add_friend_dialog.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
-import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
@@ -52,75 +51,6 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
   static const int _windowSize = 3;
   static const double _itemExtent = 52.0;
 
-  // =========================================================================
-  // --- MOCK TEMPORAL PARA TESTING VISUAL (REMOVER DESPUÉS) ---
-  // =========================================================================
-  static const bool _useMockData = false;
-
-  static final List<FriendInfo> _initialMockFriends = [
-    FriendInfo(
-      deviceId: 'mock_friend_1',
-      userCode: 'MOAI-2W6D',
-      nickname: 'Apotv',
-      isOnline: true,
-    ),
-    FriendInfo(
-      deviceId: 'mock_friend_2',
-      userCode: 'MOAI-7K9P',
-      nickname: 'Carlos TV',
-      isOnline: true,
-    ),
-    FriendInfo(
-      deviceId: 'mock_friend_3',
-      userCode: 'MOAI-4X2M',
-      nickname: 'Lucía Sala',
-      isOnline: false,
-    ),
-    FriendInfo(
-      deviceId: 'mock_friend_4',
-      userCode: 'MOAI-9L1Q',
-      nickname: 'Martín',
-      isOnline: false,
-    ),
-    FriendInfo(
-      deviceId: 'mock_friend_5',
-      userCode: 'MOAI-5F8B',
-      nickname: 'Matias Living',
-      isOnline: true,
-    ),
-  ];
-
-  static final List<FriendInfo> _initialMockRequests = [
-    FriendInfo(
-      deviceId: 'mock_req_1',
-      userCode: 'MOAI-3H8V',
-      nickname: 'Juan Gomez',
-      isOnline: true,
-    ),
-    FriendInfo(
-      deviceId: 'mock_req_2',
-      userCode: 'MOAI-8T4Z',
-      nickname: 'Sofi Cine',
-      isOnline: false,
-    ),
-    FriendInfo(
-      deviceId: 'mock_req_3',
-      userCode: 'MOAI-1P6R',
-      nickname: 'Facundo',
-      isOnline: true,
-    ),
-    FriendInfo(
-      deviceId: 'mock_req_4',
-      userCode: 'MOAI-6C3Y',
-      nickname: null,
-      isOnline: false,
-    ),
-  ];
-
-  List<FriendInfo> _overrideFriends = List<FriendInfo>.from(_initialMockFriends);
-  List<FriendInfo> _overrideRequests = List<FriendInfo>.from(_initialMockRequests);
-  // =========================================================================
-
   final TextEditingController _codeController = TextEditingController();
   final FocusNode _codeFocus = FocusNode(debugLabel: 'friends_modal_code_input');
   final FocusNode _addFocus = FocusNode(debugLabel: 'friends_modal_add_btn');
@@ -136,15 +66,9 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
   @override
   void initState() {
     super.initState();
-    if (_useMockData) {
-      _overrideFriends = List<FriendInfo>.from(_initialMockFriends);
-      _overrideRequests = List<FriendInfo>.from(_initialMockRequests);
-    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        if (!_useMockData) {
-          context.read<WatchPartyProvider>().loadFriends(showLoading: true);
-        }
+        context.read<WatchPartyProvider>().loadFriends(showLoading: true);
         _codeFocus.requestFocus();
       }
     });
@@ -166,29 +90,6 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
       final added = await TvAddFriendDialog.show(context);
       if (added == true && mounted) {
         _codeController.clear();
-      }
-      return;
-    }
-
-    if (_useMockData) {
-      setState(() {
-        _overrideFriends.insert(
-          0,
-          FriendInfo(
-            deviceId: 'mock_${DateTime.now().millisecondsSinceEpoch}',
-            userCode: rawInput,
-            nickname: rawInput,
-            isOnline: true,
-          ),
-        );
-      });
-      _codeController.clear();
-      if (mounted) {
-        MoaiSnackBar.show(
-          context,
-          message: 'friend_add_dialog_success'.tr(),
-          icon: Icons.check_circle_outline,
-        );
       }
       return;
     }
@@ -218,22 +119,6 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
   }
 
   Future<void> _handleAcceptRequest(FriendInfo request) async {
-    if (_useMockData) {
-      setState(() {
-        _overrideRequests.removeWhere((r) => r.deviceId == request.deviceId);
-        _overrideFriends.insert(
-          0,
-          FriendInfo(
-            deviceId: request.deviceId,
-            userCode: request.userCode,
-            nickname: request.nickname,
-            isOnline: true,
-          ),
-        );
-      });
-      return;
-    }
-
     setState(() {
       _isSubmitting = true;
       _errorMessage = null;
@@ -293,13 +178,6 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
     );
 
     if (confirmed == true && mounted) {
-      if (_useMockData) {
-        setState(() {
-          _overrideFriends.removeWhere((f) => f.deviceId == friend.deviceId);
-        });
-        return;
-      }
-
       try {
         await context.read<WatchPartyProvider>().removeFriend(friend.deviceId);
       } catch (_) {
@@ -312,12 +190,10 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final watchParty = context.watch<WatchPartyProvider>();
-    final friends = _useMockData ? _overrideFriends : watchParty.friends;
-    final requests = _useMockData ? _overrideRequests : watchParty.friendRequests;
+    final friends = watchParty.friends;
+    final requests = watchParty.friendRequests;
     final totalFriends = friends.length;
-    final onlineFriends = _useMockData
-        ? friends.where((f) => f.isOnline).length
-        : watchParty.onlineFriendsCount;
+    final onlineFriends = watchParty.onlineFriendsCount;
 
     return TvDialog(
       width: 800,

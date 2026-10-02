@@ -228,8 +228,8 @@ class SportsScheduleService {
     if (timeStr.toLowerCase() == 'live') {
       return nowUtc;
     }
-    // El feed trae solo HH:mm en UTC. Se ancla al día UTC actual y, si queda
-    // a 14 horas o más, se corre un día para caer en la ventana de 24 horas.
+    // El feed trae solo HH:mm en UTC. Se ancla al día UTC actual.
+    // Solo se ajusta de día en la transición de medianoche (late night <-> early morning).
     final parts = timeStr.split(':');
     if (parts.length >= 2) {
       final h = int.tryParse(parts[0]) ?? 0;
@@ -237,9 +237,12 @@ class SportsScheduleService {
 
       var eventDateUtc = DateTime.utc(nowUtc.year, nowUtc.month, nowUtc.day, h, m);
 
-      if (nowUtc.hour - h >= 14) {
+      // Si hoy es cerca del final del día (>= 20h UTC) y el evento es de madrugada (<= 3h UTC), es para mañana
+      if (nowUtc.hour >= 20 && h <= 3) {
         eventDateUtc = eventDateUtc.add(const Duration(days: 1));
-      } else if (h - nowUtc.hour >= 14) {
+      }
+      // Si hoy es de madrugada (<= 3h UTC) y el evento era de noche tardía (>= 20h UTC), es de ayer
+      else if (nowUtc.hour <= 3 && h >= 20) {
         eventDateUtc = eventDateUtc.subtract(const Duration(days: 1));
       }
       return eventDateUtc;

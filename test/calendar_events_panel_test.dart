@@ -282,7 +282,7 @@ void main() {
     subscriptionsFocus.dispose();
   });
 
-  testWidgets('renders finished events with check icon, solid muted colors, and non-interactive', (tester) async {
+  testWidgets('renders finished events with FIN badge, solid muted colors, and non-interactive', (tester) async {
     final calendarProvider = CalendarProvider();
     await calendarProvider.refreshEvents(force: true);
     await calendarProvider.toggleSubscription('lpf_ar');
@@ -301,8 +301,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // In current week, Monday 21 20:00 (Estudiantes vs Gimnasia LP) is in the past
-    // It should render with Icons.check_circle_outline
-    expect(find.byIcon(Icons.check_circle_outline), findsWidgets);
+    // It should render with FIN badge (without icon)
+    expect(find.text('FIN'), findsWidgets);
 
     // Verify the title is present
     expect(find.text('Estudiantes vs Gimnasia LP'), findsOneWidget);

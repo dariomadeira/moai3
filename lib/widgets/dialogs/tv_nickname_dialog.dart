@@ -145,7 +145,6 @@ class _TvNicknameDialogState extends State<TvNicknameDialog> {
           onKeyRight: () => _saveFocusNode.requestFocus(),
           onKeyUp: () => _textFieldFocusNode.requestFocus(),
         ),
-        const SizedBox(width: 12),
         TvDialogButton(
           focusNode: _saveFocusNode,
           label: 'nickname_dialog_confirm'.tr(),
