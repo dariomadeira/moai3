@@ -27,6 +27,9 @@ void main() {
     late DeviceIdentityService identityService;
 
     setUp(() async {
+      WatchPartyOverlay.debugForceVisible = false;
+      WatchPartyOverlay.debugSimulateIncomingAudio = false;
+      WatchPartyOverlay.debugSimulateRecording = false;
       SharedPreferences.setMockInitialValues({
         'watch_party_enabled': true,
         'device_id': 'my-device-id',
@@ -150,15 +153,58 @@ void main() {
           ),
         ),
       );
+      provider.notifyFriendJoinedChannel('Juan');
       await tester.pump();
 
-      // Verifica el chip izquierdo
-      expect(find.text('Juan está viendo'), findsOneWidget);
+      // Verifica la notificación izquierda
+      expect(find.text('watch_party_friend_joined'), findsOneWidget);
 
       // Verifica el botón central de micrófono
       expect(find.byIcon(Symbols.mic), findsOneWidget);
 
       coordinator.dispose();
+      provider.dispose();
+    });
+
+    testWidgets('se fuerza la visibilidad en modo desarrollador con datos mock y chips simulados', (tester) async {
+      WatchPartyOverlay.debugForceVisible = true;
+      WatchPartyOverlay.debugSimulateIncomingAudio = true;
+      WatchPartyOverlay.debugMockFriendsCount = 2;
+
+      final service = FakeService();
+      final provider = WatchPartyProvider(
+        preferences: prefs,
+        service: service,
+        identityService: identityService,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Stack(
+              children: [
+                ChangeNotifierProvider<WatchPartyProvider>.value(
+                  value: provider,
+                  child: const WatchPartyOverlay(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Verifica chip izquierdo con mock friends
+      expect(find.text('watch_party_friend_joined'), findsOneWidget);
+
+      // Verifica botón central de micrófono
+      expect(find.byIcon(Symbols.mic), findsOneWidget);
+
+      // Verifica chip derecho simulado
+      expect(find.text('watch_party_friend_speaking'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 10));
+
       provider.dispose();
     });
   });

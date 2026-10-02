@@ -218,5 +218,29 @@ graph TD
   - Manejo de estados de grabación (`RemoteVoiceManager`).
   - Envío y recepción de audios en Supabase.
   - Reproducción secuencial y antiacople.
-- [ ] **Paso 6: Validación y Pruebas Unitarias**
+- [x] **Paso 6: Validación y Pruebas Unitarias**
   - Tests de matching de canales, amigos mutuos y cola FIFO.
+
+---
+
+## 9. Componente `TvWatchPartyHeaderBar` y Notificaciones en Modo TV
+
+En el modo de interfaz TV (no pantalla completa), las interacciones visuales de "Miremos Juntos" se dividen en dos capas complementarias:
+
+### 9.1. Cabecera TV (`TvWatchPartyHeaderBar`)
+Ubicada en la barra superior derecha de la interfaz TV, junto a `TvClockPill` (separación de 16dp):
+* **Píldora de Audio Entrante ("Carlos TV hablando..."):**
+  * Estilo idéntico al overlay: Fondo `colorScheme.primary`, texto e icono `colorScheme.onPrimary`, bordes redondeados (`18dp`) y sombra suave.
+  * Solo se muestra activamente mientras se reproduce un audio en directo (`coordinator.isPlaying == true`).
+* **Píldora de Micrófono (Enfocable con D-Pad):**
+  * Estilo Moai TV unificado: Fondo `colorScheme.primary` y texto/icono `colorScheme.onPrimary` al recibir foco, sin bordes toscos.
+  * Al desenfocar, cambia a un tono discreto `surfaceContainerHigh`.
+  * **Navegación D-Pad:**
+    * `ARRIBA` desde el reproductor/visor ➔ Enfoca directamente el micrófono.
+    * `ABAJO` desde el micrófono ➔ Regresa al reproductor/visor.
+    * `IZQUIERDA` / `ARRIBA` desde el micrófono ➔ Regresa a las pestañas de navegación.
+
+### 9.2. Notificaciones de Conexión (`MoaiSnackBar`)
+* Cuando un amigo se conecta al mismo canal, la notificación no ocupa espacio permanente en la cabecera superior.
+* Se dispara un `MoaiSnackBar` flotante en la zona inferior central de la pantalla (*"Carlos TV se ha conectado"*).
+* Mantiene cola FIFO gestionada por el `ScaffoldMessenger` del sistema (3.5 segundos por notificación).

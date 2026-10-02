@@ -363,6 +363,18 @@ class WatchPartyProvider extends ChangeNotifier {
     _devicesRealtimeChannel = null;
   }
 
+  final StreamController<String> _joinedChannelNotificationsController =
+      StreamController<String>.broadcast();
+
+  Stream<String> get joinedChannelNotificationsStream =>
+      _joinedChannelNotificationsController.stream;
+
+  void notifyFriendJoinedChannel(String friendName) {
+    if (!_isDisposed) {
+      _joinedChannelNotificationsController.add(friendName);
+    }
+  }
+
   void _onDeviceRecordUpdated(Map<String, dynamic> record) {
     final updatedDeviceId = record['device_id'] as String?;
     if (updatedDeviceId == null || updatedDeviceId.isEmpty) return;
@@ -382,7 +394,16 @@ class WatchPartyProvider extends ChangeNotifier {
       );
       _friends[index] = updated;
       _sortFriends();
-      notifyListeners();
+
+      // Emitir notificación si el amigo acaba de entrar al mismo canal
+      final wasWatching = old.isWatchingSameChannel(_currentChannelId, _currentChannelName);
+      final isNowWatching = updated.isWatchingSameChannel(_currentChannelId, _currentChannelName);
+      if (!wasWatching && isNowWatching) {
+        final name = updated.nickname ?? updated.userCode;
+        notifyFriendJoinedChannel(name);
+      } else {
+        notifyListeners();
+      }
     }
   }
 
@@ -398,6 +419,7 @@ class WatchPartyProvider extends ChangeNotifier {
     _presenceRefreshTimer?.cancel();
     _channelReportDebounceTimer?.cancel();
     _unsubscribeFromDevicesRealtime();
+    _joinedChannelNotificationsController.close();
     super.dispose();
   }
 }

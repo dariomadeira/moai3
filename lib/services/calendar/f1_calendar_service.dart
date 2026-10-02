@@ -197,12 +197,12 @@ class F1CalendarService {
     }
   }
 
-  static CalendarEventStatus _calculateStatus(DateTime start, Duration duration) {
+  static CalendarEventStatus? _calculateStatus(DateTime start, Duration duration) {
     final now = ArgentinaTime.utcNow();
     final startUtc = start.toUtc();
     final end = startUtc.add(duration);
     if (now.isBefore(startUtc)) {
-      return CalendarEventStatus.upcoming;
+      return null;
     } else if (now.isAfter(end)) {
       return CalendarEventStatus.finished;
     } else {

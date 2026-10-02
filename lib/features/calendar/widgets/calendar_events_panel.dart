@@ -328,10 +328,6 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
         key == LogicalKeyboardKey.space) {
       if (dayEvents.isNotEmpty && currentEventIndex < dayEvents.length) {
         final ev = dayEvents[currentEventIndex];
-        if (ev.status == CalendarEventStatus.finished) {
-          // Evento concluido: no-op estricto (no abre nada, no interrumpe al usuario)
-          return KeyEventResult.handled;
-        }
         _showEventDetails(context, ev);
         return KeyEventResult.handled;
       }
@@ -591,9 +587,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                           widget.focusNode.requestFocus();
                           if (eventIdx < dayEvents.length) {
                             final ev = dayEvents[eventIdx];
-                            if (ev.status != CalendarEventStatus.finished) {
-                              _showEventDetails(context, ev);
-                            }
+                            _showEventDetails(context, ev);
                           }
                         },
                         onSelectColumn: () {
@@ -1002,7 +996,11 @@ class _CalendarEventGridCard extends StatelessWidget {
     final scheme = context.scheme;
     final isLive = event.status == CalendarEventStatus.live;
     final isFinished = event.status == CalendarEventStatus.finished;
+    final isUpcoming = event.status == CalendarEventStatus.upcoming;
     final sportIcon = CalendarProvider.getSubscriptionIcon(event.subscriptionId);
+
+    final finishedText = 'calendar_status_finished'.tr();
+    final finishedLabel = (finishedText == 'calendar_status_finished') ? 'FIN' : finishedText;
 
     // Paleta de colores adaptativa según estado y foco
     final Color bgColor;
@@ -1028,7 +1026,7 @@ class _CalendarEventGridCard extends StatelessWidget {
     return SizedBox(
       height: height,
       child: GestureDetector(
-        onTap: isFinished ? null : onTap,
+        onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
           curve: Curves.easeOutCubic,
@@ -1066,11 +1064,30 @@ class _CalendarEventGridCard extends StatelessWidget {
                           ),
                         ),
                         if (isFinished) ...[
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.check_circle_outline,
-                            size: 11,
-                            color: fgColor,
+                          const SizedBox(width: 5),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isFocused
+                                  ? scheme.onSurface.withValues(alpha: 0.18)
+                                  : scheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              finishedLabel,
+                              style: MoaiText.body(
+                                context,
+                                fontSize: 8,
+                                fontWeight: FontWeight.w800,
+                                color: isFocused
+                                    ? scheme.onSurface
+                                    : scheme.onSurfaceVariant,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
                           ),
                         ] else if (isLive) ...[
                           const SizedBox(width: 5),
@@ -1094,6 +1111,32 @@ class _CalendarEventGridCard extends StatelessWidget {
                                 color: isFocused
                                     ? scheme.primary
                                     : scheme.onPrimaryContainer,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                          ),
+                        ] else if (isUpcoming) ...[
+                          const SizedBox(width: 5),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isFocused
+                                  ? scheme.onPrimary.withValues(alpha: 0.2)
+                                  : scheme.primary.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'PROX.',
+                              style: MoaiText.body(
+                                context,
+                                fontSize: 8,
+                                fontWeight: FontWeight.w800,
+                                color: isFocused
+                                    ? scheme.onPrimary
+                                    : scheme.primary,
                                 letterSpacing: 0.4,
                               ),
                             ),
@@ -1294,7 +1337,43 @@ class _CalendarEventDialogContentState
                 ),
               ),
             )
-          : null,
+          : (widget.event.status == CalendarEventStatus.finished
+              ? Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                  decoration: BoxDecoration(
+                    color: scheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'calendar_status_finished'.tr() == 'calendar_status_finished'
+                        ? 'FIN'
+                        : 'calendar_status_finished'.tr(),
+                    style: MoaiText.body(
+                      context,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      color: scheme.onSurfaceVariant,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                )
+              : Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                  decoration: BoxDecoration(
+                    color: scheme.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'PROX.',
+                    style: MoaiText.body(
+                      context,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      color: scheme.primary,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                )),
       content: contentWidget,
       actions: [
         Focus(
@@ -1327,10 +1406,6 @@ Future<void> showCalendarEventDetails(
   CalendarEvent event, {
   ValueChanged<Channel>? onTuneChannel,
 }) async {
-  if (event.status == CalendarEventStatus.finished) {
-    return;
-  }
-
   await showTvGeneralDialog<void>(
     context: context,
     barrierLabel: 'calendar_dialog_close'.tr(),
