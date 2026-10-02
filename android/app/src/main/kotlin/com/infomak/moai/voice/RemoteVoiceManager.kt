@@ -183,26 +183,43 @@ class RemoteVoiceManager(private val activity: Activity) {
                     .build()
                 setAudioAttributes(audioAttributes)
                 setDataSource(source)
-                prepare()
+                setOnPreparedListener { mp ->
+                    if (mediaPlayer != mp) {
+                        try { mp.release() } catch (_: Exception) {}
+                        return@setOnPreparedListener
+                    }
+                    try {
+                        loudnessEnhancer = LoudnessEnhancer(mp.audioSessionId).apply {
+                            setTargetGain(1800) // +18 dB boost para igualar el nivel de la TV
+                            enabled = true
+                        }
+                    } catch (e: Exception) {
+                        Log.w("RemoteVoiceManager", "LoudnessEnhancer no disponible: ${e.message}")
+                    }
+                    try {
+                        mp.start()
+                        this@RemoteVoiceManager.isPlaying = true
+                    } catch (e: Exception) {
+                        Log.e("RemoteVoiceManager", "Error al iniciar reproducción", e)
+                        stopPlayback()
+                        onComplete()
+                    }
+                }
                 setOnCompletionListener {
                     stopPlayback()
                     onComplete()
                 }
-            }
-
-            try {
-                loudnessEnhancer = LoudnessEnhancer(player.audioSessionId).apply {
-                    setTargetGain(1800) // +18 dB boost para igualar el nivel de la TV
-                    enabled = true
+                setOnErrorListener { _, what, extra ->
+                    Log.e("RemoteVoiceManager", "Error en MediaPlayer: what=$what extra=$extra")
+                    stopPlayback()
+                    onComplete()
+                    true
                 }
-            } catch (e: Exception) {
-                Log.w("RemoteVoiceManager", "LoudnessEnhancer no disponible: ${e.message}")
+                prepareAsync()
             }
 
-            player.start()
             mediaPlayer = player
-            isPlaying = true
-            mapOf("success" to true, "durationMs" to player.duration)
+            mapOf("success" to true)
         } catch (e: Exception) {
             Log.e("RemoteVoiceManager", "Error al reproducir audio: $source", e)
             stopPlayback()
@@ -217,12 +234,21 @@ class RemoteVoiceManager(private val activity: Activity) {
         } catch (_: Exception) {}
         loudnessEnhancer = null
 
-        try {
-            mediaPlayer?.stop()
-            mediaPlayer?.release()
-        } catch (_: Exception) {}
+        val player = mediaPlayer
         mediaPlayer = null
         isPlaying = false
+
+        if (player != null) {
+            try {
+                player.setOnPreparedListener(null)
+                player.setOnCompletionListener(null)
+                player.setOnErrorListener(null)
+                if (player.isPlaying) {
+                    player.stop()
+                }
+                player.release()
+            } catch (_: Exception) {}
+        }
     }
 
     fun release() {

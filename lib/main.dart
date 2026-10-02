@@ -109,6 +109,33 @@ void main() async {
     identityService: deviceIdentityService,
   );
 
+  void syncChannelWithWatchParty() {
+    final ch = channelProvider.selectedChannel;
+    if (ch != null) {
+      watchPartyProvider.reportCurrentChannel(
+        channelId: ch.id,
+        channelName: ch.name,
+      );
+    } else {
+      watchPartyProvider.reportCurrentChannel(channelId: null);
+    }
+  }
+
+  channelProvider.addListener(syncChannelWithWatchParty);
+  bool prevWatchPartyEnabled = watchPartyProvider.enabled;
+  watchPartyProvider.addListener(() {
+    if (watchPartyProvider.enabled != prevWatchPartyEnabled) {
+      prevWatchPartyEnabled = watchPartyProvider.enabled;
+      if (prevWatchPartyEnabled) {
+        syncChannelWithWatchParty();
+      }
+    }
+  });
+
+  if (channelProvider.selectedChannel != null) {
+    syncChannelWithWatchParty();
+  }
+
   final router = createRouter(
     tvSettingsProvider,
     identityService: deviceIdentityService,

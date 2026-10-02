@@ -19,6 +19,7 @@ class WatchPartyProvider extends ChangeNotifier {
   String? _nickname;
   String _deviceId = '';
   List<FriendInfo> _friends = [];
+  List<FriendInfo> _friendRequests = [];
   bool _isLoading = false;
   String? _errorMessage;
   Timer? _presenceRefreshTimer;
@@ -26,6 +27,7 @@ class WatchPartyProvider extends ChangeNotifier {
   String? _currentChannelName;
   Timer? _channelReportDebounceTimer;
   RealtimeChannel? _devicesRealtimeChannel;
+  bool _isDisposed = false;
 
   WatchPartyProvider({
     required this.preferences,
@@ -56,6 +58,7 @@ class WatchPartyProvider extends ChangeNotifier {
   }
   String get deviceId => _deviceId;
   List<FriendInfo> get friends => List.unmodifiable(_friends);
+  List<FriendInfo> get friendRequests => List.unmodifiable(_friendRequests);
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -218,12 +221,17 @@ class WatchPartyProvider extends ChangeNotifier {
       _errorMessage = null;
     } catch (e) {
       _errorMessage = e.toString();
-    } finally {
-      if (showLoading) {
-        _isLoading = false;
-      }
-      notifyListeners();
     }
+
+    try {
+      final updatedRequests = await service.getFriendRequests(_deviceId);
+      _friendRequests = updatedRequests;
+    } catch (_) {}
+
+    if (showLoading) {
+      _isLoading = false;
+    }
+    notifyListeners();
   }
 
   /// Agrega un nuevo amigo usando su código (ej. "7421" o "MOAI-7421").
@@ -244,6 +252,10 @@ class WatchPartyProvider extends ChangeNotifier {
         ..._friends.where((f) => f.deviceId != newFriend.deviceId),
         newFriend,
       ];
+      // Remover de solicitudes si estaba en la lista de solicitudes pendientes
+      _friendRequests = _friendRequests
+          .where((r) => r.deviceId != newFriend.deviceId)
+          .toList();
       _sortFriends();
       _errorMessage = null;
     } catch (e) {
@@ -253,6 +265,11 @@ class WatchPartyProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Acepta una solicitud de amistad entrante agregando al usuario por su código.
+  Future<void> acceptFriendRequest(FriendInfo request) async {
+    await addFriend(request.userCode);
   }
 
   /// Elimina un amigo existente de la lista.
@@ -268,6 +285,7 @@ class WatchPartyProvider extends ChangeNotifier {
       );
 
       _friends = _friends.where((f) => f.deviceId != friendDeviceId).toList();
+      await loadFriends(showLoading: false);
       _errorMessage = null;
     } catch (e) {
       _errorMessage = e.toString();
@@ -278,51 +296,35 @@ class WatchPartyProvider extends ChangeNotifier {
     }
   }
 
-  /// Reporta el canal sintonizado con debounce de 3 segundos contra el zapping (SPEC-37).
-  /// Si [channelId] es null, cancela cualquier debounce previo y limpia de inmediato en Supabase.
+  /// Reporta el canal sintonizado de forma inmediata (actualiza estado local y Supabase).
+  /// Si [channelId] es null, limpia de inmediato en Supabase y notifica a los listeners.
   void reportCurrentChannel({String? channelId, String? channelName}) {
     if (!_enabled) return;
 
-    // Cancelar debounce previo
+    final normalizedId =
+        (channelId != null && channelId.trim().isNotEmpty) ? channelId.trim() : null;
+    final normalizedName =
+        (channelName != null && channelName.trim().isNotEmpty) ? channelName.trim() : null;
+
+    // Si ya está exactamente en este canal reportado, no duplicar llamadas
+    if (_currentChannelId == normalizedId && _currentChannelName == normalizedName) {
+      return;
+    }
+
     _channelReportDebounceTimer?.cancel();
     _channelReportDebounceTimer = null;
 
-    if (channelId == null || channelId.isEmpty) {
-      // Salida de canal / fullscreen / pausa -> Limpieza inmediata
-      if (_currentChannelId != null) {
-        _currentChannelId = null;
-        _currentChannelName = null;
-        notifyListeners();
-        if (_deviceId.isNotEmpty) {
-          service.reportCurrentChannel(
-            deviceId: _deviceId,
-            channelId: null,
-            channelName: null,
-          );
-        }
-      }
-      return;
+    _currentChannelId = normalizedId;
+    _currentChannelName = normalizedName;
+    notifyListeners();
+
+    if (_deviceId.isNotEmpty) {
+      unawaited(service.reportCurrentChannel(
+        deviceId: _deviceId,
+        channelId: normalizedId,
+        channelName: normalizedName,
+      ));
     }
-
-    // Si ya está exactamente en este canal reportado, no reiniciar debounce
-    if (_currentChannelId == channelId && _currentChannelName == channelName) {
-      return;
-    }
-
-    // Iniciar debounce de 3 segundos para proteger contra zapping rápido
-    _channelReportDebounceTimer = Timer(const Duration(seconds: 3), () async {
-      _currentChannelId = channelId;
-      _currentChannelName = channelName;
-      notifyListeners();
-
-      if (_deviceId.isNotEmpty) {
-        await service.reportCurrentChannel(
-          deviceId: _deviceId,
-          channelId: channelId,
-          channelName: channelName,
-        );
-      }
-    });
   }
 
   void _sortFriends() {
@@ -385,7 +387,14 @@ class WatchPartyProvider extends ChangeNotifier {
   }
 
   @override
+  void notifyListeners() {
+    if (_isDisposed) return;
+    super.notifyListeners();
+  }
+
+  @override
   void dispose() {
+    _isDisposed = true;
     _presenceRefreshTimer?.cancel();
     _channelReportDebounceTimer?.cancel();
     _unsubscribeFromDevicesRealtime();

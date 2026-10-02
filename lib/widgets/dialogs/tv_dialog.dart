@@ -159,7 +159,12 @@ class TvDialog extends StatelessWidget {
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: actionsAlignment,
-                  children: actions!,
+                  children: [
+                    for (int i = 0; i < actions!.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 12),
+                      actions![i],
+                    ],
+                  ],
                 ),
               ],
             ],

@@ -302,19 +302,15 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
+        color: scheme.tertiaryContainer,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.25),
-          width: 1,
-        ),
       ),
       child: Row(
         children: [
           Icon(
             Icons.lightbulb_outline,
             size: 18,
-            color: scheme.primary,
+            color: scheme.onTertiaryContainer,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -324,7 +320,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
                 context,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: scheme.onSurfaceVariant,
+                color: scheme.onTertiaryContainer,
               ),
             ),
           ),
@@ -405,13 +401,6 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
               decoration: BoxDecoration(
                 color: scheme.error,
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: scheme.error.withValues(alpha: 0.6),
-                    blurRadius: 10,
-                    spreadRadius: 2,
-                  ),
-                ],
               ),
             ),
             const SizedBox(width: 10),
@@ -644,7 +633,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh.withValues(alpha: 0.5),
+        color: scheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -723,10 +712,16 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
           Color fg;
 
           if (customBg != null) {
-            bg = isFocused
-                ? customBg.withValues(alpha: 0.9)
-                : customBg.withValues(alpha: 0.7);
-            fg = customFg ?? Colors.white;
+            if (customBg == scheme.error) {
+              bg = isFocused ? scheme.error : scheme.errorContainer;
+              fg = isFocused ? scheme.onError : scheme.onErrorContainer;
+            } else if (customBg == scheme.tertiary) {
+              bg = isFocused ? scheme.tertiary : scheme.tertiaryContainer;
+              fg = isFocused ? scheme.onTertiary : scheme.onTertiaryContainer;
+            } else {
+              bg = isFocused ? customBg : scheme.surfaceContainerHigh;
+              fg = customFg ?? (isFocused ? Colors.white : scheme.onSurfaceVariant);
+            }
           } else if (isPrimary) {
             bg = isFocused ? scheme.primary : scheme.primaryContainer;
             fg = isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
@@ -737,52 +732,36 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
             fg = isFocused ? scheme.onSurface : scheme.onSurfaceVariant;
           }
 
-          return InkWell(
+          return GestureDetector(
             onTap: onPressed,
-            borderRadius: BorderRadius.circular(12),
-            child: AnimatedScale(
-              scale: isFocused ? 1.04 : 1.0,
-              duration: const Duration(milliseconds: 140),
-              curve: Curves.easeOutCubic,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 140),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: bg,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: isFocused
-                      ? [
-                          BoxShadow(
-                            color: (customBg ?? scheme.primary)
-                                .withValues(alpha: 0.4),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, size: 18, color: fg),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        label,
-                        style: MoaiText.body(
-                          context,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: fg,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 18, color: fg),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: MoaiText.body(
+                        context,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: fg,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );

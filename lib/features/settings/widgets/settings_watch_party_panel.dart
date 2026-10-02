@@ -1,11 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:moai3/features/settings/screens/friends_screen.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/features/settings/widgets/tv_tile.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/dialogs/tv_friends_dialog.dart';
 import 'package:moai3/widgets/dialogs/tv_nickname_dialog.dart';
 import 'package:moai3/widgets/dialogs/tv_voice_test_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
@@ -275,7 +275,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
           label: 'settings_tv_manage_friends'.tr(),
           description: statusDesc,
           onPressed: () {
-            FriendsScreen.push(context);
+            TvFriendsDialog.show(context);
           },
           onKeyLeft: widget.onKeyLeft,
           onKeyRight: widget.onKeyRight,
