@@ -113,6 +113,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
         _wasBackgrounded = true;
         _session.begin();
         _reconnect.reset();
+        _watchParty?.reportCurrentChannel(channelId: null);
         unawaited(_disposeEngine().then((_) {
           _safeSetState(() {
             _hasFirstFrame = false;
@@ -179,17 +180,6 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
             _hasFirstFrame = false;
           });
         }));
-      }
-    }
-
-    if (oldWidget.isFullScreen != widget.isFullScreen) {
-      if (widget.isFullScreen == true && widget.channel != null) {
-        _watchParty?.reportCurrentChannel(
-          channelId: widget.channel!.id,
-          channelName: widget.channel!.name,
-        );
-      } else if (widget.isFullScreen == false) {
-        _watchParty?.reportCurrentChannel(channelId: null);
       }
     }
   }
@@ -267,7 +257,6 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
       engine.removeListener(_onEngineEvent);
       engine.dispose();
     }
-    _watchParty?.reportCurrentChannel(channelId: null);
   }
 
   Future<void> _playChannel(Channel channel, {bool isRetry = false}) async {
@@ -342,12 +331,10 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
         '${ChannelPlaybackHelpers.playbackSourceLabel(channel, _reconnect.fallbackIndex)}',
       );
       await newController.play();
-      if (_effectiveFullScreen) {
-        _watchParty?.reportCurrentChannel(
-          channelId: channel.id,
-          channelName: channel.name,
-        );
-      }
+      _watchParty?.reportCurrentChannel(
+        channelId: channel.id,
+        channelName: channel.name,
+      );
     } catch (e) {
       if (newController != null) {
         newController.removeListener(_onEngineEvent);

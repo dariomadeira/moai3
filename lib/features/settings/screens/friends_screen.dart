@@ -8,6 +8,7 @@ import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
 import 'package:moai3/widgets/dialogs/tv_add_friend_dialog.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
+import 'package:moai3/widgets/dialogs/tv_friends_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
@@ -34,11 +35,7 @@ class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
 
   static Future<void> push(BuildContext context) {
-    return Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const FriendsScreen(),
-      ),
-    );
+    return TvFriendsDialog.show(context);
   }
 
   @override

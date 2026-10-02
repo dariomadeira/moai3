@@ -122,6 +122,71 @@ class WatchPartyService {
     }
   }
 
+  /// Obtiene la lista de solicitudes de amistad pendientes.
+  /// Son dispositivos que agregaron a [deviceId] pero [deviceId] aún no los agregó de vuelta.
+  Future<List<FriendInfo>> getFriendRequests(String deviceId) async {
+    try {
+      final client = _effectiveClient;
+
+      // 1. Obtener los IDs de los que agregaron a este dispositivo
+      final incomingRows = await client
+          .from(tableFriends)
+          .select('device_id')
+          .eq('friend_device_id', deviceId);
+
+      final incomingIds = (incomingRows as List)
+          .map((row) => row['device_id'] as String)
+          .toSet();
+
+      if (incomingIds.isEmpty) {
+        return [];
+      }
+
+      // 2. Obtener los IDs que este dispositivo ya agregó como amigos
+      final myFriendsRows = await client
+          .from(tableFriends)
+          .select('friend_device_id')
+          .eq('device_id', deviceId);
+
+      final myFriendIds = (myFriendsRows as List)
+          .map((row) => row['friend_device_id'] as String)
+          .toSet();
+
+      // 3. Filtrar: sólo los que me agregaron a mí y yo NO los agregué a ellos
+      final pendingRequesterIds = incomingIds
+          .where((id) => !myFriendIds.contains(id) && id != deviceId)
+          .toList();
+
+      if (pendingRequesterIds.isEmpty) {
+        return [];
+      }
+
+      // 4. Consultar datos de los dispositivos solicitantes
+      final devicesRows = await client
+          .from(tableDevices)
+          .select('device_id, user_code, nickname, online, last_seen, current_channel_id, current_channel_name')
+          .inFilter('device_id', pendingRequesterIds);
+
+      final requestsList = (devicesRows as List)
+          .map((row) => FriendInfo.fromDeviceJson(row as Map<String, dynamic>))
+          .toList();
+
+      requestsList.sort((a, b) {
+        if (a.isOnline != b.isOnline) {
+          return a.isOnline ? -1 : 1;
+        }
+        final nameA = a.nickname ?? a.userCode;
+        final nameB = b.nickname ?? b.userCode;
+        return nameA.toLowerCase().compareTo(nameB.toLowerCase());
+      });
+
+      return requestsList;
+    } catch (e) {
+      if (e is WatchPartyException) rethrow;
+      throw const WatchPartyException('friends_requests_load_error');
+    }
+  }
+
   /// Agrega un amigo por su código de usuario `MOAI-XXXX` (Reglas RB-05, RB-07, RB-08).
   Future<FriendInfo> addFriend({
     required String deviceId,

@@ -166,9 +166,7 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
       final local = target - _windowStart;
       _localFocus = local;
       if (requestFocus) {
-        SchedulerBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _requestLocalFocus(_localFocus);
-        });
+        _requestLocalFocus(_localFocus);
       }
       return;
     }

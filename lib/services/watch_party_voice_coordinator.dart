@@ -186,8 +186,8 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
       _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         _recordingSeconds++;
         notifyListeners();
-        // Límite de seguridad: máximo 15 segundos por nota de voz
-        if (_recordingSeconds >= 15) {
+        // Límite de seguridad: máximo 30 segundos por nota de voz
+        if (_recordingSeconds >= 30) {
           stopAndSendRecording();
         }
       });
