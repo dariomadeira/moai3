@@ -298,6 +298,9 @@ class _HomeScreenState extends State<HomeScreen> {
       _focusCalendarPanelByIndex(_activeCalendarPanelIndex);
       return;
     }
+    if (_selectedIndex == _sectionMovies) {
+      return;
+    }
     _tvAreaKey.currentState?.requestEntryFocus();
   }
 

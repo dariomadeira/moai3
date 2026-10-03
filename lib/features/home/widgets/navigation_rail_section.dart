@@ -190,7 +190,7 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
       color: iconColor,
     );
 
-    if (index == 1 && todayEvents > 0) {
+    if (index == 2 && todayEvents > 0) {
       iconWidget = Badge(
         isLabelVisible: true,
         backgroundColor: scheme.tertiaryContainer,
