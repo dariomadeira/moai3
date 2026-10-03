@@ -1,17 +1,20 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/home/widgets/tv_movie_card.dart';
-import 'package:moai3/focus/tv_key_handler.dart';
+import 'package:moai3/focus/focus_retry.dart';
 import 'package:moai3/models/movie.dart';
 import 'package:moai3/models/torrent_stream.dart';
 import 'package:moai3/state/movie_provider.dart';
-import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
 import 'package:moai3/widgets/dialogs/tv_movie_detail_dialog.dart';
+import 'package:moai3/widgets/lists/tv_fixed_window_viewport.dart';
+import 'package:moai3/widgets/lists/tv_windowed_grid.dart';
 
-/// Área principal del catálogo de películas VOD envuelta en panel acordeón (SPEC-38).
+/// Área principal del catálogo de películas VOD envuelta en panel acordeón
+/// con navegación D-Pad por ventana fija (TvFixedWindowViewport + TvWindowedGrid) (SPEC-38).
 class HomeMoviesArea extends StatefulWidget {
   final FocusNode? moviesFocusNode;
   final VoidCallback onExitLeft;
@@ -29,16 +32,34 @@ class HomeMoviesArea extends StatefulWidget {
   ];
 
   @override
-  State<HomeMoviesArea> createState() => _HomeMoviesAreaState();
+  State<HomeMoviesArea> createState() => HomeMoviesAreaState();
 }
 
-class _HomeMoviesAreaState extends State<HomeMoviesArea> {
-  late FocusScopeNode _scopeNode;
+class HomeMoviesAreaState extends State<HomeMoviesArea> {
+  static const int _crossAxisCount = 5;
+  static const int _windowSize = 10;
+  static const double _rowExtent = 185.0;
+  static const int _rowCount = _windowSize ~/ _crossAxisCount;
+
+  final _listKey = GlobalKey<TvWindowedGridState<Movie>>();
+  final FocusNode _emptyFocusNode = FocusNode(debugLabel: 'movies_empty');
+
+  void focusGrid() {
+    if (!mounted) return;
+    final provider = context.read<MovieProvider>();
+    if (provider.movies.isEmpty) {
+      requestFocusWithRetry(_emptyFocusNode, isMounted: () => mounted);
+      return;
+    }
+    _listKey.currentState?.ensureVisible(0, requestFocus: true);
+  }
+
+  void requestEntryFocus() => focusGrid();
+
 
   @override
   void initState() {
     super.initState();
-    _scopeNode = FocusScopeNode(debugLabel: 'home_movies_scope');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final provider = context.read<MovieProvider>();
@@ -51,7 +72,7 @@ class _HomeMoviesAreaState extends State<HomeMoviesArea> {
 
   @override
   void dispose() {
-    _scopeNode.dispose();
+    _emptyFocusNode.dispose();
     super.dispose();
   }
 
@@ -65,7 +86,7 @@ class _HomeMoviesAreaState extends State<HomeMoviesArea> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
+    final scheme = Theme.of(context).colorScheme;
     final provider = context.watch<MovieProvider>();
     final movies = provider.movies;
 
@@ -85,76 +106,86 @@ class _HomeMoviesAreaState extends State<HomeMoviesArea> {
       icons: HomeMoviesArea.icons,
       onPanelTap: (index) {},
       buildExpandedContent: (index, title) {
-        return FocusScope(
-          node: _scopeNode,
-          child: provider.isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(),
-                )
-              : provider.errorMessage != null
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.error_outline, size: 48, color: scheme.error),
-                          const SizedBox(height: 12),
-                          Text(
-                            provider.errorMessage!,
-                            style: TextStyle(color: scheme.error),
-                          ),
-                          const SizedBox(height: 12),
-                          ElevatedButton(
-                            onPressed: () =>
-                                context.read<MovieProvider>().loadPopularMovies(),
-                            child: const Text('Reintentar'),
-                          ),
-                        ],
-                      ),
-                    )
-                  : movies.isEmpty
-                      ? const Center(
-                          child: Text('No hay películas disponibles en el catálogo.'),
-                        )
-                      : GridView.builder(
-                          padding: const EdgeInsets.all(16),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 5,
-                            childAspectRatio: 0.62,
-                            crossAxisSpacing: 14,
-                            mainAxisSpacing: 14,
-                          ),
-                          itemCount: movies.length,
-                          itemBuilder: (context, index) {
-                            final movie = movies[index];
-                            return Focus(
-                              onKeyEvent: (node, event) {
-                                if (event is! KeyDownEvent) {
-                                  return KeyEventResult.ignored;
-                                }
+        if (provider.isLoading) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
 
-                                // Izquierda desde la primera columna -> volver al NavigationRail
-                                if (event.logicalKey ==
-                                        LogicalKeyboardKey.arrowLeft &&
-                                    (index % 5) == 0) {
-                                  widget.onExitLeft();
-                                  return KeyEventResult.handled;
-                                }
+        if (provider.errorMessage != null) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.error_outline, size: 48, color: scheme.error),
+                const SizedBox(height: 12),
+                Text(
+                  provider.errorMessage!,
+                  style: TextStyle(color: scheme.error),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () =>
+                      context.read<MovieProvider>().loadPopularMovies(),
+                  child: const Text('Reintentar'),
+                ),
+              ],
+            ),
+          );
+        }
 
-                                if (TvKeyHandler.isActionKey(event.logicalKey)) {
-                                  _openMovieDetail(movie);
-                                  return KeyEventResult.handled;
-                                }
+        if (movies.isEmpty) {
+          return TvEmptyStateCard(
+            focusNode: _emptyFocusNode,
+            icon: Symbols.hourglass_empty,
+            message: 'No hay películas disponibles en el catálogo.',
+          );
+        }
 
-                                return KeyEventResult.ignored;
-                              },
-                              child: TvMovieCard(
-                                movie: movie,
-                                onTap: () => _openMovieDetail(movie),
-                              ),
-                            );
-                          },
-                        ),
+        return Container(
+          padding: const EdgeInsets.only(
+            left: 8,
+            right: 8,
+            top: 12,
+            bottom: 8,
+          ),
+          child: TvFixedWindowViewport(
+            slotCount: _rowCount,
+            slotExtent: _rowExtent,
+            child: TvWindowedGrid<Movie>(
+              key: _listKey,
+              items: movies,
+              windowSize: _windowSize,
+              crossAxisCount: _crossAxisCount,
+              initialGlobalIndex: 0,
+              itemExtent: _rowExtent,
+              crossAxisSpacing: 10,
+              showScrollDots: true,
+              onExitLeft: widget.onExitLeft,
+              itemBuilder: (
+                context,
+                movie,
+                focusNode,
+                localIndex,
+                globalIndex,
+                onKeyUp,
+                onKeyDown,
+                onKeyLeft,
+                onKeyRight,
+              ) {
+                return TvMovieCard(
+                  key: ValueKey(movie.id),
+                  movie: movie,
+                  focusNode: focusNode,
+                  onKeyUp: onKeyUp,
+                  onKeyDown: onKeyDown,
+                  onKeyLeft: onKeyLeft,
+                  onKeyRight: onKeyRight,
+                  onTap: () => _openMovieDetail(movie),
+                );
+              },
+            ),
+          ),
         );
       },
     );
