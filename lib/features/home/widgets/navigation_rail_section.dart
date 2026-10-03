@@ -82,15 +82,15 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
             return KeyEventResult.handled;
           }
 
-          // ↓ : bajar en el rail (TV 0 -> Calendario 1 -> Ajustes 2)
+          // ↓ : bajar en el rail (TV 0 -> Películas 1 -> Calendario 2 -> Ajustes 3)
           if (key == LogicalKeyboardKey.arrowDown) {
-            if (_focusedIndex < 2) {
+            if (_focusedIndex < 3) {
               setState(() => _focusedIndex++);
             }
             return KeyEventResult.handled;
           }
 
-          // ↑ : subir en el rail (Ajustes 2 -> Calendario 1 -> TV 0)
+          // ↑ : subir en el rail (Ajustes 3 -> Calendario 2 -> Películas 1 -> TV 0)
           if (key == LogicalKeyboardKey.arrowUp) {
             if (_focusedIndex > 0) {
               setState(() => _focusedIndex--);
@@ -118,14 +118,17 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
                 // Destino 0: TV
                 _buildRailDestination(0, scheme, todayEvents),
                 const SizedBox(height: 12),
-                // Destino 1: Calendario
+                // Destino 1: Películas
                 _buildRailDestination(1, scheme, todayEvents),
+                const SizedBox(height: 12),
+                // Destino 2: Calendario
+                _buildRailDestination(2, scheme, todayEvents),
 
                 // Espaciador flexible que posiciona Ajustes al final de la pantalla
                 const Spacer(),
 
-                // Destino 2: Ajustes (al fondo)
-                _buildRailDestination(2, scheme, todayEvents),
+                // Destino 3: Ajustes (al fondo)
+                _buildRailDestination(3, scheme, todayEvents),
                 const SizedBox(height: 16),
               ],
             ),
@@ -148,11 +151,15 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
         label = 'home_rail_tv_title'.tr();
         break;
       case 1:
+        iconData = isSelected ? Icons.movie : Icons.movie_outlined;
+        label = 'home_rail_movies_title'.tr();
+        break;
+      case 2:
         iconData =
             isSelected ? Icons.calendar_month : Icons.calendar_month_outlined;
         label = 'home_rail_calendar_title'.tr();
         break;
-      case 2:
+      case 3:
       default:
         iconData = isSelected ? Icons.settings : Icons.settings_outlined;
         label = 'home_rail_settings_title'.tr();
