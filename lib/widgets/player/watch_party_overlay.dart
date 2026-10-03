@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/services/modal_route_tracker.dart';
 import 'package:moai3/services/watch_party_voice_coordinator.dart';
+import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_friends_dialog.dart';
@@ -222,10 +223,22 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
             .tr(namedArgs: {'name': _activeNotificationMessage!})
         : null;
 
+    TvSettingsProvider? tvSettings;
+    try {
+      tvSettings = context.watch<TvSettingsProvider?>();
+    } catch (_) {}
+
+    final overscanY = tvSettings?.overlapPaddingY ?? 20.0;
+    final overscanX = tvSettings?.overlapPaddingX ?? 20.0;
+
+    final topOffset = overscanY + 12.0;
+    final leftOffset = overscanX + 16.0;
+    final rightOffset = overscanX + 16.0;
+
     return Positioned(
-      top: 12,
-      left: 24,
-      right: 24,
+      top: topOffset,
+      left: leftOffset,
+      right: rightOffset,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
