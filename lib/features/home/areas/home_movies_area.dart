@@ -38,7 +38,6 @@ class HomeMoviesArea extends StatefulWidget {
 class HomeMoviesAreaState extends State<HomeMoviesArea> {
   static const int _crossAxisCount = 5;
   static const int _windowSize = 10;
-  static const double _rowExtent = 245.0;
   static const int _rowCount = _windowSize ~/ _crossAxisCount;
 
   final _listKey = GlobalKey<TvWindowedGridState<Movie>>();
@@ -55,7 +54,6 @@ class HomeMoviesAreaState extends State<HomeMoviesArea> {
   }
 
   void requestEntryFocus() => focusGrid();
-
 
   @override
   void initState() {
@@ -142,51 +140,63 @@ class HomeMoviesAreaState extends State<HomeMoviesArea> {
           );
         }
 
-        return Container(
-          padding: const EdgeInsets.only(
-            left: 8,
-            right: 8,
-            top: 12,
-            bottom: 8,
-          ),
-          child: TvFixedWindowViewport(
-            slotCount: _rowCount,
-            slotExtent: _rowExtent,
-            alignment: Alignment.topCenter,
-            child: TvWindowedGrid<Movie>(
-              key: _listKey,
-              items: movies,
-              windowSize: _windowSize,
-              crossAxisCount: _crossAxisCount,
-              initialGlobalIndex: 0,
-              itemExtent: _rowExtent,
-              crossAxisSpacing: 10,
-              showScrollDots: true,
-              onExitLeft: widget.onExitLeft,
-              itemBuilder: (
-                context,
-                movie,
-                focusNode,
-                localIndex,
-                globalIndex,
-                onKeyUp,
-                onKeyDown,
-                onKeyLeft,
-                onKeyRight,
-              ) {
-                return TvMovieCard(
-                  key: ValueKey(movie.id),
-                  movie: movie,
-                  focusNode: focusNode,
-                  onKeyUp: onKeyUp,
-                  onKeyDown: onKeyDown,
-                  onKeyLeft: onKeyLeft,
-                  onKeyRight: onKeyRight,
-                  onTap: () => _openMovieDetail(movie),
-                );
-              },
-            ),
-          ),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final availableHeight = constraints.maxHeight;
+            // Distribuir el espacio de forma perfectamente simétrica:
+            // 3 espacios iguales (arriba, centro, abajo)
+            const double uniformGap = 12.0;
+            final cardHeight =
+                ((availableHeight - (3 * uniformGap)) / 2).clamp(180.0, 360.0);
+            final rowExtent = cardHeight + uniformGap;
+
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: TvFixedWindowViewport(
+                slotCount: _rowCount,
+                slotExtent: rowExtent,
+                alignment: Alignment.center,
+                child: TvWindowedGrid<Movie>(
+                  key: _listKey,
+                  items: movies,
+                  windowSize: _windowSize,
+                  crossAxisCount: _crossAxisCount,
+                  initialGlobalIndex: 0,
+                  itemExtent: rowExtent,
+                  crossAxisSpacing: 10,
+                  showScrollDots: true,
+                  onExitLeft: widget.onExitLeft,
+                  itemBuilder: (
+                    context,
+                    movie,
+                    focusNode,
+                    localIndex,
+                    globalIndex,
+                    onKeyUp,
+                    onKeyDown,
+                    onKeyLeft,
+                    onKeyRight,
+                  ) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: uniformGap / 2,
+                      ),
+                      child: TvMovieCard(
+                        key: ValueKey(movie.id),
+                        movie: movie,
+                        focusNode: focusNode,
+                        onKeyUp: onKeyUp,
+                        onKeyDown: onKeyDown,
+                        onKeyLeft: onKeyLeft,
+                        onKeyRight: onKeyRight,
+                        onTap: () => _openMovieDetail(movie),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            );
+          },
         );
       },
     );
