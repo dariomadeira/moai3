@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:moai3/models/movie.dart';
 import 'package:moai3/models/torrent_stream.dart';
 import 'package:moai3/services/movie_service.dart';
@@ -32,9 +33,11 @@ class MovieProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
+    final apiKey = tmdbApiKey ?? (dotenv.isInitialized ? dotenv.env['TMDB_API_KEY'] : null);
+
     try {
       _movies = await MovieService.fetchPopularMovies(
-        tmdbApiKey: tmdbApiKey,
+        tmdbApiKey: apiKey,
         customFetcher: customFetcher,
       );
     } catch (e) {
