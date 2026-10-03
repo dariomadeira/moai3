@@ -44,6 +44,8 @@ class _HomeScreenState extends State<HomeScreen> {
       FocusScopeNode(debugLabel: 'rail_scope');
   final FocusNode _railFocusNode = FocusNode(debugLabel: 'home_rail');
   final GlobalKey<HomeTvAreaState> _tvAreaKey = GlobalKey<HomeTvAreaState>();
+  final GlobalKey<HomeMoviesAreaState> _moviesAreaKey =
+      GlobalKey<HomeMoviesAreaState>();
   final GlobalKey<DoubleBackExitScopeState> _doubleBackKey =
       GlobalKey<DoubleBackExitScopeState>();
 
@@ -299,6 +301,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     if (_selectedIndex == _sectionMovies) {
+      _moviesAreaKey.currentState?.requestEntryFocus();
       return;
     }
     _tvAreaKey.currentState?.requestEntryFocus();
@@ -426,6 +429,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     )
                                   : _selectedIndex == _sectionMovies
                                       ? HomeMoviesArea(
+                                          key: _moviesAreaKey,
                                           onExitLeft: _focusRail,
                                         )
                                       : HomeTvArea(
