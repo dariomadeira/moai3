@@ -52,9 +52,7 @@ class _TvMovieCardState extends State<TvMovieCard> {
     final scheme = Theme.of(context).colorScheme;
     final isFocused = _isFocused || (widget.focusNode?.hasFocus ?? false);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Focus(
+    return Focus(
       focusNode: widget.focusNode,
       onFocusChange: (focused) => setState(() => _isFocused = focused),
       onKeyEvent: (node, event) {
@@ -216,7 +214,6 @@ class _TvMovieCardState extends State<TvMovieCard> {
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
