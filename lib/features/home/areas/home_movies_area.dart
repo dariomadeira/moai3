@@ -38,7 +38,7 @@ class HomeMoviesArea extends StatefulWidget {
 class HomeMoviesAreaState extends State<HomeMoviesArea> {
   static const int _crossAxisCount = 5;
   static const int _windowSize = 10;
-  static const double _rowExtent = 185.0;
+  static const double _rowExtent = 245.0;
   static const int _rowCount = _windowSize ~/ _crossAxisCount;
 
   final _listKey = GlobalKey<TvWindowedGridState<Movie>>();
@@ -152,6 +152,7 @@ class HomeMoviesAreaState extends State<HomeMoviesArea> {
           child: TvFixedWindowViewport(
             slotCount: _rowCount,
             slotExtent: _rowExtent,
+            alignment: Alignment.topCenter,
             child: TvWindowedGrid<Movie>(
               key: _listKey,
               items: movies,
