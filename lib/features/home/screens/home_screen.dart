@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/features/calendar/widgets/calendar_events_panel.dart';
 import 'package:moai3/features/home/areas/home_calendar_area.dart';
+import 'package:moai3/features/home/areas/home_movies_area.dart';
 import 'package:moai3/features/home/areas/home_settings_area.dart';
 import 'package:moai3/features/home/areas/home_tv_area.dart';
 import 'package:moai3/features/home/widgets/double_back_exit_scope.dart';
@@ -35,8 +36,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   static const int _sectionTv = 0;
-  static const int _sectionCalendar = 1;
-  static const int _sectionSettings = 2;
+  static const int _sectionMovies = 1;
+  static const int _sectionCalendar = 2;
+  static const int _sectionSettings = 3;
 
   final FocusScopeNode _railScopeNode =
       FocusScopeNode(debugLabel: 'rail_scope');
@@ -308,15 +310,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_selectedIndex == _sectionTv) {
       return _tvAreaKey.currentState?.handleBack() ?? false;
     }
-    if (_selectedIndex == _sectionCalendar) {
-      if (_railFocusNode.hasFocus) {
-        setState(() => _selectedIndex = _sectionTv);
-        return true;
-      }
-      _focusRail();
-      return true;
-    }
-    if (_selectedIndex == _sectionSettings) {
+    if (_selectedIndex == _sectionMovies ||
+        _selectedIndex == _sectionCalendar ||
+        _selectedIndex == _sectionSettings) {
       if (_railFocusNode.hasFocus) {
         setState(() => _selectedIndex = _sectionTv);
         return true;
@@ -425,10 +421,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                         });
                                       },
                                     )
-                                  : HomeTvArea(
-                                      key: _tvAreaKey,
-                                      onExitLeft: _focusRail,
-                                    ),
+                                  : _selectedIndex == _sectionMovies
+                                      ? HomeMoviesArea(
+                                          onExitLeft: _focusRail,
+                                        )
+                                      : HomeTvArea(
+                                          key: _tvAreaKey,
+                                          onExitLeft: _focusRail,
+                                        ),
                         ),
                       ),
                     ),
