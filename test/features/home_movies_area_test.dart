@@ -42,9 +42,7 @@ void main() {
 
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Películas & VOD'), findsOneWidget);
       expect(find.text('El Club de la Pelea'), findsOneWidget);
-      expect(find.text('1 títulos'), findsOneWidget);
     });
   });
 }

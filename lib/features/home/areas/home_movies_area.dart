@@ -87,126 +87,74 @@ class _HomeMoviesAreaState extends State<HomeMoviesArea> {
       buildExpandedContent: (index, title) {
         return FocusScope(
           node: _scopeNode,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header Bar dentro del panel Disponibles
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                child: Row(
-                  children: [
-                    Icon(Icons.movie, color: scheme.primary, size: 24),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Películas & VOD',
-                      style: MoaiText.display(
-                        context,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    if (movies.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: scheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '${movies.length} títulos',
-                          style: TextStyle(
-                            color: scheme.onPrimaryContainer,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
+          child: provider.isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(),
+                )
+              : provider.errorMessage != null
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.error_outline, size: 48, color: scheme.error),
+                          const SizedBox(height: 12),
+                          Text(
+                            provider.errorMessage!,
+                            style: TextStyle(color: scheme.error),
                           ),
-                        ),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: () =>
+                                context.read<MovieProvider>().loadPopularMovies(),
+                            child: const Text('Reintentar'),
+                          ),
+                        ],
                       ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.refresh),
-                      tooltip: 'Actualizar catálogo',
-                      onPressed: () => context.read<MovieProvider>().loadPopularMovies(),
-                    ),
-                  ],
-                ),
-              ),
+                    )
+                  : movies.isEmpty
+                      ? const Center(
+                          child: Text('No hay películas disponibles en el catálogo.'),
+                        )
+                      : GridView.builder(
+                          padding: const EdgeInsets.all(16),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 5,
+                            childAspectRatio: 0.62,
+                            crossAxisSpacing: 14,
+                            mainAxisSpacing: 14,
+                          ),
+                          itemCount: movies.length,
+                          itemBuilder: (context, index) {
+                            final movie = movies[index];
+                            return Focus(
+                              onKeyEvent: (node, event) {
+                                if (event is! KeyDownEvent) {
+                                  return KeyEventResult.ignored;
+                                }
 
-              const Divider(height: 1, thickness: 1),
+                                // Izquierda desde la primera columna -> volver al NavigationRail
+                                if (event.logicalKey ==
+                                        LogicalKeyboardKey.arrowLeft &&
+                                    (index % 5) == 0) {
+                                  widget.onExitLeft();
+                                  return KeyEventResult.handled;
+                                }
 
-              // Content Grid o indicador de carga
-              Expanded(
-                child: provider.isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(),
-                      )
-                    : provider.errorMessage != null
-                        ? Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.error_outline, size: 48, color: scheme.error),
-                                const SizedBox(height: 12),
-                                Text(
-                                  provider.errorMessage!,
-                                  style: TextStyle(color: scheme.error),
-                                ),
-                                const SizedBox(height: 12),
-                                ElevatedButton(
-                                  onPressed: () =>
-                                      context.read<MovieProvider>().loadPopularMovies(),
-                                  child: const Text('Reintentar'),
-                                ),
-                              ],
-                            ),
-                          )
-                        : movies.isEmpty
-                            ? const Center(
-                                child: Text('No hay películas disponibles en el catálogo.'),
-                              )
-                            : GridView.builder(
-                                padding: const EdgeInsets.all(16),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 5,
-                                  childAspectRatio: 0.62,
-                                  crossAxisSpacing: 14,
-                                  mainAxisSpacing: 14,
-                                ),
-                                itemCount: movies.length,
-                                itemBuilder: (context, index) {
-                                  final movie = movies[index];
-                                  return Focus(
-                                    onKeyEvent: (node, event) {
-                                      if (event is! KeyDownEvent) {
-                                        return KeyEventResult.ignored;
-                                      }
+                                if (TvKeyHandler.isActionKey(event.logicalKey)) {
+                                  _openMovieDetail(movie);
+                                  return KeyEventResult.handled;
+                                }
 
-                                      // Izquierda desde la primera columna -> volver al NavigationRail
-                                      if (event.logicalKey ==
-                                              LogicalKeyboardKey.arrowLeft &&
-                                          (index % 5) == 0) {
-                                        widget.onExitLeft();
-                                        return KeyEventResult.handled;
-                                      }
-
-                                      if (TvKeyHandler.isActionKey(event.logicalKey)) {
-                                        _openMovieDetail(movie);
-                                        return KeyEventResult.handled;
-                                      }
-
-                                      return KeyEventResult.ignored;
-                                    },
-                                    child: TvMovieCard(
-                                      movie: movie,
-                                      onTap: () => _openMovieDetail(movie),
-                                    ),
-                                  );
-                                },
+                                return KeyEventResult.ignored;
+                              },
+                              child: TvMovieCard(
+                                movie: movie,
+                                onTap: () => _openMovieDetail(movie),
                               ),
-              ),
-            ],
-          ),
+                            );
+                          },
+                        ),
         );
       },
     );
