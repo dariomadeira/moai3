@@ -242,5 +242,28 @@ Ubicada en la barra superior derecha de la interfaz TV, junto a `TvClockPill` (s
 
 ### 9.2. Notificaciones de Conexión (`MoaiSnackBar`)
 * Cuando un amigo se conecta al mismo canal, la notificación no ocupa espacio permanente en la cabecera superior.
-* Se dispara un `MoaiSnackBar` flotante en la zona inferior central de la pantalla (*"Carlos TV se ha conectado"*).
+* Se dispara un `MoaiSnackBar` flotante en la zona inferior central de la pantalla (*"Carlos TV está viendo"*).
 * Mantiene cola FIFO gestionada por el `ScaffoldMessenger` del sistema (3.5 segundos por notificación).
+
+---
+
+## 10. Arquitectura Supabase Realtime Presence y Ajustes Físicos de TV
+
+### 10.1. Sincronización en Tiempo Real vía WebSockets (Supabase Realtime Presence)
+* **Arquitectura:** Migración de latidos en base de datos HTTP a un canal WebSocket dedicado (`watch_party_presence`) gestionado en memoria por los servidores de Supabase Realtime.
+* **Payload En Vivo:** `{ device_id, user_code, nickname, channel_id, channel_name }`.
+* **Desconexión Instantánea (<500ms):** Al cerrar la aplicación, bloquear pantalla o cambiar de canal, el WebSocket se cierra o transmite el desenganche (`untrack()`), enviando de inmediato el evento `onPresenceLeave` a todos los amigos conectados.
+* **Resiliencia ante Corte de Red / Energía:** En caso de pérdida repentina de conexión Wi-Fi o apagado de la TV, el mecanismo de *Ping-Pong* del socket WebSockets desconecta al usuario automáticamente en 5 a 10 segundos, eliminando los "usuarios fantasma".
+* **Expiración Dinámica de Seguridad:** El modelo `FriendInfo` valida la frescura del timestamp `last_seen` (límite de 60 segundos) como respaldo defensivo.
+
+### 10.2. Margen Dinámico de Overscan en Pantalla Completa
+* En modo pantalla completa (`effectiveFullScreen == true`), el reproductor ocupa las coordenadas absolutas de la TV (`Y=0` a `Y=1080/2160`).
+* Para evitar que el botón de micrófono y los chips de notificación queden pegados o cortados por el marco/bisel físico de la televisión, `WatchPartyOverlay` calcula dinámicamente sus coordenadas utilizando los márgenes de calibración del usuario desde `TvSettingsProvider`:
+  * `topOffset = overscanY + 12.0`
+  * `leftOffset = overscanX + 16.0`
+  * `rightOffset = overscanX + 16.0`
+* Garantiza que todos los elementos flotantes respeten el área segura (*Safe Area*) configurada para cualquier televisor.
+
+### 10.3. Emisión Reactiva de Notificaciones ("xxx está viendo")
+* Seguimiento en `WatchPartyProvider` mediante `_notifiedFriendDeviceIdsInCurrentChannel`.
+* Emite el aviso *"xxx está viendo"* tanto cuando un amigo sintoniza el canal en tiempo real como cuando el usuario local sintoniza un canal donde ya hay amigos mirando.

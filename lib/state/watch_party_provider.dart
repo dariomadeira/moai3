@@ -27,6 +27,8 @@ class WatchPartyProvider extends ChangeNotifier {
   String? _currentChannelName;
   Timer? _channelReportDebounceTimer;
   RealtimeChannel? _devicesRealtimeChannel;
+  RealtimeChannel? _presenceRealtimeChannel;
+  final Set<String> _notifiedFriendDeviceIdsInCurrentChannel = {};
   bool _isDisposed = false;
 
   WatchPartyProvider({
@@ -101,6 +103,7 @@ class WatchPartyProvider extends ChangeNotifier {
       loadFriends();
       _startPresenceTimer();
       _subscribeToDevicesRealtime();
+      _subscribeToPresenceRealtime();
     }
   }
 
@@ -182,6 +185,7 @@ class WatchPartyProvider extends ChangeNotifier {
       await loadFriends();
       _startPresenceTimer();
       _subscribeToDevicesRealtime();
+      _subscribeToPresenceRealtime();
     } else {
       // Al desactivar, detener timers, desuscribir realtime y limpiar canal
       _presenceRefreshTimer?.cancel();
@@ -189,6 +193,7 @@ class WatchPartyProvider extends ChangeNotifier {
       _channelReportDebounceTimer?.cancel();
       _channelReportDebounceTimer = null;
       _unsubscribeFromDevicesRealtime();
+      _unsubscribeFromPresenceRealtime();
       if (_currentChannelId != null) {
         _currentChannelId = null;
         _currentChannelName = null;
@@ -316,15 +321,134 @@ class WatchPartyProvider extends ChangeNotifier {
 
     _currentChannelId = normalizedId;
     _currentChannelName = normalizedName;
+    _notifiedFriendDeviceIdsInCurrentChannel.clear();
     notifyListeners();
 
+    if (normalizedId != null) {
+      _checkAndNotifyWatchingFriends();
+    }
+
     if (_deviceId.isNotEmpty) {
+      if (_presenceRealtimeChannel != null) {
+        unawaited(_presenceRealtimeChannel!.track({
+          'device_id': _deviceId,
+          'user_code': _userCode,
+          'nickname': _nickname,
+          'channel_id': normalizedId,
+          'channel_name': normalizedName,
+        }));
+      }
+
       unawaited(service.reportCurrentChannel(
         deviceId: _deviceId,
         channelId: normalizedId,
         channelName: normalizedName,
       ));
     }
+  }
+
+  void _checkAndNotifyWatchingFriends() {
+    if (_currentChannelId == null || _currentChannelId!.isEmpty) return;
+
+    for (final friend in _friends) {
+      final isWatching = friend.isWatchingSameChannel(_currentChannelId, _currentChannelName);
+      if (isWatching) {
+        if (!_notifiedFriendDeviceIdsInCurrentChannel.contains(friend.deviceId)) {
+          _notifiedFriendDeviceIdsInCurrentChannel.add(friend.deviceId);
+          final name = friend.nickname ?? friend.userCode;
+          notifyFriendJoinedChannel(name);
+        }
+      } else {
+        _notifiedFriendDeviceIdsInCurrentChannel.remove(friend.deviceId);
+      }
+    }
+  }
+
+  void _subscribeToPresenceRealtime() {
+    if (_deviceId.isEmpty) return;
+    _unsubscribeFromPresenceRealtime();
+    try {
+      _presenceRealtimeChannel = service.joinWatchPartyPresence(
+        deviceId: _deviceId,
+        initialPayload: {
+          'device_id': _deviceId,
+          'user_code': _userCode,
+          'nickname': _nickname,
+          'channel_id': _currentChannelId,
+          'channel_name': _currentChannelName,
+        },
+        onPresenceUpdated: _onRealtimePresencesUpdated,
+      );
+    } catch (_) {}
+  }
+
+  void _unsubscribeFromPresenceRealtime() {
+    try {
+      _presenceRealtimeChannel?.untrack();
+      _presenceRealtimeChannel?.unsubscribe();
+    } catch (_) {}
+    _presenceRealtimeChannel = null;
+  }
+
+  void _onRealtimePresencesUpdated(List<Map<String, dynamic>> activePresences) {
+    if (_isDisposed || !_enabled) return;
+
+    final Map<String, Map<String, dynamic>> presenceByDevice = {};
+    for (final p in activePresences) {
+      final devId = p['device_id'] as String?;
+      if (devId != null && devId.isNotEmpty) {
+        presenceByDevice[devId] = p;
+      }
+    }
+
+    bool changed = false;
+    for (int i = 0; i < _friends.length; i++) {
+      final friend = _friends[i];
+      final presence = presenceByDevice[friend.deviceId];
+
+      if (presence != null) {
+        final chId = presence['channel_id'] as String?;
+        final chName = presence['channel_name'] as String?;
+        final nick = presence['nickname'] as String?;
+        final code = presence['user_code'] as String?;
+
+        final updated = friend.copyWith(
+          isOnline: true,
+          nickname: nick ?? friend.nickname,
+          userCode: code ?? friend.userCode,
+          currentChannelId: chId,
+          currentChannelName: chName,
+          lastSeen: DateTime.now(),
+        );
+
+        if (_friendHasChanged(friend, updated)) {
+          _friends[i] = updated;
+          changed = true;
+        }
+      } else {
+        if (friend.isOnline || friend.currentChannelId != null) {
+          _friends[i] = friend.copyWith(
+            isOnline: false,
+            currentChannelId: null,
+            currentChannelName: null,
+          );
+          changed = true;
+        }
+      }
+    }
+
+    if (changed) {
+      _sortFriends();
+      _checkAndNotifyWatchingFriends();
+      notifyListeners();
+    }
+  }
+
+  bool _friendHasChanged(FriendInfo a, FriendInfo b) {
+    return a.isOnline != b.isOnline ||
+        a.currentChannelId != b.currentChannelId ||
+        a.currentChannelName != b.currentChannelName ||
+        a.nickname != b.nickname;
   }
 
   void _sortFriends() {
@@ -340,8 +464,8 @@ class WatchPartyProvider extends ChangeNotifier {
 
   void _startPresenceTimer() {
     _presenceRefreshTimer?.cancel();
-    // Consultar presencia cada 20 segundos mientras la app esté abierta y la función activa
-    _presenceRefreshTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+    // Consultar presencia cada 15 segundos mientras la app esté abierta y la función activa
+    _presenceRefreshTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       if (_enabled) {
         loadFriends();
       }
@@ -419,6 +543,7 @@ class WatchPartyProvider extends ChangeNotifier {
     _presenceRefreshTimer?.cancel();
     _channelReportDebounceTimer?.cancel();
     _unsubscribeFromDevicesRealtime();
+    _unsubscribeFromPresenceRealtime();
     _joinedChannelNotificationsController.close();
     super.dispose();
   }

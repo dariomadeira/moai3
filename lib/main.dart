@@ -199,7 +199,7 @@ class _MyAppState extends State<MyApp> {
   ThemeData? _cachedLightTheme;
   ThemeData? _cachedDarkTheme;
 
-  static const Duration _heartbeatInterval = Duration(seconds: 45);
+  static const Duration _heartbeatInterval = Duration(seconds: 20);
 
   @override
   void initState() {

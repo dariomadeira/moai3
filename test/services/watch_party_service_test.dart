@@ -62,6 +62,23 @@ void main() {
       expect(offlineFriend.isWatchingSameChannel('plugin:ar:tyc_sports'), isFalse);
     });
 
+    test('FriendInfo evalúa isOnline como false si el latido (heartbeat) expiró por inactividad al cerrar la app', () {
+      final now = DateTime.now();
+      final staleLastSeen = now.subtract(const Duration(seconds: 90));
+
+      final staleFriend = FriendInfo(
+        deviceId: 'dev-stale',
+        userCode: 'MOAI-9999',
+        isOnline: true,
+        lastSeen: staleLastSeen,
+        currentChannelId: 'plugin:ar:espn',
+        currentChannelName: 'ESPN',
+      );
+
+      expect(staleFriend.isOnline, isFalse);
+      expect(staleFriend.isWatchingSameChannel('plugin:ar:espn', 'ESPN'), isFalse);
+    });
+
     test('Friendship serializa y deserializa en json', () {
       final now = DateTime.now();
       final friendship = Friendship(

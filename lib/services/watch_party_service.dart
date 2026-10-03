@@ -278,13 +278,18 @@ class WatchPartyService {
     try {
       final client = _effectiveClient;
       final nowIso = DateTime.now().toUtc().toIso8601String();
+      final updateData = <String, dynamic>{
+        'current_channel_id': channelId,
+        'current_channel_name': channelName,
+        'updated_at': nowIso,
+      };
+      if (channelId != null && channelId.trim().isNotEmpty) {
+        updateData['online'] = true;
+        updateData['last_seen'] = nowIso;
+      }
       await client
           .from(tableDevices)
-          .update({
-            'current_channel_id': channelId,
-            'current_channel_name': channelName,
-            'updated_at': nowIso,
-          })
+          .update(updateData)
           .eq('device_id', deviceId);
     } catch (_) {
       // Ignorar errores transitorios de red para no interrumpir el flujo de reproducción
@@ -371,6 +376,44 @@ class WatchPartyService {
         } catch (_) {}
       },
     ).subscribe();
+    return channel;
+  }
+
+  /// Se suscribe al canal WebSocket de presencia en tiempo real (Supabase Realtime Presence).
+  RealtimeChannel joinWatchPartyPresence({
+    required String deviceId,
+    required Map<String, dynamic> initialPayload,
+    required void Function(List<Map<String, dynamic>> activePresences) onPresenceUpdated,
+  }) {
+    final client = _effectiveClient;
+    final channel = client.channel(
+      'watch_party_presence',
+      opts: const RealtimeChannelConfig(key: 'device_id'),
+    );
+
+    void emitPresences() {
+      try {
+        final state = channel.presenceState();
+        final List<Map<String, dynamic>> presencesList = [];
+        for (final item in state) {
+          for (final presence in item.presences) {
+            presencesList.add(presence.payload);
+          }
+        }
+        onPresenceUpdated(presencesList);
+      } catch (_) {}
+    }
+
+    channel
+        .onPresenceSync((_) => emitPresences())
+        .onPresenceJoin((_) => emitPresences())
+        .onPresenceLeave((_) => emitPresences())
+        .subscribe((status, [error]) async {
+      if (status == RealtimeSubscribeStatus.subscribed) {
+        await channel.track(initialPayload);
+      }
+    });
+
     return channel;
   }
 }

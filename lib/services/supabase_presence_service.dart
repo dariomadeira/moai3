@@ -147,6 +147,9 @@ class SupabasePresenceService {
       };
       if (online) {
         data['last_seen'] = nowIso;
+      } else {
+        data['current_channel_id'] = null;
+        data['current_channel_name'] = null;
       }
 
       await client
