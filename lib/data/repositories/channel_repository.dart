@@ -48,6 +48,7 @@ class ChannelRepository extends ChangeNotifier with SafeChangeNotifier {
   }
 
   void _rebuildGroups() {
+    final validIds = _channels.map((c) => c.id).toSet();
     _groups = _customGroups
         .map((g) => ChannelGroup(
               id: g.id,
@@ -57,7 +58,7 @@ class ChannelRepository extends ChangeNotifier with SafeChangeNotifier {
               channelIds: _channels.isEmpty
                   ? List.unmodifiable(g.channelIds)
                   : g.channelIds
-                      .where((id) => _channels.any((c) => c.id == id))
+                      .where((id) => validIds.contains(id))
                       .toList(),
             ))
         .toList();

@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/features/home/widgets/tv_vertical_clock_pill.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -123,6 +124,10 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
 
                 // Espaciador flexible que posiciona Ajustes al final de la pantalla
                 const Spacer(),
+
+                // Reloj cápsula vertical sobre Ajustes
+                const TvVerticalClockPill(),
+                const SizedBox(height: 12),
 
                 // Destino 2: Ajustes (al fondo)
                 _buildRailDestination(2, scheme, todayEvents),

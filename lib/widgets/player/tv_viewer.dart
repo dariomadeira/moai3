@@ -332,8 +332,8 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
       );
       await newController.play();
       _watchParty?.reportCurrentChannel(
-        channelId: channel.id,
-        channelName: channel.name,
+        channelId: channel.isAdult ? null : channel.id,
+        channelName: channel.isAdult ? null : channel.name,
       );
     } catch (e) {
       if (newController != null) {

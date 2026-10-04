@@ -413,8 +413,13 @@ class PlayerEntry(
     }
 
     fun buildAndPlay(args: Map<*, *>) {
-        // Loose release del player anterior (misma textura, nueva fuente).
-        player?.release()
+        // Stop, clear surface and release previous player properly
+        try {
+            player?.stop()
+            player?.clearVideoSurface()
+            player?.release()
+        } catch (_: Exception) {
+        }
         player = null
 
         val url = args["url"] as? String ?: run {
@@ -506,16 +511,29 @@ class PlayerEntry(
             .setLoadErrorHandlingPolicy(object : DefaultLoadErrorHandlingPolicy() {
                 override fun getRetryDelayMsFor(
                     loadErrorInfo: LoadErrorHandlingPolicy.LoadErrorInfo
-                ): Long = 500L
+                ): Long = 1000L
 
-                override fun getMinimumLoadableRetryCount(dataType: Int): Int = 15
+                override fun getMinimumLoadableRetryCount(dataType: Int): Int = 2
             })
+
+        val loadControl = DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                2_500,
+                5_000,
+                1_000,
+                1_500
+            )
+            .setPrioritizeTimeOverSizeThresholds(true)
+            .build()
+
+        val renderersFactory = DefaultRenderersFactory(context)
+            .setEnableDecoderFallback(true)
 
         val newPlayer = ExoPlayer.Builder(context)
             .setMediaSourceFactory(mediaSourceFactory)
             .setBandwidthMeter(bandwidthMeter)
-            .setLoadControl(DefaultLoadControl.Builder().build())
-            .setRenderersFactory(DefaultRenderersFactory(context))
+            .setLoadControl(loadControl)
+            .setRenderersFactory(renderersFactory)
             .setAudioAttributes(AudioAttributes.DEFAULT, true)
             .build()
 
@@ -552,10 +570,8 @@ class PlayerEntry(
             }
 
             override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
-                if (videoSize.width > 0 && videoSize.height > 0) {
-                    textureEntry.surfaceTexture()
-                        .setDefaultBufferSize(videoSize.width, videoSize.height)
-                }
+                // DO NOT call surfaceTexture().setDefaultBufferSize() here as it invalidates
+                // active SurfaceTexture GraphicBuffers, causing Codec2 dequeue failures and UI freezes.
                 Log.i(PlayerEngine.TAG, "videoSize=${videoSize.width}x${videoSize.height} handle=$id")
                 emit(
                     "videoSize",
@@ -567,6 +583,13 @@ class PlayerEntry(
                 Log.e(PlayerEngine.TAG,
                     "ERROR code=${error.errorCode} class=${error.javaClass.simpleName} " +
                         "msg=${error.message ?: ""} handle=$id")
+                try {
+                    newPlayer.stop()
+                    newPlayer.clearVideoSurface()
+                    newPlayer.clearMediaItems()
+                } catch (e: Exception) {
+                    Log.w(PlayerEngine.TAG, "Error deteniendo player en onPlayerError: ${e.message}")
+                }
                 emit(
                     "error",
                     mapOf(
@@ -594,7 +617,12 @@ class PlayerEntry(
 
     fun dispose() {
         setKeepScreenOn(false)
-        player?.release()
+        try {
+            player?.stop()
+            player?.clearVideoSurface()
+            player?.release()
+        } catch (_: Exception) {
+        }
         player = null
         try {
             surface.release()

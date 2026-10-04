@@ -630,6 +630,51 @@ class _FriendTileState extends State<_FriendTile> {
                           ],
                         ),
                       ),
+                      if (widget.friend.displayChannelName != null) ...[
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isFocused
+                                  ? scheme.onPrimary.withValues(alpha: 0.22)
+                                  : scheme.tertiaryContainer,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.tv_rounded,
+                                  size: 11,
+                                  color: isFocused
+                                      ? scheme.onPrimary
+                                      : scheme.onTertiaryContainer,
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    widget.friend.displayChannelName!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: MoaiText.body(
+                                      context,
+                                      color: isFocused
+                                          ? scheme.onPrimary
+                                          : scheme.onTertiaryContainer,
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ],

@@ -7,15 +7,14 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 /// - Periodo de expiración extendido (180 días) para evitar descargas repetitivas.
 /// - Base de datos SQLite dedicada para aislar los logos de otros recursos temporales.
 class MoaiImageCacheManager {
-  static const String key = 'moai_channel_logos_v2';
-  static const String _legacyKey = 'moai_channel_logos';
+  static const String key = 'moai_channel_logos_v3';
+  static const String _legacyKey = 'moai_channel_logos_v2';
 
   static final CacheManager instance = CacheManager(
     Config(
       key,
       stalePeriod: const Duration(days: 180),
       maxNrOfCacheObjects: 3000,
-      repo: JsonCacheInfoRepository(databaseName: key),
       fileService: HttpFileService(),
     ),
   );

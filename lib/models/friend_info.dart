@@ -62,6 +62,26 @@ class FriendInfo {
     return true;
   }
 
+  /// Retorna el nombre del canal que el amigo está viendo, o null si está offline o es un canal de adultos.
+  String? get displayChannelName {
+    if (!isOnline) return null;
+    final name = currentChannelName?.trim();
+    if (name == null || name.isEmpty) return null;
+
+    final lower = name.toLowerCase();
+    if (lower.contains('18+') ||
+        lower.contains('+18') ||
+        lower.contains('adult') ||
+        lower.contains('xxx') ||
+        lower.contains('playboy') ||
+        lower.contains('venus') ||
+        lower.contains('erotic') ||
+        lower.contains('erotico')) {
+      return null;
+    }
+    return name;
+  }
+
   factory FriendInfo.fromDeviceJson(Map<String, dynamic> json) {
     return FriendInfo(
       deviceId: json['device_id'] as String,
