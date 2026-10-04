@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -32,13 +33,19 @@ class TvListCardLeadingLogo extends StatefulWidget {
 }
 
 class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
+  static final Set<String> _failedUrls = {};
   bool? _lastReported;
+  Timer? _timeoutTimer;
 
   @override
   void initState() {
     super.initState();
-    if (widget.logoUrl.trim().isEmpty) {
+    final url = widget.logoUrl.trim();
+    if (_failedUrls.contains(url)) {
+      _lastReported = false;
       _report(false);
+    } else {
+      _startLogoTimeout();
     }
   }
 
@@ -47,20 +54,53 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.logoUrl != widget.logoUrl) {
       _lastReported = null;
-      if (widget.logoUrl.trim().isEmpty) {
+      final url = widget.logoUrl.trim();
+      if (_failedUrls.contains(url)) {
+        _lastReported = false;
         _report(false);
+      } else {
+        _startLogoTimeout();
       }
     }
   }
 
+  @override
+  void dispose() {
+    _timeoutTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startLogoTimeout() {
+    _timeoutTimer?.cancel();
+    final url = widget.logoUrl.trim();
+    if (url.isEmpty || _failedUrls.contains(url)) {
+      _report(false);
+      return;
+    }
+    _timeoutTimer = Timer(const Duration(milliseconds: 2500), () {
+      if (mounted && _lastReported == null) {
+        _report(false);
+      }
+    });
+  }
+
   void _report(bool available) {
+    final url = widget.logoUrl.trim();
+    if (!available && url.isNotEmpty) {
+      _failedUrls.add(url);
+    }
     if (_lastReported == available) return;
     _lastReported = available;
+    _timeoutTimer?.cancel();
     final cb = widget.onLogoResolved;
     if (cb == null) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) cb(available);
-    });
+    if (mounted) {
+      cb(available);
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        cb(available);
+      });
+    }
   }
 
   @override
@@ -76,7 +116,7 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
       child: Icon(
         Icons.tv_outlined,
         color: iconColor,
-        size: widget.height * 0.55,
+        size: (widget.height * 0.55).clamp(0.0, 48.0),
       ),
     );
     const loadingPlaceholder = SizedBox.shrink();
@@ -84,10 +124,11 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
     final cleanUrl = widget.logoUrl.trim();
     final Widget logoContent;
 
-    if (cleanUrl.isEmpty) {
+    if (cleanUrl.isEmpty || _lastReported == false || _failedUrls.contains(cleanUrl)) {
       logoContent = errorPlaceholder;
     } else if (cleanUrl.startsWith('http')) {
-      final isSvg = cleanUrl.toLowerCase().contains('.svg');
+      final cleanPath = cleanUrl.toLowerCase().split('?').first.split('#').first;
+      final isSvg = cleanPath.endsWith('.svg');
       if (isSvg) {
         logoContent = SvgPicture.network(
           cleanUrl,
@@ -97,7 +138,7 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
             'User-Agent': 'Mozilla/5.0 (Linux; Android 10) MoaiTV/1.0',
           },
           placeholderBuilder: (_) => loadingPlaceholder,
-          errorBuilder: (_, _, _) {
+          errorBuilder: (context, error, stackTrace) {
             _report(false);
             return errorPlaceholder;
           },
@@ -119,7 +160,7 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
             'User-Agent': 'Mozilla/5.0 (Linux; Android 10) MoaiTV/1.0',
           },
           placeholder: (_, _) => loadingPlaceholder,
-          errorWidget: (_, _, _) {
+          errorWidget: (context, url, error) {
             _report(false);
             return errorPlaceholder;
           },
@@ -140,7 +181,7 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
         fit: BoxFit.contain,
         alignment: Alignment.center,
         filterQuality: FilterQuality.medium,
-        errorBuilder: (_, _, _) {
+        errorBuilder: (context, error, stackTrace) {
           _report(false);
           return errorPlaceholder;
         },
@@ -153,9 +194,14 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
       );
     }
 
+    final safePadding = EdgeInsets.symmetric(
+      horizontal: (widget.width * 0.1).clamp(0.0, 7.0),
+      vertical: (widget.height * 0.1).clamp(0.0, 5.5),
+    );
+
     return SizedBox(
-      width: widget.width,
-      height: widget.height,
+      width: widget.width.clamp(0.0, double.infinity),
+      height: widget.height.clamp(0.0, double.infinity),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.transparent,
@@ -163,7 +209,7 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
         ),
         clipBehavior: Clip.antiAlias,
         alignment: Alignment.center,
-        padding: widget.contentPadding,
+        padding: safePadding,
         child: logoContent,
       ),
     );

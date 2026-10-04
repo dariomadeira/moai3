@@ -51,12 +51,19 @@ class _SourcesScreenState extends State<SourcesScreen> {
   final List<FocusNode> _presetFocuses = [];
   final FocusNode _emptyFocusNode = FocusNode(debugLabel: 'sources_empty');
 
+  static const String _freeUrl =
+      'https://raw.githubusercontent.com/dariomadeira/moaiplug_free/main/manifest.json';
   static const String _arUrl =
       'https://raw.githubusercontent.com/dariomadeira/moaiplug_ar/refs/heads/main/manifest.json';
   static const String _daddyliveUrl =
       'https://raw.githubusercontent.com/dariomadeira/moaiplug_daddylive/refs/heads/main/manifest.json';
 
   static const List<_PresetPlugin> _presetPlugins = [
+    _PresetPlugin(
+      name: 'Moai Free',
+      description: 'moaiplug_free',
+      url: _freeUrl,
+    ),
     _PresetPlugin(
       name: 'Argentina (AR)',
       description: 'moaiplug_ar',

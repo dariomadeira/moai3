@@ -38,10 +38,20 @@ class Channel {
     final cat = category.trim().toLowerCase();
     final cnt = country.trim().toLowerCase();
     final n = name.toLowerCase();
+    final tag = pluginTag?.trim().toLowerCase() ?? '';
     return cat == 'adultos' ||
+        cat.contains('adult') ||
+        cat.contains('18+') ||
+        cat.contains('xxx') ||
         cnt == 'adultos' ||
+        cnt.contains('adult') ||
+        cnt.contains('18+') ||
         n.contains('18+') ||
-        n.contains('+18');
+        n.contains('+18') ||
+        n.contains('xxx') ||
+        tag.contains('adult') ||
+        tag.contains('18+') ||
+        tag.contains('xxx');
   }
 
   factory Channel.fromJson(Map<String, dynamic> json) {

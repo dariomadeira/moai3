@@ -188,6 +188,7 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
                       final logoH = (constraints.maxHeight).clamp(0.0, side);
                       return Center(
                         child: TvListCardLeadingLogo(
+                          key: ValueKey(widget.channel.logoUrl),
                           logoUrl: widget.channel.logoUrl,
                           width: side,
                           height: logoH,

@@ -830,6 +830,51 @@ class _FriendTileState extends State<_FriendTile> {
                               ],
                             ),
                           ),
+                          if (widget.friend.displayChannelName != null) ...[
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isFocused
+                                      ? scheme.onPrimary.withValues(alpha: 0.22)
+                                      : scheme.tertiaryContainer,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.tv_rounded,
+                                      size: 8.5,
+                                      color: isFocused
+                                          ? scheme.onPrimary
+                                          : scheme.onTertiaryContainer,
+                                    ),
+                                    const SizedBox(width: 3),
+                                    Flexible(
+                                      child: Text(
+                                        widget.friend.displayChannelName!,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: MoaiText.body(
+                                          context,
+                                          color: isFocused
+                                              ? scheme.onPrimary
+                                              : scheme.onTertiaryContainer,
+                                          fontSize: 8.5,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ],

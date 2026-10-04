@@ -219,11 +219,6 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
     final node = _nodes[clamped];
     if (node.context != null) {
       node.requestFocus();
-      if (!node.hasFocus && attempts > 0) {
-        SchedulerBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _requestLocalFocus(clamped, attempts - 1);
-        });
-      }
     } else if (attempts > 0) {
       SchedulerBinding.instance.addPostFrameCallback((_) {
         if (mounted) _requestLocalFocus(clamped, attempts - 1);
