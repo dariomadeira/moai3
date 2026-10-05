@@ -102,7 +102,9 @@ class DeviceIdentityService {
             }
           }
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('[DeviceIdentityService] Error leyendo propiedad Android: $e');
+      }
     }
     return null;
   }
@@ -115,7 +117,8 @@ class DeviceIdentityService {
       try {
         final dir = await getApplicationDocumentsDirectory();
         return File('${dir.path}/.moai_device_id');
-      } catch (_) {
+      } catch (e) {
+        debugPrint('[DeviceIdentityService] Error obteniendo directorio de respaldo: $e');
         return null;
       }
     }
@@ -127,7 +130,9 @@ class DeviceIdentityService {
       if (file != null) {
         await file.writeAsString(id.trim(), flush: true);
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[DeviceIdentityService] Error guardando id en archivo: $e');
+    }
   }
 
   Future<String?> _readDeviceIdFromFile() async {
@@ -137,7 +142,9 @@ class DeviceIdentityService {
         final content = (await file.readAsString()).trim();
         if (content.isNotEmpty) return content;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[DeviceIdentityService] Error leyendo id desde archivo: $e');
+    }
     return null;
   }
 

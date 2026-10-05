@@ -325,5 +325,9 @@
   "mic_test_err_stop": "Error al detener la grabación: {error}",
   "mic_test_err_play": "Error al reproducir el audio: {error}",
   "mic_test_badge_amplified": "Volumen alto (+18 dB)",
-  "mic_test_badge_ready": "Audio listo"
+  "mic_test_badge_ready": "Audio listo",
+  "sources_preset_ar_name": "Argentina (AR)",
+  "sources_preset_ar_desc": "moaiplug_ar",
+  "sources_preset_daddylive_name": "DaddyLive (Daddy)",
+  "sources_preset_daddylive_desc": "moaiplug_daddylive"
 }
