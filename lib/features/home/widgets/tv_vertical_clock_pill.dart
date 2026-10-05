@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:moai3/state/weather_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:provider/provider.dart';
 
 /// Componente de reloj en formato Cápsula (Pill) Vertical.
 ///
@@ -46,96 +48,115 @@ class _TvVerticalClockPillState extends State<TvVerticalClockPill> {
     final minuteStr = DateFormat('mm').format(_now);
 
     return Container(
-      width: 40,
+      width: 56,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(22),
+        color: scheme.surfaceContainerLow.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Cápsula interna para el reloj (Tonal accent)
+          // Cápsula interna para el reloj (Tonal accent, 56x32 matching rail pill size)
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+            width: 56,
+            height: 32,
             decoration: BoxDecoration(
               color: scheme.primaryContainer.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  hourStr,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
-                    color: scheme.onPrimaryContainer,
-                    height: 1.0,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            alignment: Alignment.center,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    hourStr,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.2,
+                      color: scheme.onPrimaryContainer,
+                      height: 1.0,
+                    ),
                   ),
-                ),
-                // Padding(
-                //   padding: const EdgeInsets.symmetric(vertical: 3),
-                //   child: AnimatedOpacity(
-                //     opacity: _dotsVisible ? 1.0 : 0.15,
-                //     duration: const Duration(milliseconds: 300),
-                //     curve: Curves.easeInOut,
-                //     child: Row(
-                //       mainAxisSize: MainAxisSize.min,
-                //       mainAxisAlignment: MainAxisAlignment.center,
-                //       children: [
-                //         Container(
-                //           width: 3,
-                //           height: 3,
-                //           decoration: BoxDecoration(
-                //             color: scheme.onPrimaryContainer,
-                //             shape: BoxShape.circle,
-                //           ),
-                //         ),
-                //         const SizedBox(width: 3),
-                //         Container(
-                //           width: 3,
-                //           height: 3,
-                //           decoration: BoxDecoration(
-                //             color: scheme.onPrimaryContainer,
-                //             shape: BoxShape.circle,
-                //           ),
-                //         ),
-                //       ],
-                //     ),
-                //   ),
-                // ),
-                const SizedBox(height: 3),
-                Text(
-                  minuteStr,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
-                    color: scheme.onPrimaryContainer.withValues(alpha: 0.5),
-                    height: 1.0,
+                  AnimatedOpacity(
+                    opacity: _dotsVisible ? 1.0 : 0.2,
+                    duration: const Duration(milliseconds: 200),
+                    child: Text(
+                      ':',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        color: scheme.onPrimaryContainer,
+                        height: 1.0,
+                      ),
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 6),
-          // Temperatura (hardcodeada)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text(
-              "33°",
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
-                color: scheme.onSurfaceVariant,
-                height: 1.0,
+                  Text(
+                    minuteStr,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.2,
+                      color: scheme.onPrimaryContainer.withValues(alpha: 0.8),
+                      height: 1.0,
+                    ),
+                  ),
+                ],
               ),
             ),
+          ),
+          const SizedBox(height: 3),
+          // Icono del clima arriba de la temperatura (desde WeatherProvider con fallback seguro)
+          Builder(
+            builder: (context) {
+              final weatherProvider = context.watch<WeatherProvider?>();
+              final tempStr = weatherProvider?.temperatureDisplay ?? '33°';
+              final iconUrl = weatherProvider?.iconUrlDisplay ?? '';
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (iconUrl.isNotEmpty)
+                    Image.network(
+                      iconUrl,
+                      width: 26,
+                      height: 26,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        Icons.wb_sunny_outlined,
+                        size: 20,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    )
+                  else
+                    Icon(
+                      Icons.wb_sunny_outlined,
+                      size: 20,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  const SizedBox(height: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text(
+                      tempStr,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                        color: scheme.onSurfaceVariant,
+                        height: 1.0,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

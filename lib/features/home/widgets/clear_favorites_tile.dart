@@ -189,7 +189,6 @@ class _ClearConfirmDialogContentState
           onPressed: () => Navigator.of(context).pop(),
           onKeyRight: () => _confirmFocusNode.requestFocus(),
         ),
-        const SizedBox(width: 12),
         TvDialogButton(
           focusNode: _confirmFocusNode,
           label: 'favorites_clear_all'.tr(),

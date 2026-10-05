@@ -129,7 +129,11 @@ class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
                           contentPadding: const EdgeInsets.all(3),
                           onLogoResolved: (ok) {
                             if (!mounted || _logoOk == ok) return;
-                            setState(() => _logoOk = ok);
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (mounted && _logoOk != ok) {
+                                setState(() => _logoOk = ok);
+                              }
+                            });
                           },
                         ),
                       );

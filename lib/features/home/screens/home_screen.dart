@@ -389,8 +389,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: RepaintBoundary(
                         child: Padding(
                           padding: _selectedIndex == _sectionTv
-                              ? const EdgeInsets.fromLTRB(8, 0, 8, 8)
-                              : const EdgeInsets.all(8),
+                              ? const EdgeInsets.fromLTRB(4, 0, 8, 8)
+                              : const EdgeInsets.fromLTRB(4, 8, 8, 8),
                           child: _selectedIndex == _sectionSettings
                               ? HomeSettingsArea(
                                   activePanelIndex: _activeSettingsPanelIndex,

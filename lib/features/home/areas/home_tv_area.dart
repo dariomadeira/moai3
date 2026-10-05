@@ -18,7 +18,7 @@ import 'package:moai3/features/home/widgets/channel_viewer_header.dart';
 import 'package:moai3/features/home/widgets/empty_viewer_panel.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/home/widgets/tv_tab_bar.dart';
-import 'package:moai3/features/home/widgets/tv_clock_pill.dart';
+// import 'package:moai3/features/home/widgets/tv_clock_pill.dart';
 import 'package:moai3/features/home/widgets/tv_watch_party_header_bar.dart';
 import 'package:moai3/features/home/widgets/viewer_favorites_bar.dart';
 import 'package:moai3/state/watch_party_provider.dart';
@@ -1118,37 +1118,31 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: TvWatchPartyHeaderBar(
-                              micFocusNode: _watchPartyMicFocusNode,
-                              onLongPressMic: () => TvFriendsDialog.show(context),
-                              onKeyLeft: () {
-                                if (_groupsTabFocus.canRequestFocus) {
-                                  _groupsTabFocus.requestFocus();
-                                } else if (_searchTabFocus.canRequestFocus) {
-                                  _searchTabFocus.requestFocus();
-                                } else {
-                                  _exploreTabFocus.requestFocus();
-                                }
-                              },
-                              onKeyUp: () {
-                                if (_groupsTabFocus.canRequestFocus) {
-                                  _groupsTabFocus.requestFocus();
-                                } else {
-                                  _exploreTabFocus.requestFocus();
-                                }
-                              },
-                              onKeyDown: () => _viewerFocus.requestFocus(),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const TvClockPill(),
-                        ],
+                    SizedBox(
+                      height: 64,
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: TvWatchPartyHeaderBar(
+                          micFocusNode: _watchPartyMicFocusNode,
+                          onLongPressMic: () => TvFriendsDialog.show(context),
+                          onKeyLeft: () {
+                            if (_groupsTabFocus.canRequestFocus) {
+                              _groupsTabFocus.requestFocus();
+                            } else if (_searchTabFocus.canRequestFocus) {
+                              _searchTabFocus.requestFocus();
+                            } else {
+                              _exploreTabFocus.requestFocus();
+                            }
+                          },
+                          onKeyUp: () {
+                            if (_groupsTabFocus.canRequestFocus) {
+                              _groupsTabFocus.requestFocus();
+                            } else {
+                              _exploreTabFocus.requestFocus();
+                            }
+                          },
+                          onKeyDown: () => _viewerFocus.requestFocus(),
+                        ),
                       ),
                     ),
                     Expanded(
