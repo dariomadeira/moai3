@@ -50,7 +50,7 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
   void initState() {
     super.initState();
     _isFocused = widget.focusNode?.hasFocus ?? false;
-    _logoOk = widget.channel.logoUrl.trim().isNotEmpty;
+    _logoOk = !TvListCardLeadingLogo.isUrlFailed(widget.channel.logoUrl);
   }
 
   @override
@@ -61,7 +61,7 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
     }
     if (widget.channel.id != oldWidget.channel.id ||
         widget.channel.logoUrl != oldWidget.channel.logoUrl) {
-      _logoOk = widget.channel.logoUrl.trim().isNotEmpty;
+      _logoOk = !TvListCardLeadingLogo.isUrlFailed(widget.channel.logoUrl);
     }
   }
 
@@ -74,8 +74,13 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final showLabelSetting =
-        context.select((TvSettingsProvider s) => s.showChannelLabels);
+    final showLabelSetting = () {
+      try {
+        return context.select((TvSettingsProvider s) => s.showChannelLabels);
+      } catch (_) {
+        return false;
+      }
+    }();
     final showLabel = showLabelSetting || !_logoOk;
     final isFocused = _isFocused || (widget.focusNode?.hasFocus ?? false);
     // Foco en grilla: sin relleno primary; borde = color que antes era el fondo.
@@ -194,12 +199,9 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
                           height: logoH,
                           isFocused: isFocused,
                           onLogoResolved: (ok) {
-                            if (!mounted || _logoOk == ok) return;
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              if (mounted && _logoOk != ok) {
-                                setState(() => _logoOk = ok);
-                              }
-                            });
+                            if (mounted && _logoOk != ok) {
+                              setState(() => _logoOk = ok);
+                            }
                           },
                         ),
                       );

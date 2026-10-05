@@ -17,6 +17,12 @@ class TvListCardLeadingLogo extends StatefulWidget {
   /// `true` si hay imagen real; `false` si URL vacía o falló la carga.
   final ValueChanged<bool>? onLogoResolved;
 
+  /// Consulta si la URL del logo falló previamente o está vacía.
+  static bool isUrlFailed(String url) {
+    final clean = url.trim();
+    return clean.isEmpty || _TvListCardLeadingLogoState._failedUrls.contains(clean);
+  }
+
   const TvListCardLeadingLogo({
     super.key,
     required this.logoUrl,
@@ -42,7 +48,6 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
     super.initState();
     final url = widget.logoUrl.trim();
     if (_failedUrls.contains(url)) {
-      _lastReported = false;
       _report(false);
     } else {
       _startLogoTimeout();
@@ -56,7 +61,6 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
       _lastReported = null;
       final url = widget.logoUrl.trim();
       if (_failedUrls.contains(url)) {
-        _lastReported = false;
         _report(false);
       } else {
         _startLogoTimeout();
