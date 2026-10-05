@@ -399,10 +399,6 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
   }
 
   VoidCallback get _focusCurrentTab => () {
-    if (_watchPartyMicFocusNode.canRequestFocus) {
-      _watchPartyMicFocusNode.requestFocus();
-      return;
-    }
     if (_tvTab == 'groups') {
       _groupsTabFocus.requestFocus();
     } else if (_tvTab == 'search') {
