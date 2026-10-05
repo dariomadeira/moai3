@@ -195,7 +195,11 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
                           isFocused: isFocused,
                           onLogoResolved: (ok) {
                             if (!mounted || _logoOk == ok) return;
-                            setState(() => _logoOk = ok);
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (mounted && _logoOk != ok) {
+                                setState(() => _logoOk = ok);
+                              }
+                            });
                           },
                         ),
                       );

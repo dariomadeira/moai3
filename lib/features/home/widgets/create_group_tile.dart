@@ -254,7 +254,6 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
           onKeyRight: () => _createFocusNode.requestFocus(),
           onKeyUp: () => _textFieldFocusNode.requestFocus(),
         ),
-        const SizedBox(width: 12),
         TvDialogButton(
           focusNode: _createFocusNode,
           label: 'groups_create_confirm'.tr(),

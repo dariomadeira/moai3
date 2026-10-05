@@ -65,10 +65,15 @@ class ChannelProvider extends ChangeNotifier {
     // 1. Último canal no adulto en memoria
     if (_lastNonAdultChannel != null) {
       if (channels.isEmpty) {
+        if (_lastNonAdultChannel!.isPluginChannel && _pluginHost.sources.isEmpty) {
+          _lastNonAdultChannel = null;
+          return null;
+        }
         return _lastNonAdultChannel;
       }
       final matched = channels.where((c) => c.id == _lastNonAdultChannel!.id).firstOrNull;
       if (matched != null) return matched;
+      _lastNonAdultChannel = null;
     }
 
     if (channels.isEmpty) return null;

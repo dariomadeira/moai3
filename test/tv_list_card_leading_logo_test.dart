@@ -9,8 +9,8 @@ import 'package:moai3/services/moai_image_cache_manager.dart';
 import 'package:moai3/widgets/cards/tv_list_card_leading_logo.dart';
 
 void main() {
-  test('MoaiImageCacheManager usa versión 2 sin distorsión', () {
-    expect(MoaiImageCacheManager.key, equals('moai_channel_logos_v2'));
+  test('MoaiImageCacheManager usa versión 3 sin distorsión', () {
+    expect(MoaiImageCacheManager.key, equals('moai_channel_logos_v3'));
   });
 
   testWidgets('TvListCardLeadingLogo renderiza placeholder cuando la URL está vacía', (tester) async {

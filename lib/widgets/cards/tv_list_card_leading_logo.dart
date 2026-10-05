@@ -94,13 +94,11 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
     _timeoutTimer?.cancel();
     final cb = widget.onLogoResolved;
     if (cb == null) return;
-    if (mounted) {
-      cb(available);
-    } else {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
         cb(available);
-      });
-    }
+      }
+    });
   }
 
   @override
