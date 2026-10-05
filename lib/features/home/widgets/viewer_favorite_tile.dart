@@ -36,7 +36,7 @@ class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
   void initState() {
     super.initState();
     _isFocused = widget.focusNode?.hasFocus ?? false;
-    _logoOk = widget.channel.logoUrl.trim().isNotEmpty;
+    _logoOk = !TvListCardLeadingLogo.isUrlFailed(widget.channel.logoUrl);
   }
 
   @override
@@ -47,7 +47,7 @@ class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
     }
     if (widget.channel.id != oldWidget.channel.id ||
         widget.channel.logoUrl != oldWidget.channel.logoUrl) {
-      _logoOk = widget.channel.logoUrl.trim().isNotEmpty;
+      _logoOk = !TvListCardLeadingLogo.isUrlFailed(widget.channel.logoUrl);
     }
   }
 
@@ -128,12 +128,9 @@ class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
                           isFocused: isFocused,
                           contentPadding: const EdgeInsets.all(3),
                           onLogoResolved: (ok) {
-                            if (!mounted || _logoOk == ok) return;
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              if (mounted && _logoOk != ok) {
-                                setState(() => _logoOk = ok);
-                              }
-                            });
+                            if (mounted && _logoOk != ok) {
+                              setState(() => _logoOk = ok);
+                            }
                           },
                         ),
                       );
