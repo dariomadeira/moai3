@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:moai3/engine/engine_player_view.dart';
 import 'package:moai3/engine/moai_engine_player.dart';
 import 'package:moai3/features/player/playback/channel_playback_helpers.dart';
@@ -16,6 +15,7 @@ import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/player/tv_viewer_focus_wrapper.dart';
 import 'package:moai3/widgets/player/viewer_error_display.dart';
+import 'package:moai3/utils/context_extensions.dart';
 import 'package:moai3/widgets/player/watch_party_overlay.dart';
 
 /// Visor TV usando el motor Kotlin nativo (ExoPlayer) con widget `Texture`.
@@ -400,12 +400,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
                 ],
               );
 
-    WatchPartyProvider? watchParty;
-    try {
-      watchParty = context.watch<WatchPartyProvider>();
-    } catch (_) {
-      watchParty = _watchParty;
-    }
+    final watchParty = context.watchOptional<WatchPartyProvider>() ?? _watchParty;
 
     final isWatchPartyActive = effectiveFullScreen &&
         (WatchPartyOverlay.debugForceVisible ||

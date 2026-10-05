@@ -56,18 +56,18 @@ class _SourcesScreenState extends State<SourcesScreen> {
   static const String _daddyliveUrl =
       'https://raw.githubusercontent.com/dariomadeira/moaiplug_daddylive/refs/heads/main/manifest.json';
 
-  static const List<_PresetPlugin> _presetPlugins = [
-    _PresetPlugin(
-      name: 'Argentina (AR)',
-      description: 'moaiplug_ar',
-      url: _arUrl,
-    ),
-    _PresetPlugin(
-      name: 'DaddyLive (Daddy)',
-      description: 'moaiplug_daddylive',
-      url: _daddyliveUrl,
-    ),
-  ];
+  static List<_PresetPlugin> get _presetPlugins => [
+        _PresetPlugin(
+          name: 'sources_preset_ar_name'.tr(),
+          description: 'sources_preset_ar_desc'.tr(),
+          url: _arUrl,
+        ),
+        _PresetPlugin(
+          name: 'sources_preset_daddylive_name'.tr(),
+          description: 'sources_preset_daddylive_desc'.tr(),
+          url: _daddyliveUrl,
+        ),
+      ];
 
   @override
   void initState() {

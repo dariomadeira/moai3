@@ -5,13 +5,13 @@ import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/features/settings/widgets/tv_tile.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/utils/context_extensions.dart';
 import 'package:moai3/widgets/dialogs/tv_friends_dialog.dart';
 import 'package:moai3/widgets/dialogs/tv_nickname_dialog.dart';
 import 'package:moai3/widgets/dialogs/tv_voice_test_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
-import 'package:provider/provider.dart';
 
 enum _SettingsWatchPartyItemType {
   watchPartySwitch,
@@ -51,13 +51,11 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        try {
-          final wp = context.read<WatchPartyProvider>();
-          if (wp.enabled) {
-            wp.ensureUserCode();
-            wp.fetchNickname();
-          }
-        } catch (_) {}
+        final wp = context.readOptional<WatchPartyProvider>();
+        if (wp != null && wp.enabled) {
+          wp.ensureUserCode();
+          wp.fetchNickname();
+        }
       }
     });
   }
@@ -68,11 +66,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
 
   @override
   Widget build(BuildContext context) {
-    WatchPartyProvider? watchParty;
-    try {
-      watchParty = context.watch<WatchPartyProvider>();
-    } catch (_) {}
-
+    final watchParty = context.watchOptional<WatchPartyProvider>();
     final isEnabled = watchParty?.enabled ?? false;
 
     final items = <_SettingsWatchPartyItemType>[

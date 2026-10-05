@@ -32,13 +32,12 @@ class ChannelViewerHeader extends StatelessWidget {
     if (channel.fallbackUrls.isNotEmpty &&
         fallbackIndex >= 0 &&
         fallbackIndex < channel.fallbackUrls.length) {
-      try {
-        final uri = Uri.parse(channel.fallbackUrls[fallbackIndex]);
-        final playerParam = uri.queryParameters['player'];
-        if (playerParam != null) {
-          displayServerNumber = int.parse(playerParam);
-        }
-      } catch (_) {}
+      final uri = Uri.tryParse(channel.fallbackUrls[fallbackIndex]);
+      final playerParam = uri?.queryParameters['player'];
+      if (playerParam != null) {
+        final parsed = int.tryParse(playerParam);
+        if (parsed != null) displayServerNumber = parsed;
+      }
     }
 
     return Column(

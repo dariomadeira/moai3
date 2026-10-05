@@ -7,7 +7,7 @@ import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/cards/tv_list_card_leading_logo.dart';
 import 'package:moai3/widgets/cards/tv_list_card_style.dart';
-import 'package:provider/provider.dart';
+import 'package:moai3/utils/context_extensions.dart';
 
 /// Tile de canal para grilla 2 columnas: logo arriba, nombre abajo.
 class ChannelGridTile extends StatefulWidget {
@@ -74,13 +74,8 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final showLabelSetting = () {
-      try {
-        return context.select((TvSettingsProvider s) => s.showChannelLabels);
-      } catch (_) {
-        return false;
-      }
-    }();
+    final showLabelSetting =
+        context.watchOptional<TvSettingsProvider>()?.showChannelLabels ?? false;
     final showLabel = showLabelSetting || !_logoOk;
     final isFocused = _isFocused || (widget.focusNode?.hasFocus ?? false);
     // Foco en grilla: sin relleno primary; borde = color que antes era el fondo.

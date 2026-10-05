@@ -553,7 +553,7 @@ class CalendarProvider extends ChangeNotifier {
       subscriptionId: 'lpf_ar',
       title: 'Estudiantes vs Gimnasia LP',
       competition: 'Liga Profesional',
-      startDateTime: kickoff(cleanMonday, 20, 0),
+      startDateTime: kickoff(cleanMonday, 8, 0),
       sessionType: 'Fecha Regular',
       broadcaster: 'TNT Sports',
     ));

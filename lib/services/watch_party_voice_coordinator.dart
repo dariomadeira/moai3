@@ -78,13 +78,17 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
       _realtimeChannel = watchPartyService.subscribeToVoiceMessages(
         onMessageReceived: handleIncomingVoiceMessage,
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[WatchPartyVoiceCoordinator] Error al suscribir a Realtime: $e');
+    }
   }
 
   void _unsubscribeFromRealtime() {
     try {
       _realtimeChannel?.unsubscribe();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[WatchPartyVoiceCoordinator] Error al desuscribir de Realtime: $e');
+    }
     _realtimeChannel = null;
   }
 
@@ -239,7 +243,8 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
           }
         }
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[WatchPartyVoiceCoordinator] Error al finalizar y enviar grabación: $e');
     } finally {
       // Reanudar cola de reproducción
       _isQueuePaused = false;
@@ -258,7 +263,9 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
 
     try {
       await RemoteVoiceTestService.stopRecording();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[WatchPartyVoiceCoordinator] Error al cancelar grabación: $e');
+    }
 
     _isQueuePaused = false;
     _playNextIfPossible();
