@@ -1147,7 +1147,13 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                         focusNode: _viewerFocus,
                         hasChannels: allChannels.isNotEmpty,
                         onReturnToPanel: _focusActiveContent,
-                        onKeyUp: _focusCurrentTab,
+                        onKeyUp: () {
+                          if (_watchPartyMicFocusNode.canRequestFocus) {
+                            _watchPartyMicFocusNode.requestFocus();
+                          } else {
+                            _focusCurrentTab();
+                          }
+                        },
                       )
                     : Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
