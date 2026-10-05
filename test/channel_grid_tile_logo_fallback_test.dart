@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/widgets/cards/channel_grid_tile.dart';
-import 'package:moai3/widgets/cards/tv_list_card_leading_logo.dart';
 
 void main() {
   final dummyChannelWithEmptyLogo = Channel(
