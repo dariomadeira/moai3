@@ -90,12 +90,19 @@ class MainActivity : FlutterActivity() {
     private lateinit var pluginLoader: PluginLoader
     private var voiceManager: RemoteVoiceManager? = null
 
+    private var arcadeManager: com.infomak.moai.games.ArcadeEmulatorManager? = null
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         configurePermissiveSsl()
         FlutterActivityHolder.current = this
         pluginLoader = PluginLoader(this)
         voiceManager = RemoteVoiceManager(this)
+        arcadeManager = com.infomak.moai.games.ArcadeEmulatorManager(this, flutterEngine.dartExecutor.binaryMessenger)
+        flutterEngine.platformViewsController.registry.registerViewFactory(
+            "com.infomak.moai/arcade_view",
+            com.infomak.moai.games.ArcadePlatformViewFactory(arcadeManager!!)
+        )
         setupDeviceChannel(flutterEngine)
         setupVoiceTestChannel(flutterEngine)
         engine.attach(flutterEngine)
