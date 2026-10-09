@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:moai3/features/games/services/arcade_emulator_service.dart';
 import 'package:moai3/features/games/widgets/arcade_controller_overlay.dart';
 import 'package:moai3/features/games/widgets/arcade_view_container.dart';
+import 'package:moai3/services/arcade_plugin_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -45,6 +46,10 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
 
   Future<void> _initEmulator() async {
     setState(() => _isLoading = true);
+    final corePath = ArcadePluginService.instance.installedCorePath;
+    if (corePath != null && corePath.isNotEmpty) {
+      await _emulatorService.setCustomCorePath(corePath);
+    }
     await _emulatorService.initializeEmulator();
     final String romToLoad = widget.initialRomPath ?? _defaultRomPath;
     if (romToLoad.isNotEmpty) {

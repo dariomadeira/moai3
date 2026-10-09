@@ -72,6 +72,19 @@ class ArcadeEmulatorService extends ChangeNotifier {
     }
   }
 
+  /// Configura la ruta dinámica del archivo .so del core de emulación.
+  Future<bool> setCustomCorePath(String path) async {
+    try {
+      final bool result = await _channel.invokeMethod('setCustomCorePath', {'path': path}) ?? false;
+      return result;
+    } on PlatformException catch (e) {
+      if (kDebugMode) {
+        print('[ArcadeEmulatorService] Error al configurar ruta de core: ${e.message}');
+      }
+      return false;
+    }
+  }
+
   /// Carga y ejecuta una ROM dada su ruta local (ej. /sdcard/roms/mvsc.zip).
   Future<bool> loadRom(String path) async {
     try {

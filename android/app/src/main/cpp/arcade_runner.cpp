@@ -436,15 +436,33 @@ Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeSetSurfaceSize(JNIEnv *e
 }
 
 static std::atomic<bool> g_core_initialized{false};
+static std::string g_custom_core_path = "";
 
 static bool ensure_core_loaded() {
    if (g_core_initialized.load() && g_core_handle) return true;
 
    if (!g_core_handle) {
-      g_core_handle = dlopen("libfbneo.so", RTLD_NOW);
+      if (!g_custom_core_path.empty()) {
+         LOGI("Intentando cargar core desde ruta dinámica de plugin: %s", g_custom_core_path.c_str());
+         g_core_handle = dlopen(g_custom_core_path.c_str(), RTLD_NOW);
+      }
+      if (!g_core_handle) {
+         const char* default_plugin_paths[] = {
+            "/data/user/0/com.infomak.moai/app_flutter/plugins/arcade/libfbneo.so",
+            "/data/data/com.infomak.moai/app_flutter/plugins/arcade/libfbneo.so",
+            "libfbneo.so"
+         };
+         for (const char* path : default_plugin_paths) {
+            g_core_handle = dlopen(path, RTLD_NOW);
+            if (g_core_handle) {
+               LOGI("Core cargado dinámicamente con éxito desde: %s", path);
+               break;
+            }
+         }
+      }
       if (!g_core_handle) {
          const char* err = dlerror();
-         LOGI("dlopen(\"libfbneo.so\") falló (%s), intentando dlsym con RTLD_DEFAULT...", err ? err : "desconocido");
+         LOGI("dlopen de libfbneo.so falló (%s), intentando fallback RTLD_DEFAULT...", err ? err : "desconocido");
          g_core_handle = RTLD_DEFAULT;
       }
    }
@@ -570,6 +588,18 @@ JNIEXPORT void JNICALL
 Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeReset(JNIEnv *env, jobject thiz) {
    if (core_retro_reset) {
       core_retro_reset();
+   }
+}
+
+JNIEXPORT void JNICALL
+Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeSetCustomCorePath(JNIEnv *env, jobject thiz, jstring path_jstr) {
+   if (path_jstr) {
+      const char *path = env->GetStringUTFChars(path_jstr, nullptr);
+      if (path) {
+         g_custom_core_path = path;
+         LOGI("Ruta de core de plugin nativo configurada a: %s", g_custom_core_path.c_str());
+         env->ReleaseStringUTFChars(path_jstr, path);
+      }
    }
 }
 

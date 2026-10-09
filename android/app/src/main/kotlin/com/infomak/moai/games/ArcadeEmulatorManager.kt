@@ -30,6 +30,15 @@ class ArcadeEmulatorManager(
                 val success = initializeNativeEngine()
                 result.success(success)
             }
+            "setCustomCorePath" -> {
+                val path = call.argument<String>("path")
+                if (path != null) {
+                    nativeSetCustomCorePath(path)
+                    result.success(true)
+                } else {
+                    result.error("INVALID_PATH", "Ruta de core nula", null)
+                }
+            }
             "loadRom" -> {
                 val path = call.argument<String>("path")
                 if (path == null) {
@@ -213,6 +222,7 @@ class ArcadeEmulatorManager(
 
     // --- Native JNI declarations ---
     private external fun nativeInitDirectories(systemDir: String, saveDir: String)
+    private external fun nativeSetCustomCorePath(path: String)
     private external fun nativeSetSurface(surface: Surface?)
     private external fun nativeSetSurfaceSize(width: Int, height: Int)
     private external fun nativeLoadRom(path: String)
