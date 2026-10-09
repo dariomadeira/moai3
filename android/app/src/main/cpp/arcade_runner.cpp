@@ -216,7 +216,7 @@ public:
 static AudioRingBuffer g_audio_ring_buffer;
 
 // Callback asíncrono de AAudio ejecutado por el sistema operativo
-static aaudio_data_result_t aaudio_data_callback(
+static aaudio_data_callback_result_t aaudio_data_callback(
     AAudioStream *stream,
     void *userData,
     void *audioData,
