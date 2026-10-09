@@ -19,10 +19,16 @@ android {
         applicationId = "com.infomak.moai"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        externalNativeBuild {
+            cmake {
+                arguments("-DANDROID_PLATFORM=android-26")
+            }
+        }
     }
 
     buildTypes {

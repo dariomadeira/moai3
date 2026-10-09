@@ -20,8 +20,14 @@ find_library(
         android
 )
 
+find_library(
+        aaudio-lib
+        aaudio
+)
+
 target_link_libraries(
         arcade_runner
         ${log-lib}
         ${android-lib}
+        ${aaudio-lib}
 )

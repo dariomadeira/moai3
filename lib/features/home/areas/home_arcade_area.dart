@@ -1,10 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/features/games/screens/arcade_games_screen.dart';
 import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
-import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/dialogs/tv_gamepad_config_dialog.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 
 /// Área principal de Arcade en HomeScreen: 1 único panel con el mismo diseño que Ajustes.
@@ -68,16 +69,7 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
   }
 
   void _onConfigGamepad() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'arcade_gamepad_detected_snack'.tr(),
-          style: MoaiText.body(context, color: Colors.white),
-        ),
-        backgroundColor: Colors.grey.shade900,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    TvGamepadConfigDialog.show(context);
   }
 
   @override
@@ -122,7 +114,7 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
                 focusNode: widget.selectGameFocus,
                 label: 'arcade_action_select_game'.tr(),
                 description: _resolveCurrentGameName(),
-                icon: Icons.sports_esports_outlined,
+                icon: Symbols.joystick,
                 onPressed: _onSelectGame,
                 onKeyLeft: widget.onExitLeft,
                 onKeyDown: () => widget.gamepadFocus.requestFocus(),
@@ -134,24 +126,28 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
                 focusNode: widget.gamepadFocus,
                 label: 'arcade_gamepad_config_title'.tr(),
                 description: 'arcade_gamepad_config_desc'.tr(),
-                icon: Icons.videogame_asset_outlined,
+                icon: Symbols.gamepad,
                 onPressed: _onConfigGamepad,
                 onKeyLeft: widget.onExitLeft,
                 onKeyUp: () => widget.selectGameFocus.requestFocus(),
-                onKeyDown: () => widget.startFocus.requestFocus(),
+                onKeyDown: widget.romManager.installedRoms.isNotEmpty
+                    ? () => widget.startFocus.requestFocus()
+                    : null,
               ),
-              const SizedBox(height: 10),
 
-              // 3. Iniciar juego
-              TvSettingsActionRow(
-                focusNode: widget.startFocus,
-                label: 'arcade_action_start_game'.tr(),
-                description: 'arcade_action_start_game_desc'.tr(),
-                icon: Icons.play_arrow_rounded,
-                onPressed: widget.onStartGame,
-                onKeyLeft: widget.onExitLeft,
-                onKeyUp: () => widget.gamepadFocus.requestFocus(),
-              ),
+              // 3. Iniciar juego (solo si hay ROMs descargadas/instaladas)
+              if (widget.romManager.installedRoms.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                TvSettingsActionRow(
+                  focusNode: widget.startFocus,
+                  label: 'arcade_action_start_game'.tr(),
+                  description: 'arcade_action_start_game_desc'.tr(),
+                  icon: Icons.play_arrow_rounded,
+                  onPressed: widget.onStartGame,
+                  onKeyLeft: widget.onExitLeft,
+                  onKeyUp: () => widget.gamepadFocus.requestFocus(),
+                ),
+              ],
             ],
           ),
         );

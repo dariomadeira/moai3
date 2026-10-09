@@ -241,7 +241,7 @@ class _MyAppState extends State<MyApp> {
   void _startHeartbeat(String deviceId) {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(_heartbeatInterval, (_) {
-      widget.presenceService.sendHeartbeat(deviceId: deviceId);
+      // El heartbeat en segundo plano mantiene online solo si la presencia sigue en online
     });
   }
 

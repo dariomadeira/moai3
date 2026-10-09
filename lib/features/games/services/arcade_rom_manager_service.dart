@@ -192,6 +192,20 @@ class ArcadeRomManagerService extends ChangeNotifier {
       }
       await tempFile.rename(targetFile.path);
 
+      // Regla de negocio Arcade: Solo se permite 1 juego instalado a la vez.
+      // Borramos cualquier otra ROM previa del almacenamiento interno.
+      for (final installed in _installedRoms) {
+        if (installed.filename != filename) {
+          try {
+            await _channel.invokeMethod('deleteRom', {'name': installed.filename});
+          } catch (e) {
+            if (kDebugMode) {
+              print('[ArcadeRomManagerService] Error purgando ROM anterior ${installed.filename}: $e');
+            }
+          }
+        }
+      }
+
       _downloadProgress.remove(filename);
       await setActiveRom(filename);
       await refreshInstalledRoms();

@@ -16,9 +16,11 @@ import 'package:moai3/focus/tv_shortcuts.dart';
 import 'package:moai3/helpers/notification_helper.dart';
 import 'package:moai3/layout/settings_panel_layout.dart';
 import 'package:moai3/models/calendar_event.dart';
+import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/modal_route_tracker.dart';
 import 'package:moai3/services/plugin_host_service.dart';
 import 'package:moai3/services/plugin_update_service.dart';
+import 'package:moai3/services/supabase_presence_service.dart';
 import 'package:moai3/services/update_service.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/channel_provider.dart';
@@ -79,6 +81,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _openingLiveSnackDialog = false;
   CalendarEvent? _currentSnackEvent;
   Timer? _modalClosedCooldownTimer;
+  Timer? _tvPresenceHeartbeatTimer;
+
+  static const Duration _tvPresenceHeartbeatInterval = Duration(seconds: 20);
 
   @override
   void initState() {
@@ -88,7 +93,35 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAutoUpdate();
       _listenToLiveEvents();
+      _updatePresenceForSection(_selectedIndex);
     });
+  }
+
+  void _updatePresenceForSection(int index) {
+    final identity = context.read<DeviceIdentityService>();
+    final presence = context.read<SupabasePresenceService>();
+    final deviceId = identity.getOrCreateDeviceId();
+
+    _tvPresenceHeartbeatTimer?.cancel();
+    _tvPresenceHeartbeatTimer = null;
+
+    if (index == _sectionTv) {
+      // Estado Online exclusivamente en la sección TV
+      presence.updateOnlineStatus(deviceId: deviceId, online: true);
+      _tvPresenceHeartbeatTimer = Timer.periodic(_tvPresenceHeartbeatInterval, (_) {
+        if (!mounted || _selectedIndex != _sectionTv) return;
+        presence.sendHeartbeat(deviceId: deviceId);
+      });
+    } else {
+      // Offline y limpiar canal sintonizado en Agenda, Arcade o Ajustes
+      presence.updateOnlineStatus(deviceId: deviceId, online: false);
+    }
+  }
+
+  void _switchSection(int index) {
+    if (_selectedIndex == index) return;
+    setState(() => _selectedIndex = index);
+    _updatePresenceForSection(index);
   }
 
   void _onModalTrackerChanged() {
@@ -195,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
       event,
       onTuneChannel: (channel) {
         context.read<ChannelProvider>().selectChannel(channel);
-        setState(() => _selectedIndex = _sectionTv);
+        _switchSection(_sectionTv);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           _tvAreaKey.currentState?.selectChannel(channel);
@@ -240,6 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _tvPresenceHeartbeatTimer?.cancel();
     ModalRouteTracker.instance.removeListener(_onModalTrackerChanged);
     _modalClosedCooldownTimer?.cancel();
     _liveEventsSub?.cancel();
@@ -314,7 +348,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     if (_selectedIndex == _sectionArcade) {
-      _requestFocusWithRetry(_arcadeStartFocus);
+      _requestFocusWithRetry(_arcadeSelectGameFocus);
       return;
     }
     _tvAreaKey.currentState?.requestEntryFocus();
@@ -331,7 +365,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     if (_selectedIndex == _sectionCalendar) {
       if (_railFocusNode.hasFocus) {
-        setState(() => _selectedIndex = _sectionTv);
+        _switchSection(_sectionTv);
         return true;
       }
       _focusRail();
@@ -339,7 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     if (_selectedIndex == _sectionArcade) {
       if (_railFocusNode.hasFocus) {
-        setState(() => _selectedIndex = _sectionTv);
+        _switchSection(_sectionTv);
         return true;
       }
       _focusRail();
@@ -347,7 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     if (_selectedIndex == _sectionSettings) {
       if (_railFocusNode.hasFocus) {
-        setState(() => _selectedIndex = _sectionTv);
+        _switchSection(_sectionTv);
         return true;
       }
       _focusRail();
@@ -409,7 +443,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         railScopeNode: _railScopeNode,
                         railFocusNode: _railFocusNode,
                         onIndexChanged: (index) {
-                          setState(() => _selectedIndex = index);
+                          _switchSection(index);
                         },
                         onFocusRight: _onRailFocusRight,
                       ),
@@ -467,7 +501,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       onExitLeft: _focusRail,
                                       onTuneChannel: (channel) {
                                         context.read<ChannelProvider>().selectChannel(channel);
-                                        setState(() => _selectedIndex = _sectionTv);
+                                        _switchSection(_sectionTv);
                                         WidgetsBinding.instance.addPostFrameCallback((_) {
                                           if (mounted) {
                                             _tvAreaKey.currentState?.selectChannel(channel);
