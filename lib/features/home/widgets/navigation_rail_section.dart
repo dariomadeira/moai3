@@ -3,14 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/features/home/widgets/tv_vertical_clock_pill.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
+import 'package:moai3/services/arcade_plugin_service.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:provider/provider.dart';
 
-/// Rail lateral de navegación para Android TV: TV, Calendario y Ajustes (al pie).
-///
-/// Soporta íconos outlined por defecto y rellenos (filled) al estar seleccionados.
-/// Ajustes queda fijado abajo del todo con navegación D-Pad 100% fluida y predecible.
+/// Rail lateral de navegación para Android TV: TV, Calendario, Arcade (si está instalado) y Ajustes.
 class NavigationRailSection extends StatefulWidget {
   final int selectedIndex;
   final FocusScopeNode railScopeNode;
@@ -34,6 +32,7 @@ class NavigationRailSection extends StatefulWidget {
 class _NavigationRailSectionState extends State<NavigationRailSection> {
   bool _isFocused = false;
   late int _focusedIndex;
+  final ArcadePluginService _arcadePlugin = ArcadePluginService.instance;
 
   int _toRailIndex(int selected) => selected;
   int _toSelectedIndex(int rail) => rail;
@@ -42,6 +41,17 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
   void initState() {
     super.initState();
     _focusedIndex = _toRailIndex(widget.selectedIndex);
+    _arcadePlugin.addListener(_onPluginStateChanged);
+  }
+
+  void _onPluginStateChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _arcadePlugin.removeListener(_onPluginStateChanged);
+    super.dispose();
   }
 
   @override
@@ -56,6 +66,7 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
     const railBg = Colors.transparent;
+    final isArcadeInstalled = _arcadePlugin.isInstalled;
 
     final todayEvents = context.select(
       (CalendarProvider p) => p.todayEventCount,
@@ -87,18 +98,30 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
             return KeyEventResult.handled;
           }
 
-          // ↓ : bajar en el rail (TV 0 -> Calendario 1 -> Arcade 2 -> Ajustes 3)
+          // ↓ : bajar en el rail
           if (key == LogicalKeyboardKey.arrowDown) {
-            if (_focusedIndex < 3) {
-              setState(() => _focusedIndex++);
+            if (isArcadeInstalled) {
+              if (_focusedIndex < 3) setState(() => _focusedIndex++);
+            } else {
+              if (_focusedIndex == 0) {
+                setState(() => _focusedIndex = 1);
+              } else if (_focusedIndex == 1) {
+                setState(() => _focusedIndex = 3);
+              }
             }
             return KeyEventResult.handled;
           }
 
-          // ↑ : subir en el rail (Ajustes 3 -> Arcade 2 -> Calendario 1 -> TV 0)
+          // ↑ : subir en el rail
           if (key == LogicalKeyboardKey.arrowUp) {
-            if (_focusedIndex > 0) {
-              setState(() => _focusedIndex--);
+            if (isArcadeInstalled) {
+              if (_focusedIndex > 0) setState(() => _focusedIndex--);
+            } else {
+              if (_focusedIndex == 3) {
+                setState(() => _focusedIndex = 1);
+              } else if (_focusedIndex == 1) {
+                setState(() => _focusedIndex = 0);
+              }
             }
             return KeyEventResult.handled;
           }
@@ -128,8 +151,11 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
                 // Destino 1: Calendario
                 _buildRailDestination(1, scheme, todayEvents),
                 const SizedBox(height: 12),
-                // Destino 2: Arcade (100% navegable con D-Pad)
-                _buildRailDestination(2, scheme, todayEvents),
+                // Destino 2: Arcade (solo si el plugin está instalado)
+                if (isArcadeInstalled) ...[
+                  _buildRailDestination(2, scheme, todayEvents),
+                  const SizedBox(height: 12),
+                ],
 
                 // Espaciador flexible que posiciona Ajustes al final de la pantalla
                 const Spacer(),

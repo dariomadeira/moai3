@@ -14,6 +14,7 @@ import 'package:moai3/config/player_config.dart';
 import 'package:moai3/helpers/notification_helper.dart';
 import 'package:moai3/routers/routers.dart';
 import 'package:moai3/services/app_preferences_service.dart';
+import 'package:moai3/services/arcade_plugin_service.dart';
 import 'package:moai3/services/debug_log_controller.dart';
 import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/moai_image_cache_manager.dart';
@@ -56,6 +57,7 @@ void main() async {
   await dotenv.load(fileName: '.env');
   await AppConfig.initialize();
   await PlayerConfig.initialize();
+  await ArcadePluginService.instance.init();
 
   await EasyLocalization.ensureInitialized();
 

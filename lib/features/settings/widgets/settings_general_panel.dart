@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/features/bootstrap/screens/overlap_config_screen.dart';
+import 'package:moai3/features/plugins/screens/general_plugins_screen.dart';
 import 'package:moai3/features/settings/widgets/settings_accent_color_row.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/state/theme_provider.dart';
@@ -9,6 +10,7 @@ import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 import 'package:provider/provider.dart';
 
 enum _SettingsGeneralItemType {
+  plugins,
   overscan,
   darkMode,
   accentColor,
@@ -48,6 +50,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
     final isAutoAccent = theme.autoAccent;
 
     final items = <_SettingsGeneralItemType>[
+      _SettingsGeneralItemType.plugins,
       _SettingsGeneralItemType.overscan,
       _SettingsGeneralItemType.darkMode,
       if (!isAutoAccent) _SettingsGeneralItemType.accentColor,
@@ -145,6 +148,24 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
     required VoidCallback onKeyDown,
   }) {
     switch (item) {
+      case _SettingsGeneralItemType.plugins:
+        return TvSettingsActionRow(
+          focusNode: focusNode,
+          icon: Icons.extension_outlined,
+          label: 'Plugins (Plugins Generales)',
+          description: 'Administrar motores de extensión nativos del sistema',
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const GeneralPluginsScreen(),
+              ),
+            );
+          },
+          onKeyLeft: widget.onKeyLeft,
+          onKeyRight: widget.onKeyRight,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+        );
       case _SettingsGeneralItemType.overscan:
         return TvSettingsActionRow(
           focusNode: focusNode,
