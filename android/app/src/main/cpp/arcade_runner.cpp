@@ -154,6 +154,8 @@ static void core_video_refresh_cb(const void *data, unsigned width, unsigned hei
    ANativeWindow_unlockAndPost(g_native_window);
 }
 
+static std::atomic<double> g_target_fps{60.0};
+
 // Manejo de Audio con AAudio de baja latencia
 static void start_aaudio(int32_t sample_rate = 44100) {
    std::lock_guard<std::mutex> lock(g_audio_mutex);
@@ -182,6 +184,12 @@ static void start_aaudio(int32_t sample_rate = 44100) {
       return;
    }
 
+   // Incrementar el buffer a 4x ráfagas para evitar vaciado (underflow/choppiness) en Android TV
+   int32_t burstSize = AAudioStream_getFramesPerBurst(g_audio_stream);
+   if (burstSize > 0) {
+      AAudioStream_setBufferSizeInFrames(g_audio_stream, burstSize * 4);
+   }
+
    result = AAudioStream_requestStart(g_audio_stream);
    if (result != AAUDIO_OK) {
       LOGE("Error iniciando AAudioStream: %s", AAudio_convertResultToText(result));
@@ -190,7 +198,7 @@ static void start_aaudio(int32_t sample_rate = 44100) {
       return;
    }
 
-   LOGI("AAudioStream iniciado con éxito: %d Hz, 2 canales, PCM 16-bit", sample_rate);
+   LOGI("AAudioStream iniciado con éxito: %d Hz, 2 canales, burst=%d", sample_rate, burstSize);
 }
 
 static void stop_aaudio() {
@@ -207,7 +215,7 @@ static void core_audio_sample_cb(int16_t left, int16_t right) {
    int16_t buffer[2] = {left, right};
    std::lock_guard<std::mutex> lock(g_audio_mutex);
    if (g_audio_stream) {
-      AAudioStream_write(g_audio_stream, buffer, 1, 0);
+      AAudioStream_write(g_audio_stream, buffer, 1, 50000000LL); // 50ms timeout
    }
 }
 
@@ -215,8 +223,8 @@ static size_t core_audio_sample_batch_cb(const int16_t *data, size_t frames) {
    if (!data || frames == 0) return 0;
    std::lock_guard<std::mutex> lock(g_audio_mutex);
    if (g_audio_stream) {
-      // Escribir muestras estéreo PCM 16-bit sin bloquear el hilo principal (timeout 0)
-      aaudio_result_t written = AAudioStream_write(g_audio_stream, data, static_cast<int32_t>(frames), 0);
+      // Escribir muestras PCM con timeout de 100ms (sincronizando audio con velocidad real del juego)
+      aaudio_result_t written = AAudioStream_write(g_audio_stream, data, static_cast<int32_t>(frames), 100000000LL);
       if (written < 0) {
          LOGE("AAudioStream_write error: %s", AAudio_convertResultToText(written));
          return frames;
@@ -259,11 +267,26 @@ static int16_t core_input_state_cb(unsigned port, unsigned device, unsigned inde
 
 static void emulation_loop() {
    LOGI("Loop de emulación iniciado.");
+   using clock = std::chrono::steady_clock;
+   double fps = g_target_fps.load();
+   if (fps <= 0.0) fps = 60.0;
+   auto frame_duration = std::chrono::duration_cast<clock::duration>(std::chrono::duration<double>(1.0 / fps));
+
+   auto next_frame = clock::now();
+
    while (g_is_running.load()) {
       if (!g_is_paused.load() && core_retro_run) {
          core_retro_run();
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(16)); // ~60 FPS
+
+      next_frame += frame_duration;
+      auto now = clock::now();
+      if (now < next_frame) {
+         std::this_thread::sleep_until(next_frame);
+      } else {
+         // Si hubo lag o desincronización, reajustar el tiempo del siguiente frame
+         next_frame = now;
+      }
    }
    LOGI("Loop de emulación finalizado.");
 }
@@ -398,6 +421,10 @@ Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeLoadRom(JNIEnv *env, job
             if (av_info.timing.sample_rate > 0) {
                sample_rate = static_cast<int32_t>(av_info.timing.sample_rate);
                LOGI("Sample rate reportado por Libretro: %d Hz", sample_rate);
+            }
+            if (av_info.timing.fps > 0) {
+               g_target_fps.store(av_info.timing.fps);
+               LOGI("FPS reportados por Libretro: %.2f", av_info.timing.fps);
             }
          }
 
