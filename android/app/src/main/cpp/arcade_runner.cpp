@@ -155,11 +155,89 @@ static void core_video_refresh_cb(const void *data, unsigned width, unsigned hei
 }
 
 static std::atomic<double> g_target_fps{60.0};
+static constexpr int32_t HARDWARE_SAMPLE_RATE = 48000; // Frecuencia de muestreo óptima fija para el DAC de Android
+static int32_t g_core_sample_rate = 44100;
 
-// Manejo de Audio con AAudio de baja latencia
+// Buffer Circular de audio ultra-rápido (Lock-Free RingBuffer)
+constexpr size_t RING_BUFFER_SIZE = 65536; // 32768 muestras estéreo (~370ms buffer depth)
+
+class AudioRingBuffer {
+private:
+    int16_t buffer[RING_BUFFER_SIZE];
+    std::atomic<size_t> write_head{0};
+    std::atomic<size_t> read_head{0};
+
+public:
+    AudioRingBuffer() {
+        std::memset(buffer, 0, sizeof(buffer));
+    }
+
+    void reset() {
+        write_head.store(0);
+        read_head.store(0);
+        std::memset(buffer, 0, sizeof(buffer));
+    }
+
+    size_t available_read() const {
+        size_t w = write_head.load(std::memory_order_relaxed);
+        size_t r = read_head.load(std::memory_order_relaxed);
+        if (w >= r) return w - r;
+        return RING_BUFFER_SIZE - (r - w);
+    }
+
+    void write(const int16_t* data, size_t count) {
+        if (count == 0) return;
+        size_t w = write_head.load(std::memory_order_relaxed);
+        for (size_t i = 0; i < count; i++) {
+            buffer[(w + i) % RING_BUFFER_SIZE] = data[i];
+        }
+        write_head.store((w + count) % RING_BUFFER_SIZE, std::memory_order_release);
+    }
+
+    size_t read(int16_t* out, size_t count) {
+        size_t r = read_head.load(std::memory_order_relaxed);
+        size_t avail = available_read();
+        size_t to_read = (count < avail) ? count : avail;
+
+        for (size_t i = 0; i < to_read; i++) {
+            out[i] = buffer[(r + i) % RING_BUFFER_SIZE];
+        }
+
+        // Si la cola se quedó corta, rellenar el sobrante con silencio para evitar desgarros
+        if (to_read < count) {
+            std::memset(out + to_read, 0, (count - to_read) * sizeof(int16_t));
+        }
+
+        read_head.store((r + to_read) % RING_BUFFER_SIZE, std::memory_order_release);
+        return to_read;
+    }
+};
+
+static AudioRingBuffer g_audio_ring_buffer;
+
+// Callback asíncrono de AAudio ejecutado por el sistema operativo
+static aaudio_data_result_t aaudio_data_callback(
+    AAudioStream *stream,
+    void *userData,
+    void *audioData,
+    int32_t numFrames) {
+
+    if (!audioData || numFrames <= 0) return AAUDIO_CALLBACK_RESULT_CONTINUE;
+
+    int16_t *out = static_cast<int16_t *>(audioData);
+    size_t total_samples = static_cast<size_t>(numFrames) * 2; // 2 canales (estéreo)
+    g_audio_ring_buffer.read(out, total_samples);
+
+    return AAUDIO_CALLBACK_RESULT_CONTINUE;
+}
+
+// Manejo de Audio con AAudio en Callback Mode y desacople total
 static void start_aaudio(int32_t sample_rate = 44100) {
    std::lock_guard<std::mutex> lock(g_audio_mutex);
    if (g_audio_stream) return;
+
+   g_core_sample_rate = sample_rate > 0 ? sample_rate : 44100;
+   g_audio_ring_buffer.reset();
 
    AAudioStreamBuilder *builder = nullptr;
    aaudio_result_t result = AAudio_createStreamBuilder(&builder);
@@ -170,10 +248,11 @@ static void start_aaudio(int32_t sample_rate = 44100) {
 
    AAudioStreamBuilder_setFormat(builder, AAUDIO_FORMAT_PCM_I16);
    AAudioStreamBuilder_setChannelCount(builder, 2); // Estéreo
-   AAudioStreamBuilder_setSampleRate(builder, sample_rate > 0 ? sample_rate : 44100);
+   AAudioStreamBuilder_setSampleRate(builder, HARDWARE_SAMPLE_RATE);
    AAudioStreamBuilder_setPerformanceMode(builder, AAUDIO_PERFORMANCE_MODE_LOW_LATENCY);
    AAudioStreamBuilder_setSharingMode(builder, AAUDIO_SHARING_MODE_SHARED);
    AAudioStreamBuilder_setDirection(builder, AAUDIO_DIRECTION_OUTPUT);
+   AAudioStreamBuilder_setDataCallback(builder, aaudio_data_callback, nullptr);
 
    result = AAudioStreamBuilder_openStream(builder, &g_audio_stream);
    AAudioStreamBuilder_delete(builder);
@@ -184,7 +263,6 @@ static void start_aaudio(int32_t sample_rate = 44100) {
       return;
    }
 
-   // Incrementar el buffer a 4x ráfagas para evitar vaciado (underflow/choppiness) en Android TV
    int32_t burstSize = AAudioStream_getFramesPerBurst(g_audio_stream);
    if (burstSize > 0) {
       AAudioStream_setBufferSizeInFrames(g_audio_stream, burstSize * 4);
@@ -198,7 +276,7 @@ static void start_aaudio(int32_t sample_rate = 44100) {
       return;
    }
 
-   LOGI("AAudioStream iniciado con éxito: %d Hz, 2 canales, burst=%d", sample_rate, burstSize);
+   LOGI("AAudioStream iniciado en Callback Mode (%d Hz HW, %d Hz Core, burst=%d)", HARDWARE_SAMPLE_RATE, g_core_sample_rate, burstSize);
 }
 
 static void stop_aaudio() {
@@ -211,27 +289,51 @@ static void stop_aaudio() {
    }
 }
 
-static void core_audio_sample_cb(int16_t left, int16_t right) {
-   int16_t buffer[2] = {left, right};
-   std::lock_guard<std::mutex> lock(g_audio_mutex);
-   if (g_audio_stream) {
-      AAudioStream_write(g_audio_stream, buffer, 1, 50000000LL); // 50ms timeout
-   }
-}
-
 static size_t core_audio_sample_batch_cb(const int16_t *data, size_t frames) {
    if (!data || frames == 0) return 0;
-   std::lock_guard<std::mutex> lock(g_audio_mutex);
-   if (g_audio_stream) {
-      // Escribir muestras PCM con timeout de 100ms (sincronizando audio con velocidad real del juego)
-      aaudio_result_t written = AAudioStream_write(g_audio_stream, data, static_cast<int32_t>(frames), 100000000LL);
-      if (written < 0) {
-         LOGE("AAudioStream_write error: %s", AAudio_convertResultToText(written));
-         return frames;
-      }
-      return static_cast<size_t>(written);
+
+   int32_t in_rate = g_core_sample_rate > 0 ? g_core_sample_rate : HARDWARE_SAMPLE_RATE;
+   int32_t out_rate = HARDWARE_SAMPLE_RATE;
+
+   if (in_rate == out_rate) {
+      g_audio_ring_buffer.write(data, frames * 2);
+      return frames;
    }
+
+   // Remuestreador lineal estéreo de 16-bit ultra-eficiente
+   size_t out_frames = static_cast<size_t>((static_cast<double>(frames) * out_rate) / in_rate);
+   if (out_frames == 0) return frames;
+
+   int16_t resampled[4096];
+   size_t safe_out_frames = (out_frames > 2048) ? 2048 : out_frames;
+
+   double step = static_cast<double>(in_rate) / static_cast<double>(out_rate);
+   double pos = 0.0;
+
+   for (size_t i = 0; i < safe_out_frames; i++) {
+      size_t idx = static_cast<size_t>(pos);
+      if (idx >= frames) idx = frames - 1;
+      size_t next_idx = (idx + 1 < frames) ? idx + 1 : idx;
+      double frac = pos - static_cast<double>(idx);
+
+      int16_t l1 = data[idx * 2];
+      int16_t l2 = data[next_idx * 2];
+      resampled[i * 2] = static_cast<int16_t>(l1 + frac * (l2 - l1));
+
+      int16_t r1 = data[idx * 2 + 1];
+      int16_t r2 = data[next_idx * 2 + 1];
+      resampled[i * 2 + 1] = static_cast<int16_t>(r1 + frac * (r2 - r1));
+
+      pos += step;
+   }
+
+   g_audio_ring_buffer.write(resampled, safe_out_frames * 2);
    return frames;
+}
+
+static void core_audio_sample_cb(int16_t left, int16_t right) {
+   int16_t buffer[2] = {left, right};
+   core_audio_sample_batch_cb(buffer, 1);
 }
 
 static void core_input_poll_cb() {}
