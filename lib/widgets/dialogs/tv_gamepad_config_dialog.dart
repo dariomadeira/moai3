@@ -5,7 +5,6 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/features/games/services/arcade_emulator_service.dart';
 import 'package:moai3/features/games/services/gamepad_manager_service.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/utils/context_extensions.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 
 /// Modal interactivo para diagnosticar, probar y configurar mandos físicos (Bluetooth / USB).
