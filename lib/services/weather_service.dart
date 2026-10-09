@@ -7,6 +7,8 @@ class WeatherData {
   final double tempC;
   final String condition;
   final String iconUrl;
+  final int? conditionCode;
+  final bool isDay;
   final String city;
   final String region;
   final String country;
@@ -17,6 +19,8 @@ class WeatherData {
     required this.tempC,
     required this.condition,
     required this.iconUrl,
+    this.conditionCode,
+    this.isDay = true,
     required this.city,
     required this.region,
     required this.country,
@@ -34,10 +38,14 @@ class WeatherData {
       rawIcon = 'https:$rawIcon';
     }
 
+    final isDayInt = (current['is_day'] as num?)?.toInt() ?? 1;
+
     return WeatherData(
       tempC: (current['temp_c'] as num?)?.toDouble() ?? 0.0,
       condition: cond['text'] as String? ?? '',
       iconUrl: rawIcon,
+      conditionCode: (cond['code'] as num?)?.toInt(),
+      isDay: isDayInt == 1,
       city: location['name'] as String? ?? '',
       region: location['region'] as String? ?? '',
       country: location['country'] as String? ?? '',
