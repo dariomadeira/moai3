@@ -1,5 +1,6 @@
 # Miscellaneous
 _tmp_*.txt
+compile_flags.txt
 *.class
 *.log
 *.pyc

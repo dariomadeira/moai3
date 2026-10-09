@@ -35,17 +35,20 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
   bool _isFocused = false;
   late int _focusedIndex;
 
+  int _toRailIndex(int selected) => selected;
+  int _toSelectedIndex(int rail) => rail;
+
   @override
   void initState() {
     super.initState();
-    _focusedIndex = widget.selectedIndex;
+    _focusedIndex = _toRailIndex(widget.selectedIndex);
   }
 
   @override
   void didUpdateWidget(covariant NavigationRailSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!_isFocused) {
-      _focusedIndex = widget.selectedIndex;
+      _focusedIndex = _toRailIndex(widget.selectedIndex);
     }
   }
 
@@ -66,7 +69,7 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
           setState(() {
             _isFocused = focused;
             if (!focused) {
-              _focusedIndex = widget.selectedIndex;
+              _focusedIndex = _toRailIndex(widget.selectedIndex);
             }
           });
         },
@@ -74,24 +77,25 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
           if (event is! KeyDownEvent) return KeyEventResult.ignored;
           final key = event.logicalKey;
 
-          // → : sincronizar sección y entrar al panel de contenido.
+          // → : sincronizar sección o entrar al panel de contenido.
           if (key == LogicalKeyboardKey.arrowRight) {
-            if (_focusedIndex != widget.selectedIndex) {
-              widget.onIndexChanged(_focusedIndex);
+            final selected = _toSelectedIndex(_focusedIndex);
+            if (selected != widget.selectedIndex) {
+              widget.onIndexChanged(selected);
             }
             widget.onFocusRight();
             return KeyEventResult.handled;
           }
 
-          // ↓ : bajar en el rail (TV 0 -> Calendario 1 -> Ajustes 2)
+          // ↓ : bajar en el rail (TV 0 -> Calendario 1 -> Arcade 2 -> Ajustes 3)
           if (key == LogicalKeyboardKey.arrowDown) {
-            if (_focusedIndex < 2) {
+            if (_focusedIndex < 3) {
               setState(() => _focusedIndex++);
             }
             return KeyEventResult.handled;
           }
 
-          // ↑ : subir en el rail (Ajustes 2 -> Calendario 1 -> TV 0)
+          // ↑ : subir en el rail (Ajustes 3 -> Arcade 2 -> Calendario 1 -> TV 0)
           if (key == LogicalKeyboardKey.arrowUp) {
             if (_focusedIndex > 0) {
               setState(() => _focusedIndex--);
@@ -99,9 +103,11 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
             return KeyEventResult.handled;
           }
 
+          // OK / Enter: seleccionar sección
           if (TvKeyHandler.isActionKey(key)) {
-            if (_focusedIndex != widget.selectedIndex) {
-              widget.onIndexChanged(_focusedIndex);
+            final selected = _toSelectedIndex(_focusedIndex);
+            if (selected != widget.selectedIndex) {
+              widget.onIndexChanged(selected);
             }
             return KeyEventResult.handled;
           }
@@ -121,6 +127,9 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
                 const SizedBox(height: 12),
                 // Destino 1: Calendario
                 _buildRailDestination(1, scheme, todayEvents),
+                const SizedBox(height: 12),
+                // Destino 2: Arcade (100% navegable con D-Pad)
+                _buildRailDestination(2, scheme, todayEvents),
 
                 // Espaciador flexible que posiciona Ajustes al final de la pantalla
                 const Spacer(),
@@ -129,8 +138,8 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
                 const TvVerticalClockPill(),
                 const SizedBox(height: 12),
 
-                // Destino 2: Ajustes (al fondo)
-                _buildRailDestination(2, scheme, todayEvents),
+                // Destino 3: Ajustes (al fondo)
+                _buildRailDestination(3, scheme, todayEvents),
                 const SizedBox(height: 16),
               ],
             ),
@@ -141,7 +150,8 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
   }
 
   Widget _buildRailDestination(int index, ColorScheme scheme, int todayEvents) {
-    final isSelected = widget.selectedIndex == index;
+    final bool isSelected = widget.selectedIndex == index;
+
     final isHovered = _isFocused && _focusedIndex == index;
 
     final IconData iconData;
@@ -158,6 +168,11 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
         label = 'home_rail_calendar_title'.tr();
         break;
       case 2:
+        iconData =
+            isSelected ? Icons.sports_esports : Icons.sports_esports_outlined;
+        label = 'home_rail_arcade_title'.tr();
+        break;
+      case 3:
       default:
         iconData = isSelected ? Icons.settings : Icons.settings_outlined;
         label = 'home_rail_settings_title'.tr();
@@ -205,7 +220,7 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
     return InkWell(
       onTap: () {
         setState(() => _focusedIndex = index);
-        widget.onIndexChanged(index);
+        widget.onIndexChanged(_toSelectedIndex(index));
       },
       borderRadius: BorderRadius.circular(16),
       child: Padding(

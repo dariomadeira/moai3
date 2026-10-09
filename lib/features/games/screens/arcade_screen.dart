@@ -1,4 +1,6 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:moai3/features/games/services/arcade_emulator_service.dart';
 import 'package:moai3/features/games/widgets/arcade_controller_overlay.dart';
 import 'package:moai3/features/games/widgets/arcade_view_container.dart';
@@ -18,100 +20,62 @@ class ArcadeScreen extends StatefulWidget {
 
 class _ArcadeScreenState extends State<ArcadeScreen> {
   final ArcadeEmulatorService _emulatorService = ArcadeEmulatorService();
-  final TextEditingController _pathController = TextEditingController();
-  bool _showOverlay = true;
+  final bool _showOverlay = false;
   bool _isLoading = false;
+
+  static const String _defaultRomPath = '/data/user/0/com.infomak.moai/files/mvsc.zip';
+  static const MethodChannel _tvPlayerChannel = MethodChannel('com.infomak.moai.tv/player');
 
   @override
   void initState() {
     super.initState();
-    _pathController.text = widget.initialRomPath ?? '/sdcard/roms/mvsc.zip';
+    // Pausar cualquier transmisión de TV activa para liberar decodificadores y CPU
+    _tvPlayerChannel.invokeMethod<void>('pauseAll');
     _initEmulator();
   }
 
   Future<void> _initEmulator() async {
     setState(() => _isLoading = true);
     await _emulatorService.initializeEmulator();
-    if (widget.initialRomPath != null && widget.initialRomPath!.isNotEmpty) {
-      await _emulatorService.loadRom(widget.initialRomPath!);
+    final String romToLoad = widget.initialRomPath ?? _defaultRomPath;
+    if (romToLoad.isNotEmpty) {
+      await _emulatorService.loadRom(romToLoad);
     }
-    setState(() => _isLoading = false);
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
   void dispose() {
-    _pathController.dispose();
     _emulatorService.stop();
+    // Reanudar la transmisión de TV al salir del Arcade
+    _tvPlayerChannel.invokeMethod<void>('resumeAll');
     super.dispose();
-  }
-
-  void _showLoadRomDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.grey.shade900,
-          title: const Text('Cargar ROM de Arcade',
-              style: TextStyle(color: Colors.white)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Ingresa la ruta absoluta del archivo .zip (ej: Marvel vs. Capcom / mvsc.zip):',
-                style: TextStyle(color: Colors.white70, fontSize: 13),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _pathController,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  labelText: 'Ruta de la ROM (.zip)',
-                  labelStyle: TextStyle(color: Colors.cyanAccent),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white30),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.cyanAccent),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar',
-                  style: TextStyle(color: Colors.white54)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.cyan.shade700,
-              ),
-              onPressed: () async {
-                Navigator.pop(context);
-                final path = _pathController.text.trim();
-                if (path.isNotEmpty) {
-                  setState(() => _isLoading = true);
-                  await _emulatorService.loadRom(path);
-                  setState(() => _isLoading = false);
-                }
-              },
-              child: const Text('Cargar y Jugar',
-                  style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
+    return PopScope(
+      canPop: true,
+      child: FocusScope(
+        autofocus: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyDownEvent &&
+              (event.logicalKey == LogicalKeyboardKey.goBack ||
+               event.logicalKey == LogicalKeyboardKey.escape ||
+               event.logicalKey == LogicalKeyboardKey.backspace)) {
+            if (mounted && Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+              return KeyEventResult.handled;
+            }
+          }
+          return KeyEventResult.ignored;
+        },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          children: [
           // 1. Vista de Video del Emulador (AndroidView SurfaceView)
           const Positioned.fill(
             child: ArcadeViewContainer(),
@@ -125,65 +89,13 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
             ),
           ),
 
-          // 3. Barra de herramientas superior flotante
+          // 3. Botón de volver superior
           Positioned(
             top: 12,
             left: 12,
-            right: 12,
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  _emulatorService.currentRomPath != null
-                      ? _emulatorService.currentRomPath!.split('/').last
-                      : 'Arcade FBNeo Engine',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: Icon(
-                    _showOverlay ? Icons.touch_app : Icons.touch_app_outlined,
-                    color: _showOverlay ? Colors.cyanAccent : Colors.white54,
-                  ),
-                  tooltip: 'Mostrar/Ocultar Controles',
-                  onPressed: () => setState(() => _showOverlay = !_showOverlay),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.folder_open, color: Colors.amberAccent),
-                  tooltip: 'Cargar ROM',
-                  onPressed: _showLoadRomDialog,
-                ),
-                IconButton(
-                  icon: Icon(
-                    _emulatorService.isPaused
-                        ? Icons.play_arrow
-                        : Icons.pause,
-                    color: Colors.white,
-                  ),
-                  tooltip: _emulatorService.isPaused ? 'Reanudar' : 'Pausar',
-                  onPressed: () {
-                    if (_emulatorService.isPaused) {
-                      _emulatorService.resume();
-                    } else {
-                      _emulatorService.pause();
-                    }
-                    setState(() {});
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.refresh, color: Colors.orangeAccent),
-                  tooltip: 'Reiniciar',
-                  onPressed: () => _emulatorService.reset(),
-                ),
-              ],
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white70),
+              onPressed: () => Navigator.pop(context),
             ),
           ),
 
@@ -191,15 +103,15 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
           if (_isLoading)
             Container(
               color: Colors.black87,
-              child: const Center(
+              child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(color: Colors.cyanAccent),
-                    SizedBox(height: 16),
+                    const CircularProgressIndicator(color: Colors.cyanAccent),
+                    const SizedBox(height: 16),
                     Text(
-                      'Inicializando motor Arcade FBNeo...',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
+                      'arcade_loading_engine'.tr(),
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ],
                 ),
@@ -207,6 +119,8 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
             ),
         ],
       ),
+    ),
+    ),
     );
   }
 }

@@ -2,7 +2,10 @@ import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:moai3/features/calendar/widgets/calendar_events_panel.dart';
+import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
+import 'package:moai3/features/home/areas/home_arcade_area.dart';
 import 'package:moai3/features/home/areas/home_calendar_area.dart';
 import 'package:moai3/features/home/areas/home_settings_area.dart';
 import 'package:moai3/features/home/areas/home_tv_area.dart';
@@ -36,7 +39,16 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   static const int _sectionTv = 0;
   static const int _sectionCalendar = 1;
-  static const int _sectionSettings = 2;
+  static const int _sectionArcade = 2;
+  static const int _sectionSettings = 3;
+
+  final FocusNode _arcadeSelectGameFocus =
+      FocusNode(debugLabel: 'arcade_select_game');
+  final FocusNode _arcadeGamepadFocus =
+      FocusNode(debugLabel: 'arcade_config_gamepad');
+  final FocusNode _arcadeStartFocus =
+      FocusNode(debugLabel: 'arcade_start_game');
+  final ArcadeRomManagerService _romManager = ArcadeRomManagerService();
 
   final FocusScopeNode _railScopeNode =
       FocusScopeNode(debugLabel: 'rail_scope');
@@ -71,6 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _romManager.initialize();
     ModalRouteTracker.instance.addListener(_onModalTrackerChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAutoUpdate();
@@ -239,6 +252,10 @@ class _HomeScreenState extends State<HomeScreen> {
     _settingsWatchPartyFocus.dispose();
     _settingsGeneralFocus.dispose();
     _settingsAboutFocus.dispose();
+    _arcadeSelectGameFocus.dispose();
+    _arcadeGamepadFocus.dispose();
+    _arcadeStartFocus.dispose();
+    _romManager.dispose();
     super.dispose();
   }
 
@@ -296,6 +313,10 @@ class _HomeScreenState extends State<HomeScreen> {
       _focusCalendarPanelByIndex(_activeCalendarPanelIndex);
       return;
     }
+    if (_selectedIndex == _sectionArcade) {
+      _requestFocusWithRetry(_arcadeStartFocus);
+      return;
+    }
     _tvAreaKey.currentState?.requestEntryFocus();
   }
 
@@ -309,6 +330,14 @@ class _HomeScreenState extends State<HomeScreen> {
       return _tvAreaKey.currentState?.handleBack() ?? false;
     }
     if (_selectedIndex == _sectionCalendar) {
+      if (_railFocusNode.hasFocus) {
+        setState(() => _selectedIndex = _sectionTv);
+        return true;
+      }
+      _focusRail();
+      return true;
+    }
+    if (_selectedIndex == _sectionArcade) {
       if (_railFocusNode.hasFocus) {
         setState(() => _selectedIndex = _sectionTv);
         return true;
@@ -404,6 +433,28 @@ class _HomeScreenState extends State<HomeScreen> {
                                       _onSettingsPanelIndexChanged,
                                   onExitLeft: _focusRail,
                                 )
+                              : _selectedIndex == _sectionArcade
+                                  ? HomeArcadeArea(
+                                      selectGameFocus: _arcadeSelectGameFocus,
+                                      gamepadFocus: _arcadeGamepadFocus,
+                                      startFocus: _arcadeStartFocus,
+                                      onExitLeft: _focusRail,
+                                      romManager: _romManager,
+                                      onStartGame: () {
+                                        final path = _romManager.getActiveRomPath();
+                                        if (path != null) {
+                                          context.push('/arcade/game', extra: path);
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'arcade_no_game_installed_snack'.tr(),
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                    )
                               : _selectedIndex == _sectionCalendar
                                   ? HomeCalendarArea(
                                       activePanelIndex:

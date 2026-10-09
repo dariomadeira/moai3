@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.18.1)
 
 project("arcade_runner")
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 add_library(
         arcade_runner
         SHARED

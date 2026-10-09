@@ -16,6 +16,8 @@ class ArcadePlatformView(
     private val surfaceView: SurfaceView = SurfaceView(context)
 
     init {
+        surfaceView.isFocusable = false
+        surfaceView.isFocusableInTouchMode = false
         surfaceView.holder.addCallback(this)
     }
 
