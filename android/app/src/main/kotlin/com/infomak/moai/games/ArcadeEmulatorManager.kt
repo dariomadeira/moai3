@@ -88,6 +88,30 @@ class ArcadeEmulatorManager(
                 } ?: emptyList<Map<String, Any>>()
                 result.success(list)
             }
+            "getConnectedGamepads" -> {
+                val inputManager = context.getSystemService(Context.INPUT_SERVICE) as? android.hardware.input.InputManager
+                val deviceIds = inputManager?.inputDeviceIds ?: android.view.InputDevice.getDeviceIds()
+                val gamepads = mutableListOf<Map<String, Any>>()
+                for (id in deviceIds) {
+                    val device = android.view.InputDevice.getDevice(id) ?: continue
+                    val sources = device.sources
+                    val isGamepad = (sources and android.view.InputDevice.SOURCE_GAMEPAD == android.view.InputDevice.SOURCE_GAMEPAD) ||
+                                    (sources and android.view.InputDevice.SOURCE_JOYSTICK == android.view.InputDevice.SOURCE_JOYSTICK)
+                    if (isGamepad && !device.isVirtual) {
+                        gamepads.add(
+                            mapOf(
+                                "id" to device.id,
+                                "name" to device.name,
+                                "descriptor" to device.descriptor,
+                                "vendorId" to device.vendorId,
+                                "productId" to device.productId,
+                                "isExternal" to device.isExternal
+                            )
+                        )
+                    }
+                }
+                result.success(gamepads)
+            }
             else -> result.notImplemented()
         }
     }

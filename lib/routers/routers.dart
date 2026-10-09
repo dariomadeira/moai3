@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:moai3/features/blocked/screens/blocked_screen.dart';
 import 'package:moai3/features/bootstrap/screens/overlap_config_screen.dart';
-import 'package:moai3/features/games/screens/arcade_menu_screen.dart';
 import 'package:moai3/features/games/screens/arcade_screen.dart';
 import 'package:moai3/features/home/screens/home_screen.dart';
 import 'package:moai3/features/loading/screens/loading_screen.dart';
@@ -78,14 +77,6 @@ GoRouter createRouter(
         pageBuilder: (context, state) => _fadePage(
           state: state,
           child: const HomeScreen(),
-        ),
-      ),
-      GoRoute(
-        path: '/arcade',
-        name: 'arcade',
-        pageBuilder: (context, state) => _fadePage(
-          state: state,
-          child: const ArcadeMenuScreen(),
         ),
       ),
       GoRoute(

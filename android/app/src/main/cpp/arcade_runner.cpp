@@ -2,6 +2,7 @@
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
 #include <android/log.h>
+#include <aaudio/AAudio.h>
 #include <dlfcn.h>
 #include <cstring>
 #include <cstdlib>
@@ -17,6 +18,9 @@
 
 static ANativeWindow* g_native_window = nullptr;
 static std::mutex g_window_mutex;
+
+static AAudioStream* g_audio_stream = nullptr;
+static std::mutex g_audio_mutex;
 
 static void* g_core_handle = nullptr;
 static retro_init_t core_retro_init = nullptr;
@@ -150,9 +154,75 @@ static void core_video_refresh_cb(const void *data, unsigned width, unsigned hei
    ANativeWindow_unlockAndPost(g_native_window);
 }
 
-static void core_audio_sample_cb(int16_t left, int16_t right) {}
+// Manejo de Audio con AAudio de baja latencia
+static void start_aaudio(int32_t sample_rate = 44100) {
+   std::lock_guard<std::mutex> lock(g_audio_mutex);
+   if (g_audio_stream) return;
+
+   AAudioStreamBuilder *builder = nullptr;
+   aaudio_result_t result = AAudio_createStreamBuilder(&builder);
+   if (result != AAUDIO_OK || !builder) {
+      LOGE("Error creando AAudioStreamBuilder: %s", AAudio_convertResultToText(result));
+      return;
+   }
+
+   AAudioStreamBuilder_setFormat(builder, AAUDIO_FORMAT_PCM_I16);
+   AAudioStreamBuilder_setChannelCount(builder, 2); // Estéreo
+   AAudioStreamBuilder_setSampleRate(builder, sample_rate > 0 ? sample_rate : 44100);
+   AAudioStreamBuilder_setPerformanceMode(builder, AAUDIO_PERFORMANCE_MODE_LOW_LATENCY);
+   AAudioStreamBuilder_setSharingMode(builder, AAUDIO_SHARING_MODE_SHARED);
+   AAudioStreamBuilder_setDirection(builder, AAUDIO_DIRECTION_OUTPUT);
+
+   result = AAudioStreamBuilder_openStream(builder, &g_audio_stream);
+   AAudioStreamBuilder_delete(builder);
+
+   if (result != AAUDIO_OK || !g_audio_stream) {
+      LOGE("Error abriendo AAudioStream: %s", AAudio_convertResultToText(result));
+      g_audio_stream = nullptr;
+      return;
+   }
+
+   result = AAudioStream_requestStart(g_audio_stream);
+   if (result != AAUDIO_OK) {
+      LOGE("Error iniciando AAudioStream: %s", AAudio_convertResultToText(result));
+      AAudioStream_close(g_audio_stream);
+      g_audio_stream = nullptr;
+      return;
+   }
+
+   LOGI("AAudioStream iniciado con éxito: %d Hz, 2 canales, PCM 16-bit", sample_rate);
+}
+
+static void stop_aaudio() {
+   std::lock_guard<std::mutex> lock(g_audio_mutex);
+   if (g_audio_stream) {
+      AAudioStream_requestStop(g_audio_stream);
+      AAudioStream_close(g_audio_stream);
+      g_audio_stream = nullptr;
+      LOGI("AAudioStream detenido y cerrado.");
+   }
+}
+
+static void core_audio_sample_cb(int16_t left, int16_t right) {
+   int16_t buffer[2] = {left, right};
+   std::lock_guard<std::mutex> lock(g_audio_mutex);
+   if (g_audio_stream) {
+      AAudioStream_write(g_audio_stream, buffer, 1, 0);
+   }
+}
 
 static size_t core_audio_sample_batch_cb(const int16_t *data, size_t frames) {
+   if (!data || frames == 0) return 0;
+   std::lock_guard<std::mutex> lock(g_audio_mutex);
+   if (g_audio_stream) {
+      // Escribir muestras estéreo PCM 16-bit sin bloquear el hilo principal (timeout 0)
+      aaudio_result_t written = AAudioStream_write(g_audio_stream, data, static_cast<int32_t>(frames), 0);
+      if (written < 0) {
+         LOGE("AAudioStream_write error: %s", AAudio_convertResultToText(written));
+         return frames;
+      }
+      return static_cast<size_t>(written);
+   }
    return frames;
 }
 
@@ -266,6 +336,7 @@ static bool ensure_core_loaded() {
    core_retro_set_audio_sample_batch = (retro_set_audio_sample_batch_t)dlsym(g_core_handle, "retro_set_audio_sample_batch");
    core_retro_set_input_poll = (retro_set_input_poll_t)dlsym(g_core_handle, "retro_set_input_poll");
    core_retro_set_input_state = (retro_set_input_state_t)dlsym(g_core_handle, "retro_set_input_state");
+   core_retro_get_system_av_info = (retro_get_system_av_info_t)dlsym(g_core_handle, "retro_get_system_av_info");
 
    if (!core_retro_init || !core_retro_load_game || !core_retro_run) {
       LOGE("Error al vincular símbolos Libretro de libfbneo.so");
@@ -311,11 +382,27 @@ Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeLoadRom(JNIEnv *env, job
    if (g_emu_thread.joinable()) {
       g_emu_thread.join();
    }
+   stop_aaudio();
 
    if (ensure_core_loaded() && core_retro_load_game) {
       struct retro_game_info game_info = { path, nullptr, 0, nullptr };
       if (core_retro_load_game(&game_info)) {
          LOGI("ROM cargada exitosamente en el core FBNeo.");
+
+         // Obtener tasa de muestreo recomendada por el core o fallback a 44100Hz
+         int32_t sample_rate = 44100;
+         if (core_retro_get_system_av_info) {
+            struct retro_system_av_info av_info;
+            std::memset(&av_info, 0, sizeof(av_info));
+            core_retro_get_system_av_info(&av_info);
+            if (av_info.timing.sample_rate > 0) {
+               sample_rate = static_cast<int32_t>(av_info.timing.sample_rate);
+               LOGI("Sample rate reportado por Libretro: %d Hz", sample_rate);
+            }
+         }
+
+         start_aaudio(sample_rate);
+
          g_is_running.store(true);
          g_is_paused.store(false);
          g_emu_thread = std::thread(emulation_loop);
@@ -335,11 +422,19 @@ Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeSendInputMask(JNIEnv *en
 JNIEXPORT void JNICALL
 Java_com_infomak_moai_games_ArcadeEmulatorManager_nativePause(JNIEnv *env, jobject thiz) {
    g_is_paused.store(true);
+   std::lock_guard<std::mutex> lock(g_audio_mutex);
+   if (g_audio_stream) {
+      AAudioStream_requestPause(g_audio_stream);
+   }
 }
 
 JNIEXPORT void JNICALL
 Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeResume(JNIEnv *env, jobject thiz) {
    g_is_paused.store(false);
+   std::lock_guard<std::mutex> lock(g_audio_mutex);
+   if (g_audio_stream) {
+      AAudioStream_requestStart(g_audio_stream);
+   }
 }
 
 JNIEXPORT void JNICALL
@@ -356,6 +451,8 @@ Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeStop(JNIEnv *env, jobjec
    if (g_emu_thread.joinable()) {
       g_emu_thread.join();
    }
+   stop_aaudio();
+
    if (core_retro_unload_game) {
       core_retro_unload_game();
       LOGI("Juego descargado limpiamente de FBNeo.");

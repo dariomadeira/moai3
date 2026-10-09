@@ -227,31 +227,27 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
             ],
           ),
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainerHighest,
+        if (installedCount > 0) ...[
+          const SizedBox(width: 12),
+          Material(
+            color: scheme.tertiaryContainer,
             borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.check_circle_outline, size: 16, color: scheme.primary),
-              const SizedBox(width: 6),
-              Text(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              child: Text(
                 installedCount == 1
                     ? 'arcade_installed_count_single'.tr(namedArgs: {'count': '1'})
                     : 'arcade_installed_count_plural'.tr(namedArgs: {'count': installedCount.toString()}),
                 style: MoaiText.body(
                   context,
-                  color: scheme.onSurface,
-                  fontSize: 12,
+                  color: scheme.onTertiaryContainer,
+                  fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -607,7 +603,7 @@ class _InstalledRomCardState extends State<_InstalledRomCard> {
               child: Padding(
                 padding: const EdgeInsets.all(10),
                 child: Icon(
-                  Icons.sports_esports,
+                  Symbols.stadia_controller,
                   size: 22,
                   color: iconColor,
                 ),
@@ -646,7 +642,7 @@ class _InstalledRomCardState extends State<_InstalledRomCard> {
               ),
             ),
             const SizedBox(width: 10),
-            // Botón Tacho de Basura
+            // Botón Tacho de Basura (idéntico a _IconButtonAction de Extensiones)
             Focus(
               focusNode: widget.deleteFocusNode,
               onKeyEvent: (node, event) {
@@ -673,31 +669,45 @@ class _InstalledRomCardState extends State<_InstalledRomCard> {
                 }
                 return KeyEventResult.ignored;
               },
-              child: AnimatedScale(
-                scale: _isFocused ? 1.08 : 1.0,
-                duration: const Duration(milliseconds: 100),
-                child: Material(
-                  color: _isFocused
-                      ? scheme.errorContainer
-                      : scheme.surfaceContainerHighest,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: InkWell(
-                    onTap: widget.onDelete,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Icon(
-                        Icons.delete_outline_rounded,
-                        size: 20,
-                        color: _isFocused
-                            ? scheme.onErrorContainer
-                            : scheme.error,
+              child: Builder(
+                builder: (context) {
+                  final Color btnBg;
+                  final Color btnFg;
+
+                  if (_isFocused) {
+                    btnBg = scheme.primary;
+                    btnFg = scheme.onPrimary;
+                  } else {
+                    btnBg = scheme.secondaryContainer.withValues(alpha: 0.7);
+                    btnFg = scheme.onSecondaryContainer;
+                  }
+
+                  return AnimatedScale(
+                    scale: _isFocused ? 1.08 : 1.0,
+                    duration: const Duration(milliseconds: 100),
+                    child: Material(
+                      color: btnBg,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Tooltip(
+                        message: 'arcade_delete_btn'.tr(),
+                        child: InkWell(
+                          onTap: widget.onDelete,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: Icon(
+                              Icons.delete_outline_rounded,
+                              size: 20,
+                              color: btnFg,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
             ),
           ],
@@ -817,7 +827,7 @@ class _CatalogRomTileState extends State<_CatalogRomTile> {
                   child: Padding(
                     padding: const EdgeInsets.all(10),
                     child: Icon(
-                      Icons.videogame_asset_outlined,
+                      Symbols.joystick,
                       size: 22,
                       color: iconColor,
                     ),
