@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -37,6 +38,61 @@ class UpdateService {
   /// También soporta un endpoint JSON estándar.
   static String updateEndpoint =
       'https://api.github.com/repos/dariomadeira/moai3/releases/latest';
+
+  static String _getPreferredAbiTag() {
+    try {
+      final abi = Abi.current();
+      switch (abi) {
+        case Abi.androidArm64:
+          return 'arm64-v8a';
+        case Abi.androidArm:
+          return 'armeabi-v7a';
+        case Abi.androidX64:
+          return 'x86_64';
+        case Abi.androidIA32:
+          return 'x86';
+        default:
+          return '';
+      }
+    } catch (_) {
+      return '';
+    }
+  }
+
+  static Map<String, dynamic>? _selectApkAsset(List<dynamic> assets) {
+    final apkAssets = <Map<String, dynamic>>[];
+    for (final asset in assets) {
+      if (asset is Map<String, dynamic>) {
+        final name = (asset['name'] as String? ?? '').toLowerCase();
+        if (name.endsWith('.apk')) {
+          apkAssets.add(asset);
+        }
+      }
+    }
+
+    if (apkAssets.isEmpty) return null;
+
+    final preferredAbi = _getPreferredAbiTag();
+    if (preferredAbi.isNotEmpty) {
+      for (final asset in apkAssets) {
+        final name = (asset['name'] as String? ?? '').toLowerCase();
+        if (name.contains(preferredAbi) ||
+            (preferredAbi == 'arm64-v8a' && name.contains('arm64')) ||
+            (preferredAbi == 'armeabi-v7a' && (name.contains('armv7') || name.contains('armeabi')))) {
+          debugPrint('[UpdateService] APK seleccionado por arquitectura ($preferredAbi): ${asset['name']}');
+          return asset;
+        }
+      }
+    }
+
+    final fallback = apkAssets.firstWhere(
+      (a) => (a['name'] as String? ?? '').toLowerCase().contains('universal') ||
+             (a['name'] as String? ?? '').toLowerCase().contains('app-release.apk'),
+      orElse: () => apkAssets.first,
+    );
+    debugPrint('[UpdateService] APK seleccionado por fallback: ${fallback['name']}');
+    return fallback;
+  }
 
   /// Comprueba si existe una versión más reciente que la instalada localmente.
   static Future<AppUpdateInfo?> checkForUpdate({String? customEndpoint}) async {
@@ -85,13 +141,10 @@ class UpdateService {
       changelog = (data['body'] as String? ?? '').trim();
 
       final assets = data['assets'] as List<dynamic>? ?? [];
-      for (final asset in assets) {
-        final name = (asset['name'] as String? ?? '').toLowerCase();
-        if (name.endsWith('.apk')) {
-          apkUrl = asset['browser_download_url'] as String? ?? '';
-          size = asset['size'] as int?;
-          break;
-        }
+      final selectedAsset = _selectApkAsset(assets);
+      if (selectedAsset != null) {
+        apkUrl = selectedAsset['browser_download_url'] as String? ?? '';
+        size = selectedAsset['size'] as int?;
       }
     }
     // Caso 2: JSON personalizado simple (version, apkUrl, changelog)
