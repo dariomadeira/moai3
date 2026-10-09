@@ -4,12 +4,43 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <limits.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define RETRO_API_VERSION 1
+
+#define RETRO_ENVIRONMENT_SET_ROTATION                          1
+#define RETRO_ENVIRONMENT_GET_OVERSCAN                          2
+#define RETRO_ENVIRONMENT_GET_CAN_DUPLICATE_FLAGS               3
+#define RETRO_ENVIRONMENT_SET_MESSAGE                           6
+#define RETRO_ENVIRONMENT_SHUTDOWN                              7
+#define RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL                 8
+#define RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY                  9
+#define RETRO_ENVIRONMENT_SET_PIXEL_FORMAT                     10
+#define RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS                 11
+#define RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK                 12
+#define RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE            13
+#define RETRO_ENVIRONMENT_SET_HW_RENDER                         14
+#define RETRO_ENVIRONMENT_GET_VARIABLE                         15
+#define RETRO_ENVIRONMENT_SET_VARIABLES                        16
+#define RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE                  17
+#define RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME                   18
+#define RETRO_ENVIRONMENT_GET_LIBRETRO_PATH                    19
+#define RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK               21
+#define RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK                    22
+#define RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE                  23
+#define RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES         24
+#define RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE                  25
+#define RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE                  26
+#define RETRO_ENVIRONMENT_GET_LOG_INTERFACE                     27
+#define RETRO_ENVIRONMENT_GET_PERF_INTERFACE                    28
+#define RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE                29
+#define RETRO_ENVIRONMENT_GET_CONTENT_DIRECTORY                 30
+#define RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY                    31
+
 
 #define RETRO_DEVICE_MASK         0xff
 #define RETRO_DEVICE_NONE         0

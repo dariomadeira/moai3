@@ -332,6 +332,16 @@ class PlayerEngine {
                     entries[handle]?.player?.pause()
                     result.success(null)
                 }
+                "pauseAll" -> {
+                    Log.i(TAG, "pauseAll (pausando streaming de TV)")
+                    entries.values.forEach { it.player?.pause() }
+                    result.success(null)
+                }
+                "resumeAll" -> {
+                    Log.i(TAG, "resumeAll (reanudando streaming de TV)")
+                    entries.values.forEach { it.player?.play() }
+                    result.success(null)
+                }
                 "seekTo" -> {
                     val pos = (call.argument<Number>("positionMs"))?.toLong() ?: 0L
                     Log.d(TAG, "seekTo handle=$handle pos=$pos")

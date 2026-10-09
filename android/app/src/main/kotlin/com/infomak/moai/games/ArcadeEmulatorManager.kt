@@ -36,8 +36,9 @@ class ArcadeEmulatorManager(
                     result.error("INVALID_PATH", "La ruta de la ROM no puede ser nula", null)
                     return
                 }
-                val success = loadRomFile(path)
-                result.success(success)
+                loadRomFile(path) { success ->
+                    result.success(success)
+                }
             }
             "sendInputState" -> {
                 val mask = call.argument<Int>("mask") ?: 0
@@ -63,6 +64,30 @@ class ArcadeEmulatorManager(
                 stopEmulation()
                 result.success(true)
             }
+            "getRomDirectory" -> {
+                result.success(context.filesDir.absolutePath)
+            }
+            "deleteRom" -> {
+                val name = call.argument<String>("name")
+                if (name != null) {
+                    val file = File(context.filesDir, name)
+                    val deleted = if (file.exists()) file.delete() else false
+                    result.success(deleted)
+                } else {
+                    result.error("INVALID_NAME", "Nombre no provisto", null)
+                }
+            }
+            "getInstalledRoms" -> {
+                val files = context.filesDir.listFiles { _, name -> name.endsWith(".zip") }
+                val list = files?.map { f ->
+                    mapOf(
+                        "filename" to f.name,
+                        "path" to f.absolutePath,
+                        "sizeBytes" to f.length()
+                    )
+                } ?: emptyList<Map<String, Any>>()
+                result.success(list)
+            }
             else -> result.notImplemented()
         }
     }
@@ -84,12 +109,20 @@ class ArcadeEmulatorManager(
 
     private fun initializeNativeEngine(): Boolean {
         return try {
-            // Intentar cargar la librería nativa si existe (ej: libfbneo.so / libarcade_runner.so)
+            try {
+                System.loadLibrary("fbneo")
+                android.util.Log.i("ArcadeEmulatorManager", "libfbneo.so cargada con éxito")
+            } catch (e: UnsatisfiedLinkError) {
+                android.util.Log.w("ArcadeEmulatorManager", "System.loadLibrary(fbneo) falló: ${e.message}")
+            }
             try {
                 System.loadLibrary("arcade_runner")
+                android.util.Log.i("ArcadeEmulatorManager", "libarcade_runner.so cargada con éxito")
             } catch (e: UnsatisfiedLinkError) {
-                // Si aún no está compilada la lib C++, marcamos preparado para PoC
+                android.util.Log.e("ArcadeEmulatorManager", "System.loadLibrary(arcade_runner) falló: ${e.message}")
             }
+            val dirPath = context.filesDir.absolutePath
+            nativeInitDirectories(dirPath, dirPath)
             isInitialized = true
             true
         } catch (e: Exception) {
@@ -98,18 +131,53 @@ class ArcadeEmulatorManager(
         }
     }
 
-    private fun loadRomFile(path: String): Boolean {
-        val file = File(path)
+    private fun loadRomFile(path: String, onComplete: (Boolean) -> Unit) {
+        var file = File(path)
         if (!file.exists()) {
-            channel.invokeMethod("onEmulatorError", "El archivo de ROM no existe en: $path")
-            return false
+            val internal = File(context.filesDir, file.name)
+            if (internal.exists()) {
+                file = internal
+            }
         }
 
-        currentRomPath = path
+        // Si el archivo está en /sdcard/Download pero no en filesDir, intentar copiarlo para acceso nativo directo
+        val targetInFiles = File(context.filesDir, file.name)
+        if (file.exists() && file.absolutePath != targetInFiles.absolutePath && !targetInFiles.exists()) {
+            try {
+                file.copyTo(targetInFiles, overwrite = true)
+                file = targetInFiles
+                android.util.Log.i("ArcadeEmulatorManager", "ROM copiada a almacenamiento interno: ${file.absolutePath}")
+            } catch (e: Exception) {
+                android.util.Log.w("ArcadeEmulatorManager", "No se pudo copiar a filesDir: ${e.message}")
+            }
+        } else if (targetInFiles.exists()) {
+            file = targetInFiles
+        }
+
+        if (!file.exists()) {
+            channel.invokeMethod("onEmulatorError", "El archivo de ROM no existe en: $path")
+            onComplete(false)
+            return
+        }
+
+        val resolvedPath = file.absolutePath
+        currentRomPath = resolvedPath
         isRunning = true
         isPaused = false
-        nativeLoadRom(path)
-        return true
+        val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+        Thread({
+            try {
+                nativeLoadRom(resolvedPath)
+                mainHandler.post {
+                    onComplete(true)
+                }
+            } catch (e: Exception) {
+                mainHandler.post {
+                    channel.invokeMethod("onEmulatorError", "Error al cargar ROM: ${e.message}")
+                    onComplete(false)
+                }
+            }
+        }, "ArcadeRomLoader").start()
     }
 
     private fun stopEmulation() {
@@ -119,13 +187,14 @@ class ArcadeEmulatorManager(
         nativeStop()
     }
 
-    // --- Stubs Native / JNI ---
-    private fun nativeSetSurface(surface: Surface?) {}
-    private fun nativeSetSurfaceSize(width: Int, height: Int) {}
-    private fun nativeLoadRom(path: String) {}
-    private fun nativeSendInputMask(mask: Int) {}
-    private fun nativePause() {}
-    private fun nativeResume() {}
-    private fun nativeReset() {}
-    private fun nativeStop() {}
+    // --- Native JNI declarations ---
+    private external fun nativeInitDirectories(systemDir: String, saveDir: String)
+    private external fun nativeSetSurface(surface: Surface?)
+    private external fun nativeSetSurfaceSize(width: Int, height: Int)
+    private external fun nativeLoadRom(path: String)
+    private external fun nativeSendInputMask(mask: Int)
+    private external fun nativePause()
+    private external fun nativeResume()
+    private external fun nativeReset()
+    private external fun nativeStop()
 }
