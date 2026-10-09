@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:moai3/services/app_preferences_service.dart';
+import 'package:moai3/services/weather_icon_mapper.dart';
 import 'package:moai3/services/weather_service.dart';
 
 /// Provider responsable de mantener actualizado el clima del dispositivo (TV).
@@ -9,6 +10,8 @@ class WeatherProvider extends ChangeNotifier {
   static const String _prefCityKey = 'weather_last_city';
   static const String _prefCondKey = 'weather_last_condition';
   static const String _prefIconKey = 'weather_last_icon_url';
+  static const String _prefCodeKey = 'weather_last_code';
+  static const String _prefIsDayKey = 'weather_last_is_day';
   static const Duration _refreshInterval = Duration(minutes: 30);
 
   final WeatherService _service;
@@ -47,12 +50,22 @@ class WeatherProvider extends ChangeNotifier {
   /// URL del icono del clima actual.
   String get iconUrlDisplay => _weather?.iconUrl ?? '';
 
+  /// Retorna la URL CDN del archivo JSON Lottie animado correspondiente al clima actual.
+  String get lottieUrl {
+    return WeatherIconMapper.getLottieUrl(
+      code: _weather?.conditionCode,
+      isDay: _weather?.isDay ?? true,
+    );
+  }
+
   /// Restaura los últimos datos conocidos de SharedPreferences.
   void _restoreCachedData() {
     final cachedTemp = _prefs.readOptionalString(_prefTempKey);
     final cachedCity = _prefs.readOptionalString(_prefCityKey);
     final cachedCond = _prefs.readOptionalString(_prefCondKey);
     final cachedIcon = _prefs.readOptionalString(_prefIconKey);
+    final cachedCode = _prefs.readOptionalString(_prefCodeKey);
+    final cachedIsDay = _prefs.readOptionalString(_prefIsDayKey);
 
     if (cachedTemp != null) {
       final parsedTemp = double.tryParse(cachedTemp);
@@ -61,6 +74,8 @@ class WeatherProvider extends ChangeNotifier {
           tempC: parsedTemp,
           condition: cachedCond ?? '',
           iconUrl: cachedIcon ?? '',
+          conditionCode: cachedCode != null ? int.tryParse(cachedCode) : null,
+          isDay: cachedIsDay != 'false',
           city: cachedCity ?? '',
           region: '',
           country: '',
@@ -82,6 +97,10 @@ class WeatherProvider extends ChangeNotifier {
       await _prefs.saveString(_prefCityKey, data.city);
       await _prefs.saveString(_prefCondKey, data.condition);
       await _prefs.saveString(_prefIconKey, data.iconUrl);
+      if (data.conditionCode != null) {
+        await _prefs.saveString(_prefCodeKey, '${data.conditionCode}');
+      }
+      await _prefs.saveString(_prefIsDayKey, '${data.isDay}');
     }
 
     _isLoading = false;

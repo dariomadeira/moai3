@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 import 'package:moai3/state/weather_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:provider/provider.dart';
@@ -111,42 +112,37 @@ class _TvVerticalClockPillState extends State<TvVerticalClockPill> {
               ),
             ),
           ),
-          const SizedBox(height: 3),
-          // Icono del clima arriba de la temperatura (desde WeatherProvider con fallback seguro)
+          // Icono del clima animado (Meteocons Lottie vía CDN con fallback seguro)
           Builder(
             builder: (context) {
               final weatherProvider = context.watch<WeatherProvider?>();
               final tempStr = weatherProvider?.temperatureDisplay ?? '33°';
-              final iconUrl = weatherProvider?.iconUrlDisplay ?? '';
+              final lottieUrl = weatherProvider?.lottieUrl ??
+                  'https://cdn.jsdelivr.net/npm/@meteocons/lottie@0.1.0/fill/clear-day.json';
 
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (iconUrl.isNotEmpty)
-                    Image.network(
-                      iconUrl,
-                      width: 26,
-                      height: 26,
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: Lottie.network(
+                      lottieUrl,
                       fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) => Icon(
                         Icons.wb_sunny_outlined,
                         size: 20,
                         color: scheme.onSurfaceVariant,
                       ),
-                    )
-                  else
-                    Icon(
-                      Icons.wb_sunny_outlined,
-                      size: 20,
-                      color: scheme.onSurfaceVariant,
                     ),
-                  const SizedBox(height: 4),
+                  ),
+                  //const SizedBox(height: 2),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Text(
                       tempStr,
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.5,
                         color: scheme.onSurfaceVariant,
