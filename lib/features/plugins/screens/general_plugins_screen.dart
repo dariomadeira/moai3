@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/services/arcade_plugin_service.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/widgets/tv_common/tv_m3.dart';
+import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
 
 /// Pantalla de gestión de Plugins Generales para Android TV (idéntica a la estructura de SourcesScreen).
 class GeneralPluginsScreen extends StatefulWidget {
@@ -15,7 +16,17 @@ class GeneralPluginsScreen extends StatefulWidget {
 class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
   final ArcadePluginService _arcadePlugin = ArcadePluginService.instance;
   final FocusNode _backFocusNode = FocusNode(debugLabel: 'general_plugins_back');
-  final FocusNode _arcadeActionFocusNode = FocusNode(debugLabel: 'arcade_plugin_action');
+  final FocusNode _emptyFocusNode = FocusNode(debugLabel: 'general_plugins_empty');
+
+  // Focus nodes para plugin instalado (update & remove)
+  final FocusNode _installedUpdateFocus = FocusNode(debugLabel: 'arcade_update_focus');
+  final FocusNode _installedRemoveFocus = FocusNode(debugLabel: 'arcade_remove_focus');
+
+  // Focus node para plugin disponible en catálogo
+  final FocusNode _availableFocusNode = FocusNode(debugLabel: 'arcade_available_focus');
+
+  final ScrollController _leftScrollController = ScrollController();
+  final ScrollController _rightScrollController = ScrollController();
 
   @override
   void initState() {
@@ -23,7 +34,13 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
     _arcadePlugin.addListener(_onPluginUpdated);
     _arcadePlugin.init();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _arcadeActionFocusNode.requestFocus();
+      if (mounted) {
+        if (_arcadePlugin.isInstalled) {
+          _installedRemoveFocus.requestFocus();
+        } else {
+          _availableFocusNode.requestFocus();
+        }
+      }
     });
   }
 
@@ -35,270 +52,854 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
   void dispose() {
     _arcadePlugin.removeListener(_onPluginUpdated);
     _backFocusNode.dispose();
-    _arcadeActionFocusNode.dispose();
+    _emptyFocusNode.dispose();
+    _installedUpdateFocus.dispose();
+    _installedRemoveFocus.dispose();
+    _availableFocusNode.dispose();
+    _leftScrollController.dispose();
+    _rightScrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleArcadeAction() async {
-    if (_arcadePlugin.isDownloading) return;
-
-    if (_arcadePlugin.isInstalled) {
-      // Confirmar desinstalación
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (ctx) {
-          final scheme = Theme.of(ctx).colorScheme;
-          return AlertDialog(
-            backgroundColor: scheme.surfaceContainerHigh,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Text(
-              'Desinstalar Plugin Arcade',
-              style: MoaiText.display(ctx, fontSize: 20, fontWeight: FontWeight.bold),
+  Future<void> _uninstallArcade() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final scheme = Theme.of(ctx).colorScheme;
+        return AlertDialog(
+          backgroundColor: scheme.surfaceContainerHigh,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Desinstalar Plugin Arcade',
+            style: MoaiText.display(ctx, fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            '¿Deseas eliminar el motor Arcade FBNeo? Esta acción liberará ~69 MB de espacio y desactivará la sección Arcade del menú lateral.',
+            style: MoaiText.body(ctx),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('Cancelar', style: TextStyle(color: scheme.onSurfaceVariant)),
             ),
-            content: Text(
-              '¿Deseas eliminar el motor Arcade FBNeo? Esta acción liberará ~69 MB de espacio y desactivará la sección Arcade del menú lateral.',
-              style: MoaiText.body(ctx),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: scheme.error),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Desinstalar'),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: Text('Cancelar', style: TextStyle(color: scheme.onSurfaceVariant)),
-              ),
-              FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: scheme.error),
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Desinstalar'),
-              ),
-            ],
-          );
-        },
-      );
+          ],
+        );
+      },
+    );
 
-      if (confirm == true) {
-        await _arcadePlugin.uninstallPlugin();
-      }
-    } else {
-      // Instalar plugin
-      await _arcadePlugin.installPlugin();
+    if (confirm == true) {
+      await _arcadePlugin.uninstallPlugin();
+      if (mounted) _availableFocusNode.requestFocus();
+    }
+  }
+
+  Future<void> _installArcade() async {
+    if (_arcadePlugin.isDownloading || _arcadePlugin.isInstalled) return;
+    await _arcadePlugin.installPlugin();
+    if (mounted && _arcadePlugin.isInstalled) {
+      _installedRemoveFocus.requestFocus();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final scheme = context.scheme;
     final isInstalled = _arcadePlugin.isInstalled;
-    final isDownloading = _arcadePlugin.isDownloading;
-    final progress = _arcadePlugin.downloadProgress;
+    final totalInstalledCount = isInstalled ? 1 : 0;
 
-    return Scaffold(
-      backgroundColor: scheme.surface,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. Encabezado con Botón Volver
-              Row(
-                children: [
-                  TvFocusButton(
-                    focusNode: _backFocusNode,
-                    label: 'Volver',
-                    icon: Symbols.arrow_back,
-                    variant: TvButtonVariant.surface,
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  const SizedBox(width: 16),
-                  Column(
+    return PopScope(
+      canPop: true,
+      child: Scaffold(
+        backgroundColor: scheme.surface,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _header(context, scheme, totalInstalledCount),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Plugins Generales',
-                        style: MoaiText.display(
-                          context,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: scheme.onSurface,
+                      // Columna Izquierda: Plugins Instalados
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Text(
+                                'Plugins instalados',
+                                style: MoaiText.body(
+                                  context,
+                                  color: scheme.onSurfaceVariant,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: !isInstalled
+                                  ? TvEmptyStateCard(
+                                      focusNode: _emptyFocusNode,
+                                      icon: Icons.extension_off_outlined,
+                                      message: 'No hay plugins generales instalados',
+                                      onFocusUp: () => _backFocusNode.requestFocus(),
+                                      onFocusRight: () => _availableFocusNode.requestFocus(),
+                                    )
+                                  : SingleChildScrollView(
+                                      controller: _leftScrollController,
+                                      child: _InstalledPluginTile(
+                                        title: 'Moai Arcade Engine',
+                                        subtitle: 'v1.0.0 · FBNeo Engine (${ArcadePluginService.getDeviceAbi()})',
+                                        updateFocus: _installedUpdateFocus,
+                                        removeFocus: _installedRemoveFocus,
+                                        onUpdate: _installArcade,
+                                        onRemove: _uninstallArcade,
+                                        onUpdateKeyUp: () => _backFocusNode.requestFocus(),
+                                        onRemoveKeyUp: () => _backFocusNode.requestFocus(),
+                                        onRemoveKeyRight: () => _availableFocusNode.requestFocus(),
+                                      ),
+                                    ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Módulos y motores de extensión nativos del sistema',
-                        style: MoaiText.body(
-                          context,
-                          fontSize: 13,
-                          color: scheme.onSurfaceVariant,
+                      const SizedBox(width: 24),
+
+                      // Columna Derecha: Plugins Disponibles (Recomendados)
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Text(
+                                'Plugins disponibles',
+                                style: MoaiText.body(
+                                  context,
+                                  color: scheme.onSurfaceVariant,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                controller: _rightScrollController,
+                                child: _AvailablePluginTile(
+                                  title: 'Moai Arcade (FBNeo)',
+                                  packageName: 'moai_arcade · ~69 MB',
+                                  focusNode: _availableFocusNode,
+                                  isInstalled: isInstalled,
+                                  isDownloading: _arcadePlugin.isDownloading,
+                                  downloadProgress: _arcadePlugin.downloadProgress,
+                                  statusMessage: _arcadePlugin.statusMessage,
+                                  onInstall: _installArcade,
+                                  onKeyLeft: () {
+                                    if (isInstalled) {
+                                      _installedRemoveFocus.requestFocus();
+                                    } else {
+                                      _emptyFocusNode.requestFocus();
+                                    }
+                                  },
+                                  onKeyUp: () => _backFocusNode.requestFocus(),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _header(BuildContext context, ColorScheme scheme, int totalPlugins) {
+    return Row(
+      children: [
+        _BackButton(
+          focusNode: _backFocusNode,
+          onPressed: () => Navigator.of(context).pop(),
+          onFocusRight: () => _arcadePlugin.isInstalled
+              ? _installedRemoveFocus.requestFocus()
+              : _availableFocusNode.requestFocus(),
+          onFocusDown: () => _arcadePlugin.isInstalled
+              ? _installedRemoveFocus.requestFocus()
+              : _availableFocusNode.requestFocus(),
+        ),
+        const SizedBox(width: 14),
+        Material(
+          color: scheme.primaryContainer,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Icon(
+              Symbols.extension,
+              color: scheme.onPrimaryContainer,
+              size: 26,
+            ),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Administrador de plugins',
+                style: MoaiText.display(
+                  context,
+                  color: scheme.onSurface,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-              const SizedBox(height: 24),
-
-              // 2. Lista de Plugins Disponibles (Tarjeta de Plugin Arcade)
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: scheme.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: scheme.outlineVariant.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: isInstalled
-                                    ? scheme.primaryContainer
-                                    : scheme.surfaceContainerHigh,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
-                                Symbols.sports_esports,
-                                size: 36,
-                                color: isInstalled
-                                    ? scheme.onPrimaryContainer
-                                    : scheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        'Moai Arcade Engine (FBNeo)',
-                                        style: MoaiText.display(
-                                          context,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: scheme.onSurface,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 3,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: isInstalled
-                                              ? Colors.green.withValues(alpha: 0.2)
-                                              : scheme.surfaceContainerHighest,
-                                          borderRadius: BorderRadius.circular(6),
-                                          border: Border.all(
-                                            color: isInstalled
-                                                ? Colors.green
-                                                : scheme.outline,
-                                            width: 0.8,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          isInstalled ? 'Instalado (~69 MB)' : 'No Instalado',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: isInstalled
-                                                ? Colors.greenAccent
-                                                : scheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    'Motor de emulación retro nativo de alta precisión para Capcom CPS-1/2/3, NeoGeo y Arcade. Activa la sección Juegos en el menú principal.',
-                                    style: MoaiText.body(
-                                      context,
-                                      fontSize: 13,
-                                      color: scheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Arquitectura detectada: ${ArcadePluginService.getDeviceAbi()}',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: scheme.primary,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-
-                            // Botón de Acción D-pad M3
-                            TvFocusButton(
-                              focusNode: _arcadeActionFocusNode,
-                              label: isDownloading
-                                  ? 'Descargando...'
-                                  : isInstalled
-                                      ? 'Desinstalar'
-                                      : 'Instalar Plugin',
-                              icon: isDownloading
-                                  ? Symbols.downloading
-                                  : isInstalled
-                                      ? Symbols.delete
-                                      : Symbols.download,
-                              variant: isInstalled
-                                  ? TvButtonVariant.destructive
-                                  : TvButtonVariant.secondary,
-                              loading: isDownloading,
-                              onPressed: _handleArcadeAction,
-                            ),
-                          ],
-                        ),
-
-                        // Barra de progreso de descarga si está en proceso
-                        if (isDownloading) ...[
-                          const SizedBox(height: 16),
-                          LinearProgressIndicator(
-                            value: progress > 0 ? progress : null,
-                            backgroundColor: scheme.surfaceContainerHighest,
-                            color: scheme.primary,
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                _arcadePlugin.statusMessage,
-                                style: MoaiText.body(
-                                  context,
-                                  fontSize: 12,
-                                  color: scheme.onSurfaceVariant,
-                                ),
-                              ),
-                              Text(
-                                '${(progress * 100).toStringAsFixed(0)}%',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: scheme.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
+              const SizedBox(height: 2),
+              Text(
+                'Instalá o administrá plugins generales del sistema.',
+                style: MoaiText.body(
+                  context,
+                  color: scheme.onSurfaceVariant,
+                  fontSize: 13,
+                  height: 1.3,
                 ),
               ),
             ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Material(
+          color: scheme.tertiaryContainer,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Text(
+              '$totalPlugins ${totalPlugins == 1 ? 'Plugin' : 'Plugins'}',
+              style: MoaiText.body(
+                context,
+                color: scheme.onTertiaryContainer,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BackButton extends StatefulWidget {
+  final FocusNode focusNode;
+  final VoidCallback onPressed;
+  final VoidCallback? onFocusRight;
+  final VoidCallback? onFocusDown;
+
+  const _BackButton({
+    required this.focusNode,
+    required this.onPressed,
+    this.onFocusRight,
+    this.onFocusDown,
+  });
+
+  @override
+  State<_BackButton> createState() => _BackButtonState();
+}
+
+class _BackButtonState extends State<_BackButton> {
+  bool _isFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isFocused = widget.focusNode.hasFocus;
+    widget.focusNode.addListener(_onFocus);
+  }
+
+  @override
+  void dispose() {
+    widget.focusNode.removeListener(_onFocus);
+    super.dispose();
+  }
+
+  void _onFocus() {
+    if (mounted) setState(() => _isFocused = widget.focusNode.hasFocus);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    final bg = _isFocused ? scheme.primary : scheme.surfaceContainerLow;
+    final fg = _isFocused ? scheme.onPrimary : scheme.onSurface;
+
+    return Focus(
+      focusNode: widget.focusNode,
+      onKeyEvent: (node, event) {
+        if (event is! KeyDownEvent) return KeyEventResult.ignored;
+        final key = event.logicalKey;
+        if (key == LogicalKeyboardKey.arrowRight && widget.onFocusRight != null) {
+          widget.onFocusRight!();
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.arrowDown && widget.onFocusDown != null) {
+          widget.onFocusDown!();
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.enter ||
+            key == LogicalKeyboardKey.select ||
+            key == LogicalKeyboardKey.space ||
+            key == LogicalKeyboardKey.gameButtonA) {
+          widget.onPressed();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: AnimatedScale(
+        scale: _isFocused ? 1.04 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOutCubic,
+        child: Material(
+          color: bg,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            onTap: widget.onPressed,
+            borderRadius: BorderRadius.circular(16),
+            child: SizedBox(
+              width: 52,
+              height: 52,
+              child: Icon(
+                Icons.arrow_back_rounded,
+                color: fg,
+                size: 24,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InstalledPluginTile extends StatefulWidget {
+  final String title;
+  final String subtitle;
+  final FocusNode updateFocus;
+  final FocusNode removeFocus;
+  final VoidCallback onUpdate;
+  final VoidCallback onRemove;
+  final VoidCallback onUpdateKeyUp;
+  final VoidCallback onRemoveKeyUp;
+  final VoidCallback? onRemoveKeyRight;
+
+  const _InstalledPluginTile({
+    required this.title,
+    required this.subtitle,
+    required this.updateFocus,
+    required this.removeFocus,
+    required this.onUpdate,
+    required this.onRemove,
+    required this.onUpdateKeyUp,
+    required this.onRemoveKeyUp,
+    this.onRemoveKeyRight,
+  });
+
+  @override
+  State<_InstalledPluginTile> createState() => _InstalledPluginTileState();
+}
+
+class _InstalledPluginTileState extends State<_InstalledPluginTile> {
+  @override
+  void initState() {
+    super.initState();
+    widget.updateFocus.addListener(_onFocus);
+    widget.removeFocus.addListener(_onFocus);
+  }
+
+  @override
+  void dispose() {
+    widget.updateFocus.removeListener(_onFocus);
+    widget.removeFocus.removeListener(_onFocus);
+    super.dispose();
+  }
+
+  void _onFocus() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    final isFocused = widget.updateFocus.hasFocus || widget.removeFocus.hasFocus;
+
+    final bg = isFocused ? scheme.primary : scheme.surfaceContainerLow;
+    final titleColor = isFocused ? scheme.onPrimary : scheme.onSurface;
+    final descColor = isFocused
+        ? scheme.onPrimary.withValues(alpha: 0.85)
+        : scheme.onSurfaceVariant;
+    final iconBg = isFocused
+        ? scheme.onPrimary.withValues(alpha: 0.18)
+        : scheme.primaryContainer;
+    final iconColor = isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        constraints: const BoxConstraints(minHeight: 64),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Material(
+              color: iconBg,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Icon(
+                  Symbols.electrical_services,
+                  size: 22,
+                  color: iconColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    widget.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: MoaiText.body(
+                      context,
+                      color: titleColor,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    widget.subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: MoaiText.body(
+                      context,
+                      color: descColor,
+                      fontSize: 12,
+                      height: 1.3,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            _IconButtonAction(
+              focusNode: widget.updateFocus,
+              tooltip: 'Reinstalar / Actualizar',
+              icon: Icons.sync_rounded,
+              onPressed: widget.onUpdate,
+              parentFocused: isFocused,
+              onKeyRight: () => widget.removeFocus.requestFocus(),
+              onKeyUp: widget.onUpdateKeyUp,
+            ),
+            const SizedBox(width: 8),
+            _IconButtonAction(
+              focusNode: widget.removeFocus,
+              tooltip: 'Desinstalar',
+              icon: Icons.delete_outline_rounded,
+              onPressed: widget.onRemove,
+              parentFocused: isFocused,
+              onKeyLeft: () => widget.updateFocus.requestFocus(),
+              onKeyRight: widget.onRemoveKeyRight,
+              onKeyUp: widget.onRemoveKeyUp,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AvailablePluginTile extends StatefulWidget {
+  final String title;
+  final String packageName;
+  final FocusNode focusNode;
+  final bool isInstalled;
+  final bool isDownloading;
+  final double downloadProgress;
+  final String statusMessage;
+  final VoidCallback onInstall;
+  final VoidCallback onKeyLeft;
+  final VoidCallback onKeyUp;
+
+  const _AvailablePluginTile({
+    required this.title,
+    required this.packageName,
+    required this.focusNode,
+    required this.isInstalled,
+    required this.isDownloading,
+    required this.downloadProgress,
+    required this.statusMessage,
+    required this.onInstall,
+    required this.onKeyLeft,
+    required this.onKeyUp,
+  });
+
+  @override
+  State<_AvailablePluginTile> createState() => _AvailablePluginTileState();
+}
+
+class _AvailablePluginTileState extends State<_AvailablePluginTile> {
+  bool _isFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isFocused = widget.focusNode.hasFocus;
+    widget.focusNode.addListener(_onFocus);
+  }
+
+  @override
+  void dispose() {
+    widget.focusNode.removeListener(_onFocus);
+    super.dispose();
+  }
+
+  void _onFocus() {
+    if (mounted) {
+      setState(() => _isFocused = widget.focusNode.hasFocus);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    final bg = _isFocused ? scheme.primary : scheme.surfaceContainerLow;
+    final titleColor = _isFocused ? scheme.onPrimary : scheme.onSurface;
+    final descColor = _isFocused
+        ? scheme.onPrimary.withValues(alpha: 0.85)
+        : scheme.onSurfaceVariant;
+    final iconBg = _isFocused
+        ? scheme.onPrimary.withValues(alpha: 0.18)
+        : scheme.primaryContainer;
+    final iconColor = _isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Focus(
+        focusNode: widget.focusNode,
+        onKeyEvent: (node, event) {
+          if (event is! KeyDownEvent) return KeyEventResult.ignored;
+          final key = event.logicalKey;
+          if (key == LogicalKeyboardKey.arrowLeft) {
+            widget.onKeyLeft();
+            return KeyEventResult.handled;
+          }
+          if (key == LogicalKeyboardKey.arrowUp) {
+            widget.onKeyUp();
+            return KeyEventResult.handled;
+          }
+          if (key == LogicalKeyboardKey.enter ||
+              key == LogicalKeyboardKey.select ||
+              key == LogicalKeyboardKey.space ||
+              key == LogicalKeyboardKey.gameButtonA) {
+            widget.onInstall();
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          constraints: const BoxConstraints(minHeight: 64),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: InkWell(
+            onTap: widget.onInstall,
+            borderRadius: BorderRadius.circular(16),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Material(
+                      color: iconBg,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Icon(
+                          Symbols.electrical_services,
+                          size: 22,
+                          color: iconColor,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            widget.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: MoaiText.body(
+                              context,
+                              color: titleColor,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.packageName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: MoaiText.body(
+                              context,
+                              color: descColor,
+                              fontSize: 12,
+                              height: 1.3,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Material(
+                      color: widget.isDownloading
+                          ? (_isFocused
+                              ? scheme.onPrimary.withValues(alpha: 0.2)
+                              : scheme.primaryContainer)
+                          : widget.isInstalled
+                              ? (_isFocused
+                                  ? scheme.onPrimary.withValues(alpha: 0.2)
+                                  : scheme.tertiaryContainer)
+                              : (_isFocused
+                                  ? scheme.onPrimary
+                                  : scheme.primary),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (widget.isDownloading) ...[
+                              SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: _isFocused
+                                      ? scheme.onPrimary
+                                      : scheme.onPrimaryContainer,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${(widget.downloadProgress * 100).toStringAsFixed(0)}%',
+                                style: MoaiText.body(
+                                  context,
+                                  color: _isFocused
+                                      ? scheme.onPrimary
+                                      : scheme.onPrimaryContainer,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ] else if (widget.isInstalled) ...[
+                              Icon(
+                                Icons.check_circle_outline_rounded,
+                                size: 16,
+                                color: _isFocused
+                                    ? scheme.onPrimary
+                                    : scheme.onTertiaryContainer,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Instalado',
+                                style: MoaiText.body(
+                                  context,
+                                  color: _isFocused
+                                      ? scheme.onPrimary
+                                      : scheme.onTertiaryContainer,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ] else ...[
+                              Icon(
+                                Symbols.download,
+                                size: 16,
+                                color: _isFocused
+                                    ? scheme.primary
+                                    : scheme.onPrimary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Instalar',
+                                style: MoaiText.body(
+                                  context,
+                                  color: _isFocused
+                                      ? scheme.primary
+                                      : scheme.onPrimary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _IconButtonAction extends StatefulWidget {
+  final FocusNode focusNode;
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onPressed;
+  final bool parentFocused;
+  final VoidCallback? onKeyLeft;
+  final VoidCallback? onKeyRight;
+  final VoidCallback? onKeyUp;
+
+  const _IconButtonAction({
+    required this.focusNode,
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+    required this.parentFocused,
+    this.onKeyLeft,
+    this.onKeyRight,
+    this.onKeyUp,
+  });
+
+  @override
+  State<_IconButtonAction> createState() => _IconButtonActionState();
+}
+
+class _IconButtonActionState extends State<_IconButtonAction> {
+  bool _isFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isFocused = widget.focusNode.hasFocus;
+    widget.focusNode.addListener(_onFocus);
+  }
+
+  @override
+  void dispose() {
+    widget.focusNode.removeListener(_onFocus);
+    super.dispose();
+  }
+
+  void _onFocus() {
+    if (mounted) setState(() => _isFocused = widget.focusNode.hasFocus);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    final bg = _isFocused
+        ? (widget.parentFocused ? scheme.onPrimary : scheme.primary)
+        : (widget.parentFocused
+            ? scheme.onPrimary.withValues(alpha: 0.2)
+            : scheme.surfaceContainerHighest);
+
+    final iconColor = _isFocused
+        ? (widget.parentFocused ? scheme.primary : scheme.onPrimary)
+        : (widget.parentFocused
+            ? scheme.onPrimary
+            : scheme.onSurfaceVariant);
+
+    return Focus(
+      focusNode: widget.focusNode,
+      onKeyEvent: (node, event) {
+        if (event is! KeyDownEvent) return KeyEventResult.ignored;
+        final key = event.logicalKey;
+        if (key == LogicalKeyboardKey.arrowLeft && widget.onKeyLeft != null) {
+          widget.onKeyLeft!();
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.arrowRight && widget.onKeyRight != null) {
+          widget.onKeyRight!();
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.arrowUp && widget.onKeyUp != null) {
+          widget.onKeyUp!();
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.enter ||
+            key == LogicalKeyboardKey.select ||
+            key == LogicalKeyboardKey.space ||
+            key == LogicalKeyboardKey.gameButtonA) {
+          widget.onPressed();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: AnimatedScale(
+        scale: _isFocused ? 1.1 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: Tooltip(
+          message: widget.tooltip,
+          child: Material(
+            color: bg,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: widget.onPressed,
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                width: 40,
+                height: 40,
+                child: Icon(
+                  widget.icon,
+                  size: 20,
+                  color: iconColor,
+                ),
+              ),
+            ),
           ),
         ),
       ),
