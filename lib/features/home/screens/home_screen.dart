@@ -25,6 +25,7 @@ import 'package:moai3/services/update_service.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
+import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/plugin_update_dialog.dart';
 import 'package:moai3/widgets/dialogs/update_dialog.dart';
@@ -83,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _modalClosedCooldownTimer;
   Timer? _tvPresenceHeartbeatTimer;
 
-  static const Duration _tvPresenceHeartbeatInterval = Duration(seconds: 20);
+  static const Duration _tvPresenceHeartbeatInterval = Duration(seconds: 60);
 
   @override
   void initState() {
@@ -100,6 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _updatePresenceForSection(int index) {
     final identity = context.read<DeviceIdentityService>();
     final presence = context.read<SupabasePresenceService>();
+    final watchParty = context.read<WatchPartyProvider>();
     final deviceId = identity.getOrCreateDeviceId();
 
     _tvPresenceHeartbeatTimer?.cancel();
@@ -108,6 +110,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (index == _sectionTv) {
       // Estado Online exclusivamente en la sección TV
       presence.updateOnlineStatus(deviceId: deviceId, online: true);
+      final ch = context.read<ChannelProvider>().selectedChannel;
+      if (ch != null) {
+        watchParty.reportCurrentChannel(channelId: ch.id, channelName: ch.name);
+      }
       _tvPresenceHeartbeatTimer = Timer.periodic(_tvPresenceHeartbeatInterval, (_) {
         if (!mounted || _selectedIndex != _sectionTv) return;
         presence.sendHeartbeat(deviceId: deviceId);
@@ -115,6 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       // Offline y limpiar canal sintonizado en Agenda, Arcade o Ajustes
       presence.updateOnlineStatus(deviceId: deviceId, online: false);
+      watchParty.reportCurrentChannel(channelId: null);
     }
   }
 
