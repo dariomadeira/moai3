@@ -133,9 +133,9 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.select);
       await tester.pumpAndSettle();
 
-      expect(selected, equals(2));
+      expect(selected, equals(3));
 
-      // Press Up: 2 -> 1 (Calendario)
+      // Press Up: 3 -> 1 (Calendario)
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
       await tester.pumpAndSettle();
 
