@@ -13,6 +13,8 @@ class AppUpdateInfo {
   final String changelog;
   final int? fileSize;
   final String? releaseTag;
+  final bool isMandatory;
+  final String? minVersion;
 
   const AppUpdateInfo({
     required this.version,
@@ -20,6 +22,8 @@ class AppUpdateInfo {
     required this.changelog,
     this.fileSize,
     this.releaseTag,
+    this.isMandatory = false,
+    this.minVersion,
   });
 
   String get formattedSize {
@@ -133,6 +137,8 @@ class UpdateService {
     String changelog = '';
     int? size;
     String? releaseTag;
+    bool isMandatory = false;
+    String? minVersion;
 
     // Caso 1: Estructura de GitHub Releases
     if (data.containsKey('tag_name')) {
@@ -159,13 +165,49 @@ class UpdateService {
       return null;
     }
 
+    // Detectar campos explícitos de objeto JSON
+    if (data['mandatory'] == true || data['is_mandatory'] == true) {
+      isMandatory = true;
+    }
+    if (data['min_version'] != null) {
+      minVersion = data['min_version'].toString().trim();
+    }
+
+    // Detectar etiquetas especiales en la descripción (Changelog / Release Body)
+    final lowerChangelog = changelog.toLowerCase();
+    if (lowerChangelog.contains('[mandatory]') ||
+        lowerChangelog.contains('[obligatoria]') ||
+        lowerChangelog.contains('[required]')) {
+      isMandatory = true;
+    }
+
+    final minVerMatch = RegExp(r'min_version\s*[:=]\s*([0-9]+\.[0-9]+\.[0-9]+)', caseSensitive: false)
+        .firstMatch(changelog);
+    if (minVerMatch != null) {
+      minVersion = minVerMatch.group(1);
+    }
+
+    if (minVersion != null && minVersion.isNotEmpty) {
+      if (_isNewer(currentVersion, minVersion)) {
+        isMandatory = true;
+      }
+    }
+
+    // Limpiar etiquetas especiales de la descripción visible
+    String cleanChangelog = changelog
+        .replaceAll(RegExp(r'\[(mandatory|obligatoria|required)\]', caseSensitive: false), '')
+        .replaceAll(RegExp(r'min_version\s*[:=]\s*[0-9]+\.[0-9]+\.[0-9]+', caseSensitive: false), '')
+        .trim();
+
     if (_isNewer(currentVersion, remoteVersion)) {
       return AppUpdateInfo(
         version: remoteVersion,
         apkUrl: apkUrl,
-        changelog: changelog.isNotEmpty ? changelog : 'Mejoras y correcciones generales.',
+        changelog: cleanChangelog.isNotEmpty ? cleanChangelog : 'Mejoras y correcciones generales.',
         fileSize: size,
         releaseTag: releaseTag,
+        isMandatory: isMandatory,
+        minVersion: minVersion,
       );
     }
 

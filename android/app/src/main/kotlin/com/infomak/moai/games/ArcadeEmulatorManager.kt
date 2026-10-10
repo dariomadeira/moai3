@@ -24,6 +24,17 @@ class ArcadeEmulatorManager(
         channel.setMethodCallHandler(this)
     }
 
+    companion object {
+        init {
+            try {
+                System.loadLibrary("arcade_runner")
+                android.util.Log.i("ArcadeEmulatorManager", "libarcade_runner.so cargada con éxito")
+            } catch (e: Throwable) {
+                android.util.Log.e("ArcadeEmulatorManager", "Error al cargar libarcade_runner.so: ${e.message}")
+            }
+        }
+    }
+
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
             "initializeEmulator" -> {
@@ -142,18 +153,6 @@ class ArcadeEmulatorManager(
 
     private fun initializeNativeEngine(): Boolean {
         return try {
-            try {
-                System.loadLibrary("fbneo")
-                android.util.Log.i("ArcadeEmulatorManager", "libfbneo.so cargada con éxito")
-            } catch (e: UnsatisfiedLinkError) {
-                android.util.Log.w("ArcadeEmulatorManager", "System.loadLibrary(fbneo) falló: ${e.message}")
-            }
-            try {
-                System.loadLibrary("arcade_runner")
-                android.util.Log.i("ArcadeEmulatorManager", "libarcade_runner.so cargada con éxito")
-            } catch (e: UnsatisfiedLinkError) {
-                android.util.Log.e("ArcadeEmulatorManager", "System.loadLibrary(arcade_runner) falló: ${e.message}")
-            }
             val dirPath = context.filesDir.absolutePath
             nativeInitDirectories(dirPath, dirPath)
             isInitialized = true

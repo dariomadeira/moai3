@@ -152,8 +152,8 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
         return TvSettingsActionRow(
           focusNode: focusNode,
           icon: Icons.extension_outlined,
-          label: 'Plugins (Plugins Generales)',
-          description: 'Administrar motores de extensión nativos del sistema',
+          label: 'settings_general_plugins_title'.tr(),
+          description: 'settings_general_plugins_desc'.tr(),
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(
