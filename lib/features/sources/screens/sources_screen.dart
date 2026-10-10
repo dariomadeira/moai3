@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/services/plugin_host_service.dart';
 import 'package:moai3/services/plugin_update_service.dart';
@@ -163,8 +163,8 @@ class _SourcesScreenState extends State<SourcesScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.error_outline_rounded,
+                          AppIcon(
+                            icon: AppIcons.error,
                             color: scheme.onErrorContainer,
                             size: 20,
                           ),
@@ -215,7 +215,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
         : totalSources == 0
             ? TvEmptyStateCard(
                 focusNode: _emptyFocusNode,
-                icon: Icons.extension_off_outlined,
+                icon: AppIcons.plugin,
                 message: 'sources_empty'.tr(),
                 onFocusUp: () => _installFocus.requestFocus(),
               )
@@ -305,7 +305,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                     : totalSources == 0
                         ? TvEmptyStateCard(
                             focusNode: _emptyFocusNode,
-                            icon: Icons.extension_off_outlined,
+                            icon: AppIcons.plugin,
                             message: 'sources_empty'.tr(),
                             onFocusUp: () => _urlFocus.requestFocus(),
                             onFocusRight: _presetFocuses.isNotEmpty
@@ -451,8 +451,8 @@ class _SourcesScreenState extends State<SourcesScreen> {
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(12),
-            child: Icon(
-              Symbols.extension,
+            child: AppIcon(
+              icon: AppIcons.plugin,
               color: scheme.onPrimaryContainer,
               size: 26,
             ),
@@ -526,7 +526,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
             hint: 'sources_url_hint'.tr(),
             keyboardType: TvKeyboardType.text,
             doneLabel: 'sources_install'.tr(),
-            leadingIcon: Icons.link_rounded,
+            leadingIcon: AppIcons.plugin,
             onSubmitted: (val) => _install(val),
             onFocusLeft: () => _backFocus.requestFocus(),
             onFocusRight: () => _installFocus.requestFocus(),
@@ -540,7 +540,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
         TvFocusButton(
           focusNode: _installFocus,
           label: 'sources_install'.tr(),
-          icon: Symbols.install_desktop,
+          icon: AppIcons.download,
           height: 60,
           variant: TvButtonVariant.tonal,
           onPressed: controller.loading
@@ -660,8 +660,8 @@ class _BackButtonState extends State<_BackButton> {
             child: SizedBox(
               width: 52,
               height: 52,
-              child: Icon(
-                Icons.arrow_back_rounded,
+              child: AppIcon(
+                icon: AppIcons.arrowLeft,
                 color: fg,
                 size: 24,
               ),
@@ -787,8 +787,8 @@ class _SourceTileState extends State<_SourceTile> {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(10),
-                child: Icon(
-                  Symbols.electrical_services,
+                child: AppIcon(
+                  icon: AppIcons.plugin,
                   size: 22,
                   color: iconColor,
                 ),
@@ -868,9 +868,7 @@ class _SourceTileState extends State<_SourceTile> {
                       namedArgs: {'version': _availableVersion!},
                     )
                   : 'sources_update'.tr(),
-              icon: _availableVersion != null
-                  ? Symbols.system_update_rounded
-                  : Icons.sync_rounded,
+              icon: AppIcons.update,
               onPressed: () {
                 widget.onUpdate();
                 setState(() => _availableVersion = null);
@@ -884,7 +882,7 @@ class _SourceTileState extends State<_SourceTile> {
             _IconButtonAction(
               focusNode: widget.removeFocus,
               tooltip: 'sources_remove'.tr(),
-              icon: Icons.delete_outline_rounded,
+              icon: AppIcons.delete,
               onPressed: widget.onRemove,
               parentFocused: isFocused,
               onKeyLeft: () => widget.updateFocus.requestFocus(),
@@ -1014,8 +1012,8 @@ class _PresetTileState extends State<_PresetTile> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(10),
-                    child: Icon(
-                      Symbols.electrical_services,
+                    child: AppIcon(
+                      icon: AppIcons.plugin,
                       size: 22,
                       color: iconColor,
                     ),
@@ -1072,10 +1070,10 @@ class _PresetTileState extends State<_PresetTile> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          widget.isInstalled
-                              ? Icons.check_circle_outline_rounded
-                              : Symbols.download,
+                        AppIcon(
+                          icon: widget.isInstalled
+                              ? AppIcons.check
+                              : AppIcons.download,
                           size: 16,
                           color: widget.isInstalled
                               ? (_isFocused
@@ -1119,7 +1117,7 @@ class _PresetTileState extends State<_PresetTile> {
 class _IconButtonAction extends StatefulWidget {
   final FocusNode focusNode;
   final String tooltip;
-  final IconData icon;
+  final dynamic icon;
   final VoidCallback onPressed;
   final bool parentFocused;
   final VoidCallback? onKeyUp;
@@ -1236,11 +1234,17 @@ class _IconButtonActionState extends State<_IconButtonAction> {
               child: SizedBox(
                 width: 44,
                 height: 44,
-                child: Icon(
-                  widget.icon,
-                  size: 20,
-                  color: fg,
-                ),
+                child: widget.icon is List<List<dynamic>>
+                    ? AppIcon(
+                        icon: widget.icon as List<List<dynamic>>,
+                        size: 20,
+                        color: fg,
+                      )
+                    : Icon(
+                        widget.icon as IconData,
+                        size: 20,
+                        color: fg,
+                      ),
               ),
             ),
           ),

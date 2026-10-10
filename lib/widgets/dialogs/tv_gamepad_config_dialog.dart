@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/features/games/services/arcade_emulator_service.dart';
 import 'package:moai3/features/games/services/gamepad_manager_service.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -203,8 +203,8 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: Icon(
-                  Symbols.gamepad,
+                child: AppIcon(
+                  icon: AppIcons.gamepad,
                   color: scheme.onPrimaryContainer,
                   size: 26,
                 ),
@@ -298,8 +298,8 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Symbols.videogame_asset_off,
+                            AppIcon(
+                              icon: AppIcons.gamepad,
                               size: 36,
                               color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
                             ),
@@ -341,8 +341,8 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                               ),
                               child: Row(
                                 children: [
-                                  Icon(
-                                    Symbols.sports_esports,
+                                  AppIcon(
+                                    icon: AppIcons.gamepad,
                                     size: 22,
                                     color: scheme.primary,
                                   ),
@@ -598,7 +598,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
         _FocusButton(
           focusNode: _refreshFocus,
           label: 'gamepad_action_reset'.tr(),
-          icon: Symbols.refresh,
+          icon: AppIcons.update,
           onPressed: () => _gamepadService.refreshGamepads(),
           onFocusRight: () => _closeFocus.requestFocus(),
         ),
@@ -607,7 +607,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
         _FocusButton(
           focusNode: _closeFocus,
           label: 'gamepad_action_close'.tr(),
-          icon: Symbols.check,
+          icon: AppIcons.check,
           isPrimary: true,
           onPressed: () => Navigator.of(context).pop(),
           onFocusLeft: () => _refreshFocus.requestFocus(),
@@ -620,7 +620,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
 class _FocusButton extends StatefulWidget {
   final FocusNode focusNode;
   final String label;
-  final IconData icon;
+  final dynamic icon;
   final VoidCallback onPressed;
   final bool isPrimary;
   final VoidCallback? onFocusLeft;
@@ -704,7 +704,10 @@ class _FocusButtonState extends State<_FocusButton> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(widget.icon, size: 18, color: fg),
+                  if (widget.icon is List<List<dynamic>>)
+                    AppIcon(icon: widget.icon as List<List<dynamic>>, size: 18, color: fg)
+                  else
+                    Icon(widget.icon as IconData, size: 18, color: fg),
                   const SizedBox(width: 8),
                   Text(
                     widget.label,

@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/features/home/widgets/panel_list_header.dart';
 import 'package:moai3/focus/focus_retry.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/widgets/cards/category_card.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
@@ -104,7 +105,7 @@ class CategoryListPanelState extends State<CategoryListPanel> {
             child: widget.categories.isEmpty
                 ? TvEmptyStateCard(
                     focusNode: _emptyFocusNode,
-                    icon: Icons.category_outlined,
+                    icon: AppIcons.category,
                     message: 'browser_categories_empty'.tr(),
                     onFocusUp: widget.onFocusUp,
                   )

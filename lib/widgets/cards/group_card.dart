@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/widgets/cards/tv_icon_list_card.dart';
 
 /// Ítem de grupo: mismo [TvIconListCard] que países / categorías.
 class GroupCard extends StatelessWidget {
-  static final Map<String, IconData> icons = {
-    'favorite': Icons.favorite_outline,
-    'no_adults': Icons.explicit_outlined,
-    'sports_soccer': Icons.sports_soccer_outlined,
-    'movie': Icons.movie_outlined,
-    'child_hat': Icons.child_care_outlined,
-    'newspaper': Icons.newspaper_outlined,
-    'tv_gen': Icons.tv_outlined,
-    'language': Icons.language_outlined,
+  static const Map<String, List<List<dynamic>>> icons = {
+    'favorite': AppIcons.star,
+    'no_adults': AppIcons.lock,
+    'sports_soccer': AppIcons.arcade,
+    'movie': AppIcons.tv,
+    'child_hat': AppIcons.star,
+    'newspaper': AppIcons.info,
+    'tv_gen': AppIcons.tv,
+    'language': AppIcons.globe,
   };
 
-  static IconData iconFor(String iconKey) =>
-      icons[iconKey] ?? Icons.group_outlined;
+  static List<List<dynamic>> iconFor(String iconKey) =>
+      icons[iconKey] ?? AppIcons.group;
 
   final String groupName;
   final String iconKey;
@@ -46,7 +47,7 @@ class GroupCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return TvIconListCard(
       label: groupName,
-      icon: iconFor(iconKey),
+      hugeIcon: iconFor(iconKey),
       isSelected: isSelected,
       onTap: onTap,
       focusNode: focusNode,

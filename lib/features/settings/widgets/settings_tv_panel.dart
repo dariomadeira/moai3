@@ -1,6 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/features/sources/screens/sources_screen.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
@@ -150,7 +150,7 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
       case _SettingsTvItemType.debugLog:
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: Icons.terminal_outlined,
+          icon: AppIcons.info,
           label: 'settings_tv_log'.tr(),
           description: 'settings_tv_log_desc'.tr(),
           value: tvSettings.showTvLog,
@@ -163,7 +163,7 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
       case _SettingsTvItemType.channelLabels:
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: Icons.label_outline,
+          icon: AppIcons.badge,
           label: 'settings_tv_channel_labels'.tr(),
           description: 'settings_tv_channel_labels_desc'.tr(),
           value: tvSettings.showChannelLabels,
@@ -176,7 +176,7 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
       case _SettingsTvItemType.adultContent:
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: tvSettings.isAdultUnlocked ? Symbols.lock_open : Symbols.lock,
+          icon: tvSettings.isAdultUnlocked ? AppIcons.unlock : AppIcons.lock,
           label: 'settings_tv_adult_content'.tr(),
           description: 'settings_tv_adult_content_desc'.tr(),
           value: tvSettings.isAdultUnlocked,
@@ -189,7 +189,7 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
                 MoaiSnackBar.show(
                   context,
                   message: 'parental_adult_locked'.tr(),
-                  icon: Symbols.lock,
+                  icon: AppIcons.lock,
                 );
               }
             }
@@ -202,7 +202,7 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
       case _SettingsTvItemType.changePin:
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: Icons.pin_outlined,
+          icon: AppIcons.pin,
           label: 'settings_tv_change_pin'.tr(),
           description: 'settings_tv_change_pin_desc'.tr(),
           onPressed: () async {
@@ -216,7 +216,7 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
       case _SettingsTvItemType.sources:
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: Symbols.extension,
+          icon: AppIcons.plugin,
           label: 'settings_general_sources'.tr(),
           description: 'settings_general_sources_desc'.tr(),
           onPressed: () {

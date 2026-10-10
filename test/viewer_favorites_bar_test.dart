@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/features/home/widgets/viewer_favorites_bar.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/widgets/buttons/clear_favorites_button.dart';
 import 'package:moai3/widgets/buttons/create_group_button.dart';
 import 'package:moai3/models/channel.dart';
@@ -174,7 +175,7 @@ void main() {
     final createBox = createContainer.decoration as BoxDecoration;
     expect(createBox.borderRadius, BorderRadius.circular(999));
     expect(createBox.border, isNull);
-    expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+    expect(find.descendant(of: find.byType(CreateGroupButton), matching: find.byType(AppIcon)), findsOneWidget);
 
     final clearContainer = tester.widget<AnimatedContainer>(
       find.descendant(
@@ -185,7 +186,7 @@ void main() {
     final clearBox = clearContainer.decoration as BoxDecoration;
     expect(clearBox.borderRadius, BorderRadius.circular(999));
     expect(clearBox.border, isNull);
-    expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);
+    expect(find.descendant(of: find.byType(ClearFavoritesButton), matching: find.byType(AppIcon)), findsOneWidget);
   });
 
   testWidgets('ViewerFavoritesBar incluye headerAction con FavoriteButton en forma de pill', (tester) async {

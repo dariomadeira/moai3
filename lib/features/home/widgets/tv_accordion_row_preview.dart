@@ -7,7 +7,7 @@ class TvAccordionRowPreview extends StatelessWidget {
   final int activeIndex;
   final List<Color> colors;
   final List<String> titles;
-  final List<IconData> icons;
+  final List<dynamic> icons;
   final int? alphabetModePanelIndex;
   final Widget Function(int panelIndex)? alphabetPanelBuilder;
   final Widget Function(int index, bool isExpanded)? tabBuilder;

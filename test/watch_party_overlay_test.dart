@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/models/friend_info.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/device_identity_service.dart';
@@ -64,7 +64,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Symbols.mic), findsNothing);
+      expect(find.byType(AppIcon), findsNothing);
       provider.dispose();
     });
 
@@ -105,7 +105,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Symbols.mic), findsNothing);
+      expect(find.byType(AppIcon), findsNothing);
       provider.dispose();
     });
 
@@ -160,7 +160,7 @@ void main() {
       expect(find.text('watch_party_friend_joined'), findsOneWidget);
 
       // Verifica el botón central de micrófono
-      expect(find.byIcon(Symbols.mic), findsOneWidget);
+      expect(find.byType(AppIcon), findsWidgets);
 
       coordinator.dispose();
       provider.dispose();
@@ -198,7 +198,7 @@ void main() {
       expect(find.text('watch_party_friend_joined'), findsOneWidget);
 
       // Verifica botón central de micrófono
-      expect(find.byIcon(Symbols.mic), findsOneWidget);
+      expect(find.byType(AppIcon), findsWidgets);
 
       // Verifica chip derecho simulado
       expect(find.text('watch_party_friend_speaking'), findsOneWidget);

@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
@@ -84,7 +84,7 @@ class TvPinDialog extends StatefulWidget {
           MoaiSnackBar.show(
             context,
             message: 'parental_adult_unlocked'.tr(),
-            icon: Symbols.lock_open,
+            icon: AppIcons.unlock,
           );
         }
         return true;
@@ -109,7 +109,7 @@ class TvPinDialog extends StatefulWidget {
       MoaiSnackBar.show(
         context,
         message: 'parental_adult_unlocked'.tr(),
-        icon: Symbols.lock_open,
+        icon: AppIcons.unlock,
       );
       return true;
     }
@@ -135,7 +135,7 @@ class TvPinDialog extends StatefulWidget {
       MoaiSnackBar.show(
         context,
         message: 'parental_pin_created_success'.tr(),
-        icon: Icons.check_circle_outline,
+        icon: AppIcons.check,
       );
       return true;
     }
@@ -165,7 +165,7 @@ class TvPinDialog extends StatefulWidget {
       MoaiSnackBar.show(
         context,
         message: 'parental_pin_changed_success'.tr(),
-        icon: Icons.check_circle_outline,
+        icon: AppIcons.check,
       );
       return true;
     }
@@ -488,7 +488,7 @@ class _TvPinDialogState extends State<TvPinDialog>
       onKeyEvent: _handleGlobalKeyEvent,
       child: TvDialog(
         width: 440,
-        icon: Symbols.lock,
+        icon: AppIcons.lock,
         titleWidget: AnimatedSwitcher(
           duration: const Duration(milliseconds: 220),
           child: Text(
@@ -552,8 +552,8 @@ class _TvPinDialogState extends State<TvPinDialog>
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.error_outline,
+                        AppIcon(
+                          icon: AppIcons.error,
                           size: 13,
                           color: scheme.error,
                         ),
@@ -688,7 +688,7 @@ class _TvPinDialogState extends State<TvPinDialog>
             _buildKey(
               3,
               0,
-              icon: Icons.backspace_outlined,
+              icon: AppIcons.backspace,
               isAction: true,
               scheme: scheme,
               onTap: _onBackspace,
@@ -697,7 +697,7 @@ class _TvPinDialogState extends State<TvPinDialog>
             _buildKey(
               3,
               2,
-              icon: Icons.close_outlined,
+              icon: AppIcons.close,
               isAction: true,
               scheme: scheme,
               onTap: () => Navigator.of(context).pop(null),
@@ -712,7 +712,7 @@ class _TvPinDialogState extends State<TvPinDialog>
     int r,
     int c, {
     String? label,
-    IconData? icon,
+    dynamic icon,
     bool isAction = false,
     required ColorScheme scheme,
     required VoidCallback onTap,
@@ -797,10 +797,10 @@ class _TvPinDialogState extends State<TvPinDialog>
                             color: fg,
                           ),
                         )
-                      : Icon(
-                          icon,
-                          color: fg,
+                      : AppIcon(
+                          icon: icon,
                           size: 19,
+                          color: fg,
                         ),
                 ),
               ),

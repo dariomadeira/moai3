@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 
 /// Variante visual alineada al teclado TV (fills, sin bordes).
@@ -24,7 +25,7 @@ class TvFocusButton extends StatefulWidget {
   final String label;
   final VoidCallback? onPressed;
   final VoidCallback? onLongPress;
-  final IconData? icon;
+  final dynamic icon;
   final TvButtonVariant variant;
   final bool loading;
   final double height;
@@ -225,7 +226,9 @@ class _TvFocusButtonState extends State<TvFocusButton> {
                       ),
                     )
                   else if (widget.icon != null)
-                    Icon(widget.icon, size: 20, color: fg),
+                    widget.icon is List<List<dynamic>>
+                        ? AppIcon(icon: widget.icon as List<List<dynamic>>, size: 20, color: fg)
+                        : Icon(widget.icon as IconData, size: 20, color: fg),
                   if (widget.loading || widget.icon != null)
                     const SizedBox(width: 10),
                   Text(

@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/state/watch_party_provider.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
@@ -97,7 +98,7 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
       MoaiSnackBar.show(
         context,
         message: 'friend_add_dialog_success'.tr(),
-        icon: Icons.check_circle_outline,
+        icon: AppIcons.check,
       );
     } catch (e) {
       if (!mounted) return;
@@ -120,7 +121,7 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
 
     return TvDialog(
       width: 480,
-      icon: Icons.person_add_alt_1,
+      icon: AppIcons.addFriend,
       title: 'friend_add_dialog_title'.tr(),
       subtitle: 'friend_add_dialog_subtitle'.tr(),
       content: Column(
@@ -194,8 +195,8 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
                         ),
                       ),
                     ),
-                    Icon(
-                      Icons.keyboard,
+                    AppIcon(
+                      icon: AppIcons.keyboard,
                       size: 20,
                       color: _inputFocusNode.hasFocus
                           ? scheme.primary
@@ -210,7 +211,7 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
             const SizedBox(height: 10),
             Row(
               children: [
-                Icon(Icons.error_outline, size: 16, color: scheme.error),
+                AppIcon(icon: AppIcons.error, size: 16, color: scheme.error),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(

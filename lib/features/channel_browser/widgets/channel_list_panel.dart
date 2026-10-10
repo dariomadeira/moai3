@@ -1,6 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/features/home/widgets/panel_list_header.dart';
 import 'package:moai3/focus/focus_retry.dart';
 import 'package:moai3/models/channel.dart';
@@ -111,7 +111,7 @@ class ChannelListPanelState extends State<ChannelListPanel> {
             child: widget.channels.isEmpty
                 ? TvEmptyStateCard(
                     focusNode: _emptyFocusNode,
-                    icon: Symbols.hourglass_empty,
+                    icon: AppIcons.hourglass,
                     message: 'browser_channels_empty'.tr(),
                     onFocusUp: widget.onFocusUp,
                   )

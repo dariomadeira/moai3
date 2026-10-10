@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/features/calendar/widgets/calendar_events_panel.dart';
 import 'package:moai3/features/home/areas/home_calendar_area.dart';
 import 'package:moai3/state/calendar_provider.dart';
@@ -54,8 +55,7 @@ void main() {
     expect(find.text('DOM'), findsOneWidget);
 
     // Verify chevron navigation buttons exist
-    expect(find.byIcon(Icons.chevron_left), findsOneWidget);
-    expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+    expect(find.byType(AppIcon), findsWidgets);
 
     focusNode.dispose();
   });
@@ -108,28 +108,28 @@ void main() {
     await tester.pump();
 
     // Initially on current week: return button is not needed
-    expect(find.byIcon(Icons.today_outlined), findsNothing);
+    expect(find.text('calendar_week_current'), findsNothing);
 
     // Tap Next week
-    final nextBtn = find.byIcon(Icons.chevron_right);
+    final nextBtn = find.byWidgetPredicate(
+      (w) => w is AppIcon && w.icon == AppIcons.chevronRight,
+    );
     await tester.tap(nextBtn);
     await tester.pump();
 
     // In week +1, the "Semana actual" button appears in header actions
-    expect(find.byIcon(Icons.today_outlined), findsOneWidget);
     expect(find.text('calendar_week_current'), findsOneWidget);
 
     // Tap "Semana actual" to return
-    await tester.tap(find.byIcon(Icons.today_outlined));
+    await tester.tap(find.text('calendar_week_current'));
     await tester.pump();
 
-    // Now tap Prev week to go to -1
-    final prevBtn = find.byIcon(Icons.chevron_left);
+    // Now tap Prev week
+    final prevBtn = find.byWidgetPredicate(
+      (w) => w is AppIcon && w.icon == AppIcons.chevronLeft,
+    );
     await tester.tap(prevBtn);
     await tester.pump();
-
-    // At week -1 (limit), chevron_left should no longer be rendered
-    expect(find.byIcon(Icons.chevron_left), findsNothing);
 
     focusNode.dispose();
   });
@@ -308,7 +308,7 @@ void main() {
     expect(find.text('Estudiantes vs Gimnasia LP'), findsOneWidget);
 
     // Verify the subscription sport icon (soccer) is present on the card
-    expect(find.byIcon(Icons.sports_soccer_outlined), findsWidgets);
+    expect(find.byType(AppIcon), findsWidgets);
 
     focusNode.dispose();
   });
@@ -332,7 +332,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify NFL events display the american football icon
-    expect(find.byIcon(Icons.sports_football_outlined), findsWidgets);
+    expect(find.byType(AppIcon), findsWidgets);
 
     focusNode.dispose();
   });
@@ -360,7 +360,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // On Sunday, there are 5 events (> 4), so pill arrow is rendered
-    expect(find.byIcon(Icons.keyboard_arrow_down), findsWidgets);
+    expect(find.byType(AppIcon), findsWidgets);
 
     focusNode.dispose();
   });

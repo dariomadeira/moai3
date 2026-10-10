@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/models/friend_info.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -152,7 +152,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
         final deleteFocus = FocusNode(debugLabel: 'delete_confirm');
         return TvDialog(
           width: 460,
-          icon: Icons.person_remove_outlined,
+          icon: AppIcons.removeFriend,
           title: 'friends_delete_confirm_title'.tr(),
           subtitle: 'friends_delete_confirm_desc'.tr(
             namedArgs: {'name': friend.nickname ?? friend.userCode},
@@ -197,7 +197,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
 
     return TvDialog(
       width: 800,
-      icon: Icons.people_alt_rounded,
+      icon: AppIcons.friends,
       title: 'friends_screen_title'.tr(),
       subtitle: 'friends_screen_subtitle'.tr(),
       trailingHeader: totalFriends > 0
@@ -238,8 +238,8 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.error_outline_rounded,
+                    AppIcon(
+                      icon: AppIcons.error,
                       color: scheme.onErrorContainer,
                       size: 16,
                     ),
@@ -273,7 +273,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
                     _sectionHeader(
                       context,
                       scheme,
-                      icon: Icons.people_outline_rounded,
+                      icon: AppIcons.friends,
                       title: 'friends_section_friends'.tr(),
                       badgeCount: totalFriends,
                     ),
@@ -297,7 +297,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
                     _sectionHeader(
                       context,
                       scheme,
-                      icon: Icons.person_add_outlined,
+                      icon: AppIcons.addFriend,
                       title: 'friends_section_requests'.tr(),
                       badgeCount: requests.length,
                       isHighlighted: requests.isNotEmpty,
@@ -346,15 +346,15 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
   Widget _sectionHeader(
     BuildContext context,
     ColorScheme scheme, {
-    required IconData icon,
+    required List<List<dynamic>> icon,
     required String title,
     required int badgeCount,
     bool isHighlighted = false,
   }) {
     return Row(
       children: [
-        Icon(
-          icon,
+        AppIcon(
+          icon: icon,
           size: 15,
           color: isHighlighted ? scheme.primary : scheme.onSurfaceVariant,
         ),
@@ -412,7 +412,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
             hint: 'friends_input_hint'.tr(),
             keyboardType: TvKeyboardType.text,
             doneLabel: 'friends_add_button'.tr(),
-            leadingIcon: Icons.badge_outlined,
+            leadingIcon: AppIcons.badge,
             maxLength: 10,
             onSubmitted: (val) => _handleAddFriend(val),
             onFocusRight: () => _addFocus.requestFocus(),
@@ -431,7 +431,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
         TvFocusButton(
           focusNode: _addFocus,
           label: 'friends_add_button'.tr(),
-          icon: Symbols.person_add,
+          icon: AppIcons.addFriend,
           height: 52,
           variant: TvButtonVariant.tonal,
           loading: _isSubmitting,
@@ -485,8 +485,8 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.group_off_outlined,
+                  AppIcon(
+                    icon: AppIcons.friends,
                     size: 24,
                     color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),
@@ -566,8 +566,8 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.mark_email_read_outlined,
+                  AppIcon(
+                    icon: AppIcons.email,
                     size: 24,
                     color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),
@@ -749,8 +749,8 @@ class _FriendTileState extends State<_FriendTile> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(5),
-                    child: Icon(
-                      Icons.person_rounded,
+                    child: AppIcon(
+                      icon: AppIcons.person,
                       size: 16,
                       color: iconColor,
                     ),
@@ -847,8 +847,8 @@ class _FriendTileState extends State<_FriendTile> {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(
-                                      Icons.tv_rounded,
+                                    AppIcon(
+                                      icon: AppIcons.tv,
                                       size: 8.5,
                                       color: isFocused
                                           ? scheme.onPrimary
@@ -893,8 +893,8 @@ class _FriendTileState extends State<_FriendTile> {
                         : scheme.secondaryContainer.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Icon(
-                    Icons.delete_outline_rounded,
+                  child: AppIcon(
+                    icon: AppIcons.delete,
                     size: 15,
                     color: isFocused
                         ? scheme.onPrimaryContainer
@@ -1035,8 +1035,8 @@ class _RequestTileState extends State<_RequestTile> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(5),
-                    child: Icon(
-                      Icons.person_add_rounded,
+                    child: AppIcon(
+                      icon: AppIcons.addFriend,
                       size: 16,
                       color: iconColor,
                     ),
@@ -1087,8 +1087,8 @@ class _RequestTileState extends State<_RequestTile> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.check_rounded,
+                      AppIcon(
+                        icon: AppIcons.check,
                         size: 12,
                         color: isFocused
                             ? scheme.onPrimaryContainer

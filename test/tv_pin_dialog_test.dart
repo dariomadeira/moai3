@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/widgets/dialogs/tv_pin_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -54,8 +55,7 @@ void main() {
       }
 
       // Check icons
-      expect(find.byIcon(Icons.backspace_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.close_outlined), findsOneWidget);
+      expect(find.byType(AppIcon), findsWidgets);
     });
 
     testWidgets('create mode transitions from step 1 to step 2 without closing dialog', (tester) async {

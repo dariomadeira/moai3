@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/features/channel_browser/controllers/channel_browser_controller.dart';
 import 'package:moai3/features/channel_browser/widgets/category_list_panel.dart';
@@ -152,7 +152,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
         MoaiSnackBar.show(
           context,
           message: 'watch_party_friend_joined'.tr(namedArgs: {'name': friendName}),
-          icon: Symbols.person,
+          icon: AppIcons.person,
         );
       });
     }
@@ -707,14 +707,14 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
         : base;
   }
 
-  List<IconData> _icons(bool showTvLog) {
+  List<dynamic> _icons(bool showTvLog) {
     final base = [
-      Icons.grid_view_outlined,
-      Icons.category_outlined,
-      Icons.live_tv_outlined,
+      AppIcons.globe,
+      AppIcons.category,
+      AppIcons.tv,
     ];
     return TvPanelLayout.hasLogPanel(showTvLog)
-        ? [Icons.bug_report_outlined, ...base]
+        ? [AppIcons.info, ...base]
         : base;
   }
 
@@ -846,7 +846,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
         'home_panel_groups'.tr(),
         'home_panel_channels'.tr(),
       ],
-      icons: const [Symbols.bookmarks, Icons.live_tv_outlined],
+      icons: const [AppIcons.group, AppIcons.tv],
       alphabetModePanelIndex: _groups.alphabetModePanelIndex,
       alphabetPanelBuilder: (_) => AlphabetJumpPanel(
         letters: _groups.alphabetLetters,
@@ -1328,7 +1328,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                                     SimulateLiveButton(
                                       focusNode: _simulateLiveTwoFocus,
                                       eventCount: 2,
-                                      icon: Icons.filter_2,
+                                      icon: AppIcons.tv,
                                       onKeyUp: () => _focusViewerFavoritesBar(
                                         favChannels,
                                         channel,

@@ -1,6 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/services/update_service.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
@@ -142,7 +142,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
               ),
               child: Row(
                 children: [
-                  Icon(Symbols.warning, color: scheme.error, size: 20),
+                  AppIcon(icon: AppIcons.info, color: scheme.error, size: 20),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -314,7 +314,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
         ),
         child: Row(
           children: [
-            Icon(Symbols.error, color: scheme.error, size: 22),
+            AppIcon(icon: AppIcons.info, color: scheme.error, size: 22),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -356,7 +356,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
       canPop: !isMandatory,
       child: TvDialog(
         width: 520,
-        icon: isMandatory ? Symbols.warning_amber : Symbols.browser_updated,
+        icon: isMandatory ? AppIcons.info : AppIcons.update,
         title: isMandatory
             ? 'update_mandatory_title'.tr()
             : 'update_available_title'.tr(),

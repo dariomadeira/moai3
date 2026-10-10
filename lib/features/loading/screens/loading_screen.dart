@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/supabase_presence_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
@@ -123,8 +124,8 @@ class _LoadingScreenState extends State<LoadingScreen> {
                   ),
                 ),
               ] else ...[
-                Icon(
-                  Icons.wifi_off_rounded,
+                AppIcon(
+                  icon: AppIcons.wifi,
                   size: 56,
                   color: colorScheme.error,
                 ),
@@ -140,7 +141,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
                 FilledButton.icon(
                   autofocus: true,
                   onPressed: _startVerification,
-                  icon: const Icon(Icons.refresh_rounded),
+                  icon: const AppIcon(icon: AppIcons.update, size: 20),
                   label: Text('update_action_retry'.tr()),
                 ),
               ],

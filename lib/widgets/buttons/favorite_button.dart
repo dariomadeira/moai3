@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -129,8 +130,8 @@ class _FavoriteButtonState extends State<FavoriteButton> {
               borderRadius: BorderRadius.circular(999),
             ),
             child: Center(
-              child: Icon(
-                isFav ? Icons.favorite : Icons.favorite_outline,
+              child: AppIcon(
+                icon: isFav ? AppIcons.starFilled : AppIcons.star,
                 color: iconColor,
                 size: 15,
               ),

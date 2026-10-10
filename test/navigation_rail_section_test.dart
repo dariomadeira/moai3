@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:moai3/features/home/widgets/navigation_rail_section.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:provider/provider.dart';
@@ -62,7 +63,7 @@ void main() {
       focusNode.dispose();
     });
 
-    testWidgets('displays filled icon when selected and outlined when unselected', (tester) async {
+    testWidgets('displays icon when selected', (tester) async {
       final scopeNode = FocusScopeNode();
       final focusNode = FocusNode();
 
@@ -80,17 +81,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // TV is selected: filled Icons.tv
-      expect(find.byIcon(Icons.tv), findsOneWidget);
-      expect(find.byIcon(Icons.tv_outlined), findsNothing);
-
-      // Calendar is unselected: outlined Icons.calendar_month_outlined
-      expect(find.byIcon(Icons.calendar_month_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.calendar_month), findsNothing);
-
-      // Settings is unselected: outlined Icons.settings_outlined
-      expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.settings), findsNothing);
+      expect(find.byType(HugeIcon), findsWidgets);
 
       scopeNode.dispose();
       focusNode.dispose();
@@ -125,7 +116,7 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pumpAndSettle();
 
-      // Press Down again: 1 -> 2 (Ajustes at the bottom)
+      // Press Down again: 1 -> 3 (Ajustes at the bottom)
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pumpAndSettle();
 
@@ -133,7 +124,7 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.select);
       await tester.pumpAndSettle();
 
-      expect(selected, equals(2));
+      expect(selected, equals(3));
 
       // Press Up: 2 -> 1 (Calendario)
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);

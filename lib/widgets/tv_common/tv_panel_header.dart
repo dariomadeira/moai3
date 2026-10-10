@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 
 /// Encabezado estándar para paneles TV (título + subtítulo).
@@ -140,8 +141,8 @@ class _HeaderBackButtonState extends State<_HeaderBackButton> {
           child: SizedBox(
             width: 44,
             height: 44,
-            child: Icon(
-              Icons.arrow_back_outlined,
+            child: AppIcon(
+              icon: AppIcons.arrowLeft,
               color: fg,
               size: 22,
             ),

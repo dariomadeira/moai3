@@ -1,49 +1,49 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/widgets/cards/tv_icon_list_card.dart';
 
 /// Ítem de categoría: mismo [TvIconListCard] que países, con ícono por nombre.
 class CategoryCard extends StatelessWidget {
-  static const Map<String, IconData> icons = {
-    'Aire': Symbols.airware,
-    'Interior': Symbols.location_city,
-    'Provinciales': Symbols.location_city,
-    'Deportes': Icons.sports_soccer_outlined,
-    'Noticias': Icons.newspaper_outlined,
-    'Infantiles': Symbols.child_hat,
-    'Infantil': Symbols.child_hat,
-    'Entretenimiento': Symbols.confirmation_number,
-    'Comedia': Icons.theater_comedy_outlined,
-    'Reality': Symbols.visibility,
-    'Anime': Symbols.animation,
-    'Cocina': Icons.restaurant_menu_outlined,
-    'Radios': Symbols.radio,
-    'Series': Symbols.tv,
-    'Películas': Symbols.movie,
-    'Cine y Series': Symbols.movie,
-    'Documentales': Symbols.library_books,
-    'Música': Symbols.music_note,
-    'Niños': Symbols.child_care,
-    'Educación': Symbols.school,
-    'Religión': Symbols.church,
-    'Religioso': Symbols.church,
-    'Conciertos': Symbols.music_note,
-    'Telenovelas': Symbols.favorite,
-    'Novelas': Symbols.favorite,
-    'Cine': Symbols.movie,
-    'Cultura': Symbols.book_2,
-    'Cultural': Symbols.book_2,
-    'General': Symbols.remote_gen,
-    'Teleshows': Symbols.confirmation_number,
-    'Otros': Symbols.more,
-    'Internacional': Symbols.globe,
-    'Comunitarios': Symbols.groups,
-    'Culturales': Symbols.theaters,
-    'Adultos': Symbols.lock,
+  static const Map<String, List<List<dynamic>>> icons = {
+    'Aire': AppIcons.tv,
+    'Interior': AppIcons.globe,
+    'Provinciales': AppIcons.globe,
+    'Deportes': AppIcons.arcade,
+    'Noticias': AppIcons.info,
+    'Infantiles': AppIcons.star,
+    'Infantil': AppIcons.star,
+    'Entretenimiento': AppIcons.category,
+    'Comedia': AppIcons.category,
+    'Reality': AppIcons.tv,
+    'Anime': AppIcons.star,
+    'Cocina': AppIcons.category,
+    'Radios': AppIcons.voiceTest,
+    'Series': AppIcons.tv,
+    'Películas': AppIcons.tv,
+    'Cine y Series': AppIcons.tv,
+    'Documentales': AppIcons.info,
+    'Música': AppIcons.voiceTest,
+    'Niños': AppIcons.star,
+    'Educación': AppIcons.info,
+    'Religión': AppIcons.info,
+    'Religioso': AppIcons.info,
+    'Conciertos': AppIcons.voiceTest,
+    'Telenovelas': AppIcons.star,
+    'Novelas': AppIcons.star,
+    'Cine': AppIcons.tv,
+    'Cultura': AppIcons.info,
+    'Cultural': AppIcons.info,
+    'General': AppIcons.category,
+    'Teleshows': AppIcons.tv,
+    'Otros': AppIcons.category,
+    'Internacional': AppIcons.globe,
+    'Comunitarios': AppIcons.group,
+    'Culturales': AppIcons.info,
+    'Adultos': AppIcons.lock,
   };
 
-  static IconData iconFor(String category) =>
-      icons[category] ?? Icons.tv_outlined;
+  static List<List<dynamic>> iconFor(String category) =>
+      icons[category] ?? AppIcons.tv;
 
   final String category;
   final bool isSelected;

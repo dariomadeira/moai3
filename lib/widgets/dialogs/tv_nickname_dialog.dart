@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
@@ -98,7 +99,7 @@ class _TvNicknameDialogState extends State<TvNicknameDialog> {
 
     return TvDialog(
       width: 640,
-      icon: Icons.badge_outlined,
+      icon: AppIcons.badge,
       title: title,
       subtitle: subtitle,
       content: Column(
@@ -112,7 +113,7 @@ class _TvNicknameDialogState extends State<TvNicknameDialog> {
             hint: 'nickname_dialog_hint'.tr(),
             keyboardType: TvKeyboardType.text,
             textInputAction: TvTextInputAction.done,
-            leadingIcon: Icons.person_outline,
+            leadingIcon: AppIcons.person,
             maxLength: 30,
             onFocusDown: () => _saveFocusNode.requestFocus(),
             onSubmitted: (_) => _saveFocusNode.requestFocus(),

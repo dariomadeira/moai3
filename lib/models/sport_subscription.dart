@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 
 /// Representa una suscripción a un deporte o competición en Moai TV.
 class SportSubscription {
@@ -6,7 +5,7 @@ class SportSubscription {
   final String name;
   final String sport;
   final String? description;
-  final IconData icon;
+  final dynamic icon;
   final bool isSubscribed;
 
   const SportSubscription({
@@ -23,7 +22,7 @@ class SportSubscription {
     String? name,
     String? sport,
     String? description,
-    IconData? icon,
+    dynamic icon,
     bool? isSubscribed,
   }) {
     return SportSubscription(

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/services/remote_voice_test_service.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
@@ -222,7 +222,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
 
     return TvDialog(
       width: 580,
-      icon: Symbols.mic_gear,
+      icon: AppIcons.voiceTest,
       iconBgColor: _isRecording
           ? scheme.error
           : _isPlaying
@@ -307,8 +307,8 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.lightbulb_outline,
+          AppIcon(
+            icon: AppIcons.idea,
             size: 18,
             color: scheme.onTertiaryContainer,
           ),
@@ -359,8 +359,8 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
             color: scheme.primaryContainer,
             shape: BoxShape.circle,
           ),
-          child: Icon(
-            Icons.mic_none_outlined,
+          child: AppIcon(
+            icon: AppIcons.micOn,
             size: 32,
             color: scheme.onPrimaryContainer,
           ),
@@ -379,7 +379,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
         const SizedBox(height: 16),
         _buildActionButton(
           focusNode: _recordFocus,
-          icon: Icons.fiber_manual_record,
+          icon: AppIcons.record,
           label: 'mic_test_btn_record'.tr(),
           isPrimary: true,
           onPressed: _startRecording,
@@ -430,7 +430,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
         const SizedBox(height: 16),
         _buildActionButton(
           focusNode: _recordFocus,
-          icon: Icons.stop_circle_outlined,
+          icon: AppIcons.stop,
           label: 'mic_test_btn_stop'.tr(
             namedArgs: {'seconds': '$_recordSeconds'},
           ),
@@ -484,8 +484,8 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.volume_up,
+                    AppIcon(
+                      icon: AppIcons.volumeHigh,
                       size: 14,
                       color: scheme.onTertiaryContainer,
                     ),
@@ -530,7 +530,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
             ),
           ],
         ] else ...[
-          Icon(Icons.warning_amber_rounded, size: 36, color: scheme.error),
+          AppIcon(icon: AppIcons.warning, size: 36, color: scheme.error),
           const SizedBox(height: 6),
           Text(
             'mic_test_empty_desc'.tr(
@@ -553,7 +553,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
               Expanded(
                 child: _buildActionButton(
                   focusNode: _playFocus,
-                  icon: _isPlaying ? Icons.stop : Icons.volume_up_outlined,
+                  icon: _isPlaying ? AppIcons.stop : AppIcons.volumeHigh,
                   label: _isPlaying
                       ? 'mic_test_btn_stop_play'.tr()
                       : 'mic_test_btn_play'.tr(),
@@ -570,7 +570,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
             Expanded(
               child: _buildActionButton(
                 focusNode: _rerecordFocus,
-                icon: Icons.refresh_outlined,
+                icon: AppIcons.update,
                 label: 'mic_test_btn_rerecord'.tr(),
                 isPrimary: !isAudioValid,
                 onPressed: _startRecording,
@@ -638,8 +638,8 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.settings_remote_outlined,
+          AppIcon(
+            icon: AppIcons.wifi,
             size: 15,
             color: scheme.onSurfaceVariant,
           ),
@@ -663,7 +663,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
 
   Widget _buildActionButton({
     required FocusNode focusNode,
-    required IconData icon,
+    required dynamic icon,
     required String label,
     required VoidCallback onPressed,
     bool isPrimary = false,
@@ -746,7 +746,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, size: 18, color: fg),
+                  AppIcon(icon: icon, size: 18, color: fg),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(

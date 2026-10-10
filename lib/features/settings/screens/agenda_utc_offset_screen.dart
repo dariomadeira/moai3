@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:moai3/features/settings/widgets/tv_tile.dart';
 import 'package:moai3/services/calendar/argentina_time.dart';
 import 'package:moai3/state/agenda_clock_provider.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
@@ -110,7 +111,7 @@ class _AgendaUtcOffsetScreenState extends State<AgendaUtcOffsetScreen> {
                                     ),
                                     child: TvTile(
                                       focusNode: focusNode,
-                                      icon: Icons.public_outlined,
+                                      icon: AppIcons.globe,
                                       label: zone.nameKey.tr(),
                                       description: ArgentinaTime.formatOffset(
                                         zone.offsetHours,
@@ -123,8 +124,8 @@ class _AgendaUtcOffsetScreenState extends State<AgendaUtcOffsetScreen> {
                                         if (!isSelected) {
                                           return const SizedBox(width: 26);
                                         }
-                                        return Icon(
-                                          Icons.check,
+                                        return AppIcon(
+                                          icon: AppIcons.check,
                                           size: 26,
                                           color: isFocused
                                               ? scheme.onPrimary

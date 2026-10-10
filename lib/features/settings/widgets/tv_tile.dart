@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 
 /// Misma ficha que [TvTile] en reposo: solo lectura, sin foco ni teclado.
 class TvInfoTile extends StatelessWidget {
   final String label;
   final String? description;
-  final IconData? icon;
+  final dynamic icon;
   final EdgeInsetsGeometry? padding;
   final double? minHeight;
 
@@ -38,7 +39,7 @@ class TvTile extends StatefulWidget {
   final FocusNode focusNode;
   final String label;
   final String? description;
-  final IconData? icon;
+  final dynamic icon;
   final Widget Function(BuildContext context, bool isFocused)? trailingBuilder;
   final VoidCallback? onPressed;
   final VoidCallback? onKeyLeft;
@@ -139,7 +140,7 @@ class _TvTileChrome extends StatelessWidget {
   final bool isFocused;
   final String label;
   final String? description;
-  final IconData? icon;
+  final dynamic icon;
   final Widget? trailing;
   final EdgeInsetsGeometry? padding;
   final double? minHeight;
@@ -192,7 +193,9 @@ class _TvTileChrome extends StatelessWidget {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(10),
-                    child: Icon(icon, size: 22, color: iconColor),
+                    child: icon is List<List<dynamic>>
+                        ? AppIcon(icon: icon as List<List<dynamic>>, size: 22, color: iconColor)
+                        : Icon(icon as IconData, size: 22, color: iconColor),
                   ),
                 ),
                 const SizedBox(width: 14),

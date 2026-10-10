@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 
 /// Helper global para mostrar notificaciones estilo Pill unificado en toda la app.
@@ -19,7 +20,7 @@ class NotificationHelper {
   /// Muestra un snackbar genérico estilo pill
   static ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? show({
     required String message,
-    IconData? icon,
+    dynamic icon,
     Color? iconColor,
     String? hint,
     VoidCallback? onAction,
@@ -66,7 +67,7 @@ class NotificationHelper {
   static void showError(String message) {
     show(
       message: message,
-      icon: Icons.error_outline,
+      icon: AppIcons.error,
       duration: const Duration(seconds: 3),
     );
   }
@@ -75,7 +76,7 @@ class NotificationHelper {
   static void showSuccess(String message) {
     show(
       message: message,
-      icon: Icons.check_circle_outline,
+      icon: AppIcons.check,
       duration: const Duration(seconds: 2),
     );
   }
@@ -84,7 +85,7 @@ class NotificationHelper {
   static void showInfo(String message) {
     show(
       message: message,
-      icon: Icons.info_outline,
+      icon: AppIcons.info,
       duration: const Duration(seconds: 2),
     );
   }
@@ -93,7 +94,7 @@ class NotificationHelper {
   static void showWarning(String message) {
     show(
       message: message,
-      icon: Icons.warning_amber_outlined,
+      icon: AppIcons.warning,
       duration: const Duration(seconds: 3),
     );
   }

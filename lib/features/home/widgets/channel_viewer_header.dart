@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/features/home/widgets/tv_panel_header_metrics.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/services/playback_stats_controller.dart';
@@ -64,14 +65,14 @@ class ChannelViewerHeader extends StatelessWidget {
             _MetaPill(
               color: scheme.tertiaryContainer,
               foreground: scheme.onTertiaryContainer,
-              icon: Icons.grid_view_outlined,
+              icon: AppIcons.globe,
               label: channel.country,
               textStyle: metaStyle.copyWith(color: scheme.onTertiaryContainer),
             ),
             _MetaPill(
               color: scheme.tertiaryContainer,
               foreground: scheme.onTertiaryContainer,
-              icon: Icons.category_outlined,
+              icon: AppIcons.category,
               label: channel.category,
               textStyle: metaStyle.copyWith(color: scheme.onTertiaryContainer),
             ),
@@ -79,7 +80,7 @@ class ChannelViewerHeader extends StatelessWidget {
               _MetaPill(
                 color: scheme.tertiaryContainer,
                 foreground: scheme.onTertiaryContainer,
-                icon: Icons.extension_outlined,
+                icon: AppIcons.plugin,
                 label: channel.pluginTag!.trim(),
                 textStyle:
                     metaStyle.copyWith(color: scheme.onTertiaryContainer),
@@ -88,7 +89,7 @@ class ChannelViewerHeader extends StatelessWidget {
               _MetaPill(
                 color: scheme.tertiaryContainer,
                 foreground: scheme.onTertiaryContainer,
-                icon: Icons.dns_outlined,
+                icon: AppIcons.tv,
                 label: 'player_server_n'.tr(
                   namedArgs: {'n': '$displayServerNumber'},
                 ),
@@ -106,7 +107,7 @@ class ChannelViewerHeader extends StatelessWidget {
 class _MetaPill extends StatelessWidget {
   final Color color;
   final Color foreground;
-  final IconData icon;
+  final dynamic icon;
   final String label;
   final TextStyle textStyle;
 
@@ -129,7 +130,13 @@ class _MetaPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: foreground),
+          icon is List<List<dynamic>>
+              ? AppIcon(
+                  icon: icon as List<List<dynamic>>,
+                  size: 18,
+                  color: foreground,
+                )
+              : Icon(icon as IconData, size: 18, color: foreground),
           const SizedBox(width: 4),
           Text(label, style: textStyle),
         ],

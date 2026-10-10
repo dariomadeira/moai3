@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/state/calendar_provider.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 
 class SimulateLiveButton extends StatefulWidget {
   final FocusNode focusNode;
   final int eventCount;
-  final IconData icon;
+  final dynamic icon;
   final VoidCallback? onKeyLeft;
   final VoidCallback? onKeyRight;
   final VoidCallback? onKeyUp;
@@ -17,7 +18,7 @@ class SimulateLiveButton extends StatefulWidget {
     super.key,
     required this.focusNode,
     this.eventCount = 1,
-    this.icon = Icons.live_tv_outlined,
+    this.icon = AppIcons.tv,
     this.onKeyLeft,
     this.onKeyRight,
     this.onKeyUp,
@@ -99,11 +100,17 @@ class _SimulateLiveButtonState extends State<SimulateLiveButton> {
               color: bgColor,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              widget.icon,
-              color: iconColor,
-              size: 20,
-            ),
+            child: widget.icon is List<List<dynamic>>
+                ? AppIcon(
+                    icon: widget.icon as List<List<dynamic>>,
+                    color: iconColor,
+                    size: 20,
+                  )
+                : Icon(
+                    widget.icon as IconData,
+                    color: iconColor,
+                    size: 20,
+                  ),
           ),
         ),
       ),

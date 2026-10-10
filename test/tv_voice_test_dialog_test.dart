@@ -90,10 +90,10 @@ void main() {
     await tester.pump();
 
     // Now in recording state, should find stop button
-    expect(find.byIcon(Icons.stop_circle_outlined), findsOneWidget);
+    expect(find.textContaining('mic_test_btn_stop'), findsOneWidget);
 
     // Tap stop
-    await tester.tap(find.byIcon(Icons.stop_circle_outlined));
+    await tester.tap(find.textContaining('mic_test_btn_stop'));
     await tester.pumpAndSettle();
 
     // Now should find play button and amplified badge
