@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -70,22 +71,22 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
           backgroundColor: scheme.surfaceContainerHigh,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
-            'Desinstalar Plugin Arcade',
+            'plugins_arcade_uninstall_dialog_title'.tr(),
             style: MoaiText.display(ctx, fontSize: 20, fontWeight: FontWeight.bold),
           ),
           content: Text(
-            '¿Deseas eliminar el motor Arcade FBNeo? Esta acción liberará ~69 MB de espacio y desactivará la sección Arcade del menú lateral.',
+            'plugins_arcade_uninstall_dialog_desc'.tr(),
             style: MoaiText.body(ctx),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: Text('Cancelar', style: TextStyle(color: scheme.onSurfaceVariant)),
+              child: Text('common_cancel'.tr(), style: TextStyle(color: scheme.onSurfaceVariant)),
             ),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: scheme.error),
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Desinstalar'),
+              child: Text('plugins_uninstall_tooltip'.tr()),
             ),
           ],
         );
@@ -136,7 +137,7 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                             Padding(
                               padding: const EdgeInsets.only(bottom: 10),
                               child: Text(
-                                'Plugins instalados',
+                                'plugins_installed_column_title'.tr(),
                                 style: MoaiText.body(
                                   context,
                                   color: scheme.onSurfaceVariant,
@@ -150,15 +151,17 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                                   ? TvEmptyStateCard(
                                       focusNode: _emptyFocusNode,
                                       icon: Icons.extension_off_outlined,
-                                      message: 'No hay plugins generales instalados',
+                                      message: 'plugins_empty_installed_msg'.tr(),
                                       onFocusUp: () => _backFocusNode.requestFocus(),
                                       onFocusRight: () => _availableFocusNode.requestFocus(),
                                     )
                                   : SingleChildScrollView(
                                       controller: _leftScrollController,
                                       child: _InstalledPluginTile(
-                                        title: 'Moai Arcade Engine',
-                                        subtitle: 'v1.0.0 · FBNeo Engine (${ArcadePluginService.getDeviceAbi()})',
+                                        title: 'plugins_arcade_name'.tr(),
+                                        subtitle: 'plugins_arcade_desc'.tr(
+                                          namedArgs: {'abi': ArcadePluginService.getDeviceAbi()},
+                                        ),
                                         updateFocus: _installedUpdateFocus,
                                         removeFocus: _installedRemoveFocus,
                                         onUpdate: _installArcade,
@@ -182,7 +185,7 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                             Padding(
                               padding: const EdgeInsets.only(bottom: 10),
                               child: Text(
-                                'Plugins disponibles',
+                                'plugins_available_column_title'.tr(),
                                 style: MoaiText.body(
                                   context,
                                   color: scheme.onSurfaceVariant,
@@ -195,8 +198,8 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                               child: SingleChildScrollView(
                                 controller: _rightScrollController,
                                 child: _AvailablePluginTile(
-                                  title: 'Moai Arcade (FBNeo)',
-                                  packageName: 'moai_arcade · ~69 MB',
+                                  title: 'plugins_arcade_available_name'.tr(),
+                                  packageName: 'plugins_arcade_available_desc'.tr(),
                                   focusNode: _availableFocusNode,
                                   isInstalled: isInstalled,
                                   isDownloading: _arcadePlugin.isDownloading,
@@ -229,6 +232,10 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
   }
 
   Widget _header(BuildContext context, ColorScheme scheme, int totalPlugins) {
+    final countText = totalPlugins == 1
+        ? 'plugins_count_single'.tr(namedArgs: {'count': '1'})
+        : 'plugins_count_plural'.tr(namedArgs: {'count': '$totalPlugins'});
+
     return Row(
       children: [
         _BackButton(
@@ -260,7 +267,7 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Administrador de plugins',
+                'plugins_admin_title'.tr(),
                 style: MoaiText.display(
                   context,
                   color: scheme.onSurface,
@@ -270,7 +277,7 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
               ),
               const SizedBox(height: 2),
               Text(
-                'Instalá o administrá plugins generales del sistema.',
+                'plugins_admin_subtitle'.tr(),
                 style: MoaiText.body(
                   context,
                   color: scheme.onSurfaceVariant,
@@ -288,7 +295,7 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             child: Text(
-              '$totalPlugins ${totalPlugins == 1 ? 'Plugin' : 'Plugins'}',
+              countText,
               style: MoaiText.body(
                 context,
                 color: scheme.onTertiaryContainer,
@@ -517,7 +524,7 @@ class _InstalledPluginTileState extends State<_InstalledPluginTile> {
             const SizedBox(width: 12),
             _IconButtonAction(
               focusNode: widget.updateFocus,
-              tooltip: 'Reinstalar / Actualizar',
+              tooltip: 'plugins_reinstall_tooltip'.tr(),
               icon: Icons.sync_rounded,
               onPressed: widget.onUpdate,
               parentFocused: isFocused,
@@ -527,7 +534,7 @@ class _InstalledPluginTileState extends State<_InstalledPluginTile> {
             const SizedBox(width: 8),
             _IconButtonAction(
               focusNode: widget.removeFocus,
-              tooltip: 'Desinstalar',
+              tooltip: 'plugins_uninstall_tooltip'.tr(),
               icon: Icons.delete_outline_rounded,
               onPressed: widget.onRemove,
               parentFocused: isFocused,
@@ -747,7 +754,7 @@ class _AvailablePluginTileState extends State<_AvailablePluginTile> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'Instalado',
+                                'plugins_status_installed'.tr(),
                                 style: MoaiText.body(
                                   context,
                                   color: _isFocused
@@ -767,7 +774,7 @@ class _AvailablePluginTileState extends State<_AvailablePluginTile> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'Instalar',
+                                'plugins_action_install'.tr(),
                                 style: MoaiText.body(
                                   context,
                                   color: _isFocused

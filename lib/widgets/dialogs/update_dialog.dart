@@ -120,6 +120,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final isMandatory = widget.updateInfo.isMandatory;
 
     Widget? content;
     List<Widget>? actions;
@@ -129,6 +130,35 @@ class _UpdateDialogState extends State<UpdateDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (isMandatory) ...[
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: scheme.errorContainer.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: scheme.error.withValues(alpha: 0.5)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Symbols.warning, color: scheme.error, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'update_mandatory_notice'.tr(),
+                      style: MoaiText.body(
+                        context,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: scheme.onErrorContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           Text(
             'update_changelog_title'.tr(),
             style: MoaiText.body(
@@ -162,19 +192,21 @@ class _UpdateDialogState extends State<UpdateDialog> {
         ],
       );
       actions = [
-        TvDialogButton(
-          focusNode: _cancelBtnFocus,
-          label: 'update_action_later'.tr(),
-          variant: TvDialogButtonVariant.neutral,
-          onKeyRight: () => _updateBtnFocus.requestFocus(),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        const SizedBox(width: 12),
+        if (!isMandatory) ...[
+          TvDialogButton(
+            focusNode: _cancelBtnFocus,
+            label: 'update_action_later'.tr(),
+            variant: TvDialogButtonVariant.neutral,
+            onKeyRight: () => _updateBtnFocus.requestFocus(),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          const SizedBox(width: 12),
+        ],
         TvDialogButton(
           focusNode: _updateBtnFocus,
           label: 'update_action_update_now'.tr(),
           variant: TvDialogButtonVariant.primary,
-          onKeyLeft: () => _cancelBtnFocus.requestFocus(),
+          onKeyLeft: !isMandatory ? () => _cancelBtnFocus.requestFocus() : null,
           onPressed: _startDownload,
         ),
       ];
@@ -230,14 +262,16 @@ class _UpdateDialogState extends State<UpdateDialog> {
           ),
         ],
       );
-      actions = [
-        TvDialogButton(
-          focusNode: _cancelBtnFocus,
-          label: 'common_cancel'.tr(),
-          variant: TvDialogButtonVariant.neutral,
-          onPressed: _cancelDownload,
-        ),
-      ];
+      actions = isMandatory
+          ? null
+          : [
+              TvDialogButton(
+                focusNode: _cancelBtnFocus,
+                label: 'common_cancel'.tr(),
+                variant: TvDialogButtonVariant.neutral,
+                onPressed: _cancelDownload,
+              ),
+            ];
     } else if (_state == UpdateDialogState.installing) {
       content = Center(
         child: Padding(
@@ -298,55 +332,81 @@ class _UpdateDialogState extends State<UpdateDialog> {
         ),
       );
       actions = [
-        TvDialogButton(
-          focusNode: _cancelBtnFocus,
-          label: 'common_close'.tr(),
-          variant: TvDialogButtonVariant.neutral,
-          onKeyRight: () => _retryBtnFocus.requestFocus(),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        const SizedBox(width: 12),
+        if (!isMandatory) ...[
+          TvDialogButton(
+            focusNode: _cancelBtnFocus,
+            label: 'common_close'.tr(),
+            variant: TvDialogButtonVariant.neutral,
+            onKeyRight: () => _retryBtnFocus.requestFocus(),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          const SizedBox(width: 12),
+        ],
         TvDialogButton(
           focusNode: _retryBtnFocus,
           label: 'update_action_retry'.tr(),
           variant: TvDialogButtonVariant.primary,
-          onKeyLeft: () => _cancelBtnFocus.requestFocus(),
+          onKeyLeft: !isMandatory ? () => _cancelBtnFocus.requestFocus() : null,
           onPressed: _startDownload,
         ),
       ];
     }
 
-    return TvDialog(
-      width: 520,
-      icon: Symbols.browser_updated,
-      title: 'update_available_title'.tr(),
-      subtitleWidget: Row(
-        children: [
-          Text(
-            'update_available_version'.tr(
-              namedArgs: {'version': widget.updateInfo.version},
-            ),
-            style: MoaiText.body(
-              context,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: scheme.primary,
-            ),
-          ),
-          if (widget.updateInfo.formattedSize.isNotEmpty) ...[
+    return PopScope(
+      canPop: !isMandatory,
+      child: TvDialog(
+        width: 520,
+        icon: isMandatory ? Symbols.warning_amber : Symbols.browser_updated,
+        title: isMandatory
+            ? 'update_mandatory_title'.tr()
+            : 'update_available_title'.tr(),
+        subtitleWidget: Row(
+          children: [
             Text(
-              ' • ${widget.updateInfo.formattedSize}',
+              'update_available_version'.tr(
+                namedArgs: {'version': widget.updateInfo.version},
+              ),
               style: MoaiText.body(
                 context,
-                fontSize: 12,
-                color: scheme.onSurfaceVariant,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isMandatory ? scheme.error : scheme.primary,
               ),
             ),
+            if (widget.updateInfo.formattedSize.isNotEmpty) ...[
+              Text(
+                ' • ${widget.updateInfo.formattedSize}',
+                style: MoaiText.body(
+                  context,
+                  fontSize: 12,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            if (isMandatory) ...[
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: scheme.error,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'update_mandatory_badge'.tr(),
+                  style: MoaiText.body(
+                    context,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: scheme.onError,
+                  ),
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
+        content: content,
+        actions: actions,
       ),
-      content: content,
-      actions: actions,
     );
   }
 }
