@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:moai3/features/home/widgets/tv_vertical_clock_pill.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/services/arcade_plugin_service.dart';
@@ -181,25 +180,27 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
 
     final isHovered = _isFocused && _focusedIndex == index;
 
+    final IconData iconData;
     final String label;
-    final List<List<dynamic>> hugeIconData;
 
     switch (index) {
       case 0:
-        hugeIconData = HugeIcons.strokeRoundedModernTv;
+        iconData = isSelected ? Icons.tv : Icons.tv_outlined;
         label = 'home_rail_tv_title'.tr();
         break;
       case 1:
-        hugeIconData = HugeIcons.strokeRoundedCalendar03;
+        iconData =
+            isSelected ? Icons.calendar_month : Icons.calendar_month_outlined;
         label = 'home_rail_calendar_title'.tr();
         break;
       case 2:
-        hugeIconData = HugeIcons.strokeRoundedGameController03;
+        iconData =
+            isSelected ? Icons.sports_esports : Icons.sports_esports_outlined;
         label = 'home_rail_arcade_title'.tr();
         break;
       case 3:
       default:
-        hugeIconData = HugeIcons.strokeRoundedSettings01;
+        iconData = isSelected ? Icons.settings : Icons.settings_outlined;
         label = 'home_rail_settings_title'.tr();
         break;
     }
@@ -222,10 +223,10 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
       textColor = scheme.onSurfaceVariant;
     }
 
-    Widget iconWidget = HugeIcon(
-      icon: hugeIconData,
+    Widget iconWidget = Icon(
+      iconData,
+      size: 24,
       color: iconColor,
-      size: 22,
     );
 
     if (index == 1 && todayEvents > 0) {
