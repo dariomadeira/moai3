@@ -7,7 +7,7 @@ class TvAccordionRowPreview extends StatelessWidget {
   final int activeIndex;
   final List<Color> colors;
   final List<String> titles;
-  final List<IconData> icons;
+  final List<dynamic> icons;
   final int? alphabetModePanelIndex;
   final Widget Function(int panelIndex)? alphabetPanelBuilder;
   final Widget Function(int index, bool isExpanded)? tabBuilder;
@@ -39,6 +39,8 @@ class TvAccordionRowPreview extends StatelessWidget {
         final expandedWidth =
             totalWidth - (collapsedWidth * (panelCount - 1)) - totalGaps;
 
+        final scheme = Theme.of(context).colorScheme;
+
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           physics: const NeverScrollableScrollPhysics(),
@@ -53,6 +55,16 @@ class TvAccordionRowPreview extends StatelessWidget {
                   alphabetPanelBuilder != null;
               final isLast = index == panelCount - 1;
 
+              final baseColor = colors[index];
+              final endColor = Color.alphaBlend(
+                scheme.onSurface.withValues(alpha: isExpanded ? 0.065 : 0.045),
+                baseColor,
+              );
+
+              final borderColor = scheme.outlineVariant.withValues(
+                alpha: isExpanded ? 0.38 : 0.28,
+              );
+
               return RepaintBoundary(
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
@@ -61,20 +73,35 @@ class TvAccordionRowPreview extends StatelessWidget {
                   margin: EdgeInsets.only(right: isLast ? 0 : gap),
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
-                    color: colors[index],
-                    borderRadius: BorderRadius.circular(18),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [baseColor, endColor],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: borderColor,
+                      width: 1.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: isExpanded ? 0.14 : 0.08),
+                        blurRadius: isExpanded ? 14 : 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       if (showAlphabet)
                         SizedBox(
-                          width: collapsedWidth,
+                          width: collapsedWidth - 2.0,
                           child: alphabetPanelBuilder!(index),
                         )
                       else if (tabBuilder != null)
                         SizedBox(
-                          width: collapsedWidth,
+                          width: collapsedWidth - 2.0,
                           child: tabBuilder!(index, isExpanded),
                         )
                       else
@@ -82,7 +109,7 @@ class TvAccordionRowPreview extends StatelessWidget {
                           child: InkWell(
                             onTap: () => onPanelTap(index),
                             child: SizedBox(
-                              width: collapsedWidth,
+                              width: collapsedWidth - 2.0,
                               child: CollapsedPanelTabPreview(
                                 title: title,
                                 icon: icon,
@@ -106,9 +133,7 @@ class TvAccordionRowPreview extends StatelessWidget {
                               return content;
                             },
                           ),
-                        )
-                      else
-                        const Spacer(),
+                        ),
                     ],
                   ),
                 ),

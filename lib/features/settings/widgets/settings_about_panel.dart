@@ -4,8 +4,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/config/player_config.dart';
 import 'package:moai3/features/settings/widgets/tv_tile.dart';
+import 'package:moai3/features/settings/widgets/tv_value_badge.dart';
 import 'package:moai3/services/update_service.dart';
 import 'package:moai3/state/channel_provider.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/update_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
@@ -242,45 +244,28 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
   }) {
     switch (item) {
       case _AboutItemType.channelsLoaded:
+        const channelsColor = Color(0xFF4FC3F7);
         return TvTile(
           focusNode: focusNode,
           label: 'settings_about_channels_loaded'.tr(),
-          icon: Symbols.tv_guide,
+          icon: AppIcons.tvMinimal(),
+          iconAccentColor: channelsColor,
           onKeyLeft: widget.onKeyLeft,
           onKeyUp: onKeyUp,
           onKeyDown: onKeyDown,
           trailingBuilder: (context, isFocused) {
-            final chipBg = isFocused
-                ? scheme.onPrimary.withValues(alpha: 0.18)
-                : scheme.secondaryContainer;
-            final chipFg =
-                isFocused ? scheme.onPrimary : scheme.onSecondaryContainer;
-
-            return Material(
-              color: chipBg,
-              borderRadius: BorderRadius.circular(10),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                child: Text(
-                  valueText,
-                  style: MoaiText.body(
-                    context,
-                    color: chipFg,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
+            return TvValueBadge(
+              text: valueText,
+              isFocused: isFocused,
+              accentColor: channelsColor,
             );
           },
         );
       case _AboutItemType.checkUpdates:
         return TvTile(
           focusNode: focusNode,
-          icon: Symbols.browser_updated,
+          icon: AppIcons.download03(),
+          iconAccentColor: const Color(0xFF81C784),
           label: 'settings_about_check_updates'.tr(),
           description: 'settings_about_check_updates_desc'.tr(),
           onKeyLeft: widget.onKeyLeft,
@@ -301,30 +286,10 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
               );
             }
             if (_statusChip != null) {
-              final chipBg = isFocused
-                  ? scheme.onPrimary.withValues(alpha: 0.18)
-                  : scheme.primaryContainer;
-              final chipFg =
-                  isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
-
-              return Material(
-                color: chipBg,
-                borderRadius: BorderRadius.circular(10),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  child: Text(
-                    _statusChip!,
-                    style: MoaiText.body(
-                      context,
-                      color: chipFg,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+              return TvValueBadge(
+                text: _statusChip!,
+                isFocused: isFocused,
+                accentColor: const Color(0xFF81C784),
               );
             }
             return Icon(

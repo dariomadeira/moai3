@@ -6,7 +6,8 @@ class TvSettingsActionRow extends StatelessWidget {
   final FocusNode focusNode;
   final String label;
   final String description;
-  final IconData? icon;
+  final dynamic icon;
+  final Color? iconAccentColor;
   final VoidCallback onPressed;
   final VoidCallback onKeyLeft;
   final VoidCallback? onKeyRight;
@@ -21,6 +22,7 @@ class TvSettingsActionRow extends StatelessWidget {
     required this.label,
     required this.description,
     this.icon,
+    this.iconAccentColor,
     required this.onPressed,
     required this.onKeyLeft,
     this.onKeyRight,
@@ -37,6 +39,7 @@ class TvSettingsActionRow extends StatelessWidget {
       label: label,
       description: description,
       icon: icon,
+      iconAccentColor: iconAccentColor,
       padding: padding,
       minHeight: minHeight,
       onPressed: onPressed,
@@ -49,7 +52,7 @@ class TvSettingsActionRow extends StatelessWidget {
         return Icon(
           Icons.chevron_right,
           size: 26,
-          color: isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
+          color: isFocused ? scheme.primary : scheme.onSurfaceVariant,
         );
       },
     );
@@ -60,7 +63,8 @@ class TvSettingsSwitchRow extends StatelessWidget {
   final FocusNode focusNode;
   final String label;
   final String? description;
-  final IconData? icon;
+  final dynamic icon;
+  final Color? iconAccentColor;
   final bool value;
   final ValueChanged<bool> onChanged;
   final VoidCallback onKeyLeft;
@@ -76,6 +80,7 @@ class TvSettingsSwitchRow extends StatelessWidget {
     required this.label,
     this.description,
     this.icon,
+    this.iconAccentColor,
     required this.value,
     required this.onChanged,
     required this.onKeyLeft,
@@ -93,6 +98,7 @@ class TvSettingsSwitchRow extends StatelessWidget {
       label: label,
       description: description,
       icon: icon,
+      iconAccentColor: iconAccentColor,
       padding: padding,
       minHeight: minHeight,
       onPressed: () => onChanged(!value),
@@ -103,29 +109,19 @@ class TvSettingsSwitchRow extends StatelessWidget {
       trailingBuilder: (context, isFocused) {
         final scheme = context.scheme;
 
-        final trackColor = isFocused
-            ? (value
-                ? scheme.onPrimary
-                : scheme.onPrimary.withValues(alpha: 0.3))
-            : (value
-                ? scheme.primary
+        final trackColor = value
+            ? scheme.primary
+            : (isFocused
+                ? scheme.surfaceContainerHigh
                 : scheme.surfaceContainerHighest);
 
-        final thumbColor = isFocused
-            ? (value
-                ? scheme.primary
-                : scheme.onPrimary.withValues(alpha: 0.7))
-            : (value
-                ? scheme.onPrimary
-                : scheme.outline);
+        final thumbColor = value
+            ? scheme.onPrimary
+            : (isFocused ? scheme.primary : scheme.outline);
 
         final outlineColor = isFocused
-            ? (value
-                ? Colors.transparent
-                : scheme.onPrimary.withValues(alpha: 0.5))
-            : (value
-                ? Colors.transparent
-                : scheme.outlineVariant);
+            ? scheme.primary
+            : (value ? Colors.transparent : scheme.outlineVariant);
 
         return IgnorePointer(
           child: Switch(
@@ -136,6 +132,7 @@ class TvSettingsSwitchRow extends StatelessWidget {
             activeThumbColor: thumbColor,
             inactiveThumbColor: thumbColor,
             trackOutlineColor: WidgetStateProperty.all(outlineColor),
+            trackOutlineWidth: WidgetStateProperty.all(isFocused ? 1.5 : 1.0),
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         );
