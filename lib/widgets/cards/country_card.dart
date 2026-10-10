@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:moai3/widgets/cards/tv_icon_list_card.dart';
 
-/// Ítem de país/grupo: [TvIconListCard] con ícono TV options / tv_displays.
+/// Ítem de país/grupo: [TvIconListCard] con ícono HugeIcons strokeRoundedTvMinimalPlay.
 class CountryCard extends StatelessWidget {
   final String country;
   final bool isSelected;
@@ -31,7 +31,7 @@ class CountryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return TvIconListCard(
       label: country,
-      icon: Symbols.tv_displays,
+      hugeIcon: HugeIcons.strokeRoundedTvMinimalPlay,
       isSelected: isSelected,
       onTap: onTap,
       focusNode: focusNode,
@@ -43,4 +43,3 @@ class CountryCard extends StatelessWidget {
     );
   }
 }
-
