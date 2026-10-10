@@ -1,6 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/settings/widgets/settings_about_panel.dart';
 import 'package:moai3/features/settings/widgets/settings_agenda_panel.dart';
@@ -8,6 +7,7 @@ import 'package:moai3/features/settings/widgets/settings_general_panel.dart';
 import 'package:moai3/features/settings/widgets/settings_tv_panel.dart';
 import 'package:moai3/features/settings/widgets/settings_watch_party_panel.dart';
 import 'package:moai3/layout/settings_panel_layout.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 
 /// Acordeón de Ajustes (UI). Los [FocusNode] viven en el padre (como moaiSmart).
@@ -33,12 +33,12 @@ class HomeSettingsArea extends StatelessWidget {
     required this.onExitLeft,
   });
 
-  static const icons = [
-    Icons.settings_remote_outlined,
-    Icons.calendar_month_outlined,
-    Symbols.adaptive_audio_mic,
-    Icons.tune_outlined,
-    Icons.info_outline,
+  static final icons = [
+    AppIcons.remote(),
+    AppIcons.agendaConfig(),
+    AppIcons.watchParty(),
+    AppIcons.generalSettings(),
+    AppIcons.about(),
   ];
 
   @override

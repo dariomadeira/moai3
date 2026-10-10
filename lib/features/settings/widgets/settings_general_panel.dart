@@ -5,6 +5,7 @@ import 'package:moai3/features/plugins/screens/general_plugins_screen.dart';
 import 'package:moai3/features/settings/widgets/settings_accent_color_row.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/state/theme_provider.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 import 'package:provider/provider.dart';
@@ -151,7 +152,8 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       case _SettingsGeneralItemType.plugins:
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: Icons.extension_outlined,
+          icon: AppIcons.sources(),
+          iconAccentColor: const Color(0xFF81C784),
           label: 'settings_general_plugins_title'.tr(),
           description: 'settings_general_plugins_desc'.tr(),
           onPressed: () {
@@ -169,7 +171,8 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       case _SettingsGeneralItemType.overscan:
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: Icons.aspect_ratio_outlined,
+          icon: AppIcons.squareArrowExpand01(),
+          iconAccentColor: const Color(0xFF64B5F6),
           label: 'settings_general_overscan'.tr(),
           description: 'settings_general_overscan_desc'.tr(),
           onPressed: () {
@@ -188,7 +191,8 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       case _SettingsGeneralItemType.darkMode:
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: Icons.dark_mode_outlined,
+          icon: AppIcons.moon02(),
+          iconAccentColor: const Color(0xFFBA68C8),
           label: 'settings_general_dark_mode'.tr(),
           description: 'settings_general_dark_mode_desc'.tr(),
           value: theme.themeMode == ThemeMode.dark,
@@ -203,7 +207,8 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       case _SettingsGeneralItemType.accentColor:
         return SettingsAccentColorRow(
           focusNode: focusNode,
-          icon: Icons.palette_outlined,
+          icon: AppIcons.paintBoard(),
+          iconAccentColor: const Color(0xFFFFB74D),
           selectedIndex: theme.accentColorIndex,
           onChanged: (index) => theme.setAccentColorIndex(index),
           onKeyUp: onKeyUp,
@@ -212,7 +217,8 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       case _SettingsGeneralItemType.autoAccent:
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: Icons.auto_awesome_outlined,
+          icon: AppIcons.sparkles(),
+          iconAccentColor: const Color(0xFFFF80AB),
           label: 'settings_general_auto_accent'.tr(),
           description: 'settings_general_auto_accent_desc'.tr(),
           value: isAutoAccent,

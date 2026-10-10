@@ -7,7 +7,8 @@ import 'package:moai3/theme/moai_text.dart';
 class TvInfoTile extends StatelessWidget {
   final String label;
   final String? description;
-  final IconData? icon;
+  final dynamic icon;
+  final Color? iconAccentColor;
   final EdgeInsetsGeometry? padding;
   final double? minHeight;
 
@@ -16,6 +17,7 @@ class TvInfoTile extends StatelessWidget {
     required this.label,
     this.description,
     this.icon,
+    this.iconAccentColor,
     this.padding,
     this.minHeight,
   });
@@ -27,6 +29,7 @@ class TvInfoTile extends StatelessWidget {
       label: label,
       description: description,
       icon: icon,
+      iconAccentColor: iconAccentColor,
       padding: padding,
       minHeight: minHeight,
     );
@@ -38,7 +41,8 @@ class TvTile extends StatefulWidget {
   final FocusNode focusNode;
   final String label;
   final String? description;
-  final IconData? icon;
+  final dynamic icon;
+  final Color? iconAccentColor;
   final Widget Function(BuildContext context, bool isFocused)? trailingBuilder;
   final VoidCallback? onPressed;
   final VoidCallback? onKeyLeft;
@@ -55,6 +59,7 @@ class TvTile extends StatefulWidget {
     required this.label,
     this.description,
     this.icon,
+    this.iconAccentColor,
     this.trailingBuilder,
     this.onPressed,
     this.onKeyLeft,
@@ -126,6 +131,7 @@ class _TvTileState extends State<TvTile> {
           label: widget.label,
           description: widget.description,
           icon: widget.icon,
+          iconAccentColor: widget.iconAccentColor,
           padding: widget.padding,
           minHeight: widget.minHeight,
           trailing: widget.trailingBuilder?.call(context, isFocused),
@@ -139,7 +145,8 @@ class _TvTileChrome extends StatelessWidget {
   final bool isFocused;
   final String label;
   final String? description;
-  final IconData? icon;
+  final dynamic icon;
+  final Color? iconAccentColor;
   final Widget? trailing;
   final EdgeInsetsGeometry? padding;
   final double? minHeight;
@@ -149,6 +156,7 @@ class _TvTileChrome extends StatelessWidget {
     required this.label,
     this.description,
     this.icon,
+    this.iconAccentColor,
     this.trailing,
     this.padding,
     this.minHeight,
@@ -157,26 +165,67 @@ class _TvTileChrome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final bg = isFocused ? scheme.primary : scheme.surfaceContainerLow;
-    final titleColor = isFocused ? scheme.onPrimary : scheme.onSurface;
-    final descColor = isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.85)
-        : scheme.onSurfaceVariant;
-    final iconBg = isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.18)
-        : scheme.primaryContainer;
-    final iconColor =
-        isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
+    final titleColor = scheme.onSurface;
+    final descColor = scheme.onSurfaceVariant;
+    final effectiveIconColor = iconAccentColor ?? scheme.onPrimaryContainer;
+
+    final containerColors = iconAccentColor != null
+        ? [
+            Color.alphaBlend(
+              iconAccentColor!.withValues(alpha: 0.20),
+              scheme.surfaceContainerLow,
+            ),
+            Color.alphaBlend(
+              iconAccentColor!.withValues(alpha: 0.08),
+              scheme.surfaceContainerLow,
+            ),
+          ]
+        : [
+            Color.alphaBlend(
+              scheme.onPrimaryContainer.withValues(alpha: 0.15),
+              scheme.primaryContainer,
+            ),
+            scheme.primaryContainer,
+          ];
+
+    final containerBorderColor = iconAccentColor != null
+        ? iconAccentColor!.withValues(alpha: 0.35)
+        : scheme.primary.withValues(alpha: 0.25);
+
+    final startColor = Color.alphaBlend(
+      scheme.onSurface.withValues(alpha: 0.025),
+      scheme.surfaceContainerLow,
+    );
+    final endColor = scheme.surfaceContainerLow;
+
+    final borderColor = isFocused
+        ? scheme.primary
+        : scheme.outlineVariant.withValues(alpha: 0.20);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 120),
       constraints: BoxConstraints(minHeight: minHeight ?? 58),
       decoration: BoxDecoration(
-        color: bg,
+        gradient: LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [startColor, endColor],
+        ),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: borderColor,
+          width: 2.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       padding:
-          padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding ?? const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final maxTrailingWidth =
@@ -185,17 +234,30 @@ class _TvTileChrome extends StatelessWidget {
           return Row(
             children: [
               if (icon != null) ...[
-                Material(
-                  color: iconBg,
-                  shape: RoundedRectangleBorder(
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: containerColors,
+                    ),
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: containerBorderColor,
+                      width: 1.0,
+                    ),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Icon(icon, size: 22, color: iconColor),
-                  ),
+                  padding: const EdgeInsets.all(9),
+                  child: icon is Widget
+                      ? IconTheme(
+                          data: IconThemeData(
+                              size: 20, color: effectiveIconColor),
+                          child: icon as Widget,
+                        )
+                      : Icon(icon as IconData,
+                          size: 20, color: effectiveIconColor),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
               ],
               Expanded(
                 child: Column(

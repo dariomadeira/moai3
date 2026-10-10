@@ -6,6 +6,7 @@ import 'package:moai3/features/settings/widgets/settings_agenda_snack_duration_r
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/state/agenda_clock_provider.dart';
 import 'package:moai3/state/calendar_provider.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 import 'package:provider/provider.dart';
@@ -107,7 +108,8 @@ class SettingsAgendaPanelState extends State<SettingsAgendaPanel> {
                                 _SettingsAgendaItemType.utcOffset =>
                                   TvSettingsActionRow(
                                     focusNode: focusNode,
-                                    icon: Icons.public_outlined,
+                                    icon: AppIcons.utcOffset(),
+                                    iconAccentColor: const Color(0xFF4FC3F7),
                                     label: 'settings_agenda_utc'.tr(),
                                     description: 'settings_agenda_utc_desc'.tr(
                                       namedArgs: {
@@ -131,6 +133,7 @@ class SettingsAgendaPanelState extends State<SettingsAgendaPanel> {
                                 _SettingsAgendaItemType.notifyLead =>
                                   SettingsAgendaNotifyRow(
                                     focusNode: focusNode,
+                                    iconAccentColor: const Color(0xFFFFB74D),
                                     selectedMinutes: calendar.notifyLeadMinutes,
                                     onChanged: calendar.setNotifyLeadMinutes,
                                     onKeyUp: onKeyUp,
@@ -139,6 +142,7 @@ class SettingsAgendaPanelState extends State<SettingsAgendaPanel> {
                                 _SettingsAgendaItemType.snackDuration =>
                                   SettingsAgendaSnackDurationRow(
                                     focusNode: focusNode,
+                                    iconAccentColor: const Color(0xFF81C784),
                                     selectedSeconds:
                                         calendar.snackDurationSeconds,
                                     onChanged: calendar.setSnackDurationSeconds,

@@ -9,7 +9,8 @@ class SettingsAccentColorRow extends StatelessWidget {
   final FocusNode focusNode;
   final int selectedIndex;
   final ValueChanged<int> onChanged;
-  final IconData? icon;
+  final dynamic icon;
+  final Color? iconAccentColor;
   final VoidCallback? onKeyUp;
   final VoidCallback? onKeyDown;
 
@@ -19,6 +20,7 @@ class SettingsAccentColorRow extends StatelessWidget {
     required this.selectedIndex,
     required this.onChanged,
     this.icon,
+    this.iconAccentColor,
     this.onKeyUp,
     this.onKeyDown,
   });
@@ -37,6 +39,7 @@ class SettingsAccentColorRow extends StatelessWidget {
       label: 'settings_general_accent'.tr(),
       description: 'settings_general_accent_desc'.tr(),
       icon: icon,
+      iconAccentColor: iconAccentColor,
       onKeyUp: onKeyUp,
       onKeyDown: onKeyDown,
       onKeyEvent: (node, event) {
@@ -73,20 +76,37 @@ class SettingsAccentColorRow extends StatelessWidget {
             MoaiAccentColors.seeds.length,
             (i) {
               final isSelected = i == selectedIndex;
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 3),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  width: isSelected ? 22 : 16,
-                  height: isSelected ? 22 : 16,
-                  decoration: BoxDecoration(
-                    color: MoaiAccentColors.seeds[i],
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isSelected
-                          ? (isFocused ? scheme.onPrimary : scheme.onSurface)
-                          : Colors.transparent,
-                      width: 2,
+              final color = MoaiAccentColors.seeds[i];
+              return MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => _select(i),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOutCubic,
+                      width: isSelected ? 22 : 16,
+                      height: isSelected ? 22 : 16,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected
+                              ? (isFocused ? Colors.white : scheme.onSurface)
+                              : Colors.transparent,
+                          width: 2,
+                        ),
+                        boxShadow: isSelected && isFocused
+                            ? [
+                                BoxShadow(
+                                  color: color.withValues(alpha: 0.6),
+                                  blurRadius: 8,
+                                  spreadRadius: 1,
+                                ),
+                              ]
+                            : null,
+                      ),
                     ),
                   ),
                 ),

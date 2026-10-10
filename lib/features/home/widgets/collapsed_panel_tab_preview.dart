@@ -4,7 +4,7 @@ import 'package:moai3/theme/moai_text.dart';
 /// Tab vertical del acordeón (título rotado + icono).
 class CollapsedPanelTabPreview extends StatelessWidget {
   final String title;
-  final IconData icon;
+  final dynamic icon;
   final bool hasFocus;
 
   const CollapsedPanelTabPreview({
@@ -45,7 +45,12 @@ class CollapsedPanelTabPreview extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Icon(icon, size: 20, color: iconColor),
+          icon is Widget
+              ? IconTheme(
+                  data: IconThemeData(size: 20, color: iconColor),
+                  child: icon as Widget,
+                )
+              : Icon(icon as IconData, size: 20, color: iconColor),
         ],
       ),
     );

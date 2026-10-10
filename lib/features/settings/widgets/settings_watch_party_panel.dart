@@ -1,9 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/features/settings/widgets/tv_tile.dart';
+import 'package:moai3/features/settings/widgets/tv_value_badge.dart';
 import 'package:moai3/state/watch_party_provider.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/utils/context_extensions.dart';
 import 'package:moai3/widgets/dialogs/tv_friends_dialog.dart';
@@ -171,7 +172,8 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
       case _SettingsWatchPartyItemType.watchPartySwitch:
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: Symbols.voice_selection,
+          icon: AppIcons.conversation(),
+          iconAccentColor: const Color(0xFF4FC3F7),
           label: 'settings_tv_watch_party'.tr(),
           description: 'settings_tv_watch_party_desc'.tr(),
           value: watchParty?.enabled ?? false,
@@ -187,7 +189,8 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
             currentNickname != null && currentNickname.trim().isNotEmpty;
         return TvTile(
           focusNode: focusNode,
-          icon: Icons.person_outline,
+          icon: AppIcons.identification(),
+          iconAccentColor: const Color(0xFFBA68C8),
           label: 'settings_watch_party_nickname'.tr(),
           description: 'settings_watch_party_nickname_desc'.tr(),
           onPressed: () => _openEditNicknameDialog(context, watchParty),
@@ -196,31 +199,21 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
           onKeyUp: onKeyUp,
           onKeyDown: onKeyDown,
           trailingBuilder: (context, isFocused) {
-            final scheme = Theme.of(context).colorScheme;
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: isFocused ? scheme.onPrimary : scheme.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                hasNick
-                    ? currentNickname
-                    : 'settings_watch_party_nickname_none'.tr(),
-                style: MoaiText.body(
-                  context,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: isFocused ? scheme.primary : scheme.onPrimaryContainer,
-                ),
-              ),
+            return TvValueBadge(
+              text: hasNick
+                  ? currentNickname
+                  : 'settings_watch_party_nickname_none'.tr(),
+              isFocused: isFocused,
+              accentColor: const Color(0xFFBA68C8),
             );
           },
         );
       case _SettingsWatchPartyItemType.watchPartyCodeCard:
+        const codeColor = Color(0xFFFFB74D);
         return TvTile(
           focusNode: focusNode,
-          icon: Icons.badge_outlined,
+          icon: AppIcons.idCard(),
+          iconAccentColor: codeColor,
           label: 'settings_tv_watch_party_code'.tr(),
           description: 'settings_tv_watch_party_code_desc'.tr(),
           onKeyLeft: widget.onKeyLeft,
@@ -228,22 +221,16 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
           onKeyUp: onKeyUp,
           onKeyDown: onKeyDown,
           trailingBuilder: (context, isFocused) {
-            final scheme = Theme.of(context).colorScheme;
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: isFocused ? scheme.onPrimary : scheme.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                watchParty?.userCode ?? 'MOAI-????',
-                style: MoaiText.display(
-                  context,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2.0,
-                  color: isFocused ? scheme.primary : scheme.onPrimaryContainer,
-                ),
+            return TvValueBadge(
+              text: watchParty?.userCode ?? 'MOAI-????',
+              isFocused: isFocused,
+              accentColor: codeColor,
+              textStyle: MoaiText.display(
+                context,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+                color: codeColor,
               ),
             );
           },
@@ -265,7 +252,8 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
         }
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: Icons.people_outline,
+          icon: AppIcons.addTeam02(),
+          iconAccentColor: const Color(0xFF81C784),
           label: 'settings_tv_manage_friends'.tr(),
           description: statusDesc,
           onPressed: () {
@@ -279,7 +267,8 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
       case _SettingsWatchPartyItemType.micTest:
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: Symbols.mic_gear,
+          icon: AppIcons.aiMic(),
+          iconAccentColor: const Color(0xFFFF80AB),
           label: 'settings_tv_mic_test'.tr(),
           description: 'settings_tv_mic_test_desc'.tr(),
           onPressed: () {
