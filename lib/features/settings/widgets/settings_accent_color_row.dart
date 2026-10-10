@@ -9,7 +9,7 @@ class SettingsAccentColorRow extends StatelessWidget {
   final FocusNode focusNode;
   final int selectedIndex;
   final ValueChanged<int> onChanged;
-  final IconData? icon;
+  final dynamic icon;
   final VoidCallback? onKeyUp;
   final VoidCallback? onKeyDown;
 

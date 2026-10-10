@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:moai3/services/moai_image_cache_manager.dart';
+import 'package:moai3/theme/app_icons.dart';
 
 /// Leading rectangular para logos de canal con la misma estética que [TvListCardLeadingIcon].
 /// Usa `scheme.primaryContainer` (o `onPrimary` con opacidad al tener foco), manteniendo
@@ -115,8 +116,8 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
         widget.isFocused ? focusedIconColor : scheme.onPrimaryContainer;
 
     final errorPlaceholder = Center(
-      child: Icon(
-        Icons.tv_outlined,
+      child: AppIcon(
+        icon: AppIcons.tv,
         color: iconColor,
         size: (widget.height * 0.55).clamp(0.0, 48.0),
       ),

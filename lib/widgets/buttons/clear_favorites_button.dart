@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/helpers/notification_helper.dart';
 import 'package:moai3/state/favorites_provider.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 
@@ -112,8 +113,8 @@ class _ClearFavoritesButtonState extends State<ClearFavoritesButton> {
                 borderRadius: BorderRadius.circular(999),
               ),
               child: Center(
-                child: Icon(
-                  Icons.delete_outline_rounded,
+                child: AppIcon(
+                  icon: AppIcons.delete,
                   color: iconColor,
                   size: 16,
                 ),
@@ -160,7 +161,7 @@ class _ClearConfirmDialogContentState
     final scheme = context.scheme;
 
     return TvDialog(
-      icon: Icons.delete_sweep_outlined,
+      icon: AppIcons.delete,
       iconBgColor: scheme.errorContainer,
       iconColor: scheme.onErrorContainer,
       title: 'favorites_clear_title'.tr(),

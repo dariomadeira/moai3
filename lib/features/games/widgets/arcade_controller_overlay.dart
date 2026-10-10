@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/features/games/services/arcade_emulator_service.dart';
 
 /// Overlay visual de controles táctiles estilo Arcade (CPS-2 Capcom: 6 Botones + D-Pad + Coin/Start).
@@ -75,7 +76,7 @@ class _ArcadeControllerOverlayState extends State<ArcadeControllerOverlay> {
     );
   }
 
-  Widget _buildDPadButton(String label, int bitmask, IconData icon) {
+  Widget _buildDPadButton(String label, int bitmask, List<List<dynamic>> icon) {
     final bool isPressed = (_activeInputMask & bitmask) != 0;
 
     return GestureDetector(
@@ -90,8 +91,8 @@ class _ArcadeControllerOverlayState extends State<ArcadeControllerOverlay> {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: Colors.white30),
         ),
-        child: Icon(
-          icon,
+        child: AppIcon(
+          icon: icon,
           color: isPressed ? Colors.cyanAccent : Colors.white,
           size: 28,
         ),
@@ -103,16 +104,16 @@ class _ArcadeControllerOverlayState extends State<ArcadeControllerOverlay> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildDPadButton('UP', ArcadeButtons.up, Icons.arrow_drop_up),
+        _buildDPadButton('UP', ArcadeButtons.up, AppIcons.arrowUp),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildDPadButton('LEFT', ArcadeButtons.left, Icons.arrow_left),
+            _buildDPadButton('LEFT', ArcadeButtons.left, AppIcons.arrowLeft),
             const SizedBox(width: 44, height: 44),
-            _buildDPadButton('RIGHT', ArcadeButtons.right, Icons.arrow_right),
+            _buildDPadButton('RIGHT', ArcadeButtons.right, AppIcons.arrowRight),
           ],
         ),
-        _buildDPadButton('DOWN', ArcadeButtons.down, Icons.arrow_drop_down),
+        _buildDPadButton('DOWN', ArcadeButtons.down, AppIcons.arrowDown),
       ],
     );
   }

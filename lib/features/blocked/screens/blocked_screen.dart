@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/theme/app_icons.dart';
 
 /// Pantalla de bloqueo para dispositivos deshabilitados (SPEC-22 §4.2).
 class BlockedScreen extends StatelessWidget {
@@ -35,8 +36,8 @@ class BlockedScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.block,
+                  AppIcon(
+                    icon: AppIcons.error,
                     size: 64,
                     color: colorScheme.error,
                   ),

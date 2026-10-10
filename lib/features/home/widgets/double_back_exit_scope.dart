@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 
 /// Margen inferior del snack de salida (zona segura TV / overscan).
@@ -73,7 +74,7 @@ class DoubleBackExitScopeState extends State<DoubleBackExitScope> {
     MoaiSnackBar.show(
       context,
       message: 'home_exit_double_back'.tr(),
-      icon: Icons.exit_to_app_outlined,
+      icon: AppIcons.close,
       bottomMargin: _exitSnackBottomMargin,
       duration: widget.exitWindow,
     );

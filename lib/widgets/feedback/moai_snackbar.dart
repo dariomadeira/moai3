@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/services/modal_route_tracker.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 
 /// Sistema unificado de SnackBar estilo Pill para Moai.
@@ -15,7 +16,7 @@ class MoaiSnackBar {
   static SnackBar buildSnackBar({
     required BuildContext? context,
     required String message,
-    IconData? icon,
+    dynamic icon,
     Color? iconColor,
     Color? backgroundColor,
     String? hint,
@@ -60,7 +61,7 @@ class MoaiSnackBar {
   static void show(
     BuildContext context, {
     required String message,
-    IconData? icon,
+    dynamic icon,
     Color? iconColor,
     Color? backgroundColor,
     String? hint,
@@ -95,7 +96,7 @@ class MoaiSnackBar {
     show(
       context,
       message: message,
-      icon: Icons.check_circle_outline,
+      icon: AppIcons.check,
       bottomMargin: bottomMargin,
       duration: duration,
     );
@@ -111,7 +112,7 @@ class MoaiSnackBar {
     show(
       context,
       message: message,
-      icon: Icons.error_outline,
+      icon: AppIcons.close,
       bottomMargin: bottomMargin,
       duration: duration,
     );
@@ -127,7 +128,7 @@ class MoaiSnackBar {
     show(
       context,
       message: message,
-      icon: Icons.info_outline,
+      icon: AppIcons.info,
       bottomMargin: bottomMargin,
       duration: duration,
     );
@@ -143,7 +144,7 @@ class MoaiSnackBar {
     show(
       context,
       message: message,
-      icon: Icons.warning_amber_outlined,
+      icon: AppIcons.info,
       bottomMargin: bottomMargin,
       duration: duration,
     );
@@ -153,7 +154,7 @@ class MoaiSnackBar {
 class _MoaiSnackBarBody extends StatefulWidget {
   final String message;
   final String? hint;
-  final IconData? icon;
+  final dynamic icon;
   final Color iconColor;
   final Color foregroundColor;
   final Color backgroundColor;
@@ -242,8 +243,15 @@ class _MoaiSnackBarBodyState extends State<_MoaiSnackBarBody> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (widget.icon != null) ...[
-              Icon(widget.icon, color: widget.iconColor, size: 22),
+            if (widget.icon is List<List<dynamic>>) ...[
+              AppIcon(
+                icon: widget.icon as List<List<dynamic>>,
+                color: widget.iconColor,
+                size: 22,
+              ),
+              const SizedBox(width: 10),
+            ] else if (widget.icon is IconData) ...[
+              Icon(widget.icon as IconData, color: widget.iconColor, size: 22),
               const SizedBox(width: 10),
             ],
             Flexible(

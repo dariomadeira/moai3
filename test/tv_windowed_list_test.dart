@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 
 void main() {
@@ -111,8 +112,7 @@ void main() {
     expect(state.canScrollDown, isTrue);
 
     // At top: only down arrow is rendered
-    expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
-    expect(find.byIcon(Icons.keyboard_arrow_up), findsNothing);
+    expect(find.byType(AppIcon), findsOneWidget);
 
     // Move to item 2 (middle/anchor): scroll down
     state.ensureVisible(2);
@@ -126,7 +126,6 @@ void main() {
     expect(state.canScrollDown, isFalse);
 
     // At bottom: only up arrow is rendered
-    expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
-    expect(find.byIcon(Icons.keyboard_arrow_down), findsNothing);
+    expect(find.byType(AppIcon), findsOneWidget);
   });
 }

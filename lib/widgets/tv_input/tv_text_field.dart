@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
 import 'package:moai3/widgets/tv_input/tv_text_input_sheet.dart';
@@ -17,7 +18,7 @@ class TvTextField extends StatefulWidget {
   final int? maxLength;
   final bool enabled;
   final bool dense;
-  final IconData? leadingIcon;
+  final dynamic leadingIcon;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final VoidCallback? onFocusLeft;
@@ -228,7 +229,7 @@ class _TvTextFieldState extends State<TvTextField> {
         : scheme.primaryContainer;
     final iconColor = _focused ? scheme.onPrimary : scheme.onPrimaryContainer;
 
-    final leading = widget.leadingIcon ?? Icons.keyboard_alt_outlined;
+    final leading = widget.leadingIcon ?? AppIcons.keyboard;
 
     return Focus(
       focusNode: _focusNode,
@@ -264,8 +265,8 @@ class _TvTextFieldState extends State<TvTextField> {
                       ),
                       child: Padding(
                         padding: EdgeInsets.all(widget.dense ? 8 : 10),
-                        child: Icon(
-                          leading,
+                        child: AppIcon(
+                          icon: leading,
                           size: widget.dense ? 20 : 22,
                           color: iconColor,
                         ),

@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/features/home/widgets/panel_list_header.dart';
 import 'package:moai3/focus/focus_retry.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/models/channel_group.dart';
 import 'package:moai3/widgets/cards/group_card.dart';
@@ -103,7 +104,7 @@ class GroupListPanelState extends State<GroupListPanel> {
             child: widget.groups.isEmpty
                 ? TvEmptyStateCard(
                     focusNode: _emptyFocusNode,
-                    icon: Icons.bookmarks_outlined,
+                    icon: AppIcons.group,
                     message: 'browser_groups_empty'.tr(),
                     onFocusUp: widget.onFocusUp,
                   )

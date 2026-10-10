@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
 
@@ -57,8 +58,8 @@ class TvTabBar extends StatelessWidget {
             children: [
               _M3EFloatingTabPill(
                 title: 'home_tab_explore'.tr(),
-                icon: Icons.explore_outlined,
-                selectedIcon: Icons.explore,
+                icon: AppIcons.home,
+                selectedIcon: AppIcons.home,
                 isSelected: selectedTab == 'explore',
                 focusNode: exploreFocusNode,
                 onSelect: () => onTabChanged('explore'),
@@ -69,8 +70,8 @@ class TvTabBar extends StatelessWidget {
               const SizedBox(width: 4),
               _M3EFloatingTabPill(
                 title: 'home_tab_search'.tr(),
-                icon: Icons.search_outlined,
-                selectedIcon: Icons.search,
+                icon: AppIcons.search,
+                selectedIcon: AppIcons.search,
                 isSelected: selectedTab == 'search',
                 focusNode: searchFocusNode,
                 onSelect: () => onTabChanged('search'),
@@ -81,8 +82,8 @@ class TvTabBar extends StatelessWidget {
               const SizedBox(width: 4),
               _M3EFloatingTabPill(
                 title: 'home_tab_groups'.tr(),
-                icon: Icons.bookmarks_outlined,
-                selectedIcon: Icons.bookmarks,
+                icon: AppIcons.group,
+                selectedIcon: AppIcons.group,
                 isSelected: selectedTab == 'groups',
                 focusNode: groupsFocusNode,
                 onSelect: () => onTabChanged('groups'),
@@ -100,8 +101,8 @@ class TvTabBar extends StatelessWidget {
 
 class _M3EFloatingTabPill extends StatefulWidget {
   final String title;
-  final IconData icon;
-  final IconData selectedIcon;
+  final dynamic icon;
+  final dynamic selectedIcon;
   final bool isSelected;
   final FocusNode focusNode;
   final VoidCallback onSelect;
@@ -147,6 +148,8 @@ class _M3EFloatingTabPillState extends State<_M3EFloatingTabPill> {
       fg = scheme.onSurfaceVariant;
     }
 
+    final currentIcon = widget.isSelected ? widget.selectedIcon : widget.icon;
+
     return Focus(
       focusNode: widget.focusNode,
       onFocusChange: (v) => setState(() => _focused = v),
@@ -191,8 +194,8 @@ class _M3EFloatingTabPillState extends State<_M3EFloatingTabPill> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                widget.isSelected ? widget.selectedIcon : widget.icon,
+              AppIcon(
+                icon: currentIcon,
                 color: fg,
                 size: 18,
               ),

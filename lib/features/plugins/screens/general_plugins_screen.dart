@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/services/arcade_plugin_service.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
@@ -150,7 +150,7 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                               child: !isInstalled
                                   ? TvEmptyStateCard(
                                       focusNode: _emptyFocusNode,
-                                      icon: Icons.extension_off_outlined,
+                                      icon: AppIcons.plugin,
                                       message: 'plugins_empty_installed_msg'.tr(),
                                       onFocusUp: () => _backFocusNode.requestFocus(),
                                       onFocusRight: () => _availableFocusNode.requestFocus(),
@@ -254,8 +254,8 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(12),
-            child: Icon(
-              Symbols.extension,
+            child: AppIcon(
+              icon: AppIcons.plugin,
               color: scheme.onPrimaryContainer,
               size: 26,
             ),
@@ -388,8 +388,8 @@ class _BackButtonState extends State<_BackButton> {
             child: SizedBox(
               width: 52,
               height: 52,
-              child: Icon(
-                Icons.arrow_back_rounded,
+              child: AppIcon(
+                icon: AppIcons.arrowLeft,
                 color: fg,
                 size: 24,
               ),
@@ -481,8 +481,8 @@ class _InstalledPluginTileState extends State<_InstalledPluginTile> {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(10),
-                child: Icon(
-                  Symbols.electrical_services,
+                child: AppIcon(
+                  icon: AppIcons.plugin,
                   size: 22,
                   color: iconColor,
                 ),
@@ -525,7 +525,7 @@ class _InstalledPluginTileState extends State<_InstalledPluginTile> {
             _IconButtonAction(
               focusNode: widget.updateFocus,
               tooltip: 'plugins_reinstall_tooltip'.tr(),
-              icon: Icons.sync_rounded,
+              icon: AppIcons.update,
               onPressed: widget.onUpdate,
               parentFocused: isFocused,
               onKeyRight: () => widget.removeFocus.requestFocus(),
@@ -535,7 +535,7 @@ class _InstalledPluginTileState extends State<_InstalledPluginTile> {
             _IconButtonAction(
               focusNode: widget.removeFocus,
               tooltip: 'plugins_uninstall_tooltip'.tr(),
-              icon: Icons.delete_outline_rounded,
+              icon: AppIcons.delete,
               onPressed: widget.onRemove,
               parentFocused: isFocused,
               onKeyLeft: () => widget.updateFocus.requestFocus(),
@@ -659,8 +659,8 @@ class _AvailablePluginTileState extends State<_AvailablePluginTile> {
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(10),
-                        child: Icon(
-                          Symbols.electrical_services,
+                        child: AppIcon(
+                          icon: AppIcons.plugin,
                           size: 22,
                           color: iconColor,
                         ),
@@ -745,8 +745,8 @@ class _AvailablePluginTileState extends State<_AvailablePluginTile> {
                                 ),
                               ),
                             ] else if (widget.isInstalled) ...[
-                              Icon(
-                                Icons.check_circle_outline_rounded,
+                              AppIcon(
+                                icon: AppIcons.check,
                                 size: 16,
                                 color: _isFocused
                                     ? scheme.onPrimary
@@ -765,8 +765,8 @@ class _AvailablePluginTileState extends State<_AvailablePluginTile> {
                                 ),
                               ),
                             ] else ...[
-                              Icon(
-                                Symbols.download,
+                              AppIcon(
+                                icon: AppIcons.download,
                                 size: 16,
                                 color: _isFocused
                                     ? scheme.primary
@@ -803,7 +803,7 @@ class _AvailablePluginTileState extends State<_AvailablePluginTile> {
 class _IconButtonAction extends StatefulWidget {
   final FocusNode focusNode;
   final String tooltip;
-  final IconData icon;
+  final dynamic icon;
   final VoidCallback onPressed;
   final bool parentFocused;
   final VoidCallback? onKeyLeft;
@@ -900,11 +900,17 @@ class _IconButtonActionState extends State<_IconButtonAction> {
               child: SizedBox(
                 width: 40,
                 height: 40,
-                child: Icon(
-                  widget.icon,
-                  size: 20,
-                  color: iconColor,
-                ),
+                child: widget.icon is List<List<dynamic>>
+                    ? AppIcon(
+                        icon: widget.icon as List<List<dynamic>>,
+                        size: 20,
+                        color: iconColor,
+                      )
+                    : Icon(
+                        widget.icon as IconData,
+                        size: 20,
+                        color: iconColor,
+                      ),
               ),
             ),
           ),

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:moai3/theme/app_icons.dart';
 
 /// Leading idéntico a [SettingsActionRow] / [TvTile]:
 /// `Material` + `Padding(10)` + `Icon(22)` → cuadrado ~42, no pastilla.
 class TvListCardLeadingIcon extends StatelessWidget {
-  final IconData? icon;
+  final dynamic icon;
   final List<List<dynamic>>? hugeIcon;
   final bool isFocused;
 
@@ -33,17 +34,13 @@ class TvListCardLeadingIcon extends StatelessWidget {
 
     final side = (pad * 2) + iconSize;
 
-    final Widget childWidget = hugeIcon != null
-        ? HugeIcon(
-            icon: hugeIcon!,
-            size: iconSize,
-            color: iconColor,
-          )
-        : Icon(
-            icon ?? Icons.tv_outlined,
-            size: iconSize,
-            color: iconColor,
-          );
+    final effectiveHugeIcon = hugeIcon ?? (icon is List<List<dynamic>> ? icon as List<List<dynamic>> : AppIcons.tv);
+
+    final Widget childWidget = HugeIcon(
+      icon: effectiveHugeIcon,
+      size: iconSize,
+      color: iconColor,
+    );
 
     return Container(
       width: side,

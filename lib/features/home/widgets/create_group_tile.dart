@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/favorites_provider.dart';
@@ -96,8 +97,8 @@ class _CreateGroupTileState extends State<CreateGroupTile> {
                     child: SizedBox(
                       width: 36,
                       height: 36,
-                      child: Icon(
-                        Icons.add_outlined,
+                      child: AppIcon(
+                        icon: AppIcons.add,
                         color: isFocused ? scheme.primary : itemStyle.foregroundColor,
                         size: 22,
                       ),
@@ -190,7 +191,7 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
         MoaiSnackBar.show(
           widget.tileContext,
           message: 'groups_created_success'.tr(namedArgs: {'name': name}),
-          icon: Icons.bookmark_add_outlined,
+          icon: AppIcons.add,
         );
       }
     } catch (e) {
@@ -198,7 +199,7 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
         MoaiSnackBar.show(
           widget.tileContext,
           message: 'groups_create_error'.tr(namedArgs: {'error': '$e'}),
-          icon: Icons.error_outline,
+          icon: AppIcons.error,
         );
       }
     }
@@ -209,7 +210,7 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
     final scheme = context.scheme;
 
     return TvDialog(
-      icon: Icons.bookmark_add_outlined,
+      icon: AppIcons.add,
       title: 'groups_create_title'.tr(),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -222,7 +223,7 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
             hint: 'groups_name_hint'.tr(),
             keyboardType: TvKeyboardType.text,
             textInputAction: TvTextInputAction.done,
-            leadingIcon: Icons.playlist_add_outlined,
+            leadingIcon: AppIcons.group,
             onFocusDown: () => _createFocusNode.requestFocus(),
             onSubmitted: (_) => _createFocusNode.requestFocus(),
             onChanged: (_) {

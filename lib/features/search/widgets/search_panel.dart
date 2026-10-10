@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/features/search/controllers/home_search_controller.dart';
 import 'package:moai3/models/channel.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/cards/channel_grid_tile.dart';
 import 'package:moai3/widgets/lists/tv_fixed_window_viewport.dart';
@@ -150,8 +151,8 @@ class SearchPanelState extends State<SearchPanel> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.explore_outlined,
+                        AppIcon(
+                          icon: AppIcons.search,
                           size: 36,
                           color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
                         ),
@@ -179,8 +180,8 @@ class SearchPanelState extends State<SearchPanel> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.cancel_outlined,
+                            AppIcon(
+                              icon: AppIcons.close,
                               size: 36,
                               color: scheme.onSurfaceVariant
                                   .withValues(alpha: 0.7),
@@ -298,7 +299,7 @@ class _SearchPanelChrome extends StatelessWidget {
                 keyboardType: TvKeyboardType.search,
                 textInputAction: TvTextInputAction.search,
                 dense: true,
-                leadingIcon: Icons.keyboard_alt_outlined,
+                leadingIcon: AppIcons.keyboard,
                 onFocusUp: onFocusUp,
                 onFocusDown: onFocusDown,
                 // Con X visible: → va al clear, no al panel Países.
@@ -416,8 +417,8 @@ class _SearchClearButtonState extends State<_SearchClearButton> {
               color: _isFocused ? scheme.primary : scheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Icon(
-              Icons.close_outlined,
+            child: AppIcon(
+              icon: AppIcons.close,
               color: _isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
               size: 20,
             ),

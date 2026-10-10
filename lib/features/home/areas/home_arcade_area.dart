@@ -1,6 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/features/games/screens/arcade_games_screen.dart';
 import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
@@ -82,7 +82,7 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
       'arcade_panel_title'.tr(),
     ];
     const icons = [
-      Icons.sports_esports_outlined,
+      AppIcons.arcade,
     ];
 
     return TvAccordionRowPreview(
@@ -114,7 +114,7 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
                 focusNode: widget.selectGameFocus,
                 label: 'arcade_action_select_game'.tr(),
                 description: _resolveCurrentGameName(),
-                icon: Symbols.joystick,
+                icon: AppIcons.gamepad,
                 onPressed: _onSelectGame,
                 onKeyLeft: widget.onExitLeft,
                 onKeyDown: () => widget.gamepadFocus.requestFocus(),
@@ -126,7 +126,7 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
                 focusNode: widget.gamepadFocus,
                 label: 'arcade_gamepad_config_title'.tr(),
                 description: 'arcade_gamepad_config_desc'.tr(),
-                icon: Symbols.gamepad,
+                icon: AppIcons.gamepad,
                 onPressed: _onConfigGamepad,
                 onKeyLeft: widget.onExitLeft,
                 onKeyUp: () => widget.selectGameFocus.requestFocus(),
@@ -142,7 +142,7 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
                   focusNode: widget.startFocus,
                   label: 'arcade_action_start_game'.tr(),
                   description: 'arcade_action_start_game_desc'.tr(),
-                  icon: Icons.play_arrow_rounded,
+                  icon: AppIcons.play,
                   onPressed: widget.onStartGame,
                   onKeyLeft: widget.onExitLeft,
                   onKeyUp: () => widget.gamepadFocus.requestFocus(),

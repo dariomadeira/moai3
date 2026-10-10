@@ -1,6 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/services/plugin_host_service.dart';
 import 'package:moai3/services/plugin_update_service.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -151,8 +151,8 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
                 final u = widget.updates[i];
                 return Row(
                   children: [
-                    Icon(
-                      Symbols.electrical_services,
+                    AppIcon(
+                      icon: AppIcons.plugin,
                       size: 18,
                       color: scheme.primary,
                     ),
@@ -266,11 +266,11 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
         alignment: Alignment.center,
         child: Column(
           children: [
-            Icon(
-              Symbols.check_circle,
-              color: scheme.primary,
-              size: 44,
-            ),
+              AppIcon(
+                icon: AppIcons.check,
+                color: scheme.primary,
+                size: 44,
+              ),
             const SizedBox(height: 12),
             Text(
               'plugin_update_completed'.tr(),
@@ -296,7 +296,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
         ),
         child: Row(
           children: [
-            Icon(Symbols.error, color: scheme.error, size: 22),
+            AppIcon(icon: AppIcons.info, color: scheme.error, size: 22),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -334,7 +334,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
 
     return TvDialog(
       width: 480,
-      icon: Symbols.extension,
+      icon: AppIcons.plugin,
       title: widget.updates.length == 1
           ? 'plugin_update_title_singular'.tr()
           : 'plugin_update_title_plural'.tr(),

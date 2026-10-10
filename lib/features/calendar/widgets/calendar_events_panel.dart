@@ -3,6 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/services/calendar/argentina_time.dart';
@@ -455,8 +456,8 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                 Expanded(
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.calendar_month_outlined,
+                      AppIcon(
+                        icon: AppIcons.calendar,
                         size: 20,
                         color: scheme.primary,
                       ),
@@ -492,7 +493,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                         return Padding(
                           padding: const EdgeInsets.only(right: 6),
                           child: _HeaderButton(
-                            icon: Icons.sync_outlined,
+                            icon: AppIcons.update,
                             tooltip: 'calendar_refresh'.tr(),
                             isFocused: isFocused,
                             isLoading: calendar.isLoading,
@@ -507,7 +508,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                         return Padding(
                           padding: const EdgeInsets.only(right: 6),
                           child: _HeaderButton(
-                            icon: Icons.chevron_left,
+                            icon: AppIcons.chevronLeft,
                             tooltip: 'calendar_week_nav_prev'.tr(),
                             isFocused: isFocused,
                             onTap: () {
@@ -521,7 +522,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                         return Padding(
                           padding: const EdgeInsets.only(right: 6),
                           child: _HeaderButton(
-                            icon: Icons.today_outlined,
+                            icon: AppIcons.calendar,
                             label: 'calendar_week_current'.tr(),
                             isFocused: isFocused,
                             onTap: () {
@@ -533,7 +534,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                         );
                       case _HeaderAction.next:
                         return _HeaderButton(
-                          icon: Icons.chevron_right,
+                          icon: AppIcons.chevronRight,
                           tooltip: 'calendar_week_nav_next'.tr(),
                           isFocused: isFocused,
                           onTap: () {
@@ -612,7 +613,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
 
 /// Botón con color sólido y sin bordes para el header
 class _HeaderButton extends StatelessWidget {
-  final IconData icon;
+  final dynamic icon;
   final String? label;
   final String? tooltip;
   final bool isFocused;
@@ -663,7 +664,13 @@ class _HeaderButton extends StatelessWidget {
                   ),
                 )
               else
-                Icon(icon, size: 17, color: fgColor),
+                icon is List<List<dynamic>>
+                    ? AppIcon(
+                        icon: icon as List<List<dynamic>>,
+                        size: 17,
+                        color: fgColor,
+                      )
+                    : Icon(icon as IconData, size: 17, color: fgColor),
               if (label != null) ...[
                 const SizedBox(width: 6),
                 Text(
@@ -881,8 +888,8 @@ class _DayColumn extends StatelessWidget {
                           color: scheme.tertiaryContainer,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Icon(
-                          Icons.keyboard_arrow_up,
+                        child: AppIcon(
+                          icon: AppIcons.arrowUp,
                           size: 12,
                           color: scheme.onTertiaryContainer,
                         ),
@@ -918,8 +925,8 @@ class _DayColumn extends StatelessWidget {
                           color: scheme.tertiaryContainer,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Icon(
-                          Icons.keyboard_arrow_down,
+                        child: AppIcon(
+                          icon: AppIcons.arrowDown,
                           size: 12,
                           color: scheme.onTertiaryContainer,
                         ),
@@ -953,8 +960,8 @@ class _DayColumn extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(
-              Icons.event_busy_outlined,
+            AppIcon(
+              icon: AppIcons.calendar,
               size: 24,
               color: isFocused ? scheme.onSecondaryContainer : scheme.outline,
             ),
@@ -1048,8 +1055,8 @@ class _CalendarEventGridCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          sportIcon,
+                        AppIcon(
+                          icon: sportIcon,
                           size: 11.5,
                           color: isFinished ? fgColor : subColor,
                         ),
@@ -1243,20 +1250,20 @@ class _CalendarEventDialogContentState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TvInfoTile(
-          icon: Icons.schedule_outlined,
+          icon: AppIcons.time,
           label: 'calendar_event_time'.tr(),
           description: '${event.formattedDate} • ${event.formattedTime} hs',
         ),
         const SizedBox(height: 8),
         TvInfoTile(
-          icon: Icons.sports_outlined,
+          icon: AppIcons.trophy,
           label: 'calendar_event_sport'.tr(),
           description: event.sessionType ?? event.competition,
         ),
         if (event.broadcaster != null && event.broadcaster!.isNotEmpty) ...[
           const SizedBox(height: 8),
           TvInfoTile(
-            icon: Icons.tv_outlined,
+            icon: AppIcons.tv,
             label: 'calendar_event_broadcaster'.tr(),
             description: event.broadcaster!,
           ),
@@ -1316,7 +1323,7 @@ class _CalendarEventDialogContentState
 
     return TvDialog(
       width: hasChannels ? 800 : 480,
-      icon: Icons.event_note_outlined,
+      icon: AppIcons.calendar,
       title: event.title,
       subtitle: event.competition,
       trailingHeader: widget.isLive

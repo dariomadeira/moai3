@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -85,8 +85,8 @@ class _ServerSkipButtonState extends State<ServerSkipButton> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Symbols.host,
+              AppIcon(
+                icon: AppIcons.skipNext,
                 color: _isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
                 size: 20,
               ),

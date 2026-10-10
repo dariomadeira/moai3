@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/cards/alphabet_letter_card.dart';
@@ -85,8 +85,8 @@ class _AlphabetDeleteCardState extends State<AlphabetDeleteCard> {
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
-              child: Icon(
-                Symbols.delete,
+              child: AppIcon(
+                icon: AppIcons.delete,
                 size: 15,
                 color: _isFocused ? scheme.onErrorContainer : scheme.error,
               ),

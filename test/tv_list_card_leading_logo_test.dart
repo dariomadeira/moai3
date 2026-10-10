@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/services/moai_image_cache_manager.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/widgets/cards/tv_list_card_leading_logo.dart';
 
 void main() {
@@ -26,7 +27,7 @@ void main() {
       ),
     );
 
-    expect(find.byIcon(Icons.tv_outlined), findsOneWidget);
+    expect(find.byType(AppIcon), findsOneWidget);
   });
 
   testWidgets('TvListCardLeadingLogo usa BoxFit.contain y alignment center en CachedNetworkImage', (tester) async {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 
 /// Variante semántica para los botones de acción en modales de Android TV.
@@ -21,7 +22,7 @@ enum TvDialogButtonVariant {
 /// y distribución accesible para control remoto D-Pad.
 class TvDialog extends StatelessWidget {
   final double width;
-  final IconData? icon;
+  final dynamic icon;
   final Widget? iconWidget;
   final Color? iconBgColor;
   final Color? iconColor;
@@ -99,11 +100,17 @@ class TvDialog extends StatelessWidget {
                           color: iconBgColor ?? scheme.primaryContainer,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(
-                          icon,
-                          color: iconColor ?? scheme.onPrimaryContainer,
-                          size: 24,
-                        ),
+                        child: icon is List<List<dynamic>>
+                            ? AppIcon(
+                                icon: icon as List<List<dynamic>>,
+                                color: iconColor ?? scheme.onPrimaryContainer,
+                                size: 24,
+                              )
+                            : Icon(
+                                icon as IconData,
+                                color: iconColor ?? scheme.onPrimaryContainer,
+                                size: 24,
+                              ),
                       ),
                     if (icon != null || iconWidget != null)
                       const SizedBox(width: 16),

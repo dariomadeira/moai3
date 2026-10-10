@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/features/bootstrap/screens/overlap_config_screen.dart';
 import 'package:moai3/features/plugins/screens/general_plugins_screen.dart';
 import 'package:moai3/features/settings/widgets/settings_accent_color_row.dart';
@@ -151,7 +152,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       case _SettingsGeneralItemType.plugins:
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: Icons.extension_outlined,
+          icon: AppIcons.plugin,
           label: 'settings_general_plugins_title'.tr(),
           description: 'settings_general_plugins_desc'.tr(),
           onPressed: () {
@@ -169,7 +170,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       case _SettingsGeneralItemType.overscan:
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: Icons.aspect_ratio_outlined,
+          icon: AppIcons.fullscreen,
           label: 'settings_general_overscan'.tr(),
           description: 'settings_general_overscan_desc'.tr(),
           onPressed: () {
@@ -188,7 +189,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       case _SettingsGeneralItemType.darkMode:
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: Icons.dark_mode_outlined,
+          icon: AppIcons.settings,
           label: 'settings_general_dark_mode'.tr(),
           description: 'settings_general_dark_mode_desc'.tr(),
           value: theme.themeMode == ThemeMode.dark,
@@ -203,7 +204,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       case _SettingsGeneralItemType.accentColor:
         return SettingsAccentColorRow(
           focusNode: focusNode,
-          icon: Icons.palette_outlined,
+          icon: AppIcons.edit,
           selectedIndex: theme.accentColorIndex,
           onChanged: (index) => theme.setAccentColorIndex(index),
           onKeyUp: onKeyUp,
@@ -212,7 +213,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       case _SettingsGeneralItemType.autoAccent:
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: Icons.auto_awesome_outlined,
+          icon: AppIcons.star,
           label: 'settings_general_auto_accent'.tr(),
           description: 'settings_general_auto_accent_desc'.tr(),
           value: isAutoAccent,

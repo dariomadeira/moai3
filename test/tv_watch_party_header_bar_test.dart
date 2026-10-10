@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/features/home/widgets/tv_watch_party_header_bar.dart';
 import 'package:moai3/models/friend_info.dart';
 import 'package:moai3/services/app_preferences_service.dart';
@@ -53,8 +53,7 @@ void main() {
       );
 
       expect(find.byType(TvWatchPartyHeaderBar), findsOneWidget);
-      expect(find.byIcon(Symbols.mic), findsNothing);
-      expect(find.byIcon(Symbols.group), findsNothing);
+      expect(find.byType(AppIcon), findsNothing);
     });
 
     testWidgets('muestra las píldoras en modo de testeo / depuración', (tester) async {
@@ -73,8 +72,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Symbols.mic), findsOneWidget);
-      expect(find.byIcon(Symbols.voice_selection), findsOneWidget);
+      expect(find.byType(AppIcon), findsWidgets);
       expect(find.text('watch_party_friend_speaking'), findsOneWidget);
 
       // Limpiar modo debug

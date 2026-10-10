@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/services/modal_route_tracker.dart';
 import 'package:moai3/services/watch_party_voice_coordinator.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
@@ -305,8 +305,8 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Symbols.person,
+            AppIcon(
+              icon: AppIcons.friends,
               color: fg,
               size: 16,
             ),
@@ -369,8 +369,8 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
         ],
       ),
       child: Center(
-        child: Icon(
-          isRecording ? Icons.stop_rounded : Symbols.mic,
+        child: AppIcon(
+          icon: isRecording ? AppIcons.close : AppIcons.micOn,
           color: iconColor,
           size: 18,
         ),
@@ -500,8 +500,8 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Symbols.voice_selection,
+            AppIcon(
+              icon: AppIcons.voiceTest,
               color: fg,
               size: 16,
             ),

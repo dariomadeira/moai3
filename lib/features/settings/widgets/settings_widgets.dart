@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:moai3/features/settings/widgets/tv_tile.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 
 class TvSettingsActionRow extends StatelessWidget {
   final FocusNode focusNode;
   final String label;
   final String description;
-  final IconData? icon;
+  final dynamic icon;
   final VoidCallback onPressed;
   final VoidCallback onKeyLeft;
   final VoidCallback? onKeyRight;
@@ -46,8 +47,8 @@ class TvSettingsActionRow extends StatelessWidget {
       onKeyDown: onKeyDown,
       trailingBuilder: (context, isFocused) {
         final scheme = context.scheme;
-        return Icon(
-          Icons.chevron_right,
+        return AppIcon(
+          icon: AppIcons.chevronRight,
           size: 26,
           color: isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
         );
@@ -60,7 +61,7 @@ class TvSettingsSwitchRow extends StatelessWidget {
   final FocusNode focusNode;
   final String label;
   final String? description;
-  final IconData? icon;
+  final dynamic icon;
   final bool value;
   final ValueChanged<bool> onChanged;
   final VoidCallback onKeyLeft;

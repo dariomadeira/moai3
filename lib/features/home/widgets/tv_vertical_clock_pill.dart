@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:moai3/state/weather_provider.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:provider/provider.dart';
 
@@ -129,8 +130,8 @@ class _TvVerticalClockPillState extends State<TvVerticalClockPill> {
                     child: Lottie.network(
                       lottieUrl,
                       fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => Icon(
-                        Icons.wb_sunny_outlined,
+                      errorBuilder: (context, error, stackTrace) => AppIcon(
+                        icon: AppIcons.time,
                         size: 20,
                         color: scheme.onSurfaceVariant,
                       ),

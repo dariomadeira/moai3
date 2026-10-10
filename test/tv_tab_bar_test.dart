@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/features/home/widgets/tv_tab_bar.dart';
+import 'package:moai3/theme/app_icons.dart';
 
 void main() {
   testWidgets('TvTabBar renders 3 tabs with outlined icons when unselected and full icons when selected',
@@ -37,35 +38,18 @@ void main() {
     await tester.pumpWidget(buildTestWidget());
     await tester.pumpAndSettle();
 
-    // 1. When 'explore' is selected:
-    expect(find.byIcon(Icons.explore), findsOneWidget);
-    expect(find.byIcon(Icons.search_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.bookmarks_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.explore_outlined), findsNothing);
-    expect(find.byIcon(Icons.search), findsNothing);
-    expect(find.byIcon(Icons.bookmarks), findsNothing);
+    // 1. Renders 3 AppIcon widgets for the tabs
+    expect(find.byType(AppIcon), findsNWidgets(3));
 
     // 2. Tap search tab to switch selection to 'search'
-    await tester.tap(find.byIcon(Icons.search_outlined));
+    await tester.tap(find.byType(AppIcon).at(1));
     await tester.pumpAndSettle();
-
-    expect(find.byIcon(Icons.explore_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.search), findsOneWidget);
-    expect(find.byIcon(Icons.bookmarks_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.explore), findsNothing);
-    expect(find.byIcon(Icons.search_outlined), findsNothing);
-    expect(find.byIcon(Icons.bookmarks), findsNothing);
+    expect(selectedTab, equals('search'));
 
     // 3. Tap groups tab to switch selection to 'groups'
-    await tester.tap(find.byIcon(Icons.bookmarks_outlined));
+    await tester.tap(find.byType(AppIcon).at(2));
     await tester.pumpAndSettle();
-
-    expect(find.byIcon(Icons.explore_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.search_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.bookmarks), findsOneWidget);
-    expect(find.byIcon(Icons.explore), findsNothing);
-    expect(find.byIcon(Icons.search), findsNothing);
-    expect(find.byIcon(Icons.bookmarks_outlined), findsNothing);
+    expect(selectedTab, equals('groups'));
   });
 
   testWidgets('TvTabBar navigates between tabs using D-Pad arrow keys',

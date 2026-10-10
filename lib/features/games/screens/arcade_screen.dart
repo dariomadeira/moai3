@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/features/games/services/arcade_emulator_service.dart';
 import 'package:moai3/features/games/widgets/arcade_controller_overlay.dart';
 import 'package:moai3/features/games/widgets/arcade_view_container.dart';
@@ -214,7 +215,7 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
                 top: overlapY + 8,
                 left: overlapX + 8,
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white70),
+                  icon: const AppIcon(icon: AppIcons.arrowLeft, color: Colors.white70),
                   onPressed: () => Navigator.pop(context),
                 ),
               ),

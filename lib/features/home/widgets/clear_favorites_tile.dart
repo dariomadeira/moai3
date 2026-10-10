@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/helpers/notification_helper.dart';
 import 'package:moai3/state/favorites_provider.dart';
@@ -94,8 +95,8 @@ class _ClearFavoritesTileState extends State<ClearFavoritesTile> {
                     child: const SizedBox(
                       width: 36,
                       height: 36,
-                      child: Icon(
-                        Icons.delete_outline,
+                      child: AppIcon(
+                        icon: AppIcons.delete,
                         color: Colors.redAccent,
                         size: 22,
                       ),
@@ -168,7 +169,7 @@ class _ClearConfirmDialogContentState
     final scheme = context.scheme;
 
     return TvDialog(
-      icon: Icons.delete_sweep_outlined,
+      icon: AppIcons.delete,
       iconBgColor: scheme.errorContainer,
       iconColor: scheme.onErrorContainer,
       title: 'favorites_clear_title'.tr(),

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
 
@@ -62,11 +63,11 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
     }
   }
 
-  IconData _cornerIcon(Alignment alignment) {
-    if (alignment == Alignment.topLeft) return Icons.north_west;
-    if (alignment == Alignment.topRight) return Icons.north_east;
-    if (alignment == Alignment.bottomLeft) return Icons.south_west;
-    return Icons.south_east;
+  List<List<dynamic>> _cornerIcon(Alignment alignment) {
+    if (alignment == Alignment.topLeft) return AppIcons.arrowLeft;
+    if (alignment == Alignment.topRight) return AppIcons.arrowRight;
+    if (alignment == Alignment.bottomLeft) return AppIcons.arrowLeft;
+    return AppIcons.arrowRight;
   }
 
   @override
@@ -108,8 +109,8 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
                         alignment: alignment,
                         child: Padding(
                           padding: const EdgeInsets.all(10),
-                          child: Icon(
-                            _cornerIcon(alignment),
+                          child: AppIcon(
+                            icon: _cornerIcon(alignment),
                             color: scheme.primary,
                             size: 26,
                           ),
@@ -140,8 +141,8 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
                             ),
                             child: Padding(
                               padding: const EdgeInsets.all(12),
-                              child: Icon(
-                                Icons.aspect_ratio_outlined,
+                              child: AppIcon(
+                                icon: AppIcons.fullscreen,
                                 color: scheme.onPrimaryContainer,
                                 size: 26,
                               ),
@@ -196,7 +197,7 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
                       TvFocusButton(
                         focusNode: _buttonFocus,
                         label: 'overlap_save'.tr(),
-                        icon: Icons.check_outlined,
+                        icon: AppIcons.check,
                         onPressed: _save,
                         onArrowUp: () => _yFocus.requestFocus(),
                       ),

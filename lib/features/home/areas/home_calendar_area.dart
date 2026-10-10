@@ -1,6 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/features/calendar/widgets/calendar_events_panel.dart';
 import 'package:moai3/features/calendar/widgets/calendar_subscriptions_panel.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
@@ -27,8 +27,8 @@ class HomeCalendarArea extends StatefulWidget {
   });
 
   static const icons = [
-    Icons.calendar_month_outlined,
-    Symbols.calendar_add_on,
+    AppIcons.calendar,
+    AppIcons.calendar,
   ];
 
   @override

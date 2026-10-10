@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/models/friend_info.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -110,7 +110,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
         MoaiSnackBar.show(
           context,
           message: 'friend_add_dialog_success'.tr(),
-          icon: Icons.check_circle_outline,
+          icon: AppIcons.check,
         );
       }
     } catch (e) {
@@ -123,7 +123,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
         MoaiSnackBar.show(
           context,
           message: localizedError,
-          icon: Icons.error_outline,
+          icon: AppIcons.error,
         );
       }
     } finally {
@@ -143,7 +143,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
         final deleteFocus = FocusNode(debugLabel: 'delete_confirm');
         return TvDialog(
           width: 460,
-          icon: Icons.person_remove_outlined,
+          icon: AppIcons.removeFriend,
           title: 'friends_delete_confirm_title'.tr(),
           subtitle: 'friends_delete_confirm_desc'.tr(
             namedArgs: {'name': friend.nickname ?? friend.userCode},
@@ -175,7 +175,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
           MoaiSnackBar.show(
             context,
             message: 'friends_delete_success'.tr(),
-            icon: Icons.check,
+            icon: AppIcons.check,
           );
         }
       } catch (e) {
@@ -183,7 +183,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
           MoaiSnackBar.show(
             context,
             message: 'friends_delete_error'.tr(),
-            icon: Icons.error_outline,
+            icon: AppIcons.error,
           );
         }
       }
@@ -225,8 +225,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.error_outline_rounded,
+                          AppIcon(
+                            icon: AppIcons.error,
                             color: scheme.onErrorContainer,
                             size: 20,
                           ),
@@ -284,8 +284,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(12),
-            child: Icon(
-              Icons.people_alt_rounded,
+            child: AppIcon(
+              icon: AppIcons.friends,
               color: scheme.onPrimaryContainer,
               size: 26,
             ),
@@ -359,7 +359,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
             hint: 'friends_input_hint'.tr(),
             keyboardType: TvKeyboardType.text,
             doneLabel: 'friends_add_button'.tr(),
-            leadingIcon: Icons.badge_outlined,
+            leadingIcon: AppIcons.badge,
             maxLength: 10,
             onSubmitted: (val) => _handleAddFriend(val),
             onFocusLeft: () => _backFocus.requestFocus(),
@@ -374,7 +374,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
         TvFocusButton(
           focusNode: _addFocus,
           label: 'friends_add_button'.tr(),
-          icon: Symbols.person_add,
+          icon: AppIcons.addFriend,
           height: 60,
           variant: TvButtonVariant.tonal,
           loading: _isSubmitting,
@@ -420,7 +420,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     if (friends.isEmpty) {
       return TvEmptyStateCard(
         focusNode: _emptyFocusNode,
-        icon: Icons.group_off_outlined,
+        icon: AppIcons.friends,
         message: 'friends_empty_title'.tr(),
         onFocusUp: () => _addFocus.requestFocus(),
       );
@@ -548,8 +548,8 @@ class _FriendTileState extends State<_FriendTile> {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(10),
-                child: Icon(
-                  Icons.person_rounded,
+                child: AppIcon(
+                  icon: AppIcons.person,
                   size: 22,
                   color: iconColor,
                 ),
@@ -647,8 +647,8 @@ class _FriendTileState extends State<_FriendTile> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  Icons.tv_rounded,
+                                AppIcon(
+                                  icon: AppIcons.tv,
                                   size: 11,
                                   color: isFocused
                                       ? scheme.onPrimary
@@ -684,7 +684,7 @@ class _FriendTileState extends State<_FriendTile> {
             _IconButtonAction(
               focusNode: widget.focusNode,
               tooltip: 'friends_delete_button'.tr(),
-              icon: Icons.delete_outline_rounded,
+              icon: AppIcons.delete,
               onPressed: widget.onDelete,
               parentFocused: isFocused,
               onKeyUp: widget.onKeyUp,
@@ -775,8 +775,8 @@ class _BackButtonState extends State<_BackButton> {
             child: SizedBox(
               width: 52,
               height: 52,
-              child: Icon(
-                Icons.arrow_back_rounded,
+              child: AppIcon(
+                icon: AppIcons.arrowLeft,
                 color: fg,
                 size: 24,
               ),
@@ -791,7 +791,7 @@ class _BackButtonState extends State<_BackButton> {
 class _IconButtonAction extends StatefulWidget {
   final FocusNode focusNode;
   final String tooltip;
-  final IconData icon;
+  final dynamic icon;
   final VoidCallback onPressed;
   final bool parentFocused;
   final VoidCallback? onKeyUp;
@@ -896,11 +896,17 @@ class _IconButtonActionState extends State<_IconButtonAction> {
               child: SizedBox(
                 width: 44,
                 height: 44,
-                child: Icon(
-                  widget.icon,
-                  size: 20,
-                  color: fg,
-                ),
+                child: widget.icon is List<List<dynamic>>
+                    ? AppIcon(
+                        icon: widget.icon as List<List<dynamic>>,
+                        size: 20,
+                        color: fg,
+                      )
+                    : Icon(
+                        widget.icon as IconData,
+                        size: 20,
+                        color: fg,
+                      ),
               ),
             ),
           ),

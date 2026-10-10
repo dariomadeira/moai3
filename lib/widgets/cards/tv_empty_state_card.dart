@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 
 /// Tarjeta reutilizable de estado vacío para listas en pantallas TV.
@@ -7,7 +8,7 @@ import 'package:moai3/theme/moai_text.dart';
 /// Encapsula la gestión de foco D-pad, borde animado y presentación estilizada.
 class TvEmptyStateCard extends StatelessWidget {
   final FocusNode focusNode;
-  final IconData icon;
+  final dynamic icon;
   final String message;
   final VoidCallback? onFocusUp;
   final VoidCallback? onFocusDown;
@@ -80,13 +81,22 @@ class TvEmptyStateCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    icon,
-                    size: 48,
-                    color: isFocused
-                        ? scheme.primary
-                        : scheme.onSurfaceVariant,
-                  ),
+                  if (icon is List<List<dynamic>>)
+                    AppIcon(
+                      icon: icon,
+                      size: 48,
+                      color: isFocused
+                          ? scheme.primary
+                          : scheme.onSurfaceVariant,
+                    )
+                  else if (icon is IconData)
+                    Icon(
+                      icon,
+                      size: 48,
+                      color: isFocused
+                          ? scheme.primary
+                          : scheme.onSurfaceVariant,
+                    ),
                   const SizedBox(height: 8),
                   Center(
                     child: Text(

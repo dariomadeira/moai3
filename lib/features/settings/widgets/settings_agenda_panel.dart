@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/theme/app_icons.dart';
 import 'package:moai3/features/settings/screens/agenda_utc_offset_screen.dart';
 import 'package:moai3/features/settings/widgets/settings_agenda_notify_row.dart';
 import 'package:moai3/features/settings/widgets/settings_agenda_snack_duration_row.dart';
@@ -107,7 +108,7 @@ class SettingsAgendaPanelState extends State<SettingsAgendaPanel> {
                                 _SettingsAgendaItemType.utcOffset =>
                                   TvSettingsActionRow(
                                     focusNode: focusNode,
-                                    icon: Icons.public_outlined,
+                                    icon: AppIcons.globe,
                                     label: 'settings_agenda_utc'.tr(),
                                     description: 'settings_agenda_utc_desc'.tr(
                                       namedArgs: {
