@@ -10,7 +10,8 @@ import 'package:moai3/widgets/cards/tv_list_card_style.dart';
 /// Ítem de lista TV: leading cuadrado + texto (países, categorías, etc.).
 class TvIconListCard extends StatefulWidget {
   final String label;
-  final IconData icon;
+  final IconData? icon;
+  final List<List<dynamic>>? hugeIcon;
   final bool isSelected;
   final VoidCallback onTap;
   final FocusNode? focusNode;
@@ -23,7 +24,8 @@ class TvIconListCard extends StatefulWidget {
   const TvIconListCard({
     super.key,
     required this.label,
-    required this.icon,
+    this.icon,
+    this.hugeIcon,
     required this.isSelected,
     required this.onTap,
     this.focusNode,
@@ -166,6 +168,7 @@ class _TvIconListCardState extends State<TvIconListCard> {
                     children: [
                       TvListCardLeadingIcon(
                         icon: widget.icon,
+                        hugeIcon: widget.hugeIcon,
                         isFocused: isFocused,
                       ),
                       SizedBox(width: metrics.gap),

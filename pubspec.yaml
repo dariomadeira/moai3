@@ -47,6 +47,7 @@ dependencies:
   uuid: ^4.5.1
   intl: ^0.20.3
   lottie: ^3.3.1
+  hugeicons: ^1.2.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
