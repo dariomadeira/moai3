@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:dynamic_color/dynamic_color.dart';
@@ -198,19 +197,16 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   AppLifecycleListener? _lifecycleListener;
-  Timer? _heartbeatTimer;
   bool _isInForeground = true;
   Color? _lastSeed;
   ThemeData? _cachedLightTheme;
   ThemeData? _cachedDarkTheme;
 
-  static const Duration _heartbeatInterval = Duration(seconds: 20);
-
   @override
   void initState() {
     super.initState();
+    NotificationHelper.initialize(MyApp.scaffoldMessengerKey);
     final deviceId = widget.identityService.getOrCreateDeviceId();
-    _startHeartbeat(deviceId);
 
     _lifecycleListener = AppLifecycleListener(
       onResume: () => _handleForeground(deviceId),
@@ -227,34 +223,19 @@ class _MyAppState extends State<MyApp> {
       deviceId: deviceId,
       online: true,
     );
-    _startHeartbeat(deviceId);
   }
 
   void _handleBackground(String deviceId) {
     if (!_isInForeground) return;
     _isInForeground = false;
-    _stopHeartbeat();
     widget.presenceService.updateOnlineStatus(
       deviceId: deviceId,
       online: false,
     );
   }
 
-  void _startHeartbeat(String deviceId) {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(_heartbeatInterval, (_) {
-      // El heartbeat en segundo plano mantiene online solo si la presencia sigue en online
-    });
-  }
-
-  void _stopHeartbeat() {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = null;
-  }
-
   @override
   void dispose() {
-    _stopHeartbeat();
     _lifecycleListener?.dispose();
     super.dispose();
   }
@@ -293,8 +274,6 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    NotificationHelper.initialize(MyApp.scaffoldMessengerKey);
-
     final (themeMode, seed) = context.select<ThemeProvider, (ThemeMode, Color)>(
       (theme) => (theme.themeMode, theme.accentSeed),
     );

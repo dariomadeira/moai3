@@ -82,7 +82,7 @@ class ArcadeRomManagerService extends ChangeNotifier {
       return _installedRoms;
     } catch (e) {
       if (kDebugMode) {
-        print('[ArcadeRomManagerService] Error al listar ROMs: $e');
+        debugPrint('[ArcadeRomManagerService] Error al listar ROMs: $e');
       }
       return [];
     }
@@ -200,7 +200,7 @@ class ArcadeRomManagerService extends ChangeNotifier {
             await _channel.invokeMethod('deleteRom', {'name': installed.filename});
           } catch (e) {
             if (kDebugMode) {
-              print('[ArcadeRomManagerService] Error purgando ROM anterior ${installed.filename}: $e');
+              debugPrint('[ArcadeRomManagerService] Error purgando ROM anterior ${installed.filename}: $e');
             }
           }
         }
@@ -212,7 +212,7 @@ class ArcadeRomManagerService extends ChangeNotifier {
       return true;
     } catch (e) {
       if (kDebugMode) {
-        print('[ArcadeRomManagerService] Error descargando $filename: $e');
+        debugPrint('[ArcadeRomManagerService] Error descargando $filename: $e');
       }
       _downloadProgress.remove(filename);
       _errorMessage = 'Error al descargar $filename: $e';
@@ -235,7 +235,7 @@ class ArcadeRomManagerService extends ChangeNotifier {
       return result;
     } catch (e) {
       if (kDebugMode) {
-        print('[ArcadeRomManagerService] Error borrando $filename: $e');
+        debugPrint('[ArcadeRomManagerService] Error borrando $filename: $e');
       }
       return false;
     }

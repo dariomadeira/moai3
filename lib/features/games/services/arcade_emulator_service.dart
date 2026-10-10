@@ -50,7 +50,7 @@ class ArcadeEmulatorService extends ChangeNotifier {
       case 'onEmulatorError':
         final String error = call.arguments as String? ?? 'Error desconocido';
         if (kDebugMode) {
-          print('[ArcadeEmulatorService] Error nativo: $error');
+          debugPrint('[ArcadeEmulatorService] Error nativo: $error');
         }
         break;
     }
@@ -66,7 +66,7 @@ class ArcadeEmulatorService extends ChangeNotifier {
       return result;
     } on PlatformException catch (e) {
       if (kDebugMode) {
-        print('[ArcadeEmulatorService] Error al inicializar: ${e.message}');
+        debugPrint('[ArcadeEmulatorService] Error al inicializar: ${e.message}');
       }
       return false;
     }
@@ -79,7 +79,7 @@ class ArcadeEmulatorService extends ChangeNotifier {
       return result;
     } on PlatformException catch (e) {
       if (kDebugMode) {
-        print('[ArcadeEmulatorService] Error al configurar ruta de core: ${e.message}');
+        debugPrint('[ArcadeEmulatorService] Error al configurar ruta de core: ${e.message}');
       }
       return false;
     }
@@ -99,7 +99,7 @@ class ArcadeEmulatorService extends ChangeNotifier {
       return result;
     } on PlatformException catch (e) {
       if (kDebugMode) {
-        print('[ArcadeEmulatorService] Error al cargar ROM $path: ${e.message}');
+        debugPrint('[ArcadeEmulatorService] Error al cargar ROM $path: ${e.message}');
       }
       return false;
     }
@@ -113,7 +113,7 @@ class ArcadeEmulatorService extends ChangeNotifier {
       await _channel.invokeMethod('sendInputState', {'mask': mask});
     } on PlatformException catch (e) {
       if (kDebugMode) {
-        print('[ArcadeEmulatorService] Error al enviar input: ${e.message}');
+        debugPrint('[ArcadeEmulatorService] Error al enviar input: ${e.message}');
       }
     }
   }

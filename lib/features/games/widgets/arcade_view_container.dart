@@ -24,7 +24,7 @@ class ArcadeViewContainer extends StatelessWidget {
         creationParamsCodec: const StandardMessageCodec(),
         onPlatformViewCreated: (id) {
           if (kDebugMode) {
-            print('[ArcadeViewContainer] PlatformView nativa creada id: $id');
+            debugPrint('[ArcadeViewContainer] PlatformView nativa creada id: $id');
           }
         },
       );

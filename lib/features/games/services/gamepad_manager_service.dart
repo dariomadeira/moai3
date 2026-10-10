@@ -59,7 +59,7 @@ class GamepadManagerService extends ChangeNotifier {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[GamepadManagerService] Error consultando gamepads: $e');
+        debugPrint('[GamepadManagerService] Error consultando gamepads: $e');
       }
       _connectedGamepads = [];
     } finally {
