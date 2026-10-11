@@ -37,7 +37,8 @@ static retro_set_input_poll_t core_retro_set_input_poll = nullptr;
 static retro_set_input_state_t core_retro_set_input_state = nullptr;
 static retro_get_system_av_info_t core_retro_get_system_av_info = nullptr;
 
-static std::atomic<uint16_t> g_input_bitmask{0};
+static std::atomic<uint16_t> g_input_bitmask_p1{0};
+static std::atomic<uint16_t> g_input_bitmask_p2{0};
 static std::atomic<bool> g_is_running{false};
 static std::atomic<bool> g_is_paused{false};
 static std::thread g_emu_thread;
@@ -339,9 +340,9 @@ static void core_audio_sample_cb(int16_t left, int16_t right) {
 static void core_input_poll_cb() {}
 
 static int16_t core_input_state_cb(unsigned port, unsigned device, unsigned index, unsigned id) {
-   if (port != 0 || (device & RETRO_DEVICE_MASK) != RETRO_DEVICE_JOYPAD) return 0;
+   if (port > 1 || (device & RETRO_DEVICE_MASK) != RETRO_DEVICE_JOYPAD) return 0;
 
-   uint16_t mask = g_input_bitmask.load();
+   uint16_t mask = (port == 0) ? g_input_bitmask_p1.load() : g_input_bitmask_p2.load();
 
    // Mapeo bitmask Flutter -> Libretro Joypad IDs
    // Bitmask Flutter:
@@ -563,7 +564,16 @@ Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeLoadRom(JNIEnv *env, job
 
 JNIEXPORT void JNICALL
 Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeSendInputMask(JNIEnv *env, jobject thiz, jint mask) {
-   g_input_bitmask.store(static_cast<uint16_t>(mask));
+   g_input_bitmask_p1.store(static_cast<uint16_t>(mask));
+}
+
+JNIEXPORT void JNICALL
+Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeSendPlayerInputMask(JNIEnv *env, jobject thiz, jint player, jint mask) {
+   if (player == 0) {
+      g_input_bitmask_p1.store(static_cast<uint16_t>(mask));
+   } else if (player == 1) {
+      g_input_bitmask_p2.store(static_cast<uint16_t>(mask));
+   }
 }
 
 JNIEXPORT void JNICALL
@@ -616,7 +626,8 @@ Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeStop(JNIEnv *env, jobjec
       core_retro_unload_game();
       LOGI("Juego descargado limpiamente de FBNeo.");
    }
-   g_input_bitmask.store(0);
+   g_input_bitmask_p1.store(0);
+   g_input_bitmask_p2.store(0);
    // NOTA: NO llamamos a core_retro_deinit() ni dlclose() porque libfbneo.so
    // permanece en el espacio de memoria de Android y su re-inicialización
    // causaría corrupción de heap en allocators como Scudo.

@@ -62,10 +62,13 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
       return 'arcade_no_games_installed'.tr();
     }
     final active = installed.firstWhere(
-      (r) => r.filename == widget.romManager.activeRomFilename,
+      (r) => r.filename.toLowerCase() == widget.romManager.activeRomFilename?.toLowerCase(),
       orElse: () => installed.first,
     );
-    return active.name;
+    if (active.name.isNotEmpty && active.name.toLowerCase() != active.filename.toLowerCase().replaceAll('.zip', '')) {
+      return active.name;
+    }
+    return widget.romManager.nameFromFilename(active.filename);
   }
 
   void _onConfigGamepad() {

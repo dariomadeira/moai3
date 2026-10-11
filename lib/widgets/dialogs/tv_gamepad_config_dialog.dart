@@ -7,7 +7,11 @@ import 'package:moai3/features/games/services/gamepad_manager_service.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 
-/// Modal interactivo para diagnosticar, probar y configurar mandos físicos (Bluetooth / USB).
+/// Modal interactivo para diagnosticar, probar y listar mandos físicos (Bluetooth / USB).
+/// Diseñado con estética Material 3 Expressive para Android TV:
+/// - Columna izquierda: Lista de mandos detectados y estado.
+/// - Columna derecha: Tablero visual de botones (D-Pad + Coin/Start + 6 botones Arcade)
+///   en iconos cuadrados redondeados (squircles) con iluminación en tiempo real sin scroll.
 class TvGamepadConfigDialog extends StatefulWidget {
   const TvGamepadConfigDialog({super.key});
 
@@ -29,7 +33,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
   final FocusNode _closeFocus = FocusNode(debugLabel: 'gamepad_close');
   final FocusNode _refreshFocus = FocusNode(debugLabel: 'gamepad_refresh');
 
-  // Estado del tester de botones en vivo
+  // Máscara de botones activos en tiempo real
   int _activeTestMask = 0;
   String? _lastPressedLabel;
 
@@ -38,7 +42,8 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
     super.initState();
     _gamepadService.refreshGamepads();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _closeFocus.requestFocus();
+      if (!mounted) return;
+      _closeFocus.requestFocus();
     });
   }
 
@@ -53,52 +58,56 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
   KeyEventResult _handleGamepadKeyEvent(FocusNode node, KeyEvent event) {
     final key = event.logicalKey;
 
-    // Permitir salir con Escape / Back
+    // Salir con Escape / Back
     if (event is KeyDownEvent &&
         (key == LogicalKeyboardKey.escape ||
-         key == LogicalKeyboardKey.goBack ||
-         key == LogicalKeyboardKey.backspace)) {
+            key == LogicalKeyboardKey.goBack ||
+            key == LogicalKeyboardKey.backspace)) {
       Navigator.of(context).pop();
       return KeyEventResult.handled;
     }
 
     int bit = 0;
     String label = '';
+    bool isDirectionalKey = false;
 
-    // Mapeo interactivo D-Pad y Botones Arcade
     if (key == LogicalKeyboardKey.arrowUp || key == LogicalKeyboardKey.gameButton11) {
       bit = ArcadeButtons.up;
       label = 'D-Pad Arriba';
+      isDirectionalKey = (key == LogicalKeyboardKey.arrowUp);
     } else if (key == LogicalKeyboardKey.arrowDown || key == LogicalKeyboardKey.gameButton12) {
       bit = ArcadeButtons.down;
       label = 'D-Pad Abajo';
+      isDirectionalKey = (key == LogicalKeyboardKey.arrowDown);
     } else if (key == LogicalKeyboardKey.arrowLeft || key == LogicalKeyboardKey.gameButton13) {
       bit = ArcadeButtons.left;
       label = 'D-Pad Izquierda';
+      isDirectionalKey = (key == LogicalKeyboardKey.arrowLeft);
     } else if (key == LogicalKeyboardKey.arrowRight || key == LogicalKeyboardKey.gameButton14) {
       bit = ArcadeButtons.right;
       label = 'D-Pad Derecha';
-    } else if (key == LogicalKeyboardKey.gameButtonX || key == LogicalKeyboardKey.keyY) {
+      isDirectionalKey = (key == LogicalKeyboardKey.arrowRight);
+    } else if (key == LogicalKeyboardKey.gameButtonX || key == LogicalKeyboardKey.keyY || key == LogicalKeyboardKey.keyJ) {
       bit = ArcadeButtons.punchLight;
-      label = 'LP (Low Punch)';
-    } else if (key == LogicalKeyboardKey.gameButtonY || key == LogicalKeyboardKey.keyX) {
+      label = 'Golpe Débil (LP)';
+    } else if (key == LogicalKeyboardKey.gameButtonY || key == LogicalKeyboardKey.keyX || key == LogicalKeyboardKey.keyI) {
       bit = ArcadeButtons.punchMedium;
-      label = 'MP (Medium Punch)';
-    } else if (key == LogicalKeyboardKey.gameButtonRight1 || key == LogicalKeyboardKey.keyL) {
+      label = 'Golpe Medio (MP)';
+    } else if (key == LogicalKeyboardKey.gameButtonRight1 || key == LogicalKeyboardKey.keyL || key == LogicalKeyboardKey.keyO) {
       bit = ArcadeButtons.punchHeavy;
-      label = 'HP (Heavy Punch)';
-    } else if (key == LogicalKeyboardKey.gameButtonA || key == LogicalKeyboardKey.keyB) {
+      label = 'Golpe Fuerte (HP)';
+    } else if (key == LogicalKeyboardKey.gameButtonA || key == LogicalKeyboardKey.keyB || key == LogicalKeyboardKey.keyK) {
       bit = ArcadeButtons.kickLight;
-      label = 'LK (Low Kick)';
-    } else if (key == LogicalKeyboardKey.gameButtonB || key == LogicalKeyboardKey.keyA) {
+      label = 'Patada Débil (LK)';
+    } else if (key == LogicalKeyboardKey.gameButtonB || key == LogicalKeyboardKey.keyA || key == LogicalKeyboardKey.keyM) {
       bit = ArcadeButtons.kickMedium;
-      label = 'MK (Medium Kick)';
-    } else if (key == LogicalKeyboardKey.gameButtonRight2 || key == LogicalKeyboardKey.keyR) {
+      label = 'Patada Media (MK)';
+    } else if (key == LogicalKeyboardKey.gameButtonRight2 || key == LogicalKeyboardKey.keyR || key == LogicalKeyboardKey.comma) {
       bit = ArcadeButtons.kickHeavy;
-      label = 'HK (Heavy Kick)';
-    } else if (key == LogicalKeyboardKey.gameButtonSelect || key == LogicalKeyboardKey.digit9) {
+      label = 'Patada Fuerte (HK)';
+    } else if (key == LogicalKeyboardKey.gameButtonSelect || key == LogicalKeyboardKey.digit9 || key == LogicalKeyboardKey.digit5) {
       bit = ArcadeButtons.coin;
-      label = 'COIN (Ficha)';
+      label = 'Ficha (COIN)';
     } else if (key == LogicalKeyboardKey.gameButtonStart || key == LogicalKeyboardKey.digit1) {
       bit = ArcadeButtons.start;
       label = 'START';
@@ -113,6 +122,10 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
           _activeTestMask &= ~bit;
         }
       });
+      // Dejar fluir flechas de teclado para no bloquear navegación de foco D-Pad
+      if (isDirectionalKey) {
+        return KeyEventResult.ignored;
+      }
       return KeyEventResult.handled;
     }
 
@@ -125,601 +138,648 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
 
     return FocusScope(
       onKeyEvent: _handleGamepadKeyEvent,
-      child: Center(
-        child: Material(
-          type: MaterialType.transparency,
-          child: Container(
-            constraints: const BoxConstraints(
-              maxWidth: 780,
-              maxHeight: 520,
-            ),
-          decoration: BoxDecoration(
-            color: scheme.surface,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: scheme.outlineVariant.withValues(alpha: 0.35),
-              width: 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.45),
-                blurRadius: 28,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 22),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Header
-                _buildHeader(context, scheme),
-                const SizedBox(height: 18),
+      child: AnimatedBuilder(
+        animation: _gamepadService,
+        builder: (context, _) {
+          final isConnected = _gamepadService.hasGamepadConnected;
+          final connectedList = _gamepadService.connectedGamepads;
 
-                // 2 Columnas: Estado de Dispositivos + Tester de Botones
-                Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Columna 1: Dispositivo y Modos
-                      Expanded(
-                        flex: 5,
-                        child: _buildDeviceColumn(context, scheme),
-                      ),
-                      const SizedBox(width: 20),
-                      // Columna 2: Tester Visual Interactivo
-                      Expanded(
-                        flex: 6,
-                        child: _buildTesterColumn(context, scheme),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                // Footer de Acciones
-                _buildFooter(context, scheme),
-              ],
-            ),
-          ),
-        ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context, ColorScheme scheme) {
-    return AnimatedBuilder(
-      animation: _gamepadService,
-      builder: (context, _) {
-        final isConnected = _gamepadService.hasGamepadConnected;
-        return Row(
-          children: [
-            Material(
-              color: scheme.primaryContainer,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Icon(
-                  Symbols.gamepad,
-                  color: scheme.onPrimaryContainer,
-                  size: 26,
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'gamepad_dialog_title'.tr(),
-                    style: MoaiText.display(
-                      context,
-                      color: scheme.onSurface,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'gamepad_dialog_subtitle'.tr(),
-                    style: MoaiText.body(
-                      context,
-                      color: scheme.onSurfaceVariant,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Tag / Pill de Estado
-            Material(
+          return TvDialog(
+            width: 820,
+            icon: Symbols.sports_esports,
+            title: 'gamepad_dialog_title'.tr(),
+            subtitle: 'gamepad_dialog_subtitle'.tr(),
+            trailingHeader: Material(
               color: isConnected
                   ? scheme.tertiaryContainer
                   : scheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                child: Text(
-                  isConnected
-                      ? 'gamepad_status_connected'.tr()
-                      : 'gamepad_status_not_connected'.tr(),
-                  style: MoaiText.body(
-                    context,
-                    color: isConnected
-                        ? scheme.onTertiaryContainer
-                        : scheme.onSurfaceVariant,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isConnected
+                          ? Icons.check_circle_outline_rounded
+                          : Icons.videogame_asset_off_outlined,
+                      size: 15,
+                      color: isConnected
+                          ? scheme.onTertiaryContainer
+                          : scheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      isConnected
+                          ? '${connectedList.length} ${connectedList.length == 1 ? "mando detectado" : "mandos detectados"}'
+                          : 'gamepad_status_not_connected'.tr(),
+                      style: MoaiText.body(
+                        context,
+                        color: isConnected
+                            ? scheme.onTertiaryContainer
+                            : scheme.onSurfaceVariant,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildDeviceColumn(BuildContext context, ColorScheme scheme) {
-    return AnimatedBuilder(
-      animation: _gamepadService,
-      builder: (context, _) {
-        final gamepads = _gamepadService.connectedGamepads;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'gamepad_device_section'.tr(),
-              style: MoaiText.body(
-                context,
-                color: scheme.onSurfaceVariant,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: scheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: scheme.outlineVariant.withValues(alpha: 0.25),
-                  ),
-                ),
-                child: gamepads.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
+            content: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Columna 1: Lista de mandos detectados
+                Expanded(
+                  flex: 10,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4, bottom: 8),
+                        child: Row(
                           children: [
-                            Icon(
-                              Symbols.videogame_asset_off,
-                              size: 36,
-                              color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
-                            ),
-                            const SizedBox(height: 10),
+                            Icon(Symbols.gamepad, size: 14, color: scheme.primary),
+                            const SizedBox(width: 6),
                             Text(
-                              'gamepad_device_none'.tr(),
-                              textAlign: TextAlign.center,
-                              style: MoaiText.body(
-                                context,
-                                color: scheme.onSurface,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'gamepad_device_none_hint'.tr(),
-                              textAlign: TextAlign.center,
+                              'MANDOS DETECTADOS',
                               style: MoaiText.body(
                                 context,
                                 color: scheme.onSurfaceVariant,
                                 fontSize: 11,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ],
                         ),
-                      )
-                    : ListView.builder(
-                        itemCount: gamepads.length,
-                        itemBuilder: (context, i) {
-                          final pad = gamepads[i];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                              decoration: BoxDecoration(
-                                color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
-                                borderRadius: BorderRadius.circular(12),
+                      ),
+                      if (!isConnected)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                          decoration: BoxDecoration(
+                            color: scheme.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: scheme.outlineVariant.withValues(alpha: 0.25),
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: scheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  Symbols.videogame_asset_off,
+                                  size: 28,
+                                  color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                                ),
                               ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Symbols.sports_esports,
-                                    size: 22,
-                                    color: scheme.primary,
+                              const SizedBox(height: 12),
+                              Text(
+                                'gamepad_device_none'.tr(),
+                                textAlign: TextAlign.center,
+                                style: MoaiText.body(
+                                  context,
+                                  color: scheme.onSurface,
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'gamepad_device_none_hint'.tr(),
+                                textAlign: TextAlign.center,
+                                style: MoaiText.body(
+                                  context,
+                                  color: scheme.onSurfaceVariant,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            for (int i = 0; i < connectedList.length; i++)
+                              _GamepadDeviceCard(
+                                index: i + 1,
+                                device: connectedList[i],
+                              ),
+                          ],
+                        ),
+                      const SizedBox(height: 10),
+                      // Tarjeta informativa compacta sobre controles arcade
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Symbols.info, size: 14, color: scheme.primary),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Soporta hasta 2 controles simultáneos (Jugador 1 y Jugador 2) para arcade.',
+                                style: MoaiText.body(
+                                  context,
+                                  color: scheme.onSurfaceVariant,
+                                  fontSize: 10.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 20),
+                // Columna 2: Tablero visual de botones en tiempo real (Squircles M3)
+                Expanded(
+                  flex: 12,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4, bottom: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Symbols.joystick, size: 14, color: scheme.primary),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'PRUEBA DE BOTONES',
+                                  style: MoaiText.body(
+                                    context,
+                                    color: scheme.onSurfaceVariant,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
                                   ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          pad.name,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: MoaiText.body(
-                                            context,
-                                            color: scheme.onSurface,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                ),
+                              ],
+                            ),
+                            if (_lastPressedLabel != null)
+                              Text(
+                                _lastPressedLabel!,
+                                style: MoaiText.body(
+                                  context,
+                                  color: scheme.primary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: scheme.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: scheme.outlineVariant.withValues(alpha: 0.25),
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Fila superior: D-Pad a la izquierda + Sistema (Coin / Start) a la derecha
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                // D-Pad en cruz compacto con squircles
+                                SizedBox(
+                                  width: 106,
+                                  height: 106,
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      // Arriba
+                                      Positioned(
+                                        top: 0,
+                                        child: _SquircleButton(
+                                          icon: Icons.arrow_upward_rounded,
+                                          isPressed: (_activeTestMask & ArcadeButtons.up) != 0,
+                                          size: 34,
                                         ),
-                                        Text(
-                                          'ID: ${pad.id} · Bluetooth / USB',
-                                          style: MoaiText.body(
-                                            context,
-                                            color: scheme.onSurfaceVariant,
-                                            fontSize: 11,
-                                          ),
+                                      ),
+                                      // Izquierda
+                                      Positioned(
+                                        left: 0,
+                                        child: _SquircleButton(
+                                          icon: Icons.arrow_back_rounded,
+                                          isPressed: (_activeTestMask & ArcadeButtons.left) != 0,
+                                          size: 34,
+                                        ),
+                                      ),
+                                      // Centro de decoración
+                                      Container(
+                                        width: 12,
+                                        height: 12,
+                                        decoration: BoxDecoration(
+                                          color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      // Derecha
+                                      Positioned(
+                                        right: 0,
+                                        child: _SquircleButton(
+                                          icon: Icons.arrow_forward_rounded,
+                                          isPressed: (_activeTestMask & ArcadeButtons.right) != 0,
+                                          size: 34,
+                                        ),
+                                      ),
+                                      // Abajo
+                                      Positioned(
+                                        bottom: 0,
+                                        child: _SquircleButton(
+                                          icon: Icons.arrow_downward_rounded,
+                                          isPressed: (_activeTestMask & ArcadeButtons.down) != 0,
+                                          size: 34,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Botones de Sistema: COIN y START
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        _SquircleButton(
+                                          label: 'COIN',
+                                          isPressed: (_activeTestMask & ArcadeButtons.coin) != 0,
+                                          width: 58,
+                                          height: 34,
+                                          activeColor: const Color(0xFFFFB300),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        _SquircleButton(
+                                          label: 'START',
+                                          isPressed: (_activeTestMask & ArcadeButtons.start) != 0,
+                                          width: 58,
+                                          height: 34,
+                                          activeColor: const Color(0xFF43A047),
                                         ),
                                       ],
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'Ficha / Iniciar',
+                                      style: MoaiText.body(
+                                        context,
+                                        color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: scheme.outlineVariant.withValues(alpha: 0.15),
                               ),
                             ),
-                          );
-                        },
-                      ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildTesterColumn(BuildContext context, ColorScheme scheme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'gamepad_test_section'.tr(),
-              style: MoaiText.body(
-                context,
-                color: scheme.onSurfaceVariant,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            if (_lastPressedLabel != null)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: scheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  _lastPressedLabel!,
-                  style: MoaiText.body(
-                    context,
-                    color: scheme.onPrimaryContainer,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: scheme.outlineVariant.withValues(alpha: 0.25),
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // Fila Superior: D-Pad y Botones Coin / Start
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    // D-Pad Mini
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildMiniKey('↑', ArcadeButtons.up, scheme),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _buildMiniKey('←', ArcadeButtons.left, scheme),
-                            const SizedBox(width: 26, height: 26),
-                            _buildMiniKey('→', ArcadeButtons.right, scheme),
+                            // Botonera de Acción Arcade (CPS / Lucha: 6 botones)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Golpes / Patadas (CPS)',
+                                  style: MoaiText.body(
+                                    context,
+                                    color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  'Débil · Medio · Fuerte',
+                                  style: MoaiText.body(
+                                    context,
+                                    color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                    fontSize: 9.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            // Fila 1: Golpes (LP, MP, HP)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _SquircleButton(
+                                  label: 'LP',
+                                  subtitle: 'X',
+                                  isPressed: (_activeTestMask & ArcadeButtons.punchLight) != 0,
+                                  width: 64,
+                                  height: 38,
+                                  activeColor: const Color(0xFFE53935),
+                                ),
+                                _SquircleButton(
+                                  label: 'MP',
+                                  subtitle: 'Y',
+                                  isPressed: (_activeTestMask & ArcadeButtons.punchMedium) != 0,
+                                  width: 64,
+                                  height: 38,
+                                  activeColor: const Color(0xFFFB8C00),
+                                ),
+                                _SquircleButton(
+                                  label: 'HP',
+                                  subtitle: 'R1',
+                                  isPressed: (_activeTestMask & ArcadeButtons.punchHeavy) != 0,
+                                  width: 64,
+                                  height: 38,
+                                  activeColor: const Color(0xFF1E88E5),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            // Fila 2: Patadas (LK, MK, HK)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _SquircleButton(
+                                  label: 'LK',
+                                  subtitle: 'A',
+                                  isPressed: (_activeTestMask & ArcadeButtons.kickLight) != 0,
+                                  width: 64,
+                                  height: 38,
+                                  activeColor: const Color(0xFFD81B60),
+                                ),
+                                _SquircleButton(
+                                  label: 'MK',
+                                  subtitle: 'B',
+                                  isPressed: (_activeTestMask & ArcadeButtons.kickMedium) != 0,
+                                  width: 64,
+                                  height: 38,
+                                  activeColor: const Color(0xFF8E24AA),
+                                ),
+                                _SquircleButton(
+                                  label: 'HK',
+                                  subtitle: 'R2',
+                                  isPressed: (_activeTestMask & ArcadeButtons.kickHeavy) != 0,
+                                  width: 64,
+                                  height: 38,
+                                  activeColor: const Color(0xFF3949AB),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
-                        _buildMiniKey('↓', ArcadeButtons.down, scheme),
-                      ],
-                    ),
-                    // COIN / START
-                    Row(
-                      children: [
-                        _buildPillKey('COIN', ArcadeButtons.coin, scheme),
-                        const SizedBox(width: 10),
-                        _buildPillKey('START', ArcadeButtons.start, scheme),
-                      ],
-                    ),
-                  ],
-                ),
-                const Divider(height: 16, thickness: 0.5),
-
-                // Grid 6 Botones Capcom CPS-2
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Puños (LP, MP, HP)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildArcadeKey('LP', ArcadeButtons.punchLight, Colors.redAccent, scheme),
-                        const SizedBox(width: 12),
-                        _buildArcadeKey('MP', ArcadeButtons.punchMedium, Colors.amber.shade700, scheme),
-                        const SizedBox(width: 12),
-                        _buildArcadeKey('HP', ArcadeButtons.punchHeavy, Colors.blueAccent, scheme),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    // Patadas (LK, MK, HK)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildArcadeKey('LK', ArcadeButtons.kickLight, Colors.deepOrangeAccent, scheme),
-                        const SizedBox(width: 12),
-                        _buildArcadeKey('MK', ArcadeButtons.kickMedium, Colors.amber.shade800, scheme),
-                        const SizedBox(width: 12),
-                        _buildArcadeKey('HK', ArcadeButtons.kickHeavy, Colors.indigoAccent, scheme),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMiniKey(String label, int bitmask, ColorScheme scheme) {
-    final isPressed = (_activeTestMask & bitmask) != 0;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 60),
-      width: 26,
-      height: 26,
-      decoration: BoxDecoration(
-        color: isPressed ? scheme.primary : scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: isPressed ? scheme.onPrimary : scheme.outlineVariant.withValues(alpha: 0.4),
-        ),
+            actions: [
+              TvDialogButton(
+                focusNode: _refreshFocus,
+                icon: Icons.refresh_rounded,
+                label: 'gamepad_action_reset'.tr(),
+                variant: TvDialogButtonVariant.neutral,
+                onPressed: () {
+                  _gamepadService.refreshGamepads();
+                  setState(() {
+                    _activeTestMask = 0;
+                    _lastPressedLabel = null;
+                  });
+                },
+                onKeyRight: () => _closeFocus.requestFocus(),
+              ),
+              TvDialogButton(
+                focusNode: _closeFocus,
+                icon: Icons.check_rounded,
+                label: 'gamepad_action_close'.tr(),
+                variant: TvDialogButtonVariant.primary,
+                onPressed: () => Navigator.of(context).pop(),
+                onKeyLeft: () => _refreshFocus.requestFocus(),
+              ),
+            ],
+          );
+        },
       ),
-      child: Center(
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isPressed ? scheme.onPrimary : scheme.onSurface,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPillKey(String label, int bitmask, ColorScheme scheme) {
-    final isPressed = (_activeTestMask & bitmask) != 0;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 60),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: isPressed ? scheme.primary : scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isPressed ? scheme.onPrimary : scheme.outlineVariant.withValues(alpha: 0.4),
-        ),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isPressed ? scheme.onPrimary : scheme.onSurface,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildArcadeKey(String label, int bitmask, Color color, ColorScheme scheme) {
-    final isPressed = (_activeTestMask & bitmask) != 0;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 60),
-      width: 42,
-      height: 42,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isPressed ? color : color.withValues(alpha: 0.25),
-        border: Border.all(
-          color: isPressed ? Colors.white : color.withValues(alpha: 0.6),
-          width: isPressed ? 2.5 : 1.5,
-        ),
-        boxShadow: isPressed
-            ? [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.6),
-                  blurRadius: 10,
-                  spreadRadius: 2,
-                )
-              ]
-            : null,
-      ),
-      child: Center(
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isPressed ? Colors.white : scheme.onSurface,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFooter(BuildContext context, ColorScheme scheme) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // Botón Actualizar Detección
-        _FocusButton(
-          focusNode: _refreshFocus,
-          label: 'gamepad_action_reset'.tr(),
-          icon: Symbols.refresh,
-          onPressed: () => _gamepadService.refreshGamepads(),
-          onFocusRight: () => _closeFocus.requestFocus(),
-        ),
-
-        // Botón Listo / Cerrar
-        _FocusButton(
-          focusNode: _closeFocus,
-          label: 'gamepad_action_close'.tr(),
-          icon: Symbols.check,
-          isPrimary: true,
-          onPressed: () => Navigator.of(context).pop(),
-          onFocusLeft: () => _refreshFocus.requestFocus(),
-        ),
-      ],
     );
   }
 }
 
-class _FocusButton extends StatefulWidget {
-  final FocusNode focusNode;
-  final String label;
-  final IconData icon;
-  final VoidCallback onPressed;
-  final bool isPrimary;
-  final VoidCallback? onFocusLeft;
-  final VoidCallback? onFocusRight;
+/// Botón en squircle con animación de escala, iluminación reactiva y glow en tiempo real
+class _SquircleButton extends StatelessWidget {
+  final String? label;
+  final String? subtitle;
+  final IconData? icon;
+  final bool isPressed;
+  final double? width;
+  final double? height;
+  final double? size;
+  final Color? activeColor;
 
-  const _FocusButton({
-    required this.focusNode,
-    required this.label,
-    required this.icon,
-    required this.onPressed,
-    this.isPrimary = false,
-    this.onFocusLeft,
-    this.onFocusRight,
+  const _SquircleButton({
+    this.label,
+    this.subtitle,
+    this.icon,
+    required this.isPressed,
+    this.width,
+    this.height,
+    this.size,
+    this.activeColor,
   });
-
-  @override
-  State<_FocusButton> createState() => _FocusButtonState();
-}
-
-class _FocusButtonState extends State<_FocusButton> {
-  bool _isFocused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _isFocused = widget.focusNode.hasFocus;
-    widget.focusNode.addListener(_onFocus);
-  }
-
-  @override
-  void dispose() {
-    widget.focusNode.removeListener(_onFocus);
-    super.dispose();
-  }
-
-  void _onFocus() {
-    if (mounted) setState(() => _isFocused = widget.focusNode.hasFocus);
-  }
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final bg = _isFocused
-        ? (widget.isPrimary ? scheme.primary : scheme.surfaceContainerHighest)
-        : (widget.isPrimary ? scheme.primaryContainer : scheme.surfaceContainerLow);
-    final fg = _isFocused
-        ? (widget.isPrimary ? scheme.onPrimary : scheme.onSurface)
-        : (widget.isPrimary ? scheme.onPrimaryContainer : scheme.onSurfaceVariant);
+    final w = size ?? width ?? 40.0;
+    final h = size ?? height ?? 40.0;
 
-    return Focus(
-      focusNode: widget.focusNode,
-      onKeyEvent: (node, event) {
-        if (event is! KeyDownEvent) return KeyEventResult.ignored;
-        if (event.logicalKey == LogicalKeyboardKey.arrowLeft && widget.onFocusLeft != null) {
-          widget.onFocusLeft!();
-          return KeyEventResult.handled;
-        }
-        if (event.logicalKey == LogicalKeyboardKey.arrowRight && widget.onFocusRight != null) {
-          widget.onFocusRight!();
-          return KeyEventResult.handled;
-        }
-        if (event.logicalKey == LogicalKeyboardKey.enter ||
-            event.logicalKey == LogicalKeyboardKey.select ||
-            event.logicalKey == LogicalKeyboardKey.space) {
-          widget.onPressed();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      child: AnimatedScale(
-        scale: _isFocused ? 1.05 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        child: Material(
+    final effectiveActiveColor = activeColor ?? scheme.primary;
+
+    final bg = isPressed
+        ? effectiveActiveColor
+        : scheme.surfaceContainerHighest.withValues(alpha: 0.55);
+
+    final fg = isPressed
+        ? Colors.white
+        : scheme.onSurface;
+
+    return AnimatedScale(
+      scale: isPressed ? 0.90 : 1.0,
+      duration: const Duration(milliseconds: 90),
+      curve: Curves.easeOutQuad,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 90),
+        width: w,
+        height: h,
+        decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(14),
-          child: InkWell(
-            onTap: widget.onPressed,
-            borderRadius: BorderRadius.circular(14),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-              child: Row(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isPressed
+                ? effectiveActiveColor.withValues(alpha: 0.9)
+                : scheme.outlineVariant.withValues(alpha: 0.35),
+            width: isPressed ? 1.5 : 1.0,
+          ),
+          boxShadow: isPressed
+              ? [
+                  BoxShadow(
+                    color: effectiveActiveColor.withValues(alpha: 0.45),
+                    blurRadius: 10,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : null,
+        ),
+        alignment: Alignment.center,
+        child: icon != null
+            ? Icon(
+                icon,
+                size: (size != null ? size! * 0.52 : 18.0),
+                color: fg,
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(widget.icon, size: 18, color: fg),
-                  const SizedBox(width: 8),
                   Text(
-                    widget.label,
+                    label ?? '',
                     style: MoaiText.body(
                       context,
                       color: fg,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
+                  if (subtitle != null) ...[
+                    const SizedBox(width: 3),
+                    Text(
+                      '·$subtitle',
+                      style: MoaiText.body(
+                        context,
+                        color: isPressed
+                            ? Colors.white.withValues(alpha: 0.8)
+                            : scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ],
               ),
+      ),
+    );
+  }
+}
+
+/// Tarjeta que representa un gamepad físico conectado
+class _GamepadDeviceCard extends StatelessWidget {
+  final int index;
+  final GamepadDeviceInfo device;
+
+  const _GamepadDeviceCard({
+    required this.index,
+    required this.device,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: scheme.primaryContainer,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              Symbols.sports_esports,
+              size: 20,
+              color: scheme.onPrimaryContainer,
             ),
           ),
-        ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Mando $index',
+                      style: MoaiText.body(
+                        context,
+                        color: scheme.primary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: scheme.tertiaryContainer,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'Activo',
+                        style: MoaiText.body(
+                          context,
+                          color: scheme.onTertiaryContainer,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  device.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: MoaiText.body(
+                    context,
+                    color: scheme.onSurface,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

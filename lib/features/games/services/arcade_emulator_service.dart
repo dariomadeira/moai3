@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -26,6 +27,14 @@ class ArcadeEmulatorService extends ChangeNotifier {
   static const MethodChannel _channel =
       MethodChannel('com.infomak.moai/arcade_channel');
 
+  final StreamController<int> _onGamepadAssignedController =
+      StreamController<int>.broadcast();
+  final StreamController<void> _onRequestExitController =
+      StreamController<void>.broadcast();
+
+  Stream<int> get onGamepadAssigned => _onGamepadAssignedController.stream;
+  Stream<void> get onRequestExit => _onRequestExitController.stream;
+
   bool _isInitialized = false;
   bool _isRunning = false;
   bool _isPaused = false;
@@ -46,6 +55,22 @@ class ArcadeEmulatorService extends ChangeNotifier {
     switch (call.method) {
       case 'onFrameRendered':
         notifyListeners();
+        break;
+      case 'onGamepadAssigned':
+        int player = 0;
+        if (call.arguments is Map) {
+          player = (call.arguments as Map)['player'] as int? ?? 0;
+        } else if (call.arguments is int) {
+          player = call.arguments as int;
+        }
+        if (!_onGamepadAssignedController.isClosed) {
+          _onGamepadAssignedController.add(player);
+        }
+        break;
+      case 'onRequestExitGame':
+        if (!_onRequestExitController.isClosed) {
+          _onRequestExitController.add(null);
+        }
         break;
       case 'onEmulatorError':
         final String error = call.arguments as String? ?? 'Error desconocido';
@@ -105,12 +130,14 @@ class ArcadeEmulatorService extends ChangeNotifier {
     }
   }
 
-  /// Actualiza la máscara de entrada (botones presionados actualmente).
-  Future<void> sendInputMask(int mask) async {
-    if (_currentInputMask == mask) return;
-    _currentInputMask = mask;
+  /// Actualiza la máscara de entrada (botones presionados actualmente) para un jugador específico (0=P1, 1=P2).
+  Future<void> sendInputMask(int mask, {int player = 0}) async {
+    if (player == 0) {
+      if (_currentInputMask == mask) return;
+      _currentInputMask = mask;
+    }
     try {
-      await _channel.invokeMethod('sendInputState', {'mask': mask});
+      await _channel.invokeMethod('sendInputState', {'mask': mask, 'player': player});
     } on PlatformException catch (e) {
       if (kDebugMode) {
         debugPrint('[ArcadeEmulatorService] Error al enviar input: ${e.message}');
@@ -153,5 +180,12 @@ class ArcadeEmulatorService extends ChangeNotifier {
       _currentRomPath = null;
       notifyListeners();
     } on PlatformException catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _onGamepadAssignedController.close();
+    _onRequestExitController.close();
+    super.dispose();
   }
 }

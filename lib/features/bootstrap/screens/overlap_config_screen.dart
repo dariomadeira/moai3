@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
+import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
 
@@ -54,7 +55,13 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
         .setOverlapConfig(x: _tempX, y: _tempY);
     if (!mounted) return;
     if (widget.isFirstRun) {
-      context.go('/home');
+      final wp = context.read<WatchPartyProvider>();
+      final nick = wp.nickname;
+      if (nick == null || nick.trim().isEmpty) {
+        context.go('/nickname_setup');
+      } else {
+        context.go('/home');
+      }
     } else if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     } else {

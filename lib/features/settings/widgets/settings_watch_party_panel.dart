@@ -54,7 +54,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
         final wp = context.readOptional<WatchPartyProvider>();
         if (wp != null && wp.enabled) {
           wp.ensureUserCode();
-          wp.fetchNickname();
+          wp.fetchNickname(forceRemote: true);
         }
       }
     });

@@ -20,6 +20,13 @@ class ArcadeEmulatorManager(
     private var currentRomPath: String? = null
     private var currentInputMask: Int = 0
 
+    val isRunningEmulation: Boolean
+        get() = isRunning
+
+    private val playerDeviceMap = mutableMapOf<Int, Int>()
+    private var p1Mask: Int = 0
+    private var p2Mask: Int = 0
+
     init {
         channel.setMethodCallHandler(this)
     }
@@ -62,8 +69,14 @@ class ArcadeEmulatorManager(
             }
             "sendInputState" -> {
                 val mask = call.argument<Int>("mask") ?: 0
-                currentInputMask = mask
-                nativeSendInputMask(mask)
+                val player = call.argument<Int>("player") ?: 0
+                if (player == 0) {
+                    currentInputMask = mask
+                    p1Mask = mask
+                } else {
+                    p2Mask = mask
+                }
+                nativeSendPlayerInputMask(player, mask)
                 result.success(true)
             }
             "pause" -> {
@@ -197,6 +210,9 @@ class ArcadeEmulatorManager(
         isRunning = true
         isPaused = false
         val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+        mainHandler.post {
+            detectAndAssignConnectedGamepads()
+        }
         Thread({
             try {
                 nativeLoadRom(resolvedPath)
@@ -212,11 +228,148 @@ class ArcadeEmulatorManager(
         }, "ArcadeRomLoader").start()
     }
 
+    /** Pre-detecta mandos físicos conectados (USB/Bluetooth) y los asigna automáticamente a Jugador 1 y Jugador 2 */
+    fun detectAndAssignConnectedGamepads() {
+        val inputManager = context.getSystemService(Context.INPUT_SERVICE) as? android.hardware.input.InputManager
+        val deviceIds = inputManager?.inputDeviceIds ?: android.view.InputDevice.getDeviceIds()
+        var nextPlayer = 0
+        for (id in deviceIds) {
+            val device = android.view.InputDevice.getDevice(id) ?: continue
+            if (device.isVirtual) continue
+            val sources = device.sources
+            val isGamepad = (sources and android.view.InputDevice.SOURCE_GAMEPAD == android.view.InputDevice.SOURCE_GAMEPAD) ||
+                            (sources and android.view.InputDevice.SOURCE_JOYSTICK == android.view.InputDevice.SOURCE_JOYSTICK)
+            if (isGamepad && !playerDeviceMap.containsKey(id)) {
+                playerDeviceMap[id] = nextPlayer
+                android.util.Log.i("ArcadeEmulatorManager", "Pre-asignado mando físico id=$id (${device.name}) a Jugador ${nextPlayer + 1}")
+                val playerAssigned = nextPlayer
+                channel.invokeMethod("onGamepadAssigned", mapOf("deviceId" to id, "player" to playerAssigned, "name" to device.name))
+                nextPlayer++
+                if (nextPlayer >= 2) break
+            }
+        }
+    }
+
     private fun stopEmulation() {
         isRunning = false
         isPaused = false
         currentRomPath = null
+        playerDeviceMap.clear()
+        p1Mask = 0
+        p2Mask = 0
         nativeStop()
+    }
+
+    fun handleKeyEvent(event: android.view.KeyEvent): Boolean {
+        if (!isRunning) return false
+
+        val isDown = event.action == android.view.KeyEvent.ACTION_DOWN
+        val isUp = event.action == android.view.KeyEvent.ACTION_UP
+        if (!isDown && !isUp) return false
+
+        var bit = 0
+        when (event.keyCode) {
+            // D-Pad y Direcciones
+            android.view.KeyEvent.KEYCODE_DPAD_UP, android.view.KeyEvent.KEYCODE_BUTTON_11 -> bit = 1 shl 0
+            android.view.KeyEvent.KEYCODE_DPAD_DOWN, android.view.KeyEvent.KEYCODE_BUTTON_12 -> bit = 1 shl 1
+            android.view.KeyEvent.KEYCODE_DPAD_LEFT, android.view.KeyEvent.KEYCODE_BUTTON_13 -> bit = 1 shl 2
+            android.view.KeyEvent.KEYCODE_DPAD_RIGHT, android.view.KeyEvent.KEYCODE_BUTTON_14 -> bit = 1 shl 3
+
+            // COIN / SELECT y START
+            android.view.KeyEvent.KEYCODE_BUTTON_SELECT, android.view.KeyEvent.KEYCODE_BUTTON_8 -> bit = 1 shl 4
+            android.view.KeyEvent.KEYCODE_BUTTON_START, android.view.KeyEvent.KEYCODE_BUTTON_7 -> bit = 1 shl 5
+
+            // Ataques Puño (CPS-2: LP, MP, HP)
+            android.view.KeyEvent.KEYCODE_BUTTON_X, android.view.KeyEvent.KEYCODE_BUTTON_3 -> bit = 1 shl 6
+            android.view.KeyEvent.KEYCODE_BUTTON_Y, android.view.KeyEvent.KEYCODE_BUTTON_4 -> bit = 1 shl 7
+            android.view.KeyEvent.KEYCODE_BUTTON_R1, android.view.KeyEvent.KEYCODE_BUTTON_L1,
+            android.view.KeyEvent.KEYCODE_BUTTON_Z, android.view.KeyEvent.KEYCODE_BUTTON_5 -> bit = 1 shl 8
+
+            // Ataques Patada (CPS-2: LK, MK, HK)
+            android.view.KeyEvent.KEYCODE_BUTTON_A, android.view.KeyEvent.KEYCODE_BUTTON_1 -> bit = 1 shl 9
+            android.view.KeyEvent.KEYCODE_BUTTON_B, android.view.KeyEvent.KEYCODE_BUTTON_2 -> bit = 1 shl 10
+            android.view.KeyEvent.KEYCODE_BUTTON_R2, android.view.KeyEvent.KEYCODE_BUTTON_L2,
+            android.view.KeyEvent.KEYCODE_BUTTON_C, android.view.KeyEvent.KEYCODE_BUTTON_6 -> bit = 1 shl 11
+        }
+
+        // Si la tecla no es un control de juego (ej. Back, Volumen, etc.), NO asignar mando ni consumir
+        if (bit == 0) return false
+
+        val deviceId = event.deviceId
+        // Asignar jugador dinámicamente si no fue pre-asignado
+        if (!playerDeviceMap.containsKey(deviceId)) {
+            val assignedPlayer = if (!playerDeviceMap.containsValue(0)) 0 else if (!playerDeviceMap.containsValue(1)) 1 else 0
+            playerDeviceMap[deviceId] = assignedPlayer
+            android.util.Log.i("ArcadeEmulatorManager", "Mando físico deviceId=$deviceId asignado a Jugador ${assignedPlayer + 1}")
+            channel.invokeMethod("onGamepadAssigned", mapOf("deviceId" to deviceId, "player" to assignedPlayer))
+        }
+
+        val player = playerDeviceMap[deviceId] ?: 0
+
+        if (player == 0) {
+            p1Mask = if (isDown) (p1Mask or bit) else (p1Mask and bit.inv())
+            nativeSendPlayerInputMask(0, p1Mask)
+            if ((p1Mask and (1 shl 4)) != 0 && (p1Mask and (1 shl 5)) != 0) {
+                channel.invokeMethod("onRequestExitGame", null)
+            }
+        } else {
+            p2Mask = if (isDown) (p2Mask or bit) else (p2Mask and bit.inv())
+            nativeSendPlayerInputMask(1, p2Mask)
+            if ((p2Mask and (1 shl 4)) != 0 && (p2Mask and (1 shl 5)) != 0) {
+                channel.invokeMethod("onRequestExitGame", null)
+            }
+        }
+        return true
+    }
+
+    fun handleGenericMotionEvent(event: android.view.MotionEvent): Boolean {
+        if (!isRunning) return false
+        val sources = event.source
+        val isJoystickOrGamepad = (sources and android.view.InputDevice.SOURCE_CLASS_JOYSTICK != 0) ||
+                                  (sources and android.view.InputDevice.SOURCE_GAMEPAD != 0) ||
+                                  (sources and android.view.InputDevice.SOURCE_JOYSTICK != 0)
+        if (!isJoystickOrGamepad) return false
+
+        val deviceId = event.deviceId
+        if (!playerDeviceMap.containsKey(deviceId)) {
+            val assignedPlayer = if (!playerDeviceMap.containsValue(0)) 0 else if (!playerDeviceMap.containsValue(1)) 1 else 0
+            playerDeviceMap[deviceId] = assignedPlayer
+            channel.invokeMethod("onGamepadAssigned", mapOf("deviceId" to deviceId, "player" to assignedPlayer))
+        }
+        val player = playerDeviceMap[deviceId] ?: 0
+
+        val x = event.getAxisValue(android.view.MotionEvent.AXIS_HAT_X).let {
+            if (it != 0f) it else event.getAxisValue(android.view.MotionEvent.AXIS_X)
+        }
+        val y = event.getAxisValue(android.view.MotionEvent.AXIS_HAT_Y).let {
+            if (it != 0f) it else event.getAxisValue(android.view.MotionEvent.AXIS_Y)
+        }
+
+        var dirMask = 0
+        if (y < -0.4f) dirMask = dirMask or (1 shl 0) // UP
+        if (y > 0.4f)  dirMask = dirMask or (1 shl 1) // DOWN
+        if (x < -0.4f) dirMask = dirMask or (1 shl 2) // LEFT
+        if (x > 0.4f)  dirMask = dirMask or (1 shl 3) // RIGHT
+
+        // Gatillos analógicos (R2 / L2)
+        val rTrigger = maxOf(event.getAxisValue(android.view.MotionEvent.AXIS_RTRIGGER), event.getAxisValue(android.view.MotionEvent.AXIS_GAS))
+        val lTrigger = maxOf(event.getAxisValue(android.view.MotionEvent.AXIS_LTRIGGER), event.getAxisValue(android.view.MotionEvent.AXIS_BRAKE))
+        val triggerPressed = (rTrigger > 0.5f || lTrigger > 0.5f)
+
+        if (player == 0) {
+            p1Mask = (p1Mask and 0xFFF0) or dirMask
+            if (triggerPressed) {
+                p1Mask = p1Mask or (1 shl 11)
+            }
+            nativeSendPlayerInputMask(0, p1Mask)
+        } else {
+            p2Mask = (p2Mask and 0xFFF0) or dirMask
+            if (triggerPressed) {
+                p2Mask = p2Mask or (1 shl 11)
+            }
+            nativeSendPlayerInputMask(1, p2Mask)
+        }
+        return true
     }
 
     // --- Native JNI declarations ---
@@ -226,6 +379,7 @@ class ArcadeEmulatorManager(
     private external fun nativeSetSurfaceSize(width: Int, height: Int)
     private external fun nativeLoadRom(path: String)
     private external fun nativeSendInputMask(mask: Int)
+    private external fun nativeSendPlayerInputMask(player: Int, mask: Int)
     private external fun nativePause()
     private external fun nativeResume()
     private external fun nativeReset()

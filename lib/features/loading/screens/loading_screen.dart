@@ -73,10 +73,18 @@ class _LoadingScreenState extends State<LoadingScreen> {
         // Dispositivo bloqueado (RB-04 / CASO-UC-02)
         context.go('/blocked', extra: record.blockReason);
       } else {
-        // Dispositivo activo -> Ir a Home o Overlap si no está calibrado
+        // Dispositivo activo -> Ir a Overlap, NicknameSetup o Home
         final tvSettings = context.read<TvSettingsProvider>();
+        final effectiveNick = (record.nickname != null && record.nickname!.trim().isNotEmpty)
+            ? record.nickname!.trim()
+            : (localNickname != null && localNickname.trim().isNotEmpty
+                ? localNickname.trim()
+                : widget.identityService.getNickname()?.trim());
+
         if (!tvSettings.hasOverlapConfig) {
           context.go('/overlap');
+        } else if (effectiveNick == null || effectiveNick.isEmpty) {
+          context.go('/nickname_setup');
         } else {
           context.go('/home');
         }

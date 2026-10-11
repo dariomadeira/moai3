@@ -9,6 +9,8 @@ import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
 import 'package:moai3/widgets/tv_input/tv_text_field.dart';
+import 'package:moai3/widgets/lists/tv_fixed_window_viewport.dart';
+import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 
 /// Pantalla para gestionar y descargar ROMs de Arcade.
 /// Sigue la misma estructura y diseño de 2 columnas que SourcesScreen.
@@ -25,6 +27,9 @@ class ArcadeGamesScreen extends StatefulWidget {
 }
 
 class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
+  static const int _catalogWindowSize = 4;
+  static const double _catalogItemExtent = 74.0;
+
   final TextEditingController _urlController =
       TextEditingController(text: ArcadeRomManagerService.defaultManifestUrl);
   final FocusNode _backFocus = FocusNode(debugLabel: 'games_back');
@@ -32,8 +37,10 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
   final FocusNode _refreshFocus = FocusNode(debugLabel: 'games_refresh');
   final FocusNode _emptyFocusNode = FocusNode(debugLabel: 'games_empty');
 
+  final GlobalKey<TvWindowedListState<ArcadeRomItem>> _catalogListKey =
+      GlobalKey<TvWindowedListState<ArcadeRomItem>>();
+
   final List<FocusNode> _installedDeleteFocuses = [];
-  final List<FocusNode> _catalogFocuses = [];
 
   @override
   void initState() {
@@ -62,13 +69,6 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
         FocusNode(debugLabel: 'installed_del_${_installedDeleteFocuses.length}'),
       );
     }
-
-    final catalog = widget.romManager.catalog;
-    while (_catalogFocuses.length < catalog.length) {
-      _catalogFocuses.add(
-        FocusNode(debugLabel: 'catalog_${_catalogFocuses.length}'),
-      );
-    }
   }
 
   @override
@@ -80,9 +80,6 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
     _refreshFocus.dispose();
     _emptyFocusNode.dispose();
     for (final f in _installedDeleteFocuses) {
-      f.dispose();
-    }
-    for (final f in _catalogFocuses) {
       f.dispose();
     }
     super.dispose();
@@ -271,8 +268,8 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
             onFocusDown: () {
               if (_installedDeleteFocuses.isNotEmpty) {
                 _installedDeleteFocuses.first.requestFocus();
-              } else if (_catalogFocuses.isNotEmpty) {
-                _catalogFocuses.first.requestFocus();
+              } else if (widget.romManager.catalog.isNotEmpty) {
+                _catalogListKey.currentState?.ensureVisible(0, requestFocus: true);
               } else {
                 _emptyFocusNode.requestFocus();
               }
@@ -290,8 +287,8 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
           onArrowLeft: () => _urlFocus.requestFocus(),
           onArrowUp: () => _backFocus.requestFocus(),
           onArrowDown: () {
-            if (_catalogFocuses.isNotEmpty) {
-              _catalogFocuses.first.requestFocus();
+            if (widget.romManager.catalog.isNotEmpty) {
+              _catalogListKey.currentState?.ensureVisible(0, requestFocus: true);
             } else if (_installedDeleteFocuses.isNotEmpty) {
               _installedDeleteFocuses.first.requestFocus();
             }
@@ -327,8 +324,8 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                   message: 'arcade_empty_installed_msg'.tr(),
                   onFocusUp: () => _urlFocus.requestFocus(),
                   onFocusRight: () {
-                    if (_catalogFocuses.isNotEmpty) {
-                      _catalogFocuses.first.requestFocus();
+                    if (widget.romManager.catalog.isNotEmpty) {
+                      _catalogListKey.currentState?.ensureVisible(0, requestFocus: true);
                     }
                   },
                 )
@@ -355,9 +352,11 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                         }
                       },
                       onKeyRight: () {
-                        if (_catalogFocuses.isNotEmpty) {
-                          final target = i.clamp(0, _catalogFocuses.length - 1);
-                          _catalogFocuses[target].requestFocus();
+                        if (widget.romManager.catalog.isNotEmpty) {
+                          _catalogListKey.currentState?.ensureVisible(
+                            i.clamp(0, widget.romManager.catalog.length - 1),
+                            requestFocus: true,
+                          );
                         }
                       },
                     );
@@ -396,41 +395,49 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                         style: MoaiText.body(context, color: scheme.error),
                       ),
                     )
-                  : ListView.builder(
-                      itemCount: catalog.length,
-                      itemBuilder: (context, i) {
-                        final item = catalog[i];
-                        final progress =
-                            widget.romManager.downloadProgress[item.filename];
-                        return _CatalogRomTile(
-                          key: ValueKey(item.id),
-                          item: item,
-                          focusNode: _catalogFocuses[i],
-                          downloadProgress: progress,
-                          onInstall: () => widget.romManager.downloadRom(item),
-                          onKeyLeft: () {
-                            if (_installedDeleteFocuses.isNotEmpty) {
-                              final target =
-                                  i.clamp(0, _installedDeleteFocuses.length - 1);
-                              _installedDeleteFocuses[target].requestFocus();
-                            } else {
-                              _emptyFocusNode.requestFocus();
-                            }
-                          },
-                          onKeyUp: () {
-                            if (i == 0) {
-                              _refreshFocus.requestFocus();
-                            } else {
-                              _catalogFocuses[i - 1].requestFocus();
-                            }
-                          },
-                          onKeyDown: () {
-                            if (i < catalog.length - 1) {
-                              _catalogFocuses[i + 1].requestFocus();
-                            }
-                          },
-                        );
-                      },
+                  : TvFixedWindowViewport(
+                      slotCount: _catalogWindowSize,
+                      slotExtent: _catalogItemExtent,
+                      alignment: Alignment.topCenter,
+                      child: TvWindowedList<ArcadeRomItem>(
+                        key: _catalogListKey,
+                        items: catalog,
+                        windowSize: _catalogWindowSize,
+                        itemExtent: _catalogItemExtent,
+                        showScrollDots: true,
+                        scrollIndicator: TvScrollIndicator.dots,
+                        onFocusUpFromFirst: () => _refreshFocus.requestFocus(),
+                        itemBuilder: (
+                          context,
+                          item,
+                          focusNode,
+                          local,
+                          global,
+                          onKeyUp,
+                          onKeyDown,
+                        ) {
+                          final progress =
+                              widget.romManager.downloadProgress[item.filename];
+                          return _CatalogRomTile(
+                            key: ValueKey(item.id),
+                            item: item,
+                            focusNode: focusNode,
+                            downloadProgress: progress,
+                            onInstall: () => widget.romManager.downloadRom(item),
+                            onKeyLeft: () {
+                              if (_installedDeleteFocuses.isNotEmpty) {
+                                final target =
+                                    global.clamp(0, _installedDeleteFocuses.length - 1);
+                                _installedDeleteFocuses[target].requestFocus();
+                              } else {
+                                _emptyFocusNode.requestFocus();
+                              }
+                            },
+                            onKeyUp: onKeyUp,
+                            onKeyDown: onKeyDown,
+                          );
+                        },
+                      ),
                     ),
         ),
       ],
@@ -752,6 +759,16 @@ class _CatalogRomTileState extends State<_CatalogRomTile> {
   }
 
   @override
+  void didUpdateWidget(covariant _CatalogRomTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.focusNode != widget.focusNode) {
+      oldWidget.focusNode.removeListener(_onFocus);
+      _isFocused = widget.focusNode.hasFocus;
+      widget.focusNode.addListener(_onFocus);
+    }
+  }
+
+  @override
   void dispose() {
     widget.focusNode.removeListener(_onFocus);
     super.dispose();
@@ -777,7 +794,7 @@ class _CatalogRomTileState extends State<_CatalogRomTile> {
     final isDownloading = widget.downloadProgress != null;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Focus(
         focusNode: widget.focusNode,
         onKeyEvent: (node, event) {
@@ -808,12 +825,12 @@ class _CatalogRomTileState extends State<_CatalogRomTile> {
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
-          constraints: const BoxConstraints(minHeight: 64),
+          height: 66,
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(16),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: InkWell(
             onTap: widget.item.isInstalled || isDownloading ? null : widget.onInstall,
             borderRadius: BorderRadius.circular(16),
@@ -825,7 +842,7 @@ class _CatalogRomTileState extends State<_CatalogRomTile> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(8),
                     child: Icon(
                       Symbols.joystick,
                       size: 22,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -27,6 +28,12 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
   final bool _showOverlay = false;
   bool _isLoading = false;
   int _activeInputMask = 0;
+  String? _gamepadNotification;
+  Timer? _gamepadToastTimer;
+  StreamSubscription<void>? _exitSubscription;
+  StreamSubscription<int>? _gamepadSubscription;
+  bool _isExiting = false;
+  final Set<int> _notifiedPlayers = {};
 
   static const String _defaultRomPath = '/data/user/0/com.infomak.moai/files/mvsc.zip';
   static const MethodChannel _tvPlayerChannel = MethodChannel('com.infomak.moai.tv/player');
@@ -36,10 +43,42 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
     super.initState();
     // Pausar cualquier transmisión de TV activa para liberar decodificadores y CPU
     _tvPlayerChannel.invokeMethod<void>('pauseAll');
+
+    _exitSubscription = _emulatorService.onRequestExit.listen((_) {
+      if (!_isExiting && mounted && Navigator.of(context).canPop()) {
+        _isExiting = true;
+        Navigator.of(context).pop();
+      }
+    });
+
+    _gamepadSubscription = _emulatorService.onGamepadAssigned.listen((player) {
+      if (mounted && !_notifiedPlayers.contains(player)) {
+        _notifiedPlayers.add(player);
+        final message = player == 1
+            ? '🎮 Mando 2 detectado - ¡Jugador 2 listo!'
+            : '🎮 Mando 1 detectado - Jugador 1';
+        _showGamepadToast(message);
+      }
+    });
+
     _initEmulator();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _gamepadFocusNode.requestFocus();
+      }
+    });
+  }
+
+  void _showGamepadToast(String message) {
+    _gamepadToastTimer?.cancel();
+    setState(() {
+      _gamepadNotification = message;
+    });
+    _gamepadToastTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) {
+        setState(() {
+          _gamepadNotification = null;
+        });
       }
     });
   }
@@ -62,8 +101,12 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
 
   @override
   void dispose() {
+    _exitSubscription?.cancel();
+    _gamepadSubscription?.cancel();
+    _gamepadToastTimer?.cancel();
     _gamepadFocusNode.dispose();
     _emulatorService.stop();
+    _emulatorService.dispose();
     // Reanudar la transmisión de TV al salir del Arcade
     _tvPlayerChannel.invokeMethod<void>('resumeAll');
     super.dispose();
@@ -218,6 +261,50 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
+
+              // Notificación de mando / jugador conectado
+              if (_gamepadNotification != null)
+                Positioned(
+                  top: overlapY + 16,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: Colors.cyanAccent.withValues(alpha: 0.8),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.cyanAccent.withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.sports_esports, color: Colors.cyanAccent, size: 22),
+                          const SizedBox(width: 10),
+                          Text(
+                            _gamepadNotification!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
 
               // 4. Indicador de Carga
               if (_isLoading)

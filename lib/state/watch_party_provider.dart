@@ -101,6 +101,7 @@ class WatchPartyProvider extends ChangeNotifier {
     if (_enabled) {
       ensureUserCode();
       loadFriends();
+      fetchNickname(forceRemote: true);
       _startPresenceTimer();
       _subscribeToDevicesRealtime();
       _subscribeToPresenceRealtime();
@@ -108,24 +109,28 @@ class WatchPartyProvider extends ChangeNotifier {
   }
 
   /// Obtiene o sincroniza el nickname desde preferencias locales o Supabase.
-  Future<String?> fetchNickname() async {
-    final local = nickname;
-    if (local != null && local.isNotEmpty) {
-      return local;
+  Future<String?> fetchNickname({bool forceRemote = false}) async {
+    if (!forceRemote) {
+      final local = nickname;
+      if (local != null && local.isNotEmpty) {
+        return local;
+      }
     }
 
     if (_deviceId.isNotEmpty) {
       try {
         final remote = await service.getDeviceNickname(_deviceId);
         if (remote != null && remote.trim().isNotEmpty) {
-          _nickname = remote.trim();
-          await identityService.saveNickname(_nickname!);
-          notifyListeners();
+          if (_nickname != remote.trim()) {
+            _nickname = remote.trim();
+            await identityService.saveNickname(_nickname!);
+            notifyListeners();
+          }
           return _nickname;
         }
       } catch (_) {}
     }
-    return null;
+    return _nickname;
   }
 
   /// Actualiza y persiste el nickname en preferencias y en Supabase.
@@ -502,6 +507,17 @@ class WatchPartyProvider extends ChangeNotifier {
   void _onDeviceRecordUpdated(Map<String, dynamic> record) {
     final updatedDeviceId = record['device_id'] as String?;
     if (updatedDeviceId == null || updatedDeviceId.isEmpty) return;
+
+    // Si el registro actualizado es nuestro propio dispositivo (ej. modificado en Supabase dashboard)
+    if (updatedDeviceId == _deviceId) {
+      final newNick = record['nickname'] as String?;
+      if (newNick != null && newNick.trim().isNotEmpty && newNick.trim() != _nickname) {
+        _nickname = newNick.trim();
+        identityService.saveNickname(_nickname!);
+        notifyListeners();
+      }
+      return;
+    }
 
     final index = _friends.indexWhere((f) => f.deviceId == updatedDeviceId);
     if (index != -1) {

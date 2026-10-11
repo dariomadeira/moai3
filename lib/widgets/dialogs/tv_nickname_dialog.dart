@@ -14,11 +14,13 @@ import 'package:moai3/widgets/tv_input/tv_text_field.dart';
 class TvNicknameDialog extends StatefulWidget {
   final String? initialNickname;
   final bool isMandatory;
+  final ValueChanged<String>? onSaved;
 
   const TvNicknameDialog({
     super.key,
     this.initialNickname,
     this.isMandatory = false,
+    this.onSaved,
   });
 
   /// Muestra el modal de apodo y devuelve el nickname ingresado o null si se canceló.
@@ -82,7 +84,11 @@ class _TvNicknameDialogState extends State<TvNicknameDialog> {
       _textFieldFocusNode.requestFocus();
       return;
     }
-    Navigator.of(context).pop(name);
+    if (widget.onSaved != null) {
+      widget.onSaved!(name);
+    } else {
+      Navigator.of(context).pop(name);
+    }
   }
 
   @override
@@ -96,7 +102,7 @@ class _TvNicknameDialogState extends State<TvNicknameDialog> {
         ? 'nickname_dialog_subtitle_setup'.tr()
         : 'nickname_dialog_subtitle_edit'.tr();
 
-    return TvDialog(
+    final dialog = TvDialog(
       width: 640,
       icon: Icons.badge_outlined,
       title: title,
@@ -137,23 +143,33 @@ class _TvNicknameDialogState extends State<TvNicknameDialog> {
         ],
       ),
       actions: [
-        TvDialogButton(
-          focusNode: _cancelFocusNode,
-          label: 'common_cancel'.tr(),
-          variant: TvDialogButtonVariant.neutral,
-          onPressed: () => Navigator.of(context).pop(null),
-          onKeyRight: () => _saveFocusNode.requestFocus(),
-          onKeyUp: () => _textFieldFocusNode.requestFocus(),
-        ),
+        if (!widget.isMandatory)
+          TvDialogButton(
+            focusNode: _cancelFocusNode,
+            label: 'common_cancel'.tr(),
+            variant: TvDialogButtonVariant.neutral,
+            onPressed: () => Navigator.of(context).pop(null),
+            onKeyRight: () => _saveFocusNode.requestFocus(),
+            onKeyUp: () => _textFieldFocusNode.requestFocus(),
+          ),
         TvDialogButton(
           focusNode: _saveFocusNode,
           label: 'nickname_dialog_confirm'.tr(),
           variant: TvDialogButtonVariant.primary,
-          onKeyLeft: () => _cancelFocusNode.requestFocus(),
+          onKeyLeft: widget.isMandatory ? null : () => _cancelFocusNode.requestFocus(),
           onKeyUp: () => _textFieldFocusNode.requestFocus(),
           onPressed: _save,
         ),
       ],
     );
+
+    if (widget.isMandatory) {
+      return PopScope(
+        canPop: false,
+        child: dialog,
+      );
+    }
+
+    return dialog;
   }
 }

@@ -120,6 +120,24 @@ class MainActivity : FlutterActivity() {
         super.onDestroy()
     }
 
+    override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        if (arcadeManager?.isRunningEmulation == true) {
+            if (arcadeManager?.handleKeyEvent(event) == true) {
+                return true
+            }
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
+    override fun dispatchGenericMotionEvent(event: android.view.MotionEvent): Boolean {
+        if (arcadeManager?.isRunningEmulation == true) {
+            if (arcadeManager?.handleGenericMotionEvent(event) == true) {
+                return true
+            }
+        }
+        return super.dispatchGenericMotionEvent(event)
+    }
+
     /** Canal de utilidades del dispositivo (rama anterior de moai). */
     private fun setupDeviceChannel(flutterEngine: FlutterEngine) {
         MethodChannel(

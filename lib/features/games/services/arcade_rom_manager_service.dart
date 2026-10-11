@@ -36,6 +36,12 @@ class ArcadeRomManagerService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _activeRomFilename = prefs.getString(_activeRomKey);
     await refreshInstalledRoms();
+    fetchCatalog().catchError((e) {
+      if (kDebugMode) {
+        debugPrint('[ArcadeRomManagerService] Error pre-cargando catálogo: $e');
+      }
+      return false;
+    });
   }
 
   /// Consulta las ROMs presentes en el almacenamiento interno de la app.
@@ -51,14 +57,23 @@ class ArcadeRomManagerService extends ChangeNotifier {
             final path = item['path'] as String? ?? '';
             final sizeBytes = (item['sizeBytes'] as num?)?.toInt() ?? 0;
             final label = '${(sizeBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+            final catalogMatch =
+                _catalog.where((c) => c.filename == filename).firstOrNull;
+            final resolvedName = catalogMatch != null && catalogMatch.name.isNotEmpty
+                ? catalogMatch.name
+                : nameFromFilename(filename);
             list.add(
               ArcadeRomItem(
-                id: filename,
-                name: _nameFromFilename(filename),
+                id: catalogMatch?.id ?? filename,
+                name: resolvedName,
                 filename: filename,
+                system: catalogMatch?.system ?? 'CPS-1',
+                year: catalogMatch?.year ?? '',
+                company: catalogMatch?.company ?? 'Capcom',
                 sizeBytes: sizeBytes,
                 sizeLabel: label,
-                url: '',
+                url: catalogMatch?.url ?? '',
+                description: catalogMatch?.description ?? '',
                 isInstalled: true,
                 localPath: path,
                 localSizeBytes: sizeBytes,
@@ -261,11 +276,28 @@ class ArcadeRomManagerService extends ChangeNotifier {
     return item.localPath;
   }
 
-  String _nameFromFilename(String filename) {
-    if (filename == 'mvsc.zip') return 'Marvel vs. Capcom: Clash of Super Heroes';
-    if (filename == 'sfa3.zip') return 'Street Fighter Alpha 3';
-    if (filename == 'vsav.zip') return 'Vampire Savior: The Lord of Vampire';
-    return filename.replaceAll('.zip', '').toUpperCase();
+  String nameFromFilename(String filename) {
+    final clean = filename.toLowerCase().trim();
+    final catalogMatch = _catalog
+        .where((c) => c.filename.toLowerCase().trim() == clean)
+        .firstOrNull;
+    if (catalogMatch != null && catalogMatch.name.isNotEmpty) {
+      return catalogMatch.name;
+    }
+    const known = {
+      'ffight.zip': 'Final Fight',
+      'mvsc.zip': 'Marvel vs. Capcom: Clash of Super Heroes',
+      'sfiii3.zip': 'Street Fighter III: 3rd Strike',
+      'mshvsf.zip': 'Marvel Super Heroes Vs. Street Fighter',
+      'robocop2.zip': 'RoboCop 2',
+      'sfa3.zip': 'Street Fighter Alpha 3',
+      'vsav.zip': 'Vampire Savior: The Lord of Vampire',
+    };
+    if (known.containsKey(clean)) {
+      return known[clean]!;
+    }
+    final base = clean.replaceAll('.zip', '');
+    return base.isNotEmpty ? base.toUpperCase() : 'Juego Arcade';
   }
 
   void _updateCatalogInstalledFlags() {

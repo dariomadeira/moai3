@@ -27,6 +27,30 @@ void main() {
       wrap(
         const TvNicknameDialog(
           initialNickname: 'Juan TV',
+          isMandatory: false,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(TvNicknameDialog), findsOneWidget);
+    expect(find.text('nickname_dialog_title_edit'), findsOneWidget);
+    expect(find.text('nickname_dialog_subtitle_edit'), findsOneWidget);
+    expect(find.text('nickname_dialog_label'), findsOneWidget);
+    expect(find.text('common_cancel'), findsOneWidget);
+    expect(find.text('nickname_dialog_confirm'), findsOneWidget);
+  });
+
+  testWidgets('TvNicknameDialog in mandatory mode hides cancel button and shows setup titles',
+      (tester) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    await tester.pumpWidget(
+      wrap(
+        const TvNicknameDialog(
+          initialNickname: 'Juan TV',
           isMandatory: true,
         ),
       ),
@@ -36,8 +60,7 @@ void main() {
     expect(find.byType(TvNicknameDialog), findsOneWidget);
     expect(find.text('nickname_dialog_title_setup'), findsOneWidget);
     expect(find.text('nickname_dialog_subtitle_setup'), findsOneWidget);
-    expect(find.text('nickname_dialog_label'), findsOneWidget);
-    expect(find.text('common_cancel'), findsOneWidget);
+    expect(find.text('common_cancel'), findsNothing);
     expect(find.text('nickname_dialog_confirm'), findsOneWidget);
   });
 
