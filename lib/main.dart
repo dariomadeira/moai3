@@ -14,6 +14,7 @@ import 'package:moai3/helpers/notification_helper.dart';
 import 'package:moai3/routers/routers.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/arcade_plugin_service.dart';
+import 'package:moai3/features/games/services/arcade_netplay_service.dart';
 import 'package:moai3/services/debug_log_controller.dart';
 import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/moai_image_cache_manager.dart';
@@ -83,6 +84,7 @@ void main() async {
   final playbackStats = PlaybackStatsController();
   final debugLog = DebugLogController();
 
+  bool supabaseInitialized = false;
   final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
   final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
   if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
@@ -92,6 +94,7 @@ void main() async {
         // ignore: deprecated_member_use
         anonKey: supabaseAnonKey,
       );
+      supabaseInitialized = true;
     } catch (e) {
       debugPrint('Error inicializando Supabase: $e');
     }
@@ -111,6 +114,13 @@ void main() async {
     watchPartyService: watchPartyService,
     identityService: deviceIdentityService,
   );
+
+  if (supabaseInitialized) {
+    ArcadeNetplayService.instance.initialize(
+      client: Supabase.instance.client,
+      myDeviceId: deviceIdentityService.getOrCreateDeviceId(),
+    );
+  }
 
   void syncChannelWithWatchParty() {
     final ch = channelProvider.selectedChannel;
@@ -163,6 +173,7 @@ void main() async {
         ChangeNotifierProvider.value(value: channelProvider.pluginHost),
         ChangeNotifierProvider.value(value: watchPartyProvider),
         ChangeNotifierProvider.value(value: watchPartyVoiceCoordinator),
+        ChangeNotifierProvider<ArcadeNetplayService>.value(value: ArcadeNetplayService.instance),
         Provider<DeviceIdentityService>.value(value: deviceIdentityService),
         Provider<SupabasePresenceService>.value(value: supabasePresenceService),
         Provider<WatchPartyService>.value(value: watchPartyService),

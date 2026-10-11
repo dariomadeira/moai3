@@ -58,6 +58,9 @@ class WatchPartyProvider extends ChangeNotifier {
     }
     return _nickname;
   }
+  /// Nombre local preferido para mostrar a otros usuarios (nickname o fallback a userCode).
+  String get myNickname =>
+      (_nickname?.trim().isNotEmpty == true) ? _nickname!.trim() : userCode;
   String get deviceId => _deviceId;
   List<FriendInfo> get friends => List.unmodifiable(_friends);
   List<FriendInfo> get friendRequests => List.unmodifiable(_friendRequests);

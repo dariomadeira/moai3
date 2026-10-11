@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:moai3/features/calendar/widgets/calendar_events_panel.dart';
+import 'package:moai3/features/games/screens/arcade_screen.dart';
+import 'package:moai3/features/games/services/arcade_netplay_service.dart';
 import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
+import 'package:moai3/features/games/widgets/tv_arcade_prep_dialog.dart';
 import 'package:moai3/features/home/areas/home_arcade_area.dart';
 import 'package:moai3/features/home/areas/home_calendar_area.dart';
 import 'package:moai3/features/home/areas/home_settings_area.dart';
@@ -29,6 +32,7 @@ import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/plugin_update_dialog.dart';
 import 'package:moai3/widgets/dialogs/update_dialog.dart';
+import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 
 /// Shell del home — foco como moaiSmart:
 /// Shortcuts D-pad globales; → del rail llama [HomeTvAreaState.requestEntryFocus].
@@ -51,7 +55,10 @@ class _HomeScreenState extends State<HomeScreen> {
       FocusNode(debugLabel: 'arcade_config_gamepad');
   final FocusNode _arcadeStartFocus =
       FocusNode(debugLabel: 'arcade_start_game');
+  final FocusNode _arcadePlayTogetherFocus =
+      FocusNode(debugLabel: 'arcade_play_together');
   final ArcadeRomManagerService _romManager = ArcadeRomManagerService();
+  StreamSubscription? _arcadeInviteSubscription;
 
   final FocusScopeNode _railScopeNode =
       FocusScopeNode(debugLabel: 'rail_scope');
@@ -95,6 +102,50 @@ class _HomeScreenState extends State<HomeScreen> {
       _checkAutoUpdate();
       _listenToLiveEvents();
       _updatePresenceForSection(_selectedIndex);
+      _listenToArcadeInvites();
+    });
+  }
+
+  void _listenToArcadeInvites() {
+    _arcadeInviteSubscription =
+        ArcadeNetplayService.instance.onIncomingInvite.listen((invite) {
+      if (!mounted) return;
+      MoaiSnackBar.show(
+        context,
+        message: '🎮 ${invite.hostNickname} te invitó a jugar ${invite.romName}',
+        icon: Icons.sports_esports,
+        hint: 'OK para Aceptar',
+        onAction: () async {
+          final identity = context.read<DeviceIdentityService>();
+          final myDeviceId = identity.getOrCreateDeviceId();
+          final myNickname =
+              context.read<WatchPartyProvider?>()?.myNickname ?? 'Jugador 2';
+
+          await ArcadeNetplayService.instance.acceptIncomingInvite(
+            myDeviceId: myDeviceId,
+            myNickname: myNickname,
+            romManager: _romManager,
+          );
+
+          if (mounted) {
+            TvArcadePrepDialog.show(
+              context,
+              onReadyToPlay: (session) {
+                final romPath = _romManager.getActiveRomPath();
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ArcadeScreen(
+                      initialRomPath: romPath,
+                      netplaySession: session,
+                    ),
+                  ),
+                );
+              },
+            );
+          }
+        },
+        duration: const Duration(seconds: 25),
+      );
     });
   }
 
@@ -296,6 +347,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _arcadeSelectGameFocus.dispose();
     _arcadeGamepadFocus.dispose();
     _arcadeStartFocus.dispose();
+    _arcadePlayTogetherFocus.dispose();
+    _arcadeInviteSubscription?.cancel();
     _romManager.dispose();
     super.dispose();
   }
@@ -479,6 +532,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       selectGameFocus: _arcadeSelectGameFocus,
                                       gamepadFocus: _arcadeGamepadFocus,
                                       startFocus: _arcadeStartFocus,
+                                      playTogetherFocus: _arcadePlayTogetherFocus,
                                       onExitLeft: _focusRail,
                                       romManager: _romManager,
                                       onStartGame: () {
@@ -486,12 +540,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                         if (path != null) {
                                           context.push('/arcade/game', extra: path);
                                         } else {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                'arcade_no_game_installed_snack'.tr(),
-                                              ),
-                                            ),
+                                          MoaiSnackBar.show(
+                                            context,
+                                            message: 'arcade_no_game_installed_snack'.tr(),
+                                            icon: Icons.info_outline,
                                           );
                                         }
                                       },

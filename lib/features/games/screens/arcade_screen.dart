@@ -2,20 +2,25 @@ import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/features/games/models/arcade_netplay_state.dart';
 import 'package:moai3/features/games/services/arcade_emulator_service.dart';
+import 'package:moai3/features/games/services/arcade_netplay_service.dart';
 import 'package:moai3/features/games/widgets/arcade_controller_overlay.dart';
 import 'package:moai3/features/games/widgets/arcade_view_container.dart';
 import 'package:moai3/services/arcade_plugin_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
+import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:provider/provider.dart';
 
 /// Pantalla principal para emular y jugar juegos de Arcade (FBNeo / Libretro).
 class ArcadeScreen extends StatefulWidget {
   final String? initialRomPath;
+  final ArcadeNetplaySession? netplaySession;
 
   const ArcadeScreen({
     super.key,
     this.initialRomPath,
+    this.netplaySession,
   });
 
   @override
@@ -28,10 +33,9 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
   final bool _showOverlay = false;
   bool _isLoading = false;
   int _activeInputMask = 0;
-  String? _gamepadNotification;
-  Timer? _gamepadToastTimer;
   StreamSubscription<void>? _exitSubscription;
-  StreamSubscription<int>? _gamepadSubscription;
+  StreamSubscription<GamepadAssignment>? _gamepadSubscription;
+  StreamSubscription<int>? _remoteInputSubscription;
   bool _isExiting = false;
   final Set<int> _notifiedPlayers = {};
 
@@ -51,34 +55,50 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
       }
     });
 
-    _gamepadSubscription = _emulatorService.onGamepadAssigned.listen((player) {
-      if (mounted && !_notifiedPlayers.contains(player)) {
-        _notifiedPlayers.add(player);
-        final message = player == 1
-            ? '🎮 Mando 2 detectado - ¡Jugador 2 listo!'
-            : '🎮 Mando 1 detectado - Jugador 1';
-        _showGamepadToast(message);
+    _gamepadSubscription = _emulatorService.onGamepadAssigned.listen((assignment) {
+      if (mounted && !_notifiedPlayers.contains(assignment.player)) {
+        _notifiedPlayers.add(assignment.player);
+        final String message;
+        final IconData icon;
+        if (assignment.isRemote) {
+          icon = Icons.settings_remote;
+          message = assignment.player == 0
+              ? 'Control remoto conectado - Jugador 1'
+              : 'Control remoto conectado - ¡Jugador 2 listo!';
+        } else {
+          icon = Icons.sports_esports;
+          message = assignment.player == 0
+              ? 'Mando 1 detectado - Jugador 1'
+              : 'Mando 2 detectado - ¡Jugador 2 listo!';
+        }
+        MoaiSnackBar.show(
+          context,
+          message: message,
+          icon: icon,
+        );
       }
     });
+
+    if (widget.netplaySession != null) {
+      _remoteInputSubscription = ArcadeNetplayService.instance.onRemoteInputReceived.listen((mask) {
+        final remotePlayer = widget.netplaySession!.isHost ? 1 : 0;
+        _emulatorService.sendInputMask(mask, player: remotePlayer);
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          MoaiSnackBar.show(
+            context,
+            message: '🎮 Partida conectada con ${widget.netplaySession!.peerNickname}',
+            icon: Icons.sports_esports,
+          );
+        }
+      });
+    }
 
     _initEmulator();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _gamepadFocusNode.requestFocus();
-      }
-    });
-  }
-
-  void _showGamepadToast(String message) {
-    _gamepadToastTimer?.cancel();
-    setState(() {
-      _gamepadNotification = message;
-    });
-    _gamepadToastTimer = Timer(const Duration(seconds: 4), () {
-      if (mounted) {
-        setState(() {
-          _gamepadNotification = null;
-        });
       }
     });
   }
@@ -101,9 +121,12 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
 
   @override
   void dispose() {
+    _remoteInputSubscription?.cancel();
+    if (widget.netplaySession != null) {
+      ArcadeNetplayService.instance.cancelSession(reason: 'El jugador salió de la partida');
+    }
     _exitSubscription?.cancel();
     _gamepadSubscription?.cancel();
-    _gamepadToastTimer?.cancel();
     _gamepadFocusNode.dispose();
     _emulatorService.stop();
     _emulatorService.dispose();
@@ -198,7 +221,13 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
       } else if (event is KeyUpEvent) {
         _activeInputMask &= ~bit;
       }
-      _emulatorService.sendInputMask(_activeInputMask);
+      if (widget.netplaySession != null) {
+        final localPlayer = widget.netplaySession!.isHost ? 0 : 1;
+        _emulatorService.sendInputMask(_activeInputMask, player: localPlayer);
+        ArcadeNetplayService.instance.sendLocalInput(_activeInputMask);
+      } else {
+        _emulatorService.sendInputMask(_activeInputMask);
+      }
 
       // Salir si se pulsa la combinación SELECT + START simultáneamente
       final isCoin = (_activeInputMask & ArcadeButtons.coin) != 0;
@@ -262,49 +291,7 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
                 ),
               ),
 
-              // Notificación de mando / jugador conectado
-              if (_gamepadNotification != null)
-                Positioned(
-                  top: overlapY + 16,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.85),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: Colors.cyanAccent.withValues(alpha: 0.8),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.cyanAccent.withValues(alpha: 0.3),
-                            blurRadius: 12,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.sports_esports, color: Colors.cyanAccent, size: 22),
-                          const SizedBox(width: 10),
-                          Text(
-                            _gamepadNotification!,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+
 
               // 4. Indicador de Carga
               if (_isLoading)

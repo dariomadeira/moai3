@@ -22,17 +22,30 @@ class ArcadeButtons {
   static const int kickHeavy = 1 << 11; // Heavy Kick (Z / R2)
 }
 
+/// Modelo que representa la asignación de un mando o control remoto a un jugador.
+class GamepadAssignment {
+  final int player;
+  final String? deviceName;
+  final bool isRemote;
+
+  const GamepadAssignment({
+    required this.player,
+    this.deviceName,
+    this.isRemote = false,
+  });
+}
+
 /// Servicio singleton/provider para controlar el motor emulador nativo FBNeo vía MethodChannel.
 class ArcadeEmulatorService extends ChangeNotifier {
   static const MethodChannel _channel =
       MethodChannel('com.infomak.moai/arcade_channel');
 
-  final StreamController<int> _onGamepadAssignedController =
-      StreamController<int>.broadcast();
+  final StreamController<GamepadAssignment> _onGamepadAssignedController =
+      StreamController<GamepadAssignment>.broadcast();
   final StreamController<void> _onRequestExitController =
       StreamController<void>.broadcast();
 
-  Stream<int> get onGamepadAssigned => _onGamepadAssignedController.stream;
+  Stream<GamepadAssignment> get onGamepadAssigned => _onGamepadAssignedController.stream;
   Stream<void> get onRequestExit => _onRequestExitController.stream;
 
   bool _isInitialized = false;
@@ -58,13 +71,24 @@ class ArcadeEmulatorService extends ChangeNotifier {
         break;
       case 'onGamepadAssigned':
         int player = 0;
+        String? deviceName;
+        bool isRemote = false;
         if (call.arguments is Map) {
-          player = (call.arguments as Map)['player'] as int? ?? 0;
+          final map = call.arguments as Map;
+          player = map['player'] as int? ?? 0;
+          deviceName = map['name'] as String?;
+          isRemote = map['isRemote'] as bool? ?? false;
         } else if (call.arguments is int) {
           player = call.arguments as int;
         }
         if (!_onGamepadAssignedController.isClosed) {
-          _onGamepadAssignedController.add(player);
+          _onGamepadAssignedController.add(
+            GamepadAssignment(
+              player: player,
+              deviceName: deviceName,
+              isRemote: isRemote,
+            ),
+          );
         }
         break;
       case 'onRequestExitGame':

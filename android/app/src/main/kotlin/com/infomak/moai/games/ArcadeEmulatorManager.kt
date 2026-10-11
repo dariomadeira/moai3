@@ -228,6 +228,30 @@ class ArcadeEmulatorManager(
         }, "ArcadeRomLoader").start()
     }
 
+    private fun isRemoteControlDevice(device: android.view.InputDevice?): Boolean {
+        if (device == null) return true
+        val name = device.name.lowercase()
+        if (name.contains("remote") || name.contains("control remoto") || name.contains("cec")) {
+            return true
+        }
+        if (name.contains("gamepad") || name.contains("joystick") || name.contains("controller")) {
+            return false
+        }
+        val sources = device.sources
+        val hasGamepadSource = (sources and android.view.InputDevice.SOURCE_GAMEPAD != 0) ||
+                               (sources and android.view.InputDevice.SOURCE_JOYSTICK != 0)
+
+        val hasGamepadKeys = device.hasKeys(
+            android.view.KeyEvent.KEYCODE_BUTTON_A,
+            android.view.KeyEvent.KEYCODE_BUTTON_B,
+            android.view.KeyEvent.KEYCODE_BUTTON_X,
+            android.view.KeyEvent.KEYCODE_BUTTON_Y,
+            android.view.KeyEvent.KEYCODE_BUTTON_START
+        )?.any { it } ?: false
+
+        return !(hasGamepadSource || hasGamepadKeys)
+    }
+
     /** Pre-detecta mandos físicos conectados (USB/Bluetooth) y los asigna automáticamente a Jugador 1 y Jugador 2 */
     fun detectAndAssignConnectedGamepads() {
         val inputManager = context.getSystemService(Context.INPUT_SERVICE) as? android.hardware.input.InputManager
@@ -241,9 +265,10 @@ class ArcadeEmulatorManager(
                             (sources and android.view.InputDevice.SOURCE_JOYSTICK == android.view.InputDevice.SOURCE_JOYSTICK)
             if (isGamepad && !playerDeviceMap.containsKey(id)) {
                 playerDeviceMap[id] = nextPlayer
-                android.util.Log.i("ArcadeEmulatorManager", "Pre-asignado mando físico id=$id (${device.name}) a Jugador ${nextPlayer + 1}")
+                val isRemote = isRemoteControlDevice(device)
+                android.util.Log.i("ArcadeEmulatorManager", "Pre-asignado dispositivo id=$id (${device.name}, isRemote=$isRemote) a Jugador ${nextPlayer + 1}")
                 val playerAssigned = nextPlayer
-                channel.invokeMethod("onGamepadAssigned", mapOf("deviceId" to id, "player" to playerAssigned, "name" to device.name))
+                channel.invokeMethod("onGamepadAssigned", mapOf("deviceId" to id, "player" to playerAssigned, "name" to device.name, "isRemote" to isRemote))
                 nextPlayer++
                 if (nextPlayer >= 2) break
             }
@@ -300,8 +325,11 @@ class ArcadeEmulatorManager(
         if (!playerDeviceMap.containsKey(deviceId)) {
             val assignedPlayer = if (!playerDeviceMap.containsValue(0)) 0 else if (!playerDeviceMap.containsValue(1)) 1 else 0
             playerDeviceMap[deviceId] = assignedPlayer
-            android.util.Log.i("ArcadeEmulatorManager", "Mando físico deviceId=$deviceId asignado a Jugador ${assignedPlayer + 1}")
-            channel.invokeMethod("onGamepadAssigned", mapOf("deviceId" to deviceId, "player" to assignedPlayer))
+            val device = event.device ?: android.view.InputDevice.getDevice(deviceId)
+            val isRemote = isRemoteControlDevice(device)
+            val deviceName = device?.name ?: "Dispositivo"
+            android.util.Log.i("ArcadeEmulatorManager", "Dispositivo deviceId=$deviceId ($deviceName, isRemote=$isRemote) asignado a Jugador ${assignedPlayer + 1}")
+            channel.invokeMethod("onGamepadAssigned", mapOf("deviceId" to deviceId, "player" to assignedPlayer, "name" to deviceName, "isRemote" to isRemote))
         }
 
         val player = playerDeviceMap[deviceId] ?: 0
@@ -334,7 +362,10 @@ class ArcadeEmulatorManager(
         if (!playerDeviceMap.containsKey(deviceId)) {
             val assignedPlayer = if (!playerDeviceMap.containsValue(0)) 0 else if (!playerDeviceMap.containsValue(1)) 1 else 0
             playerDeviceMap[deviceId] = assignedPlayer
-            channel.invokeMethod("onGamepadAssigned", mapOf("deviceId" to deviceId, "player" to assignedPlayer))
+            val device = event.device ?: android.view.InputDevice.getDevice(deviceId)
+            val isRemote = isRemoteControlDevice(device)
+            val deviceName = device?.name ?: "Dispositivo"
+            channel.invokeMethod("onGamepadAssigned", mapOf("deviceId" to deviceId, "player" to assignedPlayer, "name" to deviceName, "isRemote" to isRemote))
         }
         val player = playerDeviceMap[deviceId] ?: 0
 

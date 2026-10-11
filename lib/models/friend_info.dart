@@ -62,6 +62,10 @@ class FriendInfo {
     return true;
   }
 
+  /// Nombre a mostrar (apodo configurado o userCode como fallback).
+  String get displayName =>
+      (nickname?.trim().isNotEmpty == true) ? nickname!.trim() : userCode;
+
   /// Retorna el nombre del canal que el amigo está viendo, o null si está offline o es un canal de adultos.
   String? get displayChannelName {
     if (!isOnline) return null;
