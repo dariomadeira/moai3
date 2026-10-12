@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
@@ -51,75 +52,98 @@ class XuperApiService {
         ? 'Destacados'
         : (section == 'masnew_series' ? 'Series' : 'Películas');
 
-    // 1. Intentar actualizar online desde endpoint getNextColumns
-    try {
-      final baseUrl = _cleanUrl(serverUrl);
-      final endpoint = Uri.parse('$baseUrl/api/portalCore/getNextColumns');
-      debugPrint('🌐 [SYNC $sectionLabel] Conectando a $endpoint...');
+    // Lista de dominios de producción conocidos
+    final candidateHosts = [
+      serverUrl,
+      'https://ftmrmy.jdfey0cd.com',
+      'https://fuxok.nguvmqhpk.com',
+      'https://mptec.dhkrxuzcy.com',
+    ].toSet().toList();
 
-      final headers = {
-        'Content-Type': 'application/json;charset=utf-8',
-        'ProcessResult': 'false',
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 10; TV) Mobile Safari/537.36',
-        'apk': apkPackage,
-        'apkVer': apkVer,
-        'spkgVer': '1.1.4',
-        'PORTAL_KEY': portalKey,
-      };
+    for (final host in candidateHosts) {
+      final baseUrl = _cleanUrl(host);
+      final endpointUri = Uri.parse('$baseUrl/api/portalCore/getNextColumns');
+      debugPrint('🌐 [SYNC $sectionLabel] Conectando a $endpointUri...');
 
-      final body = jsonEncode({
-        'userToken': userToken,
-        'userId': userId,
-        'portalCode': portalCode,
-        'pageNum': 1,
-        'pageSize': 50,
-        'columnCode': section,
-        'version': '',
-      });
+      final ioClient = HttpClient()
+        ..badCertificateCallback = ((cert, h, p) => true)
+        ..connectionTimeout = timeout;
 
-      final response = await http
-          .post(endpoint, headers: headers, body: body)
-          .timeout(timeout);
+      try {
+        final request = await ioClient.postUrl(endpointUri).timeout(timeout);
+        request.headers.set('Content-Type', 'application/json;charset=utf-8');
+        request.headers.set('ProcessResult', 'false');
+        request.headers.set('User-Agent', 'Mozilla/5.0 (Linux; Android 10; TV) Mobile Safari/537.36');
+        request.headers.set('apk', apkPackage);
+        request.headers.set('apkVer', apkVer);
+        request.headers.set('spkgVer', '1.1.4');
+        request.headers.set('PORTAL_KEY', portalKey);
 
-      if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
-        if (decoded is Map<String, dynamic>) {
-          final innerData = decoded['data'];
-          List? rawList;
-          if (innerData is Map<String, dynamic> &&
-              innerData['recommendList'] is List) {
-            rawList = innerData['recommendList'];
-          } else if (decoded['recommendList'] is List) {
-            rawList = decoded['recommendList'];
-          }
+        final requestPayload = jsonEncode({
+          'userToken': userToken,
+          'userId': userId,
+          'portalCode': portalCode,
+          'pageNum': 1,
+          'pageSize': 50,
+          'columnCode': section,
+          'version': '',
+        });
 
-          if (rawList != null) {
-            final list = rawList
-                .whereType<Map<String, dynamic>>()
-                .map((e) => CategoryColumn.fromJson(e))
-                .where((cat) => cat.movies.isNotEmpty)
-                .toList();
+        request.write(requestPayload);
+        final response = await request.close().timeout(timeout);
+        final responseBody = await response.transform(utf8.decoder).join().timeout(timeout);
 
-            if (list.isNotEmpty) {
-              final total = list.fold(0, (sum, c) => sum + c.movies.length);
-              debugPrint('✅ [SYNC ONLINE] $total títulos en ${list.length} categorías sincronizadas.');
-              final result = CatalogResult(
-                categories: list,
-                isFromNetwork: true,
-                statusMessage:
-                    '$sectionLabel sincronizados en vivo ($total títulos en ${list.length} categorías)',
-              );
-              _cachedCatalog = result;
-              return result;
+        debugPrint('🌐 [SYNC] HTTP ${response.statusCode} desde $host: ${responseBody.length > 200 ? responseBody.substring(0, 200) : responseBody}');
+
+        if (response.statusCode == 200) {
+          final decoded = jsonDecode(responseBody);
+          if (decoded is Map<String, dynamic>) {
+            // Verificar si el backend devolvió error de región o versión
+            final returnCode = decoded['returnCode']?.toString();
+            if (returnCode != null && returnCode != '0' && returnCode != '0000' && returnCode != '200') {
+              debugPrint('⚠️ [SYNC] Backend respondió código no exitoso: $returnCode (${decoded['errorMessage']})');
+              continue;
+            }
+
+            final innerData = decoded['data'];
+            List? rawList;
+            if (innerData is Map<String, dynamic> &&
+                innerData['recommendList'] is List) {
+              rawList = innerData['recommendList'];
+            } else if (decoded['recommendList'] is List) {
+              rawList = decoded['recommendList'];
+            }
+
+            if (rawList != null) {
+              final list = rawList
+                  .whereType<Map<String, dynamic>>()
+                  .map((e) => CategoryColumn.fromJson(e))
+                  .where((cat) => cat.movies.isNotEmpty)
+                  .toList();
+
+              if (list.isNotEmpty) {
+                final total = list.fold(0, (sum, c) => sum + c.movies.length);
+                debugPrint('✅ [SYNC ONLINE] $total títulos en ${list.length} categorías sincronizadas.');
+                final result = CatalogResult(
+                  categories: list,
+                  isFromNetwork: true,
+                  statusMessage:
+                      '$sectionLabel sincronizados en vivo ($total títulos en ${list.length} categorías)',
+                );
+                _cachedCatalog = result;
+                return result;
+              }
             }
           }
         }
+      } catch (e) {
+        debugPrint('⚠️ [SYNC] Error consultando $host: $e');
+      } finally {
+        ioClient.close();
       }
-    } catch (e) {
-      debugPrint('⚠️ [SYNC] Servidor online no respondió en este intento: $e');
     }
 
-    // 2. Si falló la red, cargar copia local de respaldo
+    // 2. Si falló la red en todos los dominios, cargar copia local de respaldo
     return loadFallbackCatalog(section: section);
   }
 

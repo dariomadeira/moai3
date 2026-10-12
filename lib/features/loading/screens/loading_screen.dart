@@ -131,7 +131,8 @@ class _LoadingScreenState extends State<LoadingScreen>
           if (mounted) {
             setState(() => _statusText = 'Túnel seguro verificado (100% conectado a México)');
           }
-          await Future.delayed(const Duration(milliseconds: 1200));
+          // Esperar 2 segundos para estabilizar rutas y DNS de la interfaz tun0
+          await Future.delayed(const Duration(milliseconds: 2000));
           break;
         } else {
           if (vpnAttempt < 3) {
@@ -151,7 +152,7 @@ class _LoadingScreenState extends State<LoadingScreen>
           });
 
           final catResult = await XuperApiService.instance.syncCatalog(
-            timeout: const Duration(seconds: 6),
+            timeout: const Duration(seconds: 10),
           );
 
           if (catResult.isFromNetwork && catResult.categories.isNotEmpty) {
