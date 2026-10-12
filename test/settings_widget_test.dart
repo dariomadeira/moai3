@@ -12,6 +12,7 @@ import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/state/theme_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/state/watch_party_provider.dart';
+import 'package:moai3/state/weather_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -44,6 +45,9 @@ void main() {
             service: WatchPartyService(),
             identityService: DeviceIdentityService(prefs),
           ),
+        ),
+        ChangeNotifierProvider<WeatherProvider>.value(
+          value: WeatherProvider(prefs, enableTimer: false),
         ),
       ],
       child: MaterialApp(

@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:moai3/config/player_config.dart';
 import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/supabase_presence_service.dart';
+import 'package:moai3/services/vpn_service.dart';
+import 'package:moai3/services/xuper_api_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -36,6 +38,7 @@ class _LoadingScreenState extends State<LoadingScreen>
 
   bool _isLoading = true;
   String? _errorMessage;
+  String _statusText = 'loading_connecting'.tr();
 
   @override
   void initState() {
@@ -67,6 +70,7 @@ class _LoadingScreenState extends State<LoadingScreen>
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _statusText = 'loading_connecting'.tr();
     });
 
     final startTime = DateTime.now();
@@ -101,7 +105,88 @@ class _LoadingScreenState extends State<LoadingScreen>
         }
       } catch (_) {}
 
-      // Garantizar un tiempo mínimo de 1.2s para una experiencia de arranque cinematográfica y fluida
+      // Si el dispositivo está bloqueado (RB-04 / CASO-UC-02)
+      if (!record.isActive) {
+        context.go('/blocked', extra: record.blockReason);
+        return;
+      }
+
+      // --- 1. Conectar a VPN México ---
+      if (mounted) {
+        setState(() {
+          _statusText = 'Conectando a red segura (México)...';
+        });
+      }
+
+      final vpnConnected = await VpnService.instance.connectMexico(
+        timeout: const Duration(seconds: 8),
+        onStatusUpdate: (msg) {
+          if (mounted) setState(() => _statusText = msg);
+        },
+      );
+
+      if (vpnConnected) {
+        if (mounted) setState(() => _statusText = 'Conectado a la VPN (México)');
+      } else {
+        if (mounted) setState(() => _statusText = 'Sincronizando catálogo...');
+      }
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // --- 2. Sincronizar catálogo (3 intentos) ---
+      bool catalogUpdated = false;
+      for (int attempt = 1; attempt <= 3; attempt++) {
+        if (!mounted) break;
+        setState(() {
+          _statusText = 'Sincronizando catálogo de películas (Intento $attempt de 3)...';
+        });
+
+        final catResult = await XuperApiService.instance.syncCatalog(
+          timeout: const Duration(seconds: 4),
+        );
+
+        if (catResult.isFromNetwork && catResult.categories.isNotEmpty) {
+          catalogUpdated = true;
+          if (mounted) {
+            setState(() {
+              _statusText = 'Catálogo creado (${catResult.totalMovies} títulos)';
+            });
+          }
+          break;
+        } else if (attempt < 3) {
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
+      }
+
+      if (!catalogUpdated) {
+        if (mounted) {
+          setState(() {
+            _statusText = 'Cargando catálogo local de respaldo...';
+          });
+        }
+        await XuperApiService.instance.loadFallbackCatalog();
+        if (mounted) {
+          setState(() {
+            _statusText = 'Catálogo local cargado';
+          });
+        }
+      }
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      // --- 3. Desconectar VPN ---
+      if (mounted) {
+        setState(() {
+          _statusText = 'Desconectando red segura...';
+        });
+      }
+      await VpnService.instance.disconnect();
+      if (mounted) {
+        setState(() {
+          _statusText = 'Red segura desconectada';
+        });
+      }
+      await Future.delayed(const Duration(milliseconds: 400));
+
+      // Garantizar un tiempo mínimo total cinematográfico
       final elapsed = DateTime.now().difference(startTime);
       if (elapsed < const Duration(milliseconds: 1200)) {
         await Future.delayed(const Duration(milliseconds: 1200) - elapsed);
@@ -109,28 +194,33 @@ class _LoadingScreenState extends State<LoadingScreen>
 
       if (!mounted) return;
 
-      if (!record.isActive) {
-        // Dispositivo bloqueado (RB-04 / CASO-UC-02)
-        context.go('/blocked', extra: record.blockReason);
-      } else {
-        // Dispositivo activo -> Ir a Overlap, NicknameSetup o Home
-        final tvSettings = context.read<TvSettingsProvider>();
-        final effectiveNick =
-            (record.nickname != null && record.nickname!.trim().isNotEmpty)
-            ? record.nickname!.trim()
-            : (localNickname != null && localNickname.trim().isNotEmpty
-                  ? localNickname.trim()
-                  : widget.identityService.getNickname()?.trim());
+      setState(() {
+        _statusText = 'Listo. Iniciando Moai TV...';
+      });
+      await Future.delayed(const Duration(milliseconds: 350));
 
-        if (!tvSettings.hasOverlapConfig) {
-          context.go('/overlap');
-        } else if (effectiveNick == null || effectiveNick.isEmpty) {
-          context.go('/nickname_setup');
-        } else {
-          context.go('/home');
-        }
+      if (!mounted) return;
+
+      // Dispositivo activo -> Ir a Overlap, NicknameSetup o Home
+      final tvSettings = context.read<TvSettingsProvider>();
+      final effectiveNick =
+          (record.nickname != null && record.nickname!.trim().isNotEmpty)
+          ? record.nickname!.trim()
+          : (localNickname != null && localNickname.trim().isNotEmpty
+                ? localNickname.trim()
+                : widget.identityService.getNickname()?.trim());
+
+      if (!tvSettings.hasOverlapConfig) {
+        context.go('/overlap');
+      } else if (effectiveNick == null || effectiveNick.isEmpty) {
+        context.go('/nickname_setup');
+      } else {
+        context.go('/home');
       }
     } on TimeoutException {
+      try {
+        await VpnService.instance.disconnect();
+      } catch (_) {}
       if (!mounted) return;
       setState(() {
         _isLoading = false;
@@ -140,6 +230,9 @@ class _LoadingScreenState extends State<LoadingScreen>
         if (mounted) _retryFocusNode.requestFocus();
       });
     } catch (e) {
+      try {
+        await VpnService.instance.disconnect();
+      } catch (_) {}
       if (!mounted) return;
       setState(() {
         _isLoading = false;
@@ -305,7 +398,7 @@ class _LoadingScreenState extends State<LoadingScreen>
               ),
               const SizedBox(width: 8),
               Text(
-                'loading_connecting'.tr(),
+                _statusText,
                 style: MoaiText.body(
                   context,
                   fontSize: 13,

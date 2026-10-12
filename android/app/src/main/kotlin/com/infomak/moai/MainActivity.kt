@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.core.content.FileProvider
+import id.laskarmedia.openvpn_flutter.OpenVPNFlutterPlugin
 import java.io.File
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
@@ -118,6 +119,11 @@ class MainActivity : FlutterActivity() {
         voiceManager = null
         FlutterActivityHolder.current = null
         super.onDestroy()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        OpenVPNFlutterPlugin.connectWhileGranted(requestCode == 24 && resultCode == RESULT_OK)
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {

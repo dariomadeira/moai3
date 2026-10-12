@@ -29,11 +29,13 @@ class WeatherProvider extends ChangeNotifier {
   String? _customQuery;
   String? _customName;
 
-  WeatherProvider(this._prefs, {WeatherService? service})
+  WeatherProvider(this._prefs, {WeatherService? service, bool enableTimer = true})
     : _service = service ?? WeatherService() {
     _restoreCachedData();
-    refresh();
-    _timer = Timer.periodic(_refreshInterval, (_) => refresh());
+    if (enableTimer) {
+      refresh();
+      _timer = Timer.periodic(_refreshInterval, (_) => refresh());
+    }
   }
 
   WeatherData? get weather => _weather;
