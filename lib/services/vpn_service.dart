@@ -107,22 +107,10 @@ class VpnService {
       password = authMatch.group(2)?.trim();
     }
 
-    try {
-      await _engine!.connect(
-        ovpnConfig,
-        connectionName,
-        username: username,
-        password: password,
-        certIsRequired: true,
-      );
-    } catch (e) {
-      debugPrint('❌ [VPN] Excepción al invocar connect: $e');
-      return false;
-    }
-
-    // Esperar hasta que esté conectado o venza el timeout
+    // Iniciar escucha del stream de etapas ANTES de invocar connect
     final completer = Completer<bool>();
     late StreamSubscription<VPNStage> sub;
+    bool connectionAttemptStarted = false;
 
     final timer = Timer(timeout, () {
       if (!completer.isCompleted) {
@@ -132,19 +120,38 @@ class VpnService {
     });
 
     sub = stageStream.listen((stage) {
+      debugPrint('🔒 [VPN Stage Event] Recibido: $stage');
       if (stage == VPNStage.connected) {
         timer.cancel();
         if (!completer.isCompleted) completer.complete(true);
-      } else if (stage == VPNStage.disconnected || stage == VPNStage.error) {
-        // En algunas fases iniciales pasa por disconnected antes de wait/auth
+      } else if (stage == VPNStage.authenticating ||
+          stage == VPNStage.vpn_generate_config ||
+          stage == VPNStage.tcp_connect ||
+          stage == VPNStage.connecting ||
+          stage == VPNStage.wait_connection) {
+        connectionAttemptStarted = true;
+      } else if (connectionAttemptStarted &&
+          (stage == VPNStage.disconnected || stage == VPNStage.error)) {
+        // El proceso de openvpn intentó y terminó
+        debugPrint('⚠️ [VPN] Conexión no establecida (estado final: $stage)');
+        timer.cancel();
+        if (!completer.isCompleted) completer.complete(false);
       }
     });
 
-    // Si ya estaba conectado inmediatamente
-    if (_currentStage == VPNStage.connected) {
-      timer.cancel();
-      sub.cancel();
-      return true;
+    // Invocar connect sin bloquear en el Future por si el plugin no cierra el invokeMethod
+    try {
+      _engine!.connect(
+        ovpnConfig,
+        connectionName,
+        username: username,
+        password: password,
+        certIsRequired: true,
+      ).catchError((e) {
+        debugPrint('❌ [VPN] Excepción en invocación connect: $e');
+      });
+    } catch (e) {
+      debugPrint('❌ [VPN] Excepción sincrónica al invocar connect: $e');
     }
 
     final result = await completer.future;

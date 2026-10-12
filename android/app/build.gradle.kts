@@ -48,6 +48,12 @@ android {
             path = file("src/main/cpp/CMakeLists.txt")
         }
     }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
 }
 
 kotlin {
