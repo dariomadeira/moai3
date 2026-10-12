@@ -156,26 +156,31 @@ class VpnService {
     await sub.cancel();
 
     if (connected) {
-      onStatusUpdate?.call('Verificando conexión del túnel seguro...');
+      onStatusUpdate?.call('Verificando salida a Internet (México)...');
       final verified = await verifyConnection();
-      debugPrint('🔒 [VPN] Verificación de salida a Internet: $verified');
-      return true;
+      debugPrint('🔒 [VPN] Verificación de salida por México: $verified');
+      if (verified) return true;
     }
 
     return false;
   }
 
-  /// Verifica la conectividad real a través del túnel y reporta la geolocalización
+  /// Verifica la conectividad real a través del túnel y comprueba que la geolocalización sea de México
   Future<bool> verifyConnection({Duration timeout = const Duration(seconds: 5)}) async {
     try {
       final res = await http.get(Uri.parse('http://ip-api.com/json')).timeout(timeout);
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         final country = data['country'] ?? '';
-        final countryCode = data['countryCode'] ?? '';
+        final countryCode = data['countryCode']?.toString().toUpperCase() ?? '';
         final query = data['query'] ?? '';
         debugPrint('🌐 [VPN IP Check] IP pública detectada: $query ($country, $countryCode)');
-        return true;
+        if (countryCode == 'MX') {
+          return true;
+        } else {
+          debugPrint('⚠️ [VPN IP Check] La salida no es de México (es $countryCode).');
+          return false;
+        }
       }
     } catch (e) {
       debugPrint('⚠️ [VPN IP Check] No se pudo consultar ip-api: $e');
