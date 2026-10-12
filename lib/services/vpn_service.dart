@@ -95,8 +95,8 @@ class VpnService {
       return false;
     }
 
-    // Credenciales oficiales de Salvavida
-    String username = 'ZmD8M4lQLcxVOyqu';
+    // Credenciales oficiales de Salvavida con sufijo +b:0 obligatorio para forzar salida por México
+    String username = 'ZmD8M4lQLcxVOyqu+b:0';
     String password = 'hhHnycXrVSvV7QnSbCmPo3OLj3J0fBwh';
 
     // Limpiar el bloque <auth-user-pass>...</auth-user-pass> y reemplazarlo por la directiva estándar
@@ -165,8 +165,21 @@ class VpnService {
     return false;
   }
 
-  /// Verifica la conectividad real a través del túnel
-  Future<bool> verifyConnection({Duration timeout = const Duration(seconds: 4)}) async {
+  /// Verifica la conectividad real a través del túnel y reporta la geolocalización
+  Future<bool> verifyConnection({Duration timeout = const Duration(seconds: 5)}) async {
+    try {
+      final res = await http.get(Uri.parse('http://ip-api.com/json')).timeout(timeout);
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        final country = data['country'] ?? '';
+        final countryCode = data['countryCode'] ?? '';
+        final query = data['query'] ?? '';
+        debugPrint('🌐 [VPN IP Check] IP pública detectada: $query ($country, $countryCode)');
+        return true;
+      }
+    } catch (e) {
+      debugPrint('⚠️ [VPN IP Check] No se pudo consultar ip-api: $e');
+    }
     try {
       final res = await http.get(Uri.parse('https://www.google.com/generate_204')).timeout(timeout);
       return res.statusCode == 204 || res.statusCode == 200;
