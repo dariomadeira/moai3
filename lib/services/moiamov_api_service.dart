@@ -8,32 +8,20 @@ import 'package:pointycastle/digests/md5.dart';
 import 'package:pointycastle/padded_block_cipher/padded_block_cipher_impl.dart';
 import 'package:pointycastle/paddings/pkcs7.dart';
 import 'package:pointycastle/pointycastle.dart';
+import '../config/constants.dart';
 import '../models/movie_models.dart';
 
-/// Servicio de sincronización del catálogo de películas y series Xuper Hydra
+/// Servicio de sincronización del catálogo de películas y series Moiamov
 /// con cifrado nativo Triple DES (3DES) y autenticación automática.
-class XuperApiService {
-  static final XuperApiService instance = XuperApiService._internal();
+class MoiamovApiService {
+  static final MoiamovApiService instance = MoiamovApiService._internal();
 
-  XuperApiService._internal();
+  MoiamovApiService._internal();
 
-  /// Bitácora viva que la pantalla de loading muestra en pantalla para VER
-  /// exactamente qué está pasando y de dónde salió el catálogo.
-  static final ValueNotifier<List<String>> liveLog =
-      ValueNotifier<List<String>>(<String>[]);
-
+  /// Registra una línea de diagnóstico en la consola de depuración.
   static void logLine(String message) {
-    final n = DateTime.now();
-    final ts = '${n.hour.toString().padLeft(2, '0')}:'
-        '${n.minute.toString().padLeft(2, '0')}:'
-        '${n.second.toString().padLeft(2, '0')}';
-    final next = <String>[...liveLog.value, '[$ts] $message'];
-    if (next.length > 300) next.removeRange(0, next.length - 300);
-    liveLog.value = next;
-    debugPrint('📋 [XUPER] $message');
+    debugPrint('📋 [MOIAMOV] $message');
   }
-
-  static void clearLog() => liveLog.value = <String>[];
 
   static String _short(String s, [int n = 180]) =>
       s.length > n ? '${s.substring(0, n)}…' : s;
@@ -44,17 +32,16 @@ class XuperApiService {
   /// MAC real detectada del dispositivo (se licita con la huella nativa).
   static String _deviceMac = deviceMac;
 
-  static const String defaultBaseUrl = 'https://ftmrmy.jdfey0cd.com';
-  static const String portalKey = '568e194f-d170-4369-96e8-4a457f641880';
-  static const String localDocumentKey = 'b700bce0-91c7-47df-a593-747ae941bf34';
-  static const String apkPackage = 'com.android.msandroid';
-  static const String apkVer = '43404';
-  static const String spkgVer = '1.1.4';
+  static String get defaultBaseUrl => kMoiamovBaseUrl;
+  static String get portalKey => kMoiamovPortalKey;
+  static String get localDocumentKey => kMoiamovLocalDocKey;
+  static String get apkPackage => kMoiamovApkPackage;
+  static String get apkVer => kMoiamovApkVer;
+  static String get spkgVer => kMoiamovSpkgVer;
 
-  static const String defaultUserId = '967840156';
-  static const String defaultUserToken =
-      'AeVTDhgiQm12oaev9jsFA9WMYJrQcmDjANCXAccY91if21StPRQ0CI8f8jwVIqgz0UO_0e776flKjKmY7pJqasnYZp7RxbQt7kRPJCNN93mildELnyc=';
-  static const String defaultPortalCode = '15406';
+  static String get defaultUserId => kMoiamovDefaultUserId;
+  static String get defaultUserToken => kMoiamovDefaultUserToken;
+  static String get defaultPortalCode => kMoiamovDefaultPortalCode;
 
   String _currentUserId = defaultUserId;
   String _currentUserToken = defaultUserToken;
@@ -122,7 +109,8 @@ class XuperApiService {
   }
 
   /// Descifra cadenas o documentos cifrados con Triple DES (ECB + PKCS7)
-  static String decryptDocument(String hexData, {String key = localDocumentKey}) {
+  static String decryptDocument(String hexData, {String? key}) {
+    key ??= localDocumentKey;
     final base64Str = _fromHexString(hexData);
     var keyBytes = _customBase64Decode(key);
     if (keyBytes.length > 24) {
@@ -430,14 +418,14 @@ class XuperApiService {
 
         // Campo `sn` requerido por el envelope (C1446c0.m6748t = KEY_SP_SN):
         // MD5(snToken + salt) en minúscula, calculado por C0132a1 tras v3/snToken.
-        final snField = _md5Hex('${snToken}ntFT65w6itH!lHCPw7D=@qnsFC5adD28');
+        final snField = _md5Hex('$snToken$kMoiamovSnSalt');
         final localMac = _deviceMac.replaceAll(':', '');
         final reserve1 = _encryptWithKey(
             localMac.isEmpty ? '000000000000' : localMac,
-            'combrasiltvaslgklxckbcombrasiltv');
+            kMoiamovDeviceCipherKey);
         final b29 = _encryptWithKey(
             (fp['serialNumber'] ?? '').isEmpty ? '000000000000' : fp['serialNumber']!,
-            'combrasiltvaslgklxckbcombrasiltv');
+            kMoiamovDeviceCipherKey);
 
         logLine('Sesión: v8/active → $baseUrl');
         final actBody = await _postEncrypted(
@@ -469,8 +457,7 @@ class XuperApiService {
         final rc = actDecoded['returnCode']?.toString() ?? '';
         final em = actDecoded['errorMessage']?.toString() ?? '';
         if (rc == 'portal100024' || em.contains('黑名单') || em.contains('区域')) {
-          logLine('🚫 GEOBLOCK: la IP de salida está en lista negra. '
-              'Reintentá con otro nodo VPN de México.');
+          logLine('🚫 La salida de red fue rechazada. Reintentá con otro nodo.');
           return false;
         }
         if (_applyActiveResult(actDecoded)) {
@@ -487,7 +474,7 @@ class XuperApiService {
     return false;
   }
 
-  /// Intenta cargar el catálogo en vivo desde los documentos generados por Xuper en el almacenamiento del TV.
+  /// Intenta cargar el catálogo desde los documentos locales del almacenamiento del TV.
   CatalogResult? _loadFromLocalDeviceDocument(String section) {
     try {
       final sectionLabel = section == 'masnew_featured'
@@ -495,8 +482,8 @@ class XuperApiService {
           : (section == 'masnew_series' ? 'Series' : 'Películas');
 
       final candidatePaths = [
-        '/sdcard/Android/data/com.xuper.netxxus/files/Documents/$section;1',
-        '/storage/emulated/0/Android/data/com.xuper.netxxus/files/Documents/$section;1',
+        '/sdcard/Android/data/$kMoiamovDocPackage/files/Documents/$section;1',
+        '/storage/emulated/0/Android/data/$kMoiamovDocPackage/files/Documents/$section;1',
       ];
 
       for (final p in candidatePaths) {
@@ -515,7 +502,7 @@ class XuperApiService {
 
             if (list.isNotEmpty) {
               final total = list.fold(0, (sum, c) => sum + c.movies.length);
-              logLine('⚡ Documento local Xuper: $total títulos ($p)');
+              logLine('⚡ Documento local: $total títulos ($p)');
               final result = CatalogResult(
                 categories: list,
                 isFromNetwork: true,
@@ -529,7 +516,7 @@ class XuperApiService {
         }
       }
     } catch (e) {
-      logLine('⚠️ Error leyendo cache local de Xuper: $e');
+      logLine('⚠️ Error leyendo cache local: $e');
     }
     return null;
   }
@@ -542,17 +529,18 @@ class XuperApiService {
   }
 
   /// Sincroniza y actualiza el catálogo (features, películas o series)
-  /// Prioridad 1: Descarga en vivo por API directa vía túnel VPN (login + getNextColumns)
+  /// Prioridad 1: Descarga en vivo por API directa (login + getNextColumns)
   /// Prioridad 2: Almacenamiento local del dispositivo
   /// Prioridad 3: Respaldo empaquetado en assets
   Future<CatalogResult> syncCatalog({
     String section = 'masnew_movies',
-    String serverUrl = defaultBaseUrl,
+    String? serverUrl,
     String? userToken,
     String? userId,
     String? portalCode,
     Duration timeout = const Duration(seconds: 10),
   }) async {
+    serverUrl ??= defaultBaseUrl;
     final sectionLabel = section == 'masnew_featured'
         ? 'Destacados'
         : (section == 'masnew_series' ? 'Series' : 'Películas');

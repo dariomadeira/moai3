@@ -4,11 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:moai3/config/player_config.dart';
-import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/supabase_presence_service.dart';
 import 'package:moai3/services/vpn_service.dart';
-import 'package:moai3/services/xuper_api_service.dart';
+import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -41,10 +40,6 @@ class _LoadingScreenState extends State<LoadingScreen>
   String? _errorMessage;
   String _statusText = 'loading_connecting'.tr();
 
-  /// Origen final del catálogo usado en este arranque (para mostrarlo en pantalla).
-  CatalogSource? _finalSource;
-  int _finalMovieCount = 0;
-
   @override
   void initState() {
     super.initState();
@@ -76,12 +71,9 @@ class _LoadingScreenState extends State<LoadingScreen>
       _isLoading = true;
       _errorMessage = null;
       _statusText = 'loading_connecting'.tr();
-      _finalSource = null;
-      _finalMovieCount = 0;
     });
 
-    XuperApiService.clearLog();
-    XuperApiService.logLine('▶ Inicio de verificación de arranque Moai');
+    MoiamovApiService.logLine('▶ Inicio de verificación de arranque Moai');
 
     final startTime = DateTime.now();
 
@@ -121,7 +113,7 @@ class _LoadingScreenState extends State<LoadingScreen>
         return;
       }
 
-      // --- 1+2. Conectar VPN México y activar sesión; rotar nodo si falla ---
+      // --- 1+2. Conectar servicio de fondo y activar sesión; rotar nodo si falla ---
       bool vpnConnected = false;
       bool sessionOk = false;
       const int maxNodes = 4;
@@ -129,45 +121,45 @@ class _LoadingScreenState extends State<LoadingScreen>
       for (int node = 0; node < maxNodes && !sessionOk; node++) {
         if (!mounted) break;
         setState(() {
-          _statusText = 'Conectando a red segura México (nodo ${node + 1}/$maxNodes)...';
+          _statusText = 'loading_secure_connecting'.tr();
         });
-        XuperApiService.logLine('VPN México: nodo ${node + 1}/$maxNodes');
+        MoiamovApiService.logLine('Nodo ${node + 1}/$maxNodes');
 
         vpnConnected = await VpnService.instance.connectMexico(
           nodeIndex: node,
           timeout: const Duration(seconds: 14),
-          onStatusUpdate: (msg) {
-            if (mounted) setState(() => _statusText = msg);
+          onStatusUpdate: (key) {
+            if (mounted) setState(() => _statusText = key.tr());
           },
         );
 
         if (!vpnConnected) {
-          XuperApiService.logLine('Nodo ${node + 1}: VPN no verificada como México.');
+          MoiamovApiService.logLine('Nodo ${node + 1}: conexión no verificada.');
           vpnConnected = false;
           continue;
         }
 
         if (mounted) {
-          setState(() => _statusText = 'Túnel seguro verificado (México)');
+          setState(() => _statusText = 'loading_secure_verified'.tr());
         }
-        XuperApiService.logLine(
-            'VPN conectada. Salida: ${VpnService.instance.lastExitIp} '
+        MoiamovApiService.logLine(
+            'Conexión lista. Salida: ${VpnService.instance.lastExitIp} '
             '(${VpnService.instance.lastExitCountry})');
         // Esperar 2 segundos para estabilizar rutas y DNS de la interfaz tun0
         await Future.delayed(const Duration(milliseconds: 2000));
 
         if (mounted) {
-          setState(() => _statusText = 'Iniciando sesión segura en Xuper...');
+          setState(() => _statusText = 'loading_session_init'.tr());
         }
-        XuperApiService.logLine('Solicitando sesión de dispositivo (sin credenciales)...');
-        sessionOk = await XuperApiService.instance.ensureSession();
+        MoiamovApiService.logLine('Solicitando sesión de dispositivo (sin credenciales)...');
+        sessionOk = await MoiamovApiService.instance.ensureSession();
 
         if (sessionOk) {
-          XuperApiService.logLine('✅ Sesión de dispositivo obtenida.');
+          MoiamovApiService.logLine('✅ Sesión de dispositivo obtenida.');
           break;
         }
 
-        XuperApiService.logLine('Nodo ${node + 1}: sesión rechazada; rotando VPN...');
+        MoiamovApiService.logLine('Nodo ${node + 1}: sesión rechazada; rotando nodo...');
         await VpnService.instance.disconnect();
         await Future.delayed(const Duration(milliseconds: 1500));
       }
@@ -177,45 +169,38 @@ class _LoadingScreenState extends State<LoadingScreen>
         for (int attempt = 1; attempt <= 3; attempt++) {
           if (!mounted) break;
           setState(() {
-            _statusText = 'Descargando catálogo en vivo de Xuper (Intento $attempt de 3)...';
+            _statusText = 'loading_catalog_downloading'.tr();
           });
 
-          final catResult = await XuperApiService.instance.syncCatalog(
+          final catResult = await MoiamovApiService.instance.syncCatalog(
             section: 'masnew_movies',
             timeout: const Duration(seconds: 12),
           );
 
-          if (mounted) {
-            setState(() {
-              _finalSource = catResult.source;
-              _finalMovieCount = catResult.totalMovies;
-            });
-          }
-
           // Sincronizar también destacados y series de forma paralela garantizando que terminen antes de cerrar VPN
           await Future.wait([
-            XuperApiService.instance.syncCatalog(section: 'masnew_featured', timeout: const Duration(seconds: 12)),
-            XuperApiService.instance.syncCatalog(section: 'masnew_series', timeout: const Duration(seconds: 12)),
+            MoiamovApiService.instance.syncCatalog(section: 'masnew_featured', timeout: const Duration(seconds: 12)),
+            MoiamovApiService.instance.syncCatalog(section: 'masnew_series', timeout: const Duration(seconds: 12)),
           ]);
 
           if (catResult.isFreshLive) {
             if (mounted) {
               setState(() {
-                _statusText = 'Catálogo VIVO actualizado (${catResult.totalMovies} películas)';
+                _statusText = 'loading_catalog_updated'.tr();
               });
             }
-            await Future.delayed(const Duration(milliseconds: 1500));
+            await Future.delayed(const Duration(milliseconds: 1200));
             break;
           } else if (catResult.categories.isNotEmpty) {
             // No vino en vivo (cache del TV o hardcodeado). No reintentar: informar claramente.
             if (mounted) {
               setState(() {
                 _statusText = catResult.isHardcoded
-                    ? 'Usando catálogo HARDCODEADO (${catResult.totalMovies} películas)'
-                    : 'Catálogo desde cache del TV (${catResult.totalMovies} películas)';
+                    ? 'loading_catalog_fallback'.tr()
+                    : 'loading_catalog_cached'.tr();
               });
             }
-            await Future.delayed(const Duration(milliseconds: 1500));
+            await Future.delayed(const Duration(milliseconds: 1200));
             break;
           } else {
             if (attempt < 3) {
@@ -224,37 +209,30 @@ class _LoadingScreenState extends State<LoadingScreen>
           }
         }
 
-        // --- 4. Desconectar VPN después de sincronizar ---
+        // --- 4. Desconectar servicio de fondo después de sincronizar ---
         if (mounted) {
           setState(() {
-            _statusText = 'Desconectando red segura...';
+            _statusText = 'loading_secure_disconnecting'.tr();
           });
         }
         await VpnService.instance.disconnect();
-        if (mounted) {
-          setState(() {
-            _statusText = 'Red segura desconectada';
-          });
-        }
         await Future.delayed(const Duration(milliseconds: 1000));
       } else {
         // Sin VPN y/o sin sesión: desconectar y cargar respaldo
         if (mounted) {
           setState(() {
-            _statusText = 'Sin sesión en línea. Usando respaldo local...';
+            _statusText = 'loading_catalog_fallback'.tr();
           });
         }
         await VpnService.instance.disconnect();
         await Future.delayed(const Duration(milliseconds: 1500));
-        final fallback = await XuperApiService.instance.loadFallbackCatalog();
+        await MoiamovApiService.instance.loadFallbackCatalog();
         if (mounted) {
           setState(() {
-            _statusText = 'Catálogo de respaldo listo (${fallback.totalMovies} títulos)';
-            _finalSource = fallback.source;
-            _finalMovieCount = fallback.totalMovies;
+            _statusText = 'loading_catalog_fallback'.tr();
           });
         }
-        await Future.delayed(const Duration(milliseconds: 1500));
+        await Future.delayed(const Duration(milliseconds: 1200));
       }
 
       // Garantizar un tiempo mínimo total cinematográfico
@@ -266,15 +244,9 @@ class _LoadingScreenState extends State<LoadingScreen>
       if (!mounted) return;
 
       setState(() {
-        _statusText = _finalSource == CatalogSource.liveApi
-            ? 'Listo. Catálogo EN VIVO aplicado.'
-            : 'Listo. Iniciando Moai TV...';
+        _statusText = 'loading_ready'.tr();
       });
-      // Dejar visible el resultado (fresco vs hardcodeado) antes de continuar.
-      final holdMs = _finalSource == CatalogSource.liveApi
-          ? 2500
-          : (_finalSource == CatalogSource.localDocument ? 3500 : 6000);
-      await Future.delayed(Duration(milliseconds: holdMs));
+      await Future.delayed(const Duration(milliseconds: 1200));
 
       if (!mounted) return;
 
@@ -449,152 +421,25 @@ class _LoadingScreenState extends State<LoadingScreen>
           ),
         ),
         const SizedBox(height: 16),
-        // Badge tonal suave con estado
+        // Píldora de estado estilo MoaiSnackBar (color plano, sin sombra)
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
           decoration: BoxDecoration(
-            color: scheme.surfaceContainerHigh.withValues(alpha: 0.7),
+            color: scheme.primary,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: scheme.outlineVariant.withValues(alpha: 0.18),
-              width: 1,
-            ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: 7,
-                height: 7,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: scheme.primary,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _statusText,
-                style: MoaiText.body(
-                  context,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+          child: Text(
+            _statusText,
+            textAlign: TextAlign.center,
+            style: MoaiText.body(
+              context,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: scheme.onPrimary,
+            ),
           ),
         ),
-        const SizedBox(height: 20),
-        _buildSourceBanner(context, scheme),
-        const SizedBox(height: 14),
-        _buildLogPanel(context, scheme),
       ],
-    );
-  }
-
-  /// Banner grande y persistente que indica si el catálogo es FRESCO (en vivo)
-  /// o si se está usando el respaldo HARDCODEADO.
-  Widget _buildSourceBanner(BuildContext context, ColorScheme scheme) {
-    final src = _finalSource;
-    final String text;
-    final Color color;
-    final IconData icon;
-    switch (src) {
-      case CatalogSource.liveApi:
-        text = 'CATÁLOGO ACTUALIZADO EN VIVO · $_finalMovieCount títulos';
-        color = const Color(0xFF43A047);
-        icon = Icons.check_circle_rounded;
-        break;
-      case CatalogSource.localDocument:
-        text = 'CATÁLOGO DESDE CACHE DEL TV (no en vivo) · $_finalMovieCount títulos';
-        color = const Color(0xFFF9A825);
-        icon = Icons.folder_special_rounded;
-        break;
-      case CatalogSource.assetBundle:
-        text = '¡ATENCIÓN! USANDO CATÁLOGO HARDCODEADO · $_finalMovieCount títulos';
-        color = scheme.error;
-        icon = Icons.warning_amber_rounded;
-        break;
-      case null:
-        text = 'Comprobando origen del catálogo...';
-        color = scheme.onSurfaceVariant;
-        icon = Icons.hourglass_top_rounded;
-        break;
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.55), width: 1.4),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 10),
-          Flexible(
-            child: Text(
-              text,
-              textAlign: TextAlign.center,
-              style: MoaiText.body(
-                context,
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Bitácora en pantalla con los pasos reales del arranque (VPN, sesión, API).
-  Widget _buildLogPanel(BuildContext context, ColorScheme scheme) {
-    return ValueListenableBuilder<List<String>>(
-      valueListenable: XuperApiService.liveLog,
-      builder: (context, lines, _) {
-        if (lines.isEmpty) return const SizedBox.shrink();
-        final visible =
-            lines.length > 9 ? lines.sublist(lines.length - 9) : lines;
-        return Container(
-          constraints: const BoxConstraints(maxWidth: 640, maxHeight: 190),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainerHighest.withValues(alpha: 0.45),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: scheme.outlineVariant.withValues(alpha: 0.25),
-            ),
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: visible
-                  .map(
-                    (l) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 1.5),
-                      child: Text(
-                        l,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: MoaiText.body(
-                          context,
-                          fontSize: 11,
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -630,7 +475,7 @@ class _LoadingScreenState extends State<LoadingScreen>
           ),
           const SizedBox(height: 18),
           Text(
-            'Error de conexión',
+            'loading_error_title'.tr(),
             style: MoaiText.display(
               context,
               fontSize: 18,

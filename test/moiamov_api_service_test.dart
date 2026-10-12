@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/models/movie_models.dart';
-import 'package:moai3/services/xuper_api_service.dart';
+import 'package:moai3/services/moiamov_api_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('MovieModels & XuperApiService', () {
+  group('MovieModels & MoiamovApiService', () {
     test('MovieItem and CategoryColumn parse json correctly', () {
       final json = {
         'columnId': 10001,
@@ -37,7 +37,7 @@ void main() {
     });
 
     test('loadFallbackCatalog loads bundled assets', () async {
-      final service = XuperApiService.instance;
+      final service = MoiamovApiService.instance;
       final result = await service.loadFallbackCatalog(section: 'masnew_featured');
 
       expect(result.categories, isNotEmpty);

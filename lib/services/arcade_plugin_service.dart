@@ -1,5 +1,6 @@
 import 'dart:ffi';
 import 'dart:io';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -73,7 +74,7 @@ class ArcadePluginService extends ChangeNotifier {
 
     _isDownloading = true;
     _downloadProgress = 0.0;
-    _statusMessage = 'Descargando motor Arcade...';
+    _statusMessage = 'plugins_arcade_downloading_engine'.tr();
     notifyListeners();
 
     try {
@@ -127,13 +128,14 @@ class ArcadePluginService extends ChangeNotifier {
       await prefs.setBool(_keyInstalled, true);
       await prefs.setString(_keyCorePath, _installedCorePath!);
 
-      _statusMessage = 'Plugin instalado correctamente.';
+      _statusMessage = 'plugins_arcade_installed_success'.tr();
       notifyListeners();
       return true;
     } catch (e) {
       debugPrint('[ArcadePluginService] Error instalando plugin: $e');
       _isDownloading = false;
-      _statusMessage = 'Error al descargar el plugin: $e';
+      _statusMessage =
+          'plugins_arcade_error_download'.tr(namedArgs: {'error': '$e'});
       notifyListeners();
       return false;
     }
@@ -150,7 +152,7 @@ class ArcadePluginService extends ChangeNotifier {
       _isInstalled = false;
       _installedCorePath = null;
       _downloadProgress = 0.0;
-      _statusMessage = 'Plugin desinstalado.';
+      _statusMessage = 'plugins_arcade_uninstalled_success'.tr();
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keyInstalled, false);

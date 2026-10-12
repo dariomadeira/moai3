@@ -191,36 +191,6 @@ class CalendarProvider extends ChangeNotifier {
     }
   }
 
-  /// Emite eventos en vivo falsos para probar el snack mientras se mira TV.
-  void simulateLiveEventStarted({int count = 1}) {
-    final stamp = DateTime.now().millisecondsSinceEpoch;
-    final now = ArgentinaTime.utcNow();
-    final events = <CalendarEvent>[
-      CalendarEvent(
-        id: 'sim_live_${stamp}_1',
-        subscriptionId: 'f1',
-        title: 'Azerbaijan Grand Prix — Práctica Libre 3',
-        competition: 'F1',
-        startDateTime: now,
-        sessionType: 'Práctica 3',
-        broadcaster: 'Fox Sports',
-      ),
-      CalendarEvent(
-        id: 'sim_live_${stamp}_2',
-        subscriptionId: 'lpf_ar',
-        title: 'Boca vs River',
-        competition: 'LPF',
-        startDateTime: now,
-        sessionType: 'Partido',
-        broadcaster: 'ESPN',
-      ),
-    ];
-    final n = count.clamp(1, events.length);
-    if (!_disposed && !_liveEventsController.isClosed) {
-      _liveEventsController.add(events.take(n).toList());
-    }
-  }
-
   @override
   void dispose() {
     _disposed = true;

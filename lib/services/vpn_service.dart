@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 import 'package:openvpn_flutter/openvpn_flutter.dart';
+import '../config/constants.dart';
 
 /// Servicio centralizado de VPN open source integrado en Moai TV
 class VpnService {
@@ -66,18 +67,18 @@ class VpnService {
   }) async {
     await initialize();
 
-    // 1. Verificar / Solicitar permiso VPN en Android
+    // 1. Verificar / Solicitar permiso en Android
     try {
       final hasPerm = await _engine?.requestPermissionAndroid() ?? true;
       if (!hasPerm) {
-        onStatusUpdate?.call('Por favor autoriza la conexión VPN en pantalla...');
+        onStatusUpdate?.call('loading_permission_required');
         debugPrint('⚠️ [VPN] Permiso de VPN requerido en Android.');
       }
     } catch (e) {
       debugPrint('⚠️ [VPN] Error al consultar permisos Android: $e');
     }
 
-    // 2. Lista de perfiles de México verificados (Salvavida de Saltamontes)
+    // 2. Lista de perfiles verificados
     final profiles = [
       'assets/vpn/mexico_01.ovpn',
       'assets/vpn/mexico_02.ovpn',
@@ -86,7 +87,7 @@ class VpnService {
     ];
 
     final targetProfile = profiles[nodeIndex.clamp(0, profiles.length - 1)];
-    onStatusUpdate?.call('Cargando perfil seguro México (${nodeIndex + 1}/${profiles.length})...');
+    onStatusUpdate?.call('loading_init_services');
     
     String? ovpnConfig;
     try {
@@ -101,9 +102,9 @@ class VpnService {
       return false;
     }
 
-    // Credenciales oficiales de Salvavida (idéntico a Saltamontes verificado en emulador)
-    String username = 'ZmD8M4lQLcxVOyqu';
-    String password = 'hhHnycXrVSvV7QnSbCmPo3OLj3J0fBwh';
+    // Credenciales del túnel
+    final username = kTunnelUsername;
+    final password = kTunnelPassword;
 
     // Limpiar el bloque <auth-user-pass>...</auth-user-pass> y reemplazarlo por la directiva estándar
     ovpnConfig = ovpnConfig.replaceAll(
@@ -111,7 +112,7 @@ class VpnService {
       'auth-user-pass',
     );
 
-    onStatusUpdate?.call('Estableciendo túnel seguro a México...');
+    onStatusUpdate?.call('loading_connecting_server');
 
     // Iniciar escucha del stream de etapas ANTES de invocar connect
     final completer = Completer<bool>();
@@ -147,7 +148,7 @@ class VpnService {
     try {
       _engine!.connect(
         ovpnConfig,
-        'Moai Secure MX ${nodeIndex + 1}',
+        'Moai',
         username: username,
         password: password,
         certIsRequired: true,
@@ -162,7 +163,7 @@ class VpnService {
     await sub.cancel();
 
     if (connected) {
-      onStatusUpdate?.call('Verificando salida a Internet (México)...');
+      onStatusUpdate?.call('loading_verifying_connection');
       final verified = await verifyConnection();
       debugPrint('🔒 [VPN] Verificación de salida por México: $verified');
       if (verified) return true;

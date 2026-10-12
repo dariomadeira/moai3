@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:moai3/features/games/models/arcade_netplay_state.dart';
@@ -99,12 +100,12 @@ class ArcadeNetplayService extends ChangeNotifier {
 
     if (accepted) {
       _currentSession!.status = ArcadeNetplayStatus.preparingRoms;
-      _currentSession!.peerStatusText = 'Preparando juego...';
+      _currentSession!.peerStatusText = 'arcade_preparing_game'.tr();
       _connectSessionChannel();
       notifyListeners();
     } else {
       _currentSession!.status = ArcadeNetplayStatus.terminated;
-      _currentSession!.exitReason = 'El amigo rechazó la invitación';
+      _currentSession!.exitReason = 'arcade_invite_rejected'.tr();
       notifyListeners();
       _cleanupSession();
     }
@@ -119,7 +120,7 @@ class ArcadeNetplayService extends ChangeNotifier {
     required ArcadeRomItem rom,
     required ArcadeRomManagerService romManager,
   }) async {
-    cancelSession(reason: 'Nueva invitación iniciada');
+    cancelSession(reason: 'arcade_invite_replaced'.tr());
 
     final sessionId = 'arcade_${DateTime.now().millisecondsSinceEpoch}_$myDeviceId';
     _currentSession = ArcadeNetplaySession(
@@ -162,7 +163,7 @@ class ArcadeNetplayService extends ChangeNotifier {
         if (_currentSession != null &&
             _currentSession!.status == ArcadeNetplayStatus.inviting) {
           _currentSession!.status = ArcadeNetplayStatus.terminated;
-          _currentSession!.exitReason = 'Tiempo de espera agotado (sin respuesta)';
+          _currentSession!.exitReason = 'arcade_invite_timeout'.tr();
           notifyListeners();
           _cleanupSession();
         }
@@ -171,7 +172,8 @@ class ArcadeNetplayService extends ChangeNotifier {
       return true;
     } catch (e) {
       _currentSession?.status = ArcadeNetplayStatus.terminated;
-      _currentSession?.exitReason = 'Error de red al enviar invitación: $e';
+      _currentSession?.exitReason =
+          'arcade_invite_send_error'.tr(namedArgs: {'error': '$e'});
       notifyListeners();
       _cleanupSession();
       return false;
@@ -221,7 +223,8 @@ class ArcadeNetplayService extends ChangeNotifier {
       startRomPreparation(romManager);
     } catch (e) {
       _currentSession?.status = ArcadeNetplayStatus.terminated;
-      _currentSession?.exitReason = 'Error al aceptar invitación: $e';
+      _currentSession?.exitReason =
+          'arcade_invite_accept_error'.tr(namedArgs: {'error': '$e'});
       notifyListeners();
       _cleanupSession();
     }
@@ -278,7 +281,7 @@ class ArcadeNetplayService extends ChangeNotifier {
           final sender = payload['senderDeviceId'] as String?;
           if (sender == session.peerDeviceId) {
             session.peerProgress = 1.0;
-            session.peerStatusText = 'Juego listo';
+            session.peerStatusText = 'arcade_game_ready'.tr();
             _checkIfBothReady();
             notifyListeners();
           }
@@ -303,7 +306,8 @@ class ArcadeNetplayService extends ChangeNotifier {
         callback: (payload) {
           final sender = payload['senderDeviceId'] as String?;
           if (sender == session.peerDeviceId) {
-            final reason = payload['reason'] as String? ?? 'El amigo canceló la partida';
+            final reason =
+                payload['reason'] as String? ?? 'arcade_peer_canceled'.tr();
             session.status = ArcadeNetplayStatus.terminated;
             session.exitReason = reason;
             notifyListeners();
@@ -340,7 +344,7 @@ class ArcadeNetplayService extends ChangeNotifier {
 
     if (isInstalled) {
       session.myProgress = 1.0;
-      session.myStatusText = 'Juego listo';
+      session.myStatusText = 'arcade_game_ready'.tr();
       notifyListeners();
       await _broadcastReady();
       _checkIfBothReady();
@@ -348,9 +352,13 @@ class ArcadeNetplayService extends ChangeNotifier {
     }
 
     // 2. Si no está instalada, descargarla reportando progreso continuo
-    session.myStatusText = 'Descargando juego (0%)...';
+    session.myStatusText =
+        'arcade_downloading_game'.tr(namedArgs: {'percent': '0'});
     notifyListeners();
-    await _broadcastPrepStatus(0.0, 'Descargando (0%)...');
+    await _broadcastPrepStatus(
+      0.0,
+      'arcade_downloading_short'.tr(namedArgs: {'percent': '0'}),
+    );
 
     final item = romManager.catalog.firstWhere(
       (c) => c.filename.toLowerCase() == session.romFilename.toLowerCase(),
@@ -374,26 +382,31 @@ class ArcadeNetplayService extends ChangeNotifier {
         onProgress: (progress) {
           session.myProgress = progress;
           final percent = (progress * 100).toInt();
-          session.myStatusText = 'Descargando juego ($percent%)...';
+          session.myStatusText = 'arcade_downloading_game'
+              .tr(namedArgs: {'percent': '$percent'});
           notifyListeners();
-          _broadcastPrepStatus(progress, 'Descargando ($percent%)...');
+          _broadcastPrepStatus(
+            progress,
+            'arcade_downloading_short'.tr(namedArgs: {'percent': '$percent'}),
+          );
         },
       );
 
       if (success) {
         session.myProgress = 1.0;
-        session.myStatusText = 'Juego listo';
+        session.myStatusText = 'arcade_game_ready'.tr();
         notifyListeners();
         await _broadcastReady();
         _checkIfBothReady();
       } else {
-        throw Exception('Fallo al descargar la ROM');
+        throw Exception('arcade_rom_download_failed'.tr());
       }
     } catch (e) {
       session.status = ArcadeNetplayStatus.terminated;
-      session.exitReason = 'Error descargando la ROM: $e';
+      session.exitReason =
+          'arcade_netplay_error_rom'.tr(namedArgs: {'error': '$e'});
       notifyListeners();
-      await _broadcastCancel('Error en descarga de ROM');
+      await _broadcastCancel('arcade_netplay_error_rom_broadcast'.tr());
       _cleanupSession();
     }
   }
@@ -448,8 +461,8 @@ class ArcadeNetplayService extends ChangeNotifier {
         session.status != ArcadeNetplayStatus.ready &&
         session.status != ArcadeNetplayStatus.inGame) {
       session.status = ArcadeNetplayStatus.ready;
-      session.myStatusText = '¡Ambos listos! Iniciando partida...';
-      session.peerStatusText = 'Listo';
+      session.myStatusText = 'arcade_netplay_ready_both'.tr();
+      session.peerStatusText = 'arcade_peer_ready'.tr();
       notifyListeners();
     }
   }
@@ -472,7 +485,7 @@ class ArcadeNetplayService extends ChangeNotifier {
   /// Cancela la sesión actual y limpia recursos limpiamente.
   void cancelSession({String? reason}) {
     if (_currentSession != null) {
-      _broadcastCancel(reason ?? 'Partida cancelada');
+      _broadcastCancel(reason ?? 'arcade_netplay_canceled'.tr());
       _currentSession!.status = ArcadeNetplayStatus.terminated;
       _currentSession!.exitReason = reason;
       notifyListeners();

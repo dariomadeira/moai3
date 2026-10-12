@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/features/games/models/arcade_netplay_state.dart';
 import 'package:moai3/features/games/services/arcade_netplay_service.dart';
@@ -60,7 +61,8 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
 
     // Si la sesión terminó o fue cancelada
     if (session == null || session.status == ArcadeNetplayStatus.terminated) {
-      final reason = session?.exitReason ?? 'La partida fue cancelada';
+      final reason =
+          session?.exitReason ?? 'arcade_session_canceled_default'.tr();
       Navigator.of(context, rootNavigator: true).pop();
       MoaiSnackBar.show(context, message: reason);
       return;
@@ -77,7 +79,7 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
   }
 
   void _onCancel() {
-    _netplay.cancelSession(reason: 'Partida cancelada por el usuario');
+    _netplay.cancelSession(reason: 'arcade_session_canceled_by_user'.tr());
   }
 
   @override
@@ -98,17 +100,18 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
       icon: Icons.sports_esports_rounded,
       iconColor: scheme.primary,
       iconBgColor: scheme.primary.withValues(alpha: 0.15),
-      title: 'Jueguen Juntos: $gameTitle',
+      title: 'arcade_prep_title'.tr(namedArgs: {'game': gameTitle}),
       subtitle: isHost
-          ? 'Sincronizando con $friendName...'
-          : 'Invitación de $friendName...',
+          ? 'arcade_prep_subtitle_host'.tr(namedArgs: {'friend': friendName})
+          : 'arcade_prep_subtitle_guest'.tr(namedArgs: {'friend': friendName}),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. Estado local (Tu consola)
           _buildProgressBlock(
-            label: 'Tu estado (${session.myNickname})',
+            label: 'arcade_prep_status_local'
+                .tr(namedArgs: {'name': session.myNickname}),
             statusText: session.myStatusText,
             progress: session.myProgress,
             activeColor: scheme.primary,
@@ -120,7 +123,8 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
 
           // 2. Estado del amigo (Consola remota)
           _buildProgressBlock(
-            label: 'Estado de $friendName',
+            label: 'arcade_prep_status_remote'
+                .tr(namedArgs: {'friend': friendName}),
             statusText: session.peerStatusText,
             progress: session.peerProgress,
             activeColor: scheme.tertiary,
@@ -147,7 +151,7 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Ambas consolas deben tener el juego listo para arrancar en simultáneo sin cortes.',
+                    'arcade_prep_info'.tr(),
                     style: MoaiText.body(
                       context,
                       fontSize: 12,
@@ -163,7 +167,7 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
       actions: [
         TvDialogButton(
           focusNode: _cancelFocus,
-          label: 'Cancelar partida',
+          label: 'arcade_prep_cancel'.tr(),
           variant: TvDialogButtonVariant.neutral,
           onPressed: _onCancel,
         ),

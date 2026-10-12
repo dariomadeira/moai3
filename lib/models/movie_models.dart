@@ -126,7 +126,7 @@ class MovieItem {
 
 /// Origen real del catálogo mostrado por la app.
 enum CatalogSource {
-  /// Descargado en vivo por la API de Xuper (VPN México + sesión válida).
+  /// Descargado en vivo desde el servicio de catálogo (sesión válida).
   liveApi,
 
   /// Documento fresco generado por la app oficial en el almacenamiento del TV.

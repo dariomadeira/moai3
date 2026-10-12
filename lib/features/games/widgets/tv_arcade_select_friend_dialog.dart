@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/models/friend_info.dart';
@@ -84,8 +85,8 @@ class _TvArcadeSelectFriendDialogState
       icon: Icons.person_search_rounded,
       iconColor: scheme.primary,
       iconBgColor: scheme.primary.withValues(alpha: 0.15),
-      title: 'Elegir amigo para jugar',
-      subtitle: 'Partida Arcade en tiempo real',
+      title: 'arcade_select_friend_title'.tr(),
+      subtitle: 'arcade_select_friend_subtitle'.tr(),
       content: sortedFriends.isEmpty
           ? Container(
               padding: const EdgeInsets.all(20),
@@ -102,7 +103,7 @@ class _TvArcadeSelectFriendDialogState
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'No tienes amigos agregados aún.',
+                    'arcade_select_friend_empty'.tr(),
                     style: MoaiText.body(
                       context,
                       fontSize: 14,
@@ -113,7 +114,7 @@ class _TvArcadeSelectFriendDialogState
                   const SizedBox(height: 12),
                   TvDialogButton(
                     focusNode: _closeFocus,
-                    label: 'Administrar amigos',
+                    label: 'arcade_select_friend_manage'.tr(),
                     variant: TvDialogButtonVariant.primary,
                     onPressed: () {
                       Navigator.of(context, rootNavigator: true).pop();
@@ -146,7 +147,7 @@ class _TvArcadeSelectFriendDialogState
       actions: [
         TvDialogButton(
           focusNode: _closeFocus,
-          label: 'Cerrar',
+          label: 'arcade_select_friend_close'.tr(),
           variant: TvDialogButtonVariant.neutral,
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
         ),
@@ -264,7 +265,9 @@ class _FriendTileState extends State<_FriendTile> {
             ),
           ),
           subtitle: Text(
-            isOnline ? 'En línea' : 'Desconectado',
+            isOnline
+                ? 'friends_status_online'.tr()
+                : 'friends_status_offline'.tr(),
             style: MoaiText.body(
               context,
               fontSize: 12,

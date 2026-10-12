@@ -63,13 +63,13 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
         if (assignment.isRemote) {
           icon = Icons.settings_remote;
           message = assignment.player == 0
-              ? 'Control remoto conectado - Jugador 1'
-              : 'Control remoto conectado - ¡Jugador 2 listo!';
+              ? 'arcade_remote_connected_p1'.tr()
+              : 'arcade_remote_connected_p2'.tr();
         } else {
           icon = Icons.sports_esports;
           message = assignment.player == 0
-              ? 'Mando 1 detectado - Jugador 1'
-              : 'Mando 2 detectado - ¡Jugador 2 listo!';
+              ? 'arcade_pad_detected_p1'.tr()
+              : 'arcade_pad_detected_p2'.tr();
         }
         MoaiSnackBar.show(
           context,
@@ -88,7 +88,9 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
         if (mounted) {
           MoaiSnackBar.show(
             context,
-            message: '🎮 Partida conectada con ${widget.netplaySession!.peerNickname}',
+            message: 'arcade_netplay_connected'.tr(namedArgs: {
+              'friend': widget.netplaySession!.peerNickname,
+            }),
             icon: Icons.sports_esports,
           );
         }
@@ -123,7 +125,9 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
   void dispose() {
     _remoteInputSubscription?.cancel();
     if (widget.netplaySession != null) {
-      ArcadeNetplayService.instance.cancelSession(reason: 'El jugador salió de la partida');
+      ArcadeNetplayService.instance.cancelSession(
+        reason: 'arcade_player_left'.tr(),
+      );
     }
     _exitSubscription?.cancel();
     _gamepadSubscription?.cancel();

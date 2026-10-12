@@ -42,7 +42,6 @@ import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/buttons/clear_favorites_button.dart';
 import 'package:moai3/widgets/buttons/create_group_button.dart';
 import 'package:moai3/widgets/buttons/favorite_button.dart';
-import 'package:moai3/widgets/buttons/simulate_live_button.dart';
 import 'package:moai3/widgets/buttons/server_skip_button.dart';
 import 'package:moai3/widgets/feedback/debug_log_panel.dart';
 import 'package:moai3/widgets/player/tv_player_overlay.dart';
@@ -65,7 +64,6 @@ class HomeTvArea extends StatefulWidget {
 
 class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     with WidgetsBindingObserver {
-  static const bool _showSimulateLiveButtons = false;
   final _browser = ChannelBrowserController();
   final _search = HomeSearchController();
   final _groups = GroupsBrowserController();
@@ -90,8 +88,6 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
   final _favoriteBtnFocus = FocusNode(debugLabel: 'tv_fav_btn');
   final _createGroupFocus = FocusNode(debugLabel: 'tv_create_group_btn');
   final _clearFavoritesFocus = FocusNode(debugLabel: 'tv_clear_fav_btn');
-  final _simulateLiveFocus = FocusNode(debugLabel: 'tv_simulate_live');
-  final _simulateLiveTwoFocus = FocusNode(debugLabel: 'tv_simulate_live_two');
   final _serverSkipFocus = FocusNode(debugLabel: 'tv_server_skip');
   final _logFocus = FocusNode(debugLabel: 'tv_log');
   final _watchPartyMicFocusNode = FocusNode(debugLabel: 'tv_header_mic');
@@ -376,8 +372,6 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     _createGroupFocus.dispose();
     _clearFavoritesFocus.dispose();
     _watchPartyMicFocusNode.dispose();
-    _simulateLiveFocus.dispose();
-    _simulateLiveTwoFocus.dispose();
     _serverSkipFocus.dispose();
     _logFocus.dispose();
     super.dispose();
@@ -1039,7 +1033,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     final showServerSkip = channel != null &&
         ChannelPlaybackHelpers.playableUrls(channel).length > 1 &&
         !isPuppeteer;
-    final showBottomControls = showServerSkip || _showSimulateLiveButtons;
+    final showBottomControls = showServerSkip;
 
     final panelCount = TvPanelLayout.panelCount(showTvLog);
     final active = _activePanelIndex.clamp(0, panelCount - 1);
@@ -1289,13 +1283,8 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                                     ServerSkipButton(
                                       focusNode: _serverSkipFocus,
                                       onKeyLeft: _focusActiveContent,
-                                      onKeyRight: () {
-                                        if (_showSimulateLiveButtons) {
-                                          _simulateLiveFocus.requestFocus();
-                                        } else {
-                                          _viewerFocus.requestFocus();
-                                        }
-                                      },
+                                      onKeyRight: () =>
+                                          _viewerFocus.requestFocus(),
                                       onKeyUp: () => _focusViewerFavoritesBar(
                                         favChannels,
                                         channel,
@@ -1305,42 +1294,6 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                                     )
                                   else
                                     const SizedBox.shrink(),
-                                  if (_showSimulateLiveButtons) ...[
-                                    SimulateLiveButton(
-                                      focusNode: _simulateLiveFocus,
-                                      onKeyUp: () => _focusViewerFavoritesBar(
-                                        favChannels,
-                                        channel,
-                                      ),
-                                      onKeyLeft: () {
-                                        if (showServerSkip) {
-                                          _serverSkipFocus.requestFocus();
-                                        } else {
-                                          _focusActiveContent();
-                                        }
-                                      },
-                                      onKeyRight: () => _simulateLiveTwoFocus
-                                          .requestFocus(),
-                                      onKeyDown: () =>
-                                          _viewerFocus.requestFocus(),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    SimulateLiveButton(
-                                      focusNode: _simulateLiveTwoFocus,
-                                      eventCount: 2,
-                                      icon: Icons.filter_2,
-                                      onKeyUp: () => _focusViewerFavoritesBar(
-                                        favChannels,
-                                        channel,
-                                      ),
-                                      onKeyLeft: () =>
-                                          _simulateLiveFocus.requestFocus(),
-                                      onKeyRight: () =>
-                                          _viewerFocus.requestFocus(),
-                                      onKeyDown: () =>
-                                          _viewerFocus.requestFocus(),
-                                    ),
-                                  ],
                                 ],
                               ),
                             ),

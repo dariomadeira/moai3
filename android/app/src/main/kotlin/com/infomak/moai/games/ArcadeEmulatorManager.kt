@@ -24,6 +24,7 @@ class ArcadeEmulatorManager(
         get() = isRunning
 
     private val playerDeviceMap = mutableMapOf<Int, Int>()
+    private val realControllerIds = mutableSetOf<Int>()
     private var p1Mask: Int = 0
     private var p2Mask: Int = 0
 
@@ -127,10 +128,7 @@ class ArcadeEmulatorManager(
                 val gamepads = mutableListOf<Map<String, Any>>()
                 for (id in deviceIds) {
                     val device = android.view.InputDevice.getDevice(id) ?: continue
-                    val sources = device.sources
-                    val isGamepad = (sources and android.view.InputDevice.SOURCE_GAMEPAD == android.view.InputDevice.SOURCE_GAMEPAD) ||
-                                    (sources and android.view.InputDevice.SOURCE_JOYSTICK == android.view.InputDevice.SOURCE_JOYSTICK)
-                    if (isGamepad && !device.isVirtual) {
+                    if (isRealGameController(device)) {
                         gamepads.add(
                             mapOf(
                                 "id" to device.id,
@@ -228,50 +226,113 @@ class ArcadeEmulatorManager(
         }, "ArcadeRomLoader").start()
     }
 
-    private fun isRemoteControlDevice(device: android.view.InputDevice?): Boolean {
-        if (device == null) return true
+    /**
+     * Joystick o gamepad real. El control del televisor suele anunciarse como
+     * gamepad, pero solo trae el D-pad y un OK: no debe ocupar un jugador.
+     */
+    private fun isRealGameController(device: android.view.InputDevice): Boolean {
+        if (device.isVirtual) return false
         val name = device.name.lowercase()
-        if (name.contains("remote") || name.contains("control remoto") || name.contains("cec")) {
-            return true
-        }
-        if (name.contains("gamepad") || name.contains("joystick") || name.contains("controller")) {
+        if (name.contains("remote") || name.contains("control remoto") ||
+            name.contains("cec") || name.contains("ir receiver")
+        ) {
             return false
         }
-        val sources = device.sources
-        val hasGamepadSource = (sources and android.view.InputDevice.SOURCE_GAMEPAD != 0) ||
-                               (sources and android.view.InputDevice.SOURCE_JOYSTICK != 0)
-
-        val hasGamepadKeys = device.hasKeys(
+        if (name.contains("gamepad") || name.contains("joystick") ||
+            name.contains("controller") || name.contains("arcade")
+        ) {
+            return true
+        }
+        val hasAnalogStick = device.motionRanges.any { range ->
+            when (range.axis) {
+                android.view.MotionEvent.AXIS_X,
+                android.view.MotionEvent.AXIS_Y,
+                android.view.MotionEvent.AXIS_Z,
+                android.view.MotionEvent.AXIS_RZ,
+                android.view.MotionEvent.AXIS_RX,
+                android.view.MotionEvent.AXIS_RY -> true
+                else -> false
+            }
+        }
+        if (hasAnalogStick) return true
+        val keys = device.hasKeys(
             android.view.KeyEvent.KEYCODE_BUTTON_A,
             android.view.KeyEvent.KEYCODE_BUTTON_B,
             android.view.KeyEvent.KEYCODE_BUTTON_X,
             android.view.KeyEvent.KEYCODE_BUTTON_Y,
-            android.view.KeyEvent.KEYCODE_BUTTON_START
-        )?.any { it } ?: false
-
-        return !(hasGamepadSource || hasGamepadKeys)
+            android.view.KeyEvent.KEYCODE_BUTTON_L1,
+            android.view.KeyEvent.KEYCODE_BUTTON_R1
+        )
+        val faceCount = keys?.count { it } ?: 0
+        val hasJoystickSource =
+            (device.sources and android.view.InputDevice.SOURCE_JOYSTICK) ==
+                android.view.InputDevice.SOURCE_JOYSTICK
+        if (hasJoystickSource && faceCount >= 2) return true
+        return faceCount >= 3
     }
 
-    /** Pre-detecta mandos físicos conectados (USB/Bluetooth) y los asigna automáticamente a Jugador 1 y Jugador 2 */
+    private fun hasConnectedRealController(): Boolean {
+        val inputManager = context.getSystemService(Context.INPUT_SERVICE) as? android.hardware.input.InputManager
+        val deviceIds = inputManager?.inputDeviceIds ?: android.view.InputDevice.getDeviceIds()
+        return deviceIds.any { id ->
+            val device = android.view.InputDevice.getDevice(id) ?: return@any false
+            isRealGameController(device)
+        }
+    }
+
+    /**
+     * Los mandos reales ocupan jugador 1 y, si hay otro, jugador 2.
+     * El control remoto solo puede ser jugador 1 cuando no hay ningún mando real.
+     */
+    private fun claimPlayerSlot(deviceId: Int, device: android.view.InputDevice?): Int? {
+        playerDeviceMap[deviceId]?.let { return it }
+
+        val real = device != null && isRealGameController(device)
+        if (real) {
+            if (realControllerIds.isEmpty()) {
+                val stale = playerDeviceMap.keys.filter { it !in realControllerIds }.toList()
+                for (id in stale) playerDeviceMap.remove(id)
+            }
+            val slot = when {
+                0 !in playerDeviceMap.values -> 0
+                1 !in playerDeviceMap.values -> 1
+                else -> return null
+            }
+            playerDeviceMap[deviceId] = slot
+            realControllerIds.add(deviceId)
+            return slot
+        }
+
+        if (realControllerIds.isNotEmpty() || hasConnectedRealController()) return null
+        if (playerDeviceMap.isNotEmpty()) return null
+        playerDeviceMap[deviceId] = 0
+        return 0
+    }
+
+    private fun notifyAssignment(deviceId: Int, player: Int, device: android.view.InputDevice?) {
+        val name = device?.name ?: "Dispositivo"
+        val isRemote = device == null || !isRealGameController(device)
+        android.util.Log.i(
+            "ArcadeEmulatorManager",
+            "Dispositivo id=$deviceId ($name, isRemote=$isRemote) asignado a Jugador ${player + 1}"
+        )
+        channel.invokeMethod(
+            "onGamepadAssigned",
+            mapOf("deviceId" to deviceId, "player" to player, "name" to name, "isRemote" to isRemote)
+        )
+    }
+
+    /** Pre-asigna solo joysticks o gamepads reales. El control del TV no entra. */
     fun detectAndAssignConnectedGamepads() {
         val inputManager = context.getSystemService(Context.INPUT_SERVICE) as? android.hardware.input.InputManager
         val deviceIds = inputManager?.inputDeviceIds ?: android.view.InputDevice.getDeviceIds()
-        var nextPlayer = 0
         for (id in deviceIds) {
+            if (realControllerIds.size >= 2) break
             val device = android.view.InputDevice.getDevice(id) ?: continue
-            if (device.isVirtual) continue
-            val sources = device.sources
-            val isGamepad = (sources and android.view.InputDevice.SOURCE_GAMEPAD == android.view.InputDevice.SOURCE_GAMEPAD) ||
-                            (sources and android.view.InputDevice.SOURCE_JOYSTICK == android.view.InputDevice.SOURCE_JOYSTICK)
-            if (isGamepad && !playerDeviceMap.containsKey(id)) {
-                playerDeviceMap[id] = nextPlayer
-                val isRemote = isRemoteControlDevice(device)
-                android.util.Log.i("ArcadeEmulatorManager", "Pre-asignado dispositivo id=$id (${device.name}, isRemote=$isRemote) a Jugador ${nextPlayer + 1}")
-                val playerAssigned = nextPlayer
-                channel.invokeMethod("onGamepadAssigned", mapOf("deviceId" to id, "player" to playerAssigned, "name" to device.name, "isRemote" to isRemote))
-                nextPlayer++
-                if (nextPlayer >= 2) break
-            }
+            if (!isRealGameController(device)) continue
+            val already = playerDeviceMap.containsKey(id)
+            val slot = claimPlayerSlot(id, device) ?: continue
+            if (!already) notifyAssignment(id, slot, device)
         }
     }
 
@@ -280,6 +341,7 @@ class ArcadeEmulatorManager(
         isPaused = false
         currentRomPath = null
         playerDeviceMap.clear()
+        realControllerIds.clear()
         p1Mask = 0
         p2Mask = 0
         nativeStop()
@@ -321,18 +383,12 @@ class ArcadeEmulatorManager(
         if (bit == 0) return false
 
         val deviceId = event.deviceId
-        // Asignar jugador dinámicamente si no fue pre-asignado
-        if (!playerDeviceMap.containsKey(deviceId)) {
-            val assignedPlayer = if (!playerDeviceMap.containsValue(0)) 0 else if (!playerDeviceMap.containsValue(1)) 1 else 0
-            playerDeviceMap[deviceId] = assignedPlayer
-            val device = event.device ?: android.view.InputDevice.getDevice(deviceId)
-            val isRemote = isRemoteControlDevice(device)
-            val deviceName = device?.name ?: "Dispositivo"
-            android.util.Log.i("ArcadeEmulatorManager", "Dispositivo deviceId=$deviceId ($deviceName, isRemote=$isRemote) asignado a Jugador ${assignedPlayer + 1}")
-            channel.invokeMethod("onGamepadAssigned", mapOf("deviceId" to deviceId, "player" to assignedPlayer, "name" to deviceName, "isRemote" to isRemote))
-        }
-
-        val player = playerDeviceMap[deviceId] ?: 0
+        val device = event.device ?: android.view.InputDevice.getDevice(deviceId)
+        val alreadyAssigned = playerDeviceMap.containsKey(deviceId)
+        // Si es el control del TV y ya hay un mando real, se consume la tecla
+        // para que no entre al jugador ni se reenvíe por la partida en red.
+        val player = claimPlayerSlot(deviceId, device) ?: return true
+        if (!alreadyAssigned) notifyAssignment(deviceId, player, device)
 
         if (player == 0) {
             p1Mask = if (isDown) (p1Mask or bit) else (p1Mask and bit.inv())
@@ -359,15 +415,10 @@ class ArcadeEmulatorManager(
         if (!isJoystickOrGamepad) return false
 
         val deviceId = event.deviceId
-        if (!playerDeviceMap.containsKey(deviceId)) {
-            val assignedPlayer = if (!playerDeviceMap.containsValue(0)) 0 else if (!playerDeviceMap.containsValue(1)) 1 else 0
-            playerDeviceMap[deviceId] = assignedPlayer
-            val device = event.device ?: android.view.InputDevice.getDevice(deviceId)
-            val isRemote = isRemoteControlDevice(device)
-            val deviceName = device?.name ?: "Dispositivo"
-            channel.invokeMethod("onGamepadAssigned", mapOf("deviceId" to deviceId, "player" to assignedPlayer, "name" to deviceName, "isRemote" to isRemote))
-        }
-        val player = playerDeviceMap[deviceId] ?: 0
+        val device = event.device ?: android.view.InputDevice.getDevice(deviceId)
+        val alreadyAssigned = playerDeviceMap.containsKey(deviceId)
+        val player = claimPlayerSlot(deviceId, device) ?: return true
+        if (!alreadyAssigned) notifyAssignment(deviceId, player, device)
 
         val x = event.getAxisValue(android.view.MotionEvent.AXIS_HAT_X).let {
             if (it != 0f) it else event.getAxisValue(android.view.MotionEvent.AXIS_X)

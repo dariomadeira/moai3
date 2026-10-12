@@ -118,7 +118,9 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
     Navigator.of(context, rootNavigator: true).pop();
     MoaiSnackBar.show(
       context,
-      message: 'Ubicación configurada: ${loc.displayName}',
+      message: 'weather_location_configured'.tr(
+        namedArgs: {'location': loc.displayName},
+      ),
       icon: Icons.check_circle_rounded,
     );
   }
@@ -131,7 +133,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
     Navigator.of(context, rootNavigator: true).pop();
     MoaiSnackBar.show(
       context,
-      message: 'Ubicación restablecida a modo automático',
+      message: 'weather_location_reset_auto'.tr(),
       icon: Icons.my_location_rounded,
     );
   }
@@ -157,7 +159,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
           TvDialogButton(
             focusNode: _autoBtnFocus,
             label: isAuto
-                ? 'Modo automático activo (por red)'
+                ? 'weather_location_auto_active'.tr()
                 : 'weather_location_auto_btn'.tr(),
             icon: Icons.my_location_rounded,
             variant: isAuto
@@ -175,10 +177,12 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             label: _searchQuery.isEmpty
                 ? 'weather_location_search_hint'.tr()
-                : 'Buscar: "$_searchQuery"',
+                : 'weather_location_search_prefix'.tr(
+                    namedArgs: {'query': _searchQuery},
+                  ),
             description: _searchQuery.isEmpty
-                ? 'Presioná OK para escribir tu localidad o ciudad'
-                : 'Presioná OK para modificar la búsqueda',
+                ? 'weather_location_search_desc_empty'.tr()
+                : 'weather_location_search_desc_modify'.tr(),
             icon: Icons.search_rounded,
             onPressed: _openKeyboardAndSearch,
             onKeyUp: () => _autoBtnFocus.requestFocus(),

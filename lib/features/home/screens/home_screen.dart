@@ -112,14 +112,18 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       MoaiSnackBar.show(
         context,
-        message: '🎮 ${invite.hostNickname} te invitó a jugar ${invite.romName}',
+        message: 'arcade_invite_received'.tr(namedArgs: {
+          'name': invite.hostNickname,
+          'game': invite.romName,
+        }),
         icon: Icons.sports_esports,
-        hint: 'OK para Aceptar',
+        hint: 'arcade_invite_hint_accept'.tr(),
         onAction: () async {
           final identity = context.read<DeviceIdentityService>();
           final myDeviceId = identity.getOrCreateDeviceId();
           final myNickname =
-              context.read<WatchPartyProvider?>()?.myNickname ?? 'Jugador 2';
+              context.read<WatchPartyProvider?>()?.myNickname ??
+                  'arcade_default_player_2'.tr();
 
           await ArcadeNetplayService.instance.acceptIncomingInvite(
             myDeviceId: myDeviceId,

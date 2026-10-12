@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/weather_icon_mapper.dart';
@@ -53,9 +54,9 @@ class WeatherProvider extends ChangeNotifier {
     if (isAutoLocation) {
       final detectedCity = _weather?.city;
       if (detectedCity != null && detectedCity.isNotEmpty) {
-        return 'Automático ($detectedCity)';
+        return 'weather_auto_city'.tr(namedArgs: {'city': detectedCity});
       }
-      return 'Automático (por red)';
+      return 'weather_auto_network'.tr();
     }
     return _customName ?? _weather?.city ?? '';
   }

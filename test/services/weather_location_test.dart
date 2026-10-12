@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/weather_service.dart';
@@ -54,7 +57,11 @@ void main() {
       final provider = WeatherProvider(prefs);
       expect(provider.isAutoLocation, isTrue);
       expect(provider.customLocationName, isNull);
-      expect(provider.locationDisplayName, contains('Automático'));
+      expect(provider.locationDisplayName, 'weather_auto_network');
+      final translations = jsonDecode(
+        File('assets/translations/es.json').readAsStringSync(),
+      ) as Map<String, dynamic>;
+      expect(translations['weather_auto_network'], contains('Automático'));
       provider.dispose();
     });
 

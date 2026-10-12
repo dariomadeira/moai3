@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -30,12 +32,23 @@ class TvGamepadConfigDialog extends StatefulWidget {
 
 class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
   final GamepadManagerService _gamepadService = GamepadManagerService();
-  final FocusNode _closeFocus = FocusNode(debugLabel: 'gamepad_close');
-  final FocusNode _refreshFocus = FocusNode(debugLabel: 'gamepad_refresh');
+  final FocusNode _testFocus = FocusNode(debugLabel: 'gamepad_test');
+  final FocusNode _closeFocus = FocusNode(
+    debugLabel: 'gamepad_close',
+    canRequestFocus: false,
+    skipTraversal: true,
+  );
+  final FocusNode _refreshFocus = FocusNode(
+    debugLabel: 'gamepad_refresh',
+    canRequestFocus: false,
+    skipTraversal: true,
+  );
 
   // Máscara de botones activos en tiempo real
   int _activeTestMask = 0;
   String? _lastPressedLabel;
+  Timer? _backHoldTimer;
+  bool _backHoldFired = false;
 
   @override
   void initState() {
@@ -43,50 +56,69 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
     _gamepadService.refreshGamepads();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _closeFocus.requestFocus();
+      _testFocus.requestFocus();
     });
   }
 
   @override
   void dispose() {
+    _backHoldTimer?.cancel();
+    _testFocus.dispose();
     _closeFocus.dispose();
     _refreshFocus.dispose();
     _gamepadService.dispose();
     super.dispose();
   }
 
+  void _clearTest() {
+    _gamepadService.refreshGamepads();
+    if (!mounted) return;
+    setState(() {
+      _activeTestMask = 0;
+      _lastPressedLabel = null;
+    });
+  }
+
   KeyEventResult _handleGamepadKeyEvent(FocusNode node, KeyEvent event) {
     final key = event.logicalKey;
 
-    // Salir con Escape / Back
-    if (event is KeyDownEvent &&
-        (key == LogicalKeyboardKey.escape ||
-            key == LogicalKeyboardKey.goBack ||
-            key == LogicalKeyboardKey.backspace)) {
-      Navigator.of(context).pop();
+    final isBack = key == LogicalKeyboardKey.escape ||
+        key == LogicalKeyboardKey.goBack ||
+        key == LogicalKeyboardKey.backspace;
+    if (isBack) {
+      if (event is KeyDownEvent &&
+          (_backHoldTimer == null || !_backHoldTimer!.isActive)) {
+        _backHoldFired = false;
+        _backHoldTimer = Timer(const Duration(milliseconds: 650), () {
+          _backHoldFired = true;
+          _clearTest();
+        });
+      } else if (event is KeyUpEvent) {
+        _backHoldTimer?.cancel();
+        _backHoldTimer = null;
+        if (!_backHoldFired && mounted) {
+          Navigator.of(context).pop();
+        }
+        _backHoldFired = false;
+      }
       return KeyEventResult.handled;
     }
 
     int bit = 0;
     String label = '';
-    bool isDirectionalKey = false;
 
     if (key == LogicalKeyboardKey.arrowUp || key == LogicalKeyboardKey.gameButton11) {
       bit = ArcadeButtons.up;
-      label = 'D-Pad Arriba';
-      isDirectionalKey = (key == LogicalKeyboardKey.arrowUp);
+      label = 'gamepad_dpad_up'.tr();
     } else if (key == LogicalKeyboardKey.arrowDown || key == LogicalKeyboardKey.gameButton12) {
       bit = ArcadeButtons.down;
-      label = 'D-Pad Abajo';
-      isDirectionalKey = (key == LogicalKeyboardKey.arrowDown);
+      label = 'gamepad_dpad_down'.tr();
     } else if (key == LogicalKeyboardKey.arrowLeft || key == LogicalKeyboardKey.gameButton13) {
       bit = ArcadeButtons.left;
-      label = 'D-Pad Izquierda';
-      isDirectionalKey = (key == LogicalKeyboardKey.arrowLeft);
+      label = 'gamepad_dpad_left'.tr();
     } else if (key == LogicalKeyboardKey.arrowRight || key == LogicalKeyboardKey.gameButton14) {
       bit = ArcadeButtons.right;
-      label = 'D-Pad Derecha';
-      isDirectionalKey = (key == LogicalKeyboardKey.arrowRight);
+      label = 'gamepad_dpad_right'.tr();
     } else if (key == LogicalKeyboardKey.gameButtonX || key == LogicalKeyboardKey.keyY || key == LogicalKeyboardKey.keyJ) {
       bit = ArcadeButtons.punchLight;
       label = 'Golpe Débil (LP)';
@@ -96,7 +128,12 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
     } else if (key == LogicalKeyboardKey.gameButtonRight1 || key == LogicalKeyboardKey.keyL || key == LogicalKeyboardKey.keyO) {
       bit = ArcadeButtons.punchHeavy;
       label = 'Golpe Fuerte (HP)';
-    } else if (key == LogicalKeyboardKey.gameButtonA || key == LogicalKeyboardKey.keyB || key == LogicalKeyboardKey.keyK) {
+    } else if (key == LogicalKeyboardKey.gameButtonA ||
+        key == LogicalKeyboardKey.select ||
+        key == LogicalKeyboardKey.enter ||
+        key == LogicalKeyboardKey.space ||
+        key == LogicalKeyboardKey.keyB ||
+        key == LogicalKeyboardKey.keyK) {
       bit = ArcadeButtons.kickLight;
       label = 'Patada Débil (LK)';
     } else if (key == LogicalKeyboardKey.gameButtonB || key == LogicalKeyboardKey.keyA || key == LogicalKeyboardKey.keyM) {
@@ -122,10 +159,6 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
           _activeTestMask &= ~bit;
         }
       });
-      // Dejar fluir flechas de teclado para no bloquear navegación de foco D-Pad
-      if (isDirectionalKey) {
-        return KeyEventResult.ignored;
-      }
       return KeyEventResult.handled;
     }
 
@@ -136,7 +169,9 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
 
-    return FocusScope(
+    return Focus(
+      focusNode: _testFocus,
+      autofocus: true,
       onKeyEvent: _handleGamepadKeyEvent,
       child: AnimatedBuilder(
         animation: _gamepadService,
@@ -148,7 +183,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
             width: 820,
             icon: Symbols.sports_esports,
             title: 'gamepad_dialog_title'.tr(),
-            subtitle: 'gamepad_dialog_subtitle'.tr(),
+            subtitle: 'gamepad_test_focus_hint'.tr(),
             trailingHeader: Material(
               color: isConnected
                   ? scheme.tertiaryContainer
@@ -171,7 +206,13 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                     const SizedBox(width: 6),
                     Text(
                       isConnected
-                          ? '${connectedList.length} ${connectedList.length == 1 ? "mando detectado" : "mandos detectados"}'
+                          ? (connectedList.length == 1
+                              ? 'gamepad_count_single'.tr(namedArgs: {
+                                  'count': '${connectedList.length}',
+                                })
+                              : 'gamepad_count_plural'.tr(namedArgs: {
+                                  'count': '${connectedList.length}',
+                                }))
                           : 'gamepad_status_not_connected'.tr(),
                       style: MoaiText.body(
                         context,
@@ -203,7 +244,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                             Icon(Symbols.gamepad, size: 14, color: scheme.primary),
                             const SizedBox(width: 6),
                             Text(
-                              'MANDOS DETECTADOS',
+                              'gamepad_detected_section_header'.tr(),
                               style: MoaiText.body(
                                 context,
                                 color: scheme.onSurfaceVariant,
@@ -289,7 +330,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Soporta hasta 2 controles simultáneos (Jugador 1 y Jugador 2) para arcade.',
+                                'gamepad_support_two_players'.tr(),
                                 style: MoaiText.body(
                                   context,
                                   color: scheme.onSurfaceVariant,
@@ -441,7 +482,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
-                                      'Ficha / Iniciar',
+                                      'gamepad_coin_start_header'.tr(),
                                       style: MoaiText.body(
                                         context,
                                         color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
@@ -466,7 +507,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  'Golpes / Patadas (CPS)',
+                                  'gamepad_attacks_cps_header'.tr(),
                                   style: MoaiText.body(
                                     context,
                                     color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
@@ -475,7 +516,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                                   ),
                                 ),
                                 Text(
-                                  'Débil · Medio · Fuerte',
+                                  'gamepad_levels_weak_med_strong'.tr(),
                                   style: MoaiText.body(
                                     context,
                                     color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
@@ -560,14 +601,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                 icon: Icons.refresh_rounded,
                 label: 'gamepad_action_reset'.tr(),
                 variant: TvDialogButtonVariant.neutral,
-                onPressed: () {
-                  _gamepadService.refreshGamepads();
-                  setState(() {
-                    _activeTestMask = 0;
-                    _lastPressedLabel = null;
-                  });
-                },
-                onKeyRight: () => _closeFocus.requestFocus(),
+                onPressed: _clearTest,
               ),
               TvDialogButton(
                 focusNode: _closeFocus,
@@ -575,7 +609,6 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                 label: 'gamepad_action_close'.tr(),
                 variant: TvDialogButtonVariant.primary,
                 onPressed: () => Navigator.of(context).pop(),
-                onKeyLeft: () => _refreshFocus.requestFocus(),
               ),
             ],
           );
@@ -737,7 +770,9 @@ class _GamepadDeviceCard extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      'Mando $index',
+                      'gamepad_controller_label'.tr(
+                        namedArgs: {'index': '$index'},
+                      ),
                       style: MoaiText.body(
                         context,
                         color: scheme.primary,
