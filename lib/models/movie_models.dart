@@ -124,16 +124,36 @@ class MovieItem {
   };
 }
 
+/// Origen real del catálogo mostrado por la app.
+enum CatalogSource {
+  /// Descargado en vivo por la API de Xuper (VPN México + sesión válida).
+  liveApi,
+
+  /// Documento fresco generado por la app oficial en el almacenamiento del TV.
+  localDocument,
+
+  /// Respaldo empaquetado en los assets del APK (hardcodeado).
+  assetBundle,
+}
+
 class CatalogResult {
   final List<CategoryColumn> categories;
   final bool isFromNetwork;
   final String statusMessage;
+  final CatalogSource source;
 
   CatalogResult({
     required this.categories,
     required this.isFromNetwork,
     required this.statusMessage,
+    this.source = CatalogSource.assetBundle,
   });
+
+  /// `true` solo si el catálogo vino EN VIVO por la API (no caché local ni assets).
+  bool get isFreshLive => source == CatalogSource.liveApi;
+
+  /// `true` si el catálogo es el respaldo empaquetado (hardcodeado).
+  bool get isHardcoded => source == CatalogSource.assetBundle;
 
   int get totalMovies =>
       categories.fold(0, (sum, cat) => sum + cat.movies.length);

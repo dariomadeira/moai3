@@ -5,10 +5,13 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
+import android.os.StatFs
 import android.provider.Settings
 import androidx.core.content.FileProvider
 import id.laskarmedia.openvpn_flutter.OpenVPNFlutterPlugin
 import java.io.File
+import java.net.NetworkInterface
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import javax.net.ssl.HttpsURLConnection
@@ -170,6 +173,67 @@ class MainActivity : FlutterActivity() {
                         Log.e("MainActivity", "Error getting ANDROID_ID: ${e.message}", e)
                         result.success("")
                     }
+                }
+                "getDeviceFingerprint" -> {
+                    val map = HashMap<String, String>()
+                    map["androidId"] = try {
+                        Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) ?: ""
+                    } catch (e: Exception) {
+                        ""
+                    }
+                    fun macOf(ifaceName: String): String {
+                        return try {
+                            val networkInterfaces = NetworkInterface.getNetworkInterfaces()
+                            var iface: NetworkInterface? = null
+                            while (networkInterfaces.hasMoreElements()) {
+                                val candidate = networkInterfaces.nextElement()
+                                if (candidate.name.equals(ifaceName, true)) {
+                                    iface = candidate
+                                    break
+                                }
+                            }
+                            val addr = iface?.hardwareAddress
+                            if (addr == null || addr.isEmpty()) {
+                                "02:00:00:00:00:00"
+                            } else {
+                                addr.joinToString(":") { byte -> String.format("%02X", byte) }
+                            }
+                        } catch (e: Exception) {
+                            "02:00:00:00:00:00"
+                        }
+                    }
+                    map["wifiMac"] = macOf("wlan0")
+                    map["etheMac"] = macOf("eth0")
+                    map["serialNumber"] = try { Build.SERIAL ?: "unknown" } catch (e: Exception) { "unknown" }
+                    map["diskInfo"] = ""
+                    map["ramSize"] = try {
+                        val am = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                        val mi = ActivityManager.MemoryInfo()
+                        am.getMemoryInfo(mi)
+                        (mi.totalMem / (1024L * 1024L)).toString() + "MB"
+                    } catch (e: Exception) {
+                        ""
+                    }
+                    map["romSize"] = try {
+                        val s = StatFs(Environment.getDataDirectory().path)
+                        ((s.blockSizeLong * s.blockCountLong) / (1024L * 1024L)).toString() + "MB"
+                    } catch (e: Exception) {
+                        ""
+                    }
+                    map["gatewayMac"] = "02:00:00:00:00:00"
+                    map["cpuId"] = Build.HARDWARE ?: "unknown"
+                    map["display"] = Build.DISPLAY ?: "unknown"
+                    map["brand"] = Build.BRAND ?: "unknown"
+                    map["verId"] = Build.ID ?: "unknown"
+                    map["cpuAbi"] = Build.CPU_ABI ?: "unknown"
+                    map["hardware"] = Build.HARDWARE ?: "unknown"
+                    map["manufacturer"] = Build.MANUFACTURER ?: "unknown"
+                    map["fingerprint"] = Build.FINGERPRINT ?: "unknown"
+                    map["host"] = Build.HOST ?: "unknown"
+                    map["device"] = Build.DEVICE ?: "unknown"
+                    map["board"] = Build.BOARD ?: "unknown"
+                    map["tags"] = Build.TAGS ?: "unknown"
+                    result.success(map)
                 }
                 "isEmulator" -> {
                     val isEmu = (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic")

@@ -16,6 +16,12 @@ class VpnService {
   VPNStage _currentStage = VPNStage.disconnected;
   VpnStatus? _currentStatus;
 
+  /// Última IP pública y país detectados al validar el túnel (para mostrarlo en pantalla).
+  String _lastExitIp = '';
+  String _lastExitCountry = '';
+  String get lastExitIp => _lastExitIp;
+  String get lastExitCountry => _lastExitCountry;
+
   final StreamController<VPNStage> _stageController =
       StreamController<VPNStage>.broadcast();
 
@@ -95,8 +101,8 @@ class VpnService {
       return false;
     }
 
-    // Credenciales oficiales de Salvavida con sufijo +b:0 obligatorio para forzar salida por México
-    String username = 'ZmD8M4lQLcxVOyqu+b:0';
+    // Credenciales oficiales de Salvavida (idéntico a Saltamontes verificado en emulador)
+    String username = 'ZmD8M4lQLcxVOyqu';
     String password = 'hhHnycXrVSvV7QnSbCmPo3OLj3J0fBwh';
 
     // Limpiar el bloque <auth-user-pass>...</auth-user-pass> y reemplazarlo por la directiva estándar
@@ -174,6 +180,8 @@ class VpnService {
         final country = data['country'] ?? '';
         final countryCode = data['countryCode']?.toString().toUpperCase() ?? '';
         final query = data['query'] ?? '';
+        _lastExitIp = query.toString();
+        _lastExitCountry = countryCode;
         debugPrint('🌐 [VPN IP Check] IP pública detectada: $query ($country, $countryCode)');
         if (countryCode == 'MX') {
           return true;
@@ -191,7 +199,12 @@ class VpnService {
     } catch (_) {
       try {
         final res = await http.get(Uri.parse('https://cloudflare.com/cdn-cgi/trace')).timeout(timeout);
-        return res.statusCode == 200;
+        if (res.statusCode == 200) {
+          final loc = RegExp(r'loc=([A-Z]+)').firstMatch(res.body)?.group(1);
+          if (loc != null) _lastExitCountry = loc;
+          return true;
+        }
+        return false;
       } catch (_) {
         return false;
       }
@@ -236,30 +249,6 @@ class VpnService {
     }
   }
 
-  /// Consulta la API pública de VPN Gate para buscar un servidor de México (MX)
-  Future<String?> _fetchMexicoNodeFromPublicApi({required Duration timeout}) async {
-    final uri = Uri.parse('http://www.vpngate.net/api/iphone/');
-    final response = await http.get(uri).timeout(timeout);
-
-    if (response.statusCode != 200) return null;
-
-    final lines = const LineSplitter().convert(response.body);
-    for (final line in lines) {
-      if (line.startsWith('*') || line.startsWith('#')) continue;
-      final parts = line.split(',');
-      if (parts.length >= 15) {
-        final country = parts[6].trim().toUpperCase();
-        if (country == 'MX') {
-          final base64Config = parts[14].trim();
-          if (base64Config.isNotEmpty) {
-            final decoded = utf8.decode(base64.decode(base64Config));
-            return decoded;
-          }
-        }
-      }
-    }
-    return null;
-  }
 
   void dispose() {
     _stageController.close();
