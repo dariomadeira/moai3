@@ -111,62 +111,86 @@ class _LoadingScreenState extends State<LoadingScreen>
         return;
       }
 
-      // --- 1. Conectar a VPN México ---
-      if (mounted) {
-        setState(() {
-          _statusText = 'Conectando a red segura (México)...';
-        });
-      }
-
-      final vpnConnected = await VpnService.instance.connectMexico(
-        timeout: const Duration(seconds: 8),
-        onStatusUpdate: (msg) {
-          if (mounted) setState(() => _statusText = msg);
-        },
-      );
-
-      if (vpnConnected) {
-        if (mounted) setState(() => _statusText = 'Conectado a la VPN (México)');
-      } else {
-        if (mounted) setState(() => _statusText = 'Iniciando sincronización del catálogo...');
-      }
-      await Future.delayed(const Duration(milliseconds: 1200));
-
-      // --- 2. Sincronizar catálogo (3 intentos) ---
-      bool catalogUpdated = false;
-      for (int attempt = 1; attempt <= 3; attempt++) {
+      // --- 1. Conectar a VPN México (Garantía 100% antes de consultar catálogo) ---
+      bool vpnConnected = false;
+      for (int vpnAttempt = 1; vpnAttempt <= 3; vpnAttempt++) {
         if (!mounted) break;
         setState(() {
-          _statusText = 'Sincronizando catálogo en vivo (Intento $attempt de 3)...';
+          _statusText = 'Conectando a red segura México (Intento $vpnAttempt de 3)...';
         });
 
-        final catResult = await XuperApiService.instance.syncCatalog(
-          timeout: const Duration(seconds: 4),
+        vpnConnected = await VpnService.instance.connectMexico(
+          nodeIndex: vpnAttempt - 1,
+          timeout: const Duration(seconds: 14),
+          onStatusUpdate: (msg) {
+            if (mounted) setState(() => _statusText = msg);
+          },
         );
 
-        if (catResult.isFromNetwork && catResult.categories.isNotEmpty) {
-          catalogUpdated = true;
+        if (vpnConnected) {
           if (mounted) {
-            setState(() {
-              _statusText = 'Catálogo fresco en vivo (${catResult.totalMovies} títulos)';
-            });
+            setState(() => _statusText = 'Túnel seguro verificado (100% conectado a México)');
           }
-          await Future.delayed(const Duration(milliseconds: 1500));
+          await Future.delayed(const Duration(milliseconds: 1200));
           break;
         } else {
-          if (attempt < 3) {
-            await Future.delayed(const Duration(milliseconds: 1000));
+          if (vpnAttempt < 3) {
+            if (mounted) setState(() => _statusText = 'Reintentando nodo seguro de México...');
+            await Future.delayed(const Duration(milliseconds: 1500));
           }
         }
       }
 
-      if (!catalogUpdated) {
+      // --- 2. Sincronizar catálogo SOLO SI la VPN está 100% conectada ---
+      bool catalogUpdated = false;
+      if (vpnConnected) {
+        for (int attempt = 1; attempt <= 3; attempt++) {
+          if (!mounted) break;
+          setState(() {
+            _statusText = 'Descargando catálogo en vivo de Xuper (Intento $attempt de 3)...';
+          });
+
+          final catResult = await XuperApiService.instance.syncCatalog(
+            timeout: const Duration(seconds: 6),
+          );
+
+          if (catResult.isFromNetwork && catResult.categories.isNotEmpty) {
+            catalogUpdated = true;
+            if (mounted) {
+              setState(() {
+                _statusText = 'Catálogo fresco en vivo (${catResult.totalMovies} títulos)';
+              });
+            }
+            await Future.delayed(const Duration(milliseconds: 1500));
+            break;
+          } else {
+            if (attempt < 3) {
+              await Future.delayed(const Duration(milliseconds: 1000));
+            }
+          }
+        }
+
+        // --- 3. Desconectar VPN después de sincronizar ---
         if (mounted) {
           setState(() {
-            _statusText = 'Cargando catálogo local de respaldo...';
+            _statusText = 'Desconectando red segura...';
           });
         }
-        await Future.delayed(const Duration(milliseconds: 800));
+        await VpnService.instance.disconnect();
+        if (mounted) {
+          setState(() {
+            _statusText = 'Red segura desconectada';
+          });
+        }
+        await Future.delayed(const Duration(milliseconds: 1000));
+      } else {
+        // Si no se pudo conectar a la VPN de México, advertir claramente y cargar respaldo
+        if (mounted) {
+          setState(() {
+            _statusText = 'No se pudo conectar a la VPN de México. Usando respaldo local...';
+          });
+        }
+        await Future.delayed(const Duration(milliseconds: 1500));
         final fallback = await XuperApiService.instance.loadFallbackCatalog();
         if (mounted) {
           setState(() {
@@ -175,20 +199,6 @@ class _LoadingScreenState extends State<LoadingScreen>
         }
         await Future.delayed(const Duration(milliseconds: 1500));
       }
-
-      // --- 3. Desconectar VPN ---
-      if (mounted) {
-        setState(() {
-          _statusText = 'Desconectando red segura...';
-        });
-      }
-      await VpnService.instance.disconnect();
-      if (mounted) {
-        setState(() {
-          _statusText = 'Red segura desconectada';
-        });
-      }
-      await Future.delayed(const Duration(milliseconds: 1000));
 
       // Garantizar un tiempo mínimo total cinematográfico
       final elapsed = DateTime.now().difference(startTime);

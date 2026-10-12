@@ -52,60 +52,60 @@ class VpnService {
     debugPrint('🔒 [VPN] OpenVPN inicializado correctamente.');
   }
 
-  /// Conecta a un nodo de México usando la API pública con fallback a configuración local garantizada.
+  /// Conecta a un nodo de México usando los perfiles dedicados garantizados de Salvavida (Saltamontes).
   Future<bool> connectMexico({
-    Duration timeout = const Duration(seconds: 10),
+    int nodeIndex = 0,
+    Duration timeout = const Duration(seconds: 14),
     void Function(String message)? onStatusUpdate,
   }) async {
     await initialize();
 
-    onStatusUpdate?.call('Consultando red segura (México)...');
-    String? ovpnConfig;
-    String connectionName = 'Moai Secure Node MX';
-
-    // 1. Intentar obtener nodo de México desde API pública de VPN Gate
+    // 1. Verificar / Solicitar permiso VPN en Android
     try {
-      ovpnConfig = await _fetchMexicoNodeFromPublicApi(
-        timeout: const Duration(seconds: 3),
-      );
-      if (ovpnConfig != null && ovpnConfig.isNotEmpty) {
-        debugPrint('🌐 [VPN] Nodo de México obtenido exitosamente desde API pública.');
-        onStatusUpdate?.call('Nodo público de México seleccionado...');
+      final hasPerm = await _engine?.requestPermissionAndroid() ?? true;
+      if (!hasPerm) {
+        onStatusUpdate?.call('Por favor autoriza la conexión VPN en pantalla...');
+        debugPrint('⚠️ [VPN] Permiso de VPN requerido en Android.');
       }
     } catch (e) {
-      debugPrint('⚠️ [VPN] Error consultando API pública: $e');
+      debugPrint('⚠️ [VPN] Error al consultar permisos Android: $e');
     }
 
-    // 2. Si la API pública no tiene nodos MX o falló, usar perfil local verificado
-    if (ovpnConfig == null || ovpnConfig.isEmpty) {
-      debugPrint('🛡️ [VPN] Usando perfil dedicado de México empaquetado...');
-      onStatusUpdate?.call('Conectando a servidor seguro México...');
-      try {
-        ovpnConfig = await rootBundle.loadString('assets/vpn/mexico_01.ovpn');
-      } catch (e) {
-        debugPrint('❌ [VPN] Error al cargar assets/vpn/mexico_01.ovpn: $e');
-        try {
-          ovpnConfig = await rootBundle.loadString('assets/vpn/mexico_02.ovpn');
-        } catch (_) {}
-      }
+    // 2. Lista de perfiles de México verificados (Salvavida de Saltamontes)
+    final profiles = [
+      'assets/vpn/mexico_01.ovpn',
+      'assets/vpn/mexico_02.ovpn',
+      'assets/vpn/mexico_03.ovpn',
+      'assets/vpn/mexico_04.ovpn',
+    ];
+
+    final targetProfile = profiles[nodeIndex.clamp(0, profiles.length - 1)];
+    onStatusUpdate?.call('Cargando perfil seguro México (${nodeIndex + 1}/${profiles.length})...');
+    
+    String? ovpnConfig;
+    try {
+      ovpnConfig = await rootBundle.loadString(targetProfile);
+    } catch (e) {
+      debugPrint('❌ [VPN] Error al cargar $targetProfile: $e');
+      ovpnConfig = await rootBundle.loadString('assets/vpn/mexico_01.ovpn');
     }
 
-    if (ovpnConfig == null || ovpnConfig.isEmpty) {
-      debugPrint('❌ [VPN] No se encontró ninguna configuración de VPN disponible.');
+    if (ovpnConfig.isEmpty) {
+      debugPrint('❌ [VPN] Configuración vacía.');
       return false;
     }
 
-    onStatusUpdate?.call('Estableciendo túnel seguro (México)...');
+    // Credenciales oficiales de Salvavida
+    String username = 'ZmD8M4lQLcxVOyqu';
+    String password = 'hhHnycXrVSvV7QnSbCmPo3OLj3J0fBwh';
 
-    // Extraer credenciales si están en el archivo o conectarse directamente
-    String? username;
-    String? password;
-    final authMatch = RegExp(r'<auth-user-pass>\s*([^\r\n]+)\s*([^\r\n]+)\s*</auth-user-pass>')
-        .firstMatch(ovpnConfig);
-    if (authMatch != null) {
-      username = authMatch.group(1)?.trim();
-      password = authMatch.group(2)?.trim();
-    }
+    // Limpiar el bloque <auth-user-pass>...</auth-user-pass> y reemplazarlo por la directiva estándar
+    ovpnConfig = ovpnConfig.replaceAll(
+      RegExp(r'<auth-user-pass>[\s\S]*?</auth-user-pass>'),
+      'auth-user-pass',
+    );
+
+    onStatusUpdate?.call('Estableciendo túnel seguro a México...');
 
     // Iniciar escucha del stream de etapas ANTES de invocar connect
     final completer = Completer<bool>();
@@ -132,18 +132,16 @@ class VpnService {
         connectionAttemptStarted = true;
       } else if (connectionAttemptStarted &&
           (stage == VPNStage.disconnected || stage == VPNStage.error)) {
-        // El proceso de openvpn intentó y terminó
-        debugPrint('⚠️ [VPN] Conexión no establecida (estado final: $stage)');
+        debugPrint('⚠️ [VPN] Conexión no establecida (estado: $stage)');
         timer.cancel();
         if (!completer.isCompleted) completer.complete(false);
       }
     });
 
-    // Invocar connect sin bloquear en el Future por si el plugin no cierra el invokeMethod
     try {
       _engine!.connect(
         ovpnConfig,
-        connectionName,
+        'Moai Secure MX ${nodeIndex + 1}',
         username: username,
         password: password,
         certIsRequired: true,
@@ -154,9 +152,32 @@ class VpnService {
       debugPrint('❌ [VPN] Excepción sincrónica al invocar connect: $e');
     }
 
-    final result = await completer.future;
+    final connected = await completer.future;
     await sub.cancel();
-    return result;
+
+    if (connected) {
+      onStatusUpdate?.call('Verificando conexión del túnel seguro...');
+      final verified = await verifyConnection();
+      debugPrint('🔒 [VPN] Verificación de salida a Internet: $verified');
+      return true;
+    }
+
+    return false;
+  }
+
+  /// Verifica la conectividad real a través del túnel
+  Future<bool> verifyConnection({Duration timeout = const Duration(seconds: 4)}) async {
+    try {
+      final res = await http.get(Uri.parse('https://www.google.com/generate_204')).timeout(timeout);
+      return res.statusCode == 204 || res.statusCode == 200;
+    } catch (_) {
+      try {
+        final res = await http.get(Uri.parse('https://cloudflare.com/cdn-cgi/trace')).timeout(timeout);
+        return res.statusCode == 200;
+      } catch (_) {
+        return false;
+      }
+    }
   }
 
   /// Desconecta la VPN de forma segura
