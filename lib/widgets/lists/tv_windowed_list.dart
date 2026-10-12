@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 /// Tipo de indicador de scroll para listas TV por ventana.
-enum TvScrollIndicator {
-  none,
-  dots,
-  arrows,
-}
+enum TvScrollIndicator { none, dots, arrows }
 
 /// Lista TV por ventana fija (sin ListView/scroll).
 ///
@@ -17,15 +13,19 @@ class TvWindowedList<T> extends StatefulWidget {
   final int windowSize;
   final int initialGlobalIndex;
   final double itemExtent;
+
   /// Estilo del indicador visual de scroll.
   final TvScrollIndicator scrollIndicator;
+
   /// Si es true, renderiza del lado derecho unos puntos indicadores (dots)
   /// que reflejan la página o grupo de scroll actual en listas paginadas.
   final bool showScrollDots;
+
   /// Si es true, renderiza flechas tipo 'pill' (cápsula) superpuestas arriba o abajo
   /// según haya más elementos disponibles para hacer scroll.
   final bool showScrollArrows;
   final VoidCallback? onFocusUpFromFirst;
+  final VoidCallback? onFocusDownFromLast;
   final ValueChanged<int>? onFocusedGlobalIndex;
   final Widget Function(
     BuildContext context,
@@ -35,7 +35,8 @@ class TvWindowedList<T> extends StatefulWidget {
     int globalIndex,
     VoidCallback onKeyUp,
     VoidCallback onKeyDown,
-  ) itemBuilder;
+  )
+  itemBuilder;
 
   const TvWindowedList({
     super.key,
@@ -48,6 +49,7 @@ class TvWindowedList<T> extends StatefulWidget {
     this.showScrollDots = false,
     this.showScrollArrows = false,
     this.onFocusUpFromFirst,
+    this.onFocusDownFromLast,
     this.onFocusedGlobalIndex,
   });
 
@@ -124,8 +126,10 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
       for (final n in _nodes) {
         n.dispose();
       }
-      _nodes =
-          List.generate(windowSize, (i) => FocusNode(debugLabel: 'win_$i'));
+      _nodes = List.generate(
+        windowSize,
+        (i) => FocusNode(debugLabel: 'win_$i'),
+      );
     }
     if (!identical(oldWidget.items, widget.items) ||
         oldWidget.items.length != widget.items.length ||
@@ -189,8 +193,10 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
       return;
     }
     final g = globalIndex.clamp(0, widget.items.length - 1);
-    final maxStart =
-        (widget.items.length - windowSize).clamp(0, widget.items.length);
+    final maxStart = (widget.items.length - windowSize).clamp(
+      0,
+      widget.items.length,
+    );
 
     if (!preferAnchorSlot || g == 0) {
       if (g < windowSize) {
@@ -244,8 +250,10 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
     }
 
     final anchorSlot = (windowSize - 2).clamp(0, windowSize - 1);
-    final maxStart =
-        (widget.items.length - windowSize).clamp(0, widget.items.length);
+    final maxStart = (widget.items.length - windowSize).clamp(
+      0,
+      widget.items.length,
+    );
     final newStart = (global - anchorSlot).clamp(0, maxStart);
     setState(() {
       _windowStart = newStart;
@@ -268,10 +276,15 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
       return;
     }
 
-    if (global >= widget.items.length - 1) return;
+    if (global >= widget.items.length - 1) {
+      widget.onFocusDownFromLast?.call();
+      return;
+    }
 
-    final maxStart =
-        (widget.items.length - windowSize).clamp(0, widget.items.length);
+    final maxStart = (widget.items.length - windowSize).clamp(
+      0,
+      widget.items.length,
+    );
     final newStart = (global - 1).clamp(0, maxStart);
     setState(() {
       _windowStart = newStart;
@@ -411,4 +424,3 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
     );
   }
 }
-

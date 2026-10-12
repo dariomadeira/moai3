@@ -5,6 +5,8 @@ import 'package:moai3/features/plugins/screens/general_plugins_screen.dart';
 import 'package:moai3/features/settings/widgets/settings_accent_color_row.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/state/theme_provider.dart';
+import 'package:moai3/state/weather_provider.dart';
+import 'package:moai3/widgets/dialogs/tv_weather_location_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 import 'package:provider/provider.dart';
@@ -12,6 +14,7 @@ import 'package:provider/provider.dart';
 enum _SettingsGeneralItemType {
   plugins,
   overscan,
+  weatherLocation,
   darkMode,
   accentColor,
   autoAccent,
@@ -52,6 +55,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
     final items = <_SettingsGeneralItemType>[
       _SettingsGeneralItemType.plugins,
       _SettingsGeneralItemType.overscan,
+      _SettingsGeneralItemType.weatherLocation,
       _SettingsGeneralItemType.darkMode,
       if (!isAutoAccent) _SettingsGeneralItemType.accentColor,
       _SettingsGeneralItemType.autoAccent,
@@ -69,12 +73,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
         }
       },
       child: Container(
-        padding: const EdgeInsets.only(
-          left: 4,
-          right: 12,
-          top: 8,
-          bottom: 8,
-        ),
+        padding: const EdgeInsets.only(left: 4, right: 12, top: 8, bottom: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -85,8 +84,10 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final targetHeight = (_windowSize * _itemExtent)
-                      .clamp(0.0, constraints.maxHeight);
+                  final targetHeight = (_windowSize * _itemExtent).clamp(
+                    0.0,
+                    constraints.maxHeight,
+                  );
                   return Align(
                     alignment: Alignment.bottomCenter,
                     child: SizedBox(
@@ -103,28 +104,31 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
                           onFocusedGlobalIndex: (idx) {
                             _selectedIndex = idx;
                           },
-                          itemBuilder: (
-                            context,
-                            item,
-                            focusNode,
-                            local,
-                            global,
-                            onKeyUp,
-                            onKeyDown,
-                          ) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: _buildItem(
-                                context: context,
-                                item: item,
-                                theme: theme,
-                                isAutoAccent: isAutoAccent,
-                                focusNode: focusNode,
-                                onKeyUp: onKeyUp,
-                                onKeyDown: onKeyDown,
-                              ),
-                            );
-                          },
+                          itemBuilder:
+                              (
+                                context,
+                                item,
+                                focusNode,
+                                local,
+                                global,
+                                onKeyUp,
+                                onKeyDown,
+                              ) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 4,
+                                  ),
+                                  child: _buildItem(
+                                    context: context,
+                                    item: item,
+                                    theme: theme,
+                                    isAutoAccent: isAutoAccent,
+                                    focusNode: focusNode,
+                                    onKeyUp: onKeyUp,
+                                    onKeyDown: onKeyDown,
+                                  ),
+                                );
+                              },
                         ),
                       ),
                     ),
@@ -179,6 +183,21 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
                     const OverlapConfigScreen(isFirstRun: false),
               ),
             );
+          },
+          onKeyLeft: widget.onKeyLeft,
+          onKeyRight: widget.onKeyRight,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+        );
+      case _SettingsGeneralItemType.weatherLocation:
+        final weather = context.watch<WeatherProvider>();
+        return TvSettingsActionRow(
+          focusNode: focusNode,
+          icon: Icons.cloud_outlined,
+          label: 'settings_general_weather_title'.tr(),
+          description: weather.locationDisplayName,
+          onPressed: () {
+            TvWeatherLocationDialog.show(context);
           },
           onKeyLeft: widget.onKeyLeft,
           onKeyRight: widget.onKeyRight,
