@@ -9,6 +9,70 @@ import 'package:material_symbols_icons/symbols.dart';
 abstract final class MoaiIcons {
   MoaiIcons._();
 
+  // ---------------------------------------------------------------------------
+  // Rail de navegacion (orden de UI)
+  // ---------------------------------------------------------------------------
+
+  /// Origen: `Icons.tv`
+  ///
+  /// Usos:
+  /// - Inicio / menú lateral: `home_rail_tv_title` (`features/home/widgets/navigation_rail_section.dart`)
+  static const tv = Icons.tv;
+
+  /// Origen: `Icons.tv_outlined`
+  ///
+  /// Usos:
+  /// - Agenda: `calendar_event_broadcaster` (`features/calendar/widgets/calendar_events_panel.dart`)
+  /// - Categorías de canales (mapa por nombre) (`widgets/cards/category_card.dart`)
+  /// - Grupos (mapa por clave) (`widgets/cards/group_card.dart`)
+  /// - Inicio / menú lateral: `home_rail_tv_title` (`features/home/widgets/navigation_rail_section.dart`)
+  /// - Tarjetas de listado (`widgets/cards/tv_list_card_leading_logo.dart`)
+  static const tvOutlined = Icons.tv_outlined;
+
+  /// Origen: `Icons.calendar_month`
+  ///
+  /// Usos:
+  /// - Inicio / menú lateral: `home_rail_tv_title` (`features/home/widgets/navigation_rail_section.dart`)
+  static const calendarMonth = Icons.calendar_month;
+
+  /// Origen: `Icons.calendar_month_outlined`
+  ///
+  /// Usos:
+  /// - Agenda (`features/calendar/widgets/calendar_events_panel.dart`)
+  /// - Agenda (`features/home/areas/home_calendar_area.dart`)
+  /// - Inicio / menú lateral (`features/home/areas/home_settings_area.dart`)
+  /// - Inicio / menú lateral: `home_rail_tv_title` (`features/home/widgets/navigation_rail_section.dart`)
+  static const calendarMonthOutlined = Icons.calendar_month_outlined;
+
+  /// Origen: `Icons.sports_esports`
+  ///
+  /// Usos:
+  /// - Arcade (`features/games/screens/arcade_games_screen.dart`)
+  /// - Arcade: `arcade_remote_connected_p1` (`features/games/screens/arcade_screen.dart`)
+  /// - Inicio: `arcade_invite_received` (`features/home/screens/home_screen.dart`)
+  /// - Inicio / menú lateral: `home_rail_calendar_title` (`features/home/widgets/navigation_rail_section.dart`)
+  static const sportsEsports = Icons.sports_esports;
+
+  /// Origen: `Icons.sports_esports_outlined`
+  ///
+  /// Usos:
+  /// - Arcade: `arcade_empty_installed_msg` (`features/games/screens/arcade_games_screen.dart`)
+  /// - Arcade: `arcade_panel_title` (`features/home/areas/home_arcade_area.dart`)
+  /// - Inicio / menú lateral: `home_rail_calendar_title` (`features/home/widgets/navigation_rail_section.dart`)
+  static const sportsEsportsOutlined = Icons.sports_esports_outlined;
+
+  /// Origen: `Icons.settings`
+  ///
+  /// Usos:
+  /// - Inicio / menú lateral: `home_rail_arcade_title` (`features/home/widgets/navigation_rail_section.dart`)
+  static const settings = Icons.settings;
+
+  /// Origen: `Icons.settings_outlined`
+  ///
+  /// Usos:
+  /// - Inicio / menú lateral: `home_rail_arcade_title` (`features/home/widgets/navigation_rail_section.dart`)
+  static const settingsOutlined = Icons.settings_outlined;
+
   /// Origen: `Symbols.adaptive_audio_mic`
   ///
   /// Usos:
@@ -174,21 +238,6 @@ abstract final class MoaiIcons {
   /// Usos:
   /// - Agenda (`features/home/areas/home_calendar_area.dart`)
   static const calendarAddOn = Symbols.calendar_add_on;
-
-  /// Origen: `Icons.calendar_month`
-  ///
-  /// Usos:
-  /// - Inicio / menú lateral: `home_rail_tv_title` (`features/home/widgets/navigation_rail_section.dart`)
-  static const calendarMonth = Icons.calendar_month;
-
-  /// Origen: `Icons.calendar_month_outlined`
-  ///
-  /// Usos:
-  /// - Agenda (`features/calendar/widgets/calendar_events_panel.dart`)
-  /// - Agenda (`features/home/areas/home_calendar_area.dart`)
-  /// - Inicio / menú lateral (`features/home/areas/home_settings_area.dart`)
-  /// - Inicio / menú lateral: `home_rail_tv_title` (`features/home/widgets/navigation_rail_section.dart`)
-  static const calendarMonthOutlined = Icons.calendar_month_outlined;
 
   /// Origen: `Icons.cancel_outlined`
   ///
@@ -940,18 +989,6 @@ abstract final class MoaiIcons {
   /// - Clima: `weather_location_search_desc_empty` (`widgets/dialogs/tv_weather_location_dialog.dart`)
   static const searchRounded = Icons.search_rounded;
 
-  /// Origen: `Icons.settings`
-  ///
-  /// Usos:
-  /// - Inicio / menú lateral: `home_rail_arcade_title` (`features/home/widgets/navigation_rail_section.dart`)
-  static const settings = Icons.settings;
-
-  /// Origen: `Icons.settings_outlined`
-  ///
-  /// Usos:
-  /// - Inicio / menú lateral: `home_rail_arcade_title` (`features/home/widgets/navigation_rail_section.dart`)
-  static const settingsOutlined = Icons.settings_outlined;
-
   /// Origen: `Icons.settings_remote`
   ///
   /// Usos:
@@ -982,23 +1019,6 @@ abstract final class MoaiIcons {
   /// Usos:
   /// - Agenda (`state/calendar_provider.dart`)
   static const sportsBasketballOutlined = Icons.sports_basketball_outlined;
-
-  /// Origen: `Icons.sports_esports`
-  ///
-  /// Usos:
-  /// - Arcade (`features/games/screens/arcade_games_screen.dart`)
-  /// - Arcade: `arcade_remote_connected_p1` (`features/games/screens/arcade_screen.dart`)
-  /// - Inicio: `arcade_invite_received` (`features/home/screens/home_screen.dart`)
-  /// - Inicio / menú lateral: `home_rail_calendar_title` (`features/home/widgets/navigation_rail_section.dart`)
-  static const sportsEsports = Icons.sports_esports;
-
-  /// Origen: `Icons.sports_esports_outlined`
-  ///
-  /// Usos:
-  /// - Arcade: `arcade_empty_installed_msg` (`features/games/screens/arcade_games_screen.dart`)
-  /// - Arcade: `arcade_panel_title` (`features/home/areas/home_arcade_area.dart`)
-  /// - Inicio / menú lateral: `home_rail_calendar_title` (`features/home/widgets/navigation_rail_section.dart`)
-  static const sportsEsportsOutlined = Icons.sports_esports_outlined;
 
   /// Origen: `Icons.sports_esports_rounded`
   ///
@@ -1144,12 +1164,6 @@ abstract final class MoaiIcons {
   /// - Inicio / menú lateral (`features/home/areas/home_settings_area.dart`)
   static const tuneOutlined = Icons.tune_outlined;
 
-  /// Origen: `Icons.tv`
-  ///
-  /// Usos:
-  /// - Inicio / menú lateral: `home_rail_tv_title` (`features/home/widgets/navigation_rail_section.dart`)
-  static const tv = Icons.tv;
-
   /// Origen: `Symbols.tv_displays`
   ///
   /// Usos:
@@ -1161,16 +1175,6 @@ abstract final class MoaiIcons {
   /// Usos:
   /// - Ajustes: `settings_about_channels_loaded` (`features/settings/widgets/settings_about_panel.dart`)
   static const tvGuide = Symbols.tv_guide;
-
-  /// Origen: `Icons.tv_outlined`
-  ///
-  /// Usos:
-  /// - Agenda: `calendar_event_broadcaster` (`features/calendar/widgets/calendar_events_panel.dart`)
-  /// - Categorías de canales (mapa por nombre) (`widgets/cards/category_card.dart`)
-  /// - Grupos (mapa por clave) (`widgets/cards/group_card.dart`)
-  /// - Inicio / menú lateral: `home_rail_tv_title` (`features/home/widgets/navigation_rail_section.dart`)
-  /// - Tarjetas de listado (`widgets/cards/tv_list_card_leading_logo.dart`)
-  static const tvOutlined = Icons.tv_outlined;
 
   /// Origen: `Icons.tv_rounded`
   ///

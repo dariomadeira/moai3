@@ -93,6 +93,7 @@ class MainActivity : FlutterActivity() {
     private val engine = PlayerEngine()
     private lateinit var pluginLoader: PluginLoader
     private var voiceManager: RemoteVoiceManager? = null
+    private var uiDpadSounds: UiDpadSounds? = null
 
     private var arcadeManager: com.infomak.moai.games.ArcadeEmulatorManager? = null
 
@@ -102,6 +103,7 @@ class MainActivity : FlutterActivity() {
         FlutterActivityHolder.current = this
         pluginLoader = PluginLoader(this)
         voiceManager = RemoteVoiceManager(this)
+        uiDpadSounds = UiDpadSounds(this).also { it.init() }
         arcadeManager = com.infomak.moai.games.ArcadeEmulatorManager(this, flutterEngine.dartExecutor.binaryMessenger)
         flutterEngine.platformViewsController.registry.registerViewFactory(
             "com.infomak.moai/arcade_view",
@@ -120,6 +122,8 @@ class MainActivity : FlutterActivity() {
         engine.disposeAll()
         voiceManager?.release()
         voiceManager = null
+        uiDpadSounds?.release()
+        uiDpadSounds = null
         FlutterActivityHolder.current = null
         super.onDestroy()
     }
@@ -134,7 +138,11 @@ class MainActivity : FlutterActivity() {
             if (arcadeManager?.handleKeyEvent(event) == true) {
                 return true
             }
+            // Emulación activa: no sonidos de UI.
+            return super.dispatchKeyEvent(event)
         }
+        // UI TV: click D-pad (gamepad filtrado dentro de UiDpadSounds).
+        uiDpadSounds?.onKey(event)
         return super.dispatchKeyEvent(event)
     }
 
