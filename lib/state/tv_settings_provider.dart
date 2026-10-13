@@ -9,6 +9,7 @@ class TvSettingsProvider extends ChangeNotifier {
   static const String _overlapPaddingYKey = 'overlap_padding_y';
   static const String _hasOverlapConfigKey = 'has_overlap_config';
   static const String _parentalPinKey = 'parental_pin';
+  static const String _skipCatalogUpdateKey = 'skip_catalog_update';
 
   final AppPreferences _prefs;
 
@@ -17,6 +18,7 @@ class TvSettingsProvider extends ChangeNotifier {
   late double _overlapPaddingX;
   late double _overlapPaddingY;
   late bool _hasOverlapConfig;
+  late bool _skipCatalogUpdate;
 
   String? _parentalPin;
   bool _isAdultUnlocked = false;
@@ -30,6 +32,10 @@ class TvSettingsProvider extends ChangeNotifier {
     _overlapPaddingY =
         _prefs.readPreferenceDouble(_overlapPaddingYKey, defaultValue: 20.0);
     _hasOverlapConfig = _prefs.readPreferenceBool(_hasOverlapConfigKey);
+    _skipCatalogUpdate = _prefs.readPreferenceBool(
+      _skipCatalogUpdateKey,
+      defaultValue: true,
+    );
     _parentalPin = _prefs.readOptionalString(_parentalPinKey);
     _isAdultUnlocked = false; // Siempre bloqueado al iniciar
   }
@@ -39,6 +45,9 @@ class TvSettingsProvider extends ChangeNotifier {
   double get overlapPaddingX => _overlapPaddingX;
   double get overlapPaddingY => _overlapPaddingY;
   bool get hasOverlapConfig => _hasOverlapConfig;
+
+  /// Si es true, el arranque no actualiza el catálogo y usa el incluido en la app.
+  bool get skipCatalogUpdate => _skipCatalogUpdate;
 
   bool get isAdultUnlocked => _isAdultUnlocked;
   bool get hasParentalPin =>
@@ -85,6 +94,13 @@ class TvSettingsProvider extends ChangeNotifier {
     if (_showTvLog == value) return;
     _showTvLog = value;
     await _prefs.saveBool(_showTvLogKey, value);
+    notifyListeners();
+  }
+
+  Future<void> setSkipCatalogUpdate(bool value) async {
+    if (_skipCatalogUpdate == value) return;
+    _skipCatalogUpdate = value;
+    await _prefs.saveBool(_skipCatalogUpdateKey, value);
     notifyListeners();
   }
 

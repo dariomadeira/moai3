@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pointycastle/block/desede_engine.dart';
 import 'package:pointycastle/block/modes/ecb.dart';
 import 'package:pointycastle/digests/md5.dart';
@@ -52,6 +53,37 @@ class MoiamovApiService {
 
   /// Evita reactivar en bucle (el servidor corta el TLS si se lo bombardea).
   bool _reactivationTried = false;
+
+  bool _syncCancelled = false;
+  final Set<HttpClient> _liveClients = {};
+
+  bool get syncCancelled => _syncCancelled;
+
+  /// Permite un nuevo intento de descarga después de un arranque cancelado.
+  void beginCatalogSync() {
+    _syncCancelled = false;
+  }
+
+  /// Cierra las descargas en curso para que el arranque no siga esperando.
+  void cancelActiveRequests() {
+    _syncCancelled = true;
+    for (final client in _liveClients.toList()) {
+      try {
+        client.close(force: true);
+      } catch (_) {}
+    }
+  }
+
+  void _trackClient(HttpClient client) {
+    _liveClients.add(client);
+  }
+
+  void _releaseClient(HttpClient client) {
+    _liveClients.remove(client);
+    try {
+      client.close();
+    } catch (_) {}
+  }
 
   static Uint8List _customBase64Decode(String str) {
     const pem = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -405,10 +437,12 @@ class MoiamovApiService {
     }.toList();
 
     for (final host in candidateHosts) {
+      if (_syncCancelled) return false;
       final baseUrl = _cleanUrl(host);
       final ioClient = HttpClient()
         ..badCertificateCallback = ((cert, h, p) => true)
         ..connectionTimeout = timeout;
+      _trackClient(ioClient);
       try {
         logLine('Sesión: v3/snToken → $baseUrl');
         final sn = await _fetchSnToken(ioClient, baseUrl, fp, timeout);
@@ -467,7 +501,7 @@ class MoiamovApiService {
       } catch (e) {
         logLine('Sesión: excepción en $host: $e');
       } finally {
-        ioClient.close();
+        _releaseClient(ioClient);
       }
     }
     logLine('⚠️ No se pudo activar sesión en ningún host.');
@@ -558,11 +592,15 @@ class MoiamovApiService {
       final endpointUri = Uri.parse('$baseUrl/api/portalCore/getNextColumns');
 
       for (final code in candidateCodes) {
+        if (_syncCancelled) {
+          return _emptyCatalog(sectionLabel);
+        }
         logLine('getNextColumns $sectionLabel: código "$code" → $host');
 
         final ioClient = HttpClient()
           ..badCertificateCallback = ((cert, h, p) => true)
           ..connectionTimeout = timeout;
+        _trackClient(ioClient);
 
         try {
           final request = await ioClient.postUrl(endpointUri).timeout(timeout);
@@ -629,6 +667,7 @@ class MoiamovApiService {
                       '$sectionLabel ACTUALIZADO EN VIVO ($total títulos en ${list.length} categorías)',
                 );
                 _cachedCatalog = result;
+                await _persistLiveCatalog(section, rawList);
                 return result;
               }
               logLine('⚠️ Respuesta OK pero sin títulos ($sectionLabel / $code).');
@@ -650,21 +689,32 @@ class MoiamovApiService {
         } catch (e) {
           logLine('⚠️ Error consultando $host ($code): $e');
         } finally {
-          ioClient.close();
+          _releaseClient(ioClient);
         }
 
         await Future.delayed(const Duration(milliseconds: 250));
       }
     }
 
-    // 2. Almacenamiento local del dispositivo
-    logLine('ℹ️ API en vivo no devolvió $sectionLabel. Probando cache local del TV...');
+    if (_syncCancelled) {
+      return _emptyCatalog(sectionLabel);
+    }
+
+    // 2. Última descarga que esta app guardó
+    logLine('ℹ️ API en vivo no devolvió $sectionLabel. Probando la última copia guardada...');
+    final saved = await loadPersistedCatalog(section);
+    if (saved != null) {
+      return saved;
+    }
+
+    // 3. Almacenamiento local del dispositivo
+    logLine('Probando cache local del TV...');
     final localLive = _loadFromLocalDeviceDocument(section);
     if (localLive != null) {
       return localLive;
     }
 
-    // 3. Prioridad 3: Respaldo empaquetado
+    // 4. Respaldo empaquetado. No se guarda: no debe pisar una descarga anterior.
     logLine('📦 Usando respaldo HARDCODEADO para $sectionLabel.');
     return loadFallbackCatalog(section: section);
   }
@@ -675,6 +725,146 @@ class MoiamovApiService {
     await syncCatalog(section: 'masnew_movies', timeout: timeout);
     await syncCatalog(section: 'masnew_featured', timeout: timeout);
     await syncCatalog(section: 'masnew_series', timeout: timeout);
+  }
+
+  static const Set<String> _persistableSections = {
+    'masnew_movies',
+    'masnew_featured',
+    'masnew_series',
+  };
+
+  Directory? _catalogDirectoryOverride;
+
+  /// Carpeta de prueba. En la app se usa el directorio privado de soporte.
+  @visibleForTesting
+  void debugSetCatalogDirectory(Directory? directory) {
+    _catalogDirectoryOverride = directory;
+  }
+
+  Future<Directory> _catalogDirectory() async {
+    final override = _catalogDirectoryOverride;
+    if (override != null) return override;
+    final support = await getApplicationSupportDirectory();
+    final dir = Directory('${support.path}/catalog');
+    if (!dir.existsSync()) {
+      dir.createSync(recursive: true);
+    }
+    return dir;
+  }
+
+  Future<void> _persistLiveCatalog(String section, List rawList) async {
+    if (!_persistableSections.contains(section)) return;
+    try {
+      final dir = await _catalogDirectory();
+      final file = File('${dir.path}/$section.json');
+      final payload = jsonEncode({'recommendList': rawList});
+      await file.writeAsString(payload, flush: true);
+      logLine('Guardada última descarga de $section.');
+    } catch (e) {
+      logLine('No se pudo guardar $section: $e');
+    }
+  }
+
+  /// Momento en que se guardó la descarga más reciente. Null si todavía no hay ninguna.
+  Future<DateTime?> lastSavedCatalogAt() async {
+    try {
+      final Directory? dir;
+      if (_catalogDirectoryOverride != null) {
+        dir = _catalogDirectoryOverride;
+      } else {
+        final support = await getApplicationSupportDirectory();
+        final candidate = Directory('${support.path}/catalog');
+        dir = candidate.existsSync() ? candidate : null;
+      }
+      if (dir == null || !dir.existsSync()) return null;
+
+      DateTime? latest;
+      for (final section in _persistableSections) {
+        final file = File('${dir.path}/$section.json');
+        if (!file.existsSync() || file.lengthSync() < 50) continue;
+        final modified = file.lastModifiedSync();
+        if (latest == null || modified.isAfter(latest)) {
+          latest = modified;
+        }
+      }
+      return latest;
+    } catch (e) {
+      logLine('No se pudo leer la fecha del catálogo: $e');
+      return null;
+    }
+  }
+
+  /// Lee la última descarga en vivo guardada por esta app. No incluye el respaldo empaquetado.
+  Future<CatalogResult?> loadPersistedCatalog(String section) async {
+    if (!_persistableSections.contains(section)) return null;
+    try {
+      final dir = await _catalogDirectory();
+      final file = File('${dir.path}/$section.json');
+      if (!file.existsSync() || file.lengthSync() < 50) return null;
+
+      final decoded = jsonDecode(await file.readAsString());
+      final result = _catalogFromRecommendList(
+        decoded,
+        source: CatalogSource.savedCatalog,
+        isFromNetwork: false,
+        statusMessage: _savedStatusMessage(section),
+      );
+      if (result == null) return null;
+      logLine('Última descarga guardada: ${result.totalMovies} títulos ($section).');
+      _cachedCatalog = result;
+      return result;
+    } catch (e) {
+      logLine('No se pudo leer la copia guardada de $section: $e');
+      return null;
+    }
+  }
+
+  /// Última descarga guardada, o el respaldo empaquetado si todavía no hay ninguna.
+  Future<CatalogResult> loadSavedOrBundled({
+    String section = 'masnew_featured',
+  }) async {
+    final saved = await loadPersistedCatalog(section);
+    if (saved != null) return saved;
+    return loadFallbackCatalog(section: section);
+  }
+
+  CatalogResult _emptyCatalog(String sectionLabel) {
+    return CatalogResult(
+      categories: [],
+      isFromNetwork: false,
+      source: CatalogSource.assetBundle,
+      statusMessage: 'Sin catálogo de $sectionLabel.',
+    );
+  }
+
+  String _savedStatusMessage(String section) {
+    final sectionLabel = section == 'masnew_featured'
+        ? 'Destacados'
+        : (section == 'masnew_series' ? 'Series' : 'Películas');
+    return '$sectionLabel desde la última descarga guardada';
+  }
+
+  CatalogResult? _catalogFromRecommendList(
+    Object? decoded, {
+    required CatalogSource source,
+    required bool isFromNetwork,
+    required String statusMessage,
+  }) {
+    if (decoded is! Map<String, dynamic> || decoded['recommendList'] is! List) {
+      return null;
+    }
+    final list = (decoded['recommendList'] as List)
+        .whereType<Map<String, dynamic>>()
+        .map((e) => CategoryColumn.fromJson(e))
+        .where((cat) => cat.movies.isNotEmpty)
+        .toList();
+    if (list.isEmpty) return null;
+    return CatalogResult(
+      categories: list,
+      isFromNetwork: isFromNetwork,
+      source: source,
+      statusMessage: statusMessage,
+    );
   }
 
   /// Carga el catálogo desde la copia local empaquetada

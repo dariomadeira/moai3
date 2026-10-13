@@ -4,7 +4,9 @@ import 'package:moai3/features/bootstrap/screens/overlap_config_screen.dart';
 import 'package:moai3/features/plugins/screens/general_plugins_screen.dart';
 import 'package:moai3/features/settings/widgets/settings_accent_color_row.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
+import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/state/theme_provider.dart';
+import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/state/weather_provider.dart';
 import 'package:moai3/widgets/dialogs/tv_weather_location_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
@@ -15,6 +17,7 @@ enum _SettingsGeneralItemType {
   plugins,
   overscan,
   weatherLocation,
+  skipCatalog,
   darkMode,
   accentColor,
   autoAccent,
@@ -42,6 +45,29 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
 
   final _listKey = GlobalKey<TvWindowedListState<_SettingsGeneralItemType>>();
   int _selectedIndex = 0;
+  DateTime? _catalogSavedAt;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCatalogSavedAt();
+  }
+
+  Future<void> _loadCatalogSavedAt() async {
+    final savedAt = await MoiamovApiService.instance.lastSavedCatalogAt();
+    if (!mounted) return;
+    setState(() => _catalogSavedAt = savedAt);
+  }
+
+  String _skipCatalogLabel() {
+    final title = 'settings_general_skip_catalog'.tr();
+    final savedAt = _catalogSavedAt;
+    if (savedAt == null) return title;
+    final local = savedAt.toLocal();
+    final day = local.day.toString().padLeft(2, '0');
+    final month = local.month.toString().padLeft(2, '0');
+    return '$title · $day/$month/${local.year}';
+  }
 
   void focusSelected() {
     _listKey.currentState?.ensureVisible(_selectedIndex);
@@ -56,6 +82,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       _SettingsGeneralItemType.plugins,
       _SettingsGeneralItemType.overscan,
       _SettingsGeneralItemType.weatherLocation,
+      _SettingsGeneralItemType.skipCatalog,
       _SettingsGeneralItemType.darkMode,
       if (!isAutoAccent) _SettingsGeneralItemType.accentColor,
       _SettingsGeneralItemType.autoAccent,
@@ -198,6 +225,22 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
           description: weather.locationDisplayName,
           onPressed: () {
             TvWeatherLocationDialog.show(context);
+          },
+          onKeyLeft: widget.onKeyLeft,
+          onKeyRight: widget.onKeyRight,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+        );
+      case _SettingsGeneralItemType.skipCatalog:
+        final skipCatalog = context.watch<TvSettingsProvider>().skipCatalogUpdate;
+        return TvSettingsSwitchRow(
+          focusNode: focusNode,
+          icon: Icons.cloud_off_outlined,
+          label: _skipCatalogLabel(),
+          description: 'settings_general_skip_catalog_desc'.tr(),
+          value: skipCatalog,
+          onChanged: (value) {
+            context.read<TvSettingsProvider>().setSkipCatalogUpdate(value);
           },
           onKeyLeft: widget.onKeyLeft,
           onKeyRight: widget.onKeyRight,

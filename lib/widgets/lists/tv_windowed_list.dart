@@ -72,7 +72,8 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
 
   int get _activeLocal {
     for (var i = 0; i < _visibleCount; i++) {
-      if (_nodes[i].hasFocus) return i;
+      final global = _windowStart + i;
+      if (global < _nodes.length && _nodes[global].hasFocus) return i;
     }
     return _localFocus.clamp(0, (_visibleCount - 1).clamp(0, windowSize));
   }
@@ -109,10 +110,28 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
       widget.items.isNotEmpty &&
       (_windowStart + _visibleCount < widget.items.length);
 
+  FocusNode _nodeFor(int global) => _nodes[global];
+
+  /// Un nodo por ítem, no por hueco visible. Si el nodo fuera del hueco,
+  /// al correr la ventana el Switch reutiliza el estado de otro ajuste.
+  void _syncNodes() {
+    final needed = widget.items.length;
+    if (_nodes.length > needed) {
+      for (final node in _nodes.sublist(needed)) {
+        node.dispose();
+      }
+      _nodes.removeRange(needed, _nodes.length);
+    }
+    while (_nodes.length < needed) {
+      _nodes.add(FocusNode(debugLabel: 'win_${_nodes.length}'));
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _nodes = List.generate(windowSize, (i) => FocusNode(debugLabel: 'win_$i'));
+    _nodes = [];
+    _syncNodes();
     _placeWindowFor(widget.initialGlobalIndex, preferAnchorSlot: false);
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (mounted) _requestLocalFocus(_localFocus);
@@ -122,14 +141,8 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
   @override
   void didUpdateWidget(covariant TvWindowedList<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.windowSize != widget.windowSize) {
-      for (final n in _nodes) {
-        n.dispose();
-      }
-      _nodes = List.generate(
-        windowSize,
-        (i) => FocusNode(debugLabel: 'win_$i'),
-      );
+    if (oldWidget.items.length != widget.items.length) {
+      _syncNodes();
     }
     if (!identical(oldWidget.items, widget.items) ||
         oldWidget.items.length != widget.items.length ||
@@ -222,7 +235,9 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
     if (maxLocal < 0) return;
     final clamped = local.clamp(0, maxLocal);
     _localFocus = clamped;
-    final node = _nodes[clamped];
+    final global = _windowStart + clamped;
+    if (global < 0 || global >= _nodes.length) return;
+    final node = _nodeFor(global);
     if (node.context != null) {
       node.requestFocus();
     } else if (attempts > 0) {
@@ -310,11 +325,12 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
       children: [
         for (var local = 0; local < count; local++)
           SizedBox(
+            key: ValueKey<int>(_windowStart + local),
             height: widget.itemExtent,
             child: widget.itemBuilder(
               context,
               widget.items[_windowStart + local],
-              _nodes[local],
+              _nodeFor(_windowStart + local),
               local,
               _windowStart + local,
               _moveUp,

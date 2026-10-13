@@ -132,6 +132,9 @@ enum CatalogSource {
   /// Documento fresco generado por la app oficial en el almacenamiento del TV.
   localDocument,
 
+  /// Última descarga en vivo que Moai guardó en su carpeta privada.
+  savedCatalog,
+
   /// Respaldo empaquetado en los assets del APK (hardcodeado).
   assetBundle,
 }

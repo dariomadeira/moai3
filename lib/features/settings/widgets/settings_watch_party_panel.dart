@@ -4,7 +4,6 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/features/settings/widgets/tv_tile.dart';
 import 'package:moai3/state/watch_party_provider.dart';
-import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/utils/context_extensions.dart';
 import 'package:moai3/widgets/dialogs/tv_friends_dialog.dart';
 import 'package:moai3/widgets/dialogs/tv_nickname_dialog.dart';
@@ -12,6 +11,7 @@ import 'package:moai3/widgets/dialogs/tv_voice_test_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
+import 'package:moai3/widgets/tv_common/tv_value_chip.dart';
 
 enum _SettingsWatchPartyItemType {
   watchPartySwitch,
@@ -196,24 +196,11 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
           onKeyUp: onKeyUp,
           onKeyDown: onKeyDown,
           trailingBuilder: (context, isFocused) {
-            final scheme = Theme.of(context).colorScheme;
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: isFocused ? scheme.onPrimary : scheme.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                hasNick
-                    ? currentNickname
-                    : 'settings_watch_party_nickname_none'.tr(),
-                style: MoaiText.body(
-                  context,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: isFocused ? scheme.primary : scheme.onPrimaryContainer,
-                ),
-              ),
+            return TvValueChip(
+              text: hasNick
+                  ? currentNickname
+                  : 'settings_watch_party_nickname_none'.tr(),
+              isFocused: isFocused,
             );
           },
         );
@@ -228,23 +215,9 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
           onKeyUp: onKeyUp,
           onKeyDown: onKeyDown,
           trailingBuilder: (context, isFocused) {
-            final scheme = Theme.of(context).colorScheme;
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: isFocused ? scheme.onPrimary : scheme.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                watchParty?.userCode ?? 'MOAI-????',
-                style: MoaiText.display(
-                  context,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2.0,
-                  color: isFocused ? scheme.primary : scheme.onPrimaryContainer,
-                ),
-              ),
+            return TvValueChip(
+              text: watchParty?.userCode ?? 'MOAI-????',
+              isFocused: isFocused,
             );
           },
         );

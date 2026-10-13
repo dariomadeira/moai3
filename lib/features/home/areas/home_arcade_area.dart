@@ -139,6 +139,16 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
 
   @override
   Widget build(BuildContext context) {
+    final canPlayTogether =
+        context.watch<WatchPartyProvider?>()?.hasOnlineFriends ?? false;
+    if (!canPlayTogether && widget.playTogetherFocus.hasFocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !widget.startFocus.hasFocus) {
+          widget.startFocus.requestFocus();
+        }
+      });
+    }
+
     final scheme = Theme.of(context).colorScheme;
     final panelColors = [
       scheme.surface.withValues(alpha: 0.8),
@@ -211,18 +221,22 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
                   onPressed: widget.onStartGame,
                   onKeyLeft: widget.onExitLeft,
                   onKeyUp: () => widget.gamepadFocus.requestFocus(),
-                  onKeyDown: () => widget.playTogetherFocus.requestFocus(),
+                  onKeyDown: canPlayTogether
+                      ? () => widget.playTogetherFocus.requestFocus()
+                      : null,
                 ),
-                const SizedBox(height: 10),
-                TvSettingsActionRow(
-                  focusNode: widget.playTogetherFocus,
-                  label: 'arcade_action_play_together'.tr(),
-                  description: 'arcade_action_play_together_desc'.tr(),
-                  icon: Icons.group_outlined,
-                  onPressed: _onPlayTogether,
-                  onKeyLeft: widget.onExitLeft,
-                  onKeyUp: () => widget.startFocus.requestFocus(),
-                ),
+                if (canPlayTogether) ...[
+                  const SizedBox(height: 10),
+                  TvSettingsActionRow(
+                    focusNode: widget.playTogetherFocus,
+                    label: 'arcade_action_play_together'.tr(),
+                    description: 'arcade_action_play_together_desc'.tr(),
+                    icon: Icons.group_outlined,
+                    onPressed: _onPlayTogether,
+                    onKeyLeft: widget.onExitLeft,
+                    onKeyUp: () => widget.startFocus.requestFocus(),
+                  ),
+                ],
               ],
             ],
           ),

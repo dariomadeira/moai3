@@ -10,6 +10,7 @@ import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/update_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
+import 'package:moai3/widgets/tv_common/tv_value_chip.dart';
 import 'package:provider/provider.dart';
 
 enum _AboutItemType {
@@ -250,31 +251,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
           onKeyUp: onKeyUp,
           onKeyDown: onKeyDown,
           trailingBuilder: (context, isFocused) {
-            final chipBg = isFocused
-                ? scheme.onPrimary.withValues(alpha: 0.18)
-                : scheme.secondaryContainer;
-            final chipFg =
-                isFocused ? scheme.onPrimary : scheme.onSecondaryContainer;
-
-            return Material(
-              color: chipBg,
-              borderRadius: BorderRadius.circular(10),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                child: Text(
-                  valueText,
-                  style: MoaiText.body(
-                    context,
-                    color: chipFg,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            );
+            return TvValueChip(text: valueText, isFocused: isFocused);
           },
         );
       case _AboutItemType.checkUpdates:

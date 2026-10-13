@@ -129,4 +129,62 @@ void main() {
     expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
     expect(find.byIcon(Icons.keyboard_arrow_down), findsNothing);
   });
+
+  testWidgets('row state stays with the item when the window shifts', (tester) async {
+    final items = List.generate(8, (i) => 'Item $i');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 300,
+            height: 400,
+            child: TvWindowedList<String>(
+              items: items,
+              windowSize: 4,
+              itemExtent: 50,
+              itemBuilder: (context, item, node, local, global, up, down) {
+                return _Stamp(id: item);
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final before = tester.state<_StampState>(
+      find.byWidgetPredicate((w) => w is _Stamp && w.id == 'Item 2'),
+    );
+    final stamp = before.stamp;
+
+    final state = tester.state<TvWindowedListState<String>>(
+      find.byType(TvWindowedList<String>),
+    );
+    state.ensureVisible(3);
+    await tester.pumpAndSettle();
+
+    final after = tester.state<_StampState>(
+      find.byWidgetPredicate((w) => w is _Stamp && w.id == 'Item 2'),
+    );
+    expect(after.stamp, stamp);
+    expect(find.text('Item 2'), findsOneWidget);
+  });
+}
+
+class _Stamp extends StatefulWidget {
+  final String id;
+
+  const _Stamp({required this.id});
+
+  @override
+  State<_Stamp> createState() => _StampState();
+}
+
+class _StampState extends State<_Stamp> {
+  static int _next = 0;
+  late final int stamp = _next++;
+
+  @override
+  Widget build(BuildContext context) => Text(widget.id);
 }

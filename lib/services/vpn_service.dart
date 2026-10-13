@@ -31,6 +31,16 @@ class VpnService {
   VpnStatus? get currentStatus => _currentStatus;
   bool get isConnected => _currentStage == VPNStage.connected;
 
+  bool _connectCancelled = false;
+
+  /// Corta el intento de conexión en curso para salir del arranque sin esperar el timeout.
+  void cancelConnect() {
+    _connectCancelled = true;
+    try {
+      _engine?.disconnect();
+    } catch (_) {}
+  }
+
   Future<void> initialize() async {
     if (_isInitialized) return;
 
@@ -65,7 +75,9 @@ class VpnService {
     Duration timeout = const Duration(seconds: 14),
     void Function(String message)? onStatusUpdate,
   }) async {
+    _connectCancelled = false;
     await initialize();
+    if (_connectCancelled) return false;
 
     // 1. Verificar / Solicitar permiso en Android
     try {
@@ -128,6 +140,12 @@ class VpnService {
 
     sub = stageStream.listen((stage) {
       debugPrint('🔒 [VPN Stage Event] Recibido: $stage');
+      if (_connectCancelled &&
+          (stage == VPNStage.disconnected || stage == VPNStage.error)) {
+        timer.cancel();
+        if (!completer.isCompleted) completer.complete(false);
+        return;
+      }
       if (stage == VPNStage.connected) {
         timer.cancel();
         if (!completer.isCompleted) completer.complete(true);
@@ -159,8 +177,17 @@ class VpnService {
       debugPrint('❌ [VPN] Excepción sincrónica al invocar connect: $e');
     }
 
+    final cancelWatch = Timer.periodic(const Duration(milliseconds: 200), (_) {
+      if (_connectCancelled && !completer.isCompleted) {
+        timer.cancel();
+        completer.complete(false);
+      }
+    });
+
     final connected = await completer.future;
+    cancelWatch.cancel();
     await sub.cancel();
+    if (_connectCancelled) return false;
 
     if (connected) {
       onStatusUpdate?.call('loading_verifying_connection');
