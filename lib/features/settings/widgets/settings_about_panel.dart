@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/config/player_config.dart';
 import 'package:moai3/features/settings/widgets/tv_tile.dart';
 import 'package:moai3/services/update_service.dart';
@@ -12,6 +11,7 @@ import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 import 'package:moai3/widgets/tv_common/tv_value_chip.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 enum _AboutItemType {
   channelsLoaded,
@@ -246,7 +246,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
         return TvTile(
           focusNode: focusNode,
           label: 'settings_about_channels_loaded'.tr(),
-          icon: Symbols.tv_guide,
+          icon: MoaiIcons.tvGuide,
           onKeyLeft: widget.onKeyLeft,
           onKeyUp: onKeyUp,
           onKeyDown: onKeyDown,
@@ -257,7 +257,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
       case _AboutItemType.checkUpdates:
         return TvTile(
           focusNode: focusNode,
-          icon: Symbols.browser_updated,
+          icon: MoaiIcons.browserUpdated,
           label: 'settings_about_check_updates'.tr(),
           description: 'settings_about_check_updates_desc'.tr(),
           onKeyLeft: widget.onKeyLeft,
@@ -305,7 +305,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
               );
             }
             return Icon(
-              Symbols.chevron_right,
+              MoaiIcons.symbolChevronRight,
               color: isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
               size: 20,
             );

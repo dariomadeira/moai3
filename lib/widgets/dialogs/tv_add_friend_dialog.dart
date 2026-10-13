@@ -7,6 +7,7 @@ import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/tv_input/tv_text_field.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Diálogo modal para agregar un amigo mediante su código (SPEC-36 §4.3).
 ///
@@ -97,7 +98,7 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
       MoaiSnackBar.show(
         context,
         message: 'friend_add_dialog_success'.tr(),
-        icon: Icons.check_circle_outline,
+        icon: MoaiIcons.checkCircleOutline,
       );
     } catch (e) {
       if (!mounted) return;
@@ -120,7 +121,7 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
 
     return TvDialog(
       width: 480,
-      icon: Icons.person_add_alt_1,
+      icon: MoaiIcons.personAddAlt1,
       title: 'friend_add_dialog_title'.tr(),
       subtitle: 'friend_add_dialog_subtitle'.tr(),
       content: Column(
@@ -195,7 +196,7 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
                       ),
                     ),
                     Icon(
-                      Icons.keyboard,
+                      MoaiIcons.keyboard,
                       size: 20,
                       color: _inputFocusNode.hasFocus
                           ? scheme.primary
@@ -210,7 +211,7 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
             const SizedBox(height: 10),
             Row(
               children: [
-                Icon(Icons.error_outline, size: 16, color: scheme.error),
+                Icon(MoaiIcons.errorOutline, size: 16, color: scheme.error),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(

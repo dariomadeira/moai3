@@ -8,6 +8,7 @@ import 'package:moai3/widgets/cards/channel_grid_tile.dart';
 import 'package:moai3/widgets/lists/tv_fixed_window_viewport.dart';
 import 'package:moai3/widgets/lists/tv_windowed_grid.dart';
 import 'package:moai3/widgets/tv_input/tv_input.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Panel Buscar: header compacto propio + grilla 2×3 (como Canales).
 class SearchPanel extends StatefulWidget {
@@ -151,7 +152,7 @@ class SearchPanelState extends State<SearchPanel> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.explore_outlined,
+                          MoaiIcons.exploreOutlined,
                           size: 36,
                           color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
                         ),
@@ -180,7 +181,7 @@ class SearchPanelState extends State<SearchPanel> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.cancel_outlined,
+                              MoaiIcons.cancelOutlined,
                               size: 36,
                               color: scheme.onSurfaceVariant
                                   .withValues(alpha: 0.7),
@@ -298,7 +299,7 @@ class _SearchPanelChrome extends StatelessWidget {
                 keyboardType: TvKeyboardType.search,
                 textInputAction: TvTextInputAction.search,
                 dense: true,
-                leadingIcon: Icons.keyboard_alt_outlined,
+                leadingIcon: MoaiIcons.keyboardAltOutlined,
                 onFocusUp: onFocusUp,
                 onFocusDown: onFocusDown,
                 // Con X visible: → va al clear, no al panel Países.
@@ -417,7 +418,7 @@ class _SearchClearButtonState extends State<_SearchClearButton> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Icon(
-              Icons.close_outlined,
+              MoaiIcons.closeOutlined,
               color: _isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
               size: 20,
             ),

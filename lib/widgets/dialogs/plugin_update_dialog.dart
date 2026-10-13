@@ -1,12 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/services/plugin_host_service.dart';
 import 'package:moai3/services/plugin_update_service.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 enum _PluginUpdateState { idle, updating, success, error }
 
@@ -152,7 +152,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
                 return Row(
                   children: [
                     Icon(
-                      Symbols.electrical_services,
+                      MoaiIcons.electricalServices,
                       size: 18,
                       color: scheme.primary,
                     ),
@@ -267,7 +267,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
         child: Column(
           children: [
             Icon(
-              Symbols.check_circle,
+              MoaiIcons.checkCircle,
               color: scheme.primary,
               size: 44,
             ),
@@ -296,7 +296,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
         ),
         child: Row(
           children: [
-            Icon(Symbols.error, color: scheme.error, size: 22),
+            Icon(MoaiIcons.error, color: scheme.error, size: 22),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -334,7 +334,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
 
     return TvDialog(
       width: 480,
-      icon: Symbols.extension,
+      icon: MoaiIcons.extension,
       title: widget.updates.length == 1
           ? 'plugin_update_title_singular'.tr()
           : 'plugin_update_title_plural'.tr(),

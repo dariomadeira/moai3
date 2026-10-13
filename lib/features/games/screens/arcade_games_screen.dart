@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/features/games/models/arcade_rom_item.dart';
 import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -11,6 +10,7 @@ import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
 import 'package:moai3/widgets/tv_input/tv_text_field.dart';
 import 'package:moai3/widgets/lists/tv_fixed_window_viewport.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Pantalla para gestionar y descargar ROMs de Arcade.
 /// Sigue la misma estructura y diseño de 2 columnas que SourcesScreen.
@@ -192,7 +192,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Icon(
-              Icons.sports_esports,
+              MoaiIcons.sportsEsports,
               color: scheme.onPrimaryContainer,
               size: 28,
             ),
@@ -260,7 +260,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
             hint: 'arcade_input_url_hint'.tr(),
             keyboardType: TvKeyboardType.text,
             doneLabel: 'arcade_input_url_done'.tr(),
-            leadingIcon: Icons.link_rounded,
+            leadingIcon: MoaiIcons.linkRounded,
             onSubmitted: (val) => _loadData(),
             onFocusLeft: () => _backFocus.requestFocus(),
             onFocusRight: () => _refreshFocus.requestFocus(),
@@ -280,7 +280,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
         TvFocusButton(
           focusNode: _refreshFocus,
           label: 'arcade_btn_refresh'.tr(),
-          icon: Icons.refresh_rounded,
+          icon: MoaiIcons.refreshRounded,
           height: 60,
           variant: TvButtonVariant.tonal,
           onPressed: () => _loadData(),
@@ -320,7 +320,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
           child: installed.isEmpty
               ? TvEmptyStateCard(
                   focusNode: _emptyFocusNode,
-                  icon: Icons.sports_esports_outlined,
+                  icon: MoaiIcons.sportsEsportsOutlined,
                   message: 'arcade_empty_installed_msg'.tr(),
                   onFocusUp: () => _urlFocus.requestFocus(),
                   onFocusRight: () {
@@ -524,7 +524,7 @@ class _BackButtonState extends State<_BackButton> {
               width: 52,
               height: 52,
               child: Icon(
-                Icons.arrow_back_rounded,
+                MoaiIcons.arrowBackRounded,
                 color: fg,
                 size: 24,
               ),
@@ -610,7 +610,7 @@ class _InstalledRomCardState extends State<_InstalledRomCard> {
               child: Padding(
                 padding: const EdgeInsets.all(10),
                 child: Icon(
-                  Symbols.stadia_controller,
+                  MoaiIcons.stadiaController,
                   size: 22,
                   color: iconColor,
                 ),
@@ -705,7 +705,7 @@ class _InstalledRomCardState extends State<_InstalledRomCard> {
                           child: Padding(
                             padding: const EdgeInsets.all(10),
                             child: Icon(
-                              Icons.delete_outline_rounded,
+                              MoaiIcons.deleteOutlineRounded,
                               size: 20,
                               color: btnFg,
                             ),
@@ -844,7 +844,7 @@ class _CatalogRomTileState extends State<_CatalogRomTile> {
                   child: Padding(
                     padding: const EdgeInsets.all(8),
                     child: Icon(
-                      Symbols.joystick,
+                      MoaiIcons.joystick,
                       size: 22,
                       color: iconColor,
                     ),
@@ -899,7 +899,7 @@ class _CatalogRomTileState extends State<_CatalogRomTile> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Icons.check_circle_outline_rounded,
+                            MoaiIcons.checkCircleOutlineRounded,
                             size: 16,
                             color: _isFocused
                                 ? scheme.onPrimary
@@ -964,7 +964,7 @@ class _CatalogRomTileState extends State<_CatalogRomTile> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Symbols.download,
+                            MoaiIcons.download,
                             size: 16,
                             color: _isFocused ? scheme.primary : scheme.onPrimary,
                           ),

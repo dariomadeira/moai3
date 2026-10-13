@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 class FavoriteButton extends StatefulWidget {
   final Channel channel;
@@ -130,7 +131,7 @@ class _FavoriteButtonState extends State<FavoriteButton> {
             ),
             child: Center(
               child: Icon(
-                isFav ? Icons.favorite : Icons.favorite_outline,
+                isFav ? MoaiIcons.favorite : MoaiIcons.favoriteOutline,
                 color: iconColor,
                 size: 15,
               ),

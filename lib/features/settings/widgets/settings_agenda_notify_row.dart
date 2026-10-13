@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:moai3/features/settings/widgets/tv_tile.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 class SettingsAgendaNotifyRow extends StatelessWidget {
   final FocusNode focusNode;
@@ -51,7 +52,7 @@ class SettingsAgendaNotifyRow extends StatelessWidget {
       focusNode: focusNode,
       label: 'settings_agenda_notify'.tr(),
       description: 'settings_agenda_notify_desc'.tr(),
-      icon: Icons.notifications_active_outlined,
+      icon: MoaiIcons.notificationsActiveOutlined,
       onKeyUp: onKeyUp,
       onKeyDown: onKeyDown,
       onKeyEvent: (node, event) {

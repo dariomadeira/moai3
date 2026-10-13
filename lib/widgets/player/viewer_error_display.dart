@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Estado de error compacto del visor TV.
 class ViewerErrorDisplay extends StatelessWidget {
@@ -20,7 +21,7 @@ class ViewerErrorDisplay extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, size: 36, color: scheme.error),
+              Icon(MoaiIcons.errorOutline, size: 36, color: scheme.error),
               const SizedBox(height: 8),
               Text(
                 errorMessage,

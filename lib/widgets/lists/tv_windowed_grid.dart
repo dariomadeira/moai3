@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Grilla TV por ventana fija (sin scroll continuo).
 ///
@@ -505,7 +506,7 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Icon(
-        isUp ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+        isUp ? MoaiIcons.keyboardArrowUp : MoaiIcons.keyboardArrowDown,
         size: 16,
         color: scheme.onTertiaryContainer,
       ),

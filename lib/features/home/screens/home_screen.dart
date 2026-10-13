@@ -33,6 +33,7 @@ import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/plugin_update_dialog.dart';
 import 'package:moai3/widgets/dialogs/update_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Shell del home — foco como moaiSmart:
 /// Shortcuts D-pad globales; → del rail llama [HomeTvAreaState.requestEntryFocus].
@@ -116,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
           'name': invite.hostNickname,
           'game': invite.romName,
         }),
-        icon: Icons.sports_esports,
+        icon: MoaiIcons.sportsEsports,
         hint: 'arcade_invite_hint_accept'.tr(),
         onAction: () async {
           final identity = context.read<DeviceIdentityService>();
@@ -547,7 +548,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           MoaiSnackBar.show(
                                             context,
                                             message: 'arcade_no_game_installed_snack'.tr(),
-                                            icon: Icons.info_outline,
+                                            icon: MoaiIcons.infoOutline,
                                           );
                                         }
                                       },

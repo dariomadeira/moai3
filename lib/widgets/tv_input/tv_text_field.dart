@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
 import 'package:moai3/widgets/tv_input/tv_text_input_sheet.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Campo de texto para Smart TV: Select abre teclado on-screen Material.
 class TvTextField extends StatefulWidget {
@@ -228,7 +229,7 @@ class _TvTextFieldState extends State<TvTextField> {
         : scheme.primaryContainer;
     final iconColor = _focused ? scheme.onPrimary : scheme.onPrimaryContainer;
 
-    final leading = widget.leadingIcon ?? Icons.keyboard_alt_outlined;
+    final leading = widget.leadingIcon ?? MoaiIcons.keyboardAltOutlined;
 
     return Focus(
       focusNode: _focusNode,

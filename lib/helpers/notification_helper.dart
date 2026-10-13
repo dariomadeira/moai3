@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Helper global para mostrar notificaciones estilo Pill unificado en toda la app.
 class NotificationHelper {
@@ -66,7 +67,7 @@ class NotificationHelper {
   static void showError(String message) {
     show(
       message: message,
-      icon: Icons.error_outline,
+      icon: MoaiIcons.errorOutline,
       duration: const Duration(seconds: 3),
     );
   }
@@ -75,7 +76,7 @@ class NotificationHelper {
   static void showSuccess(String message) {
     show(
       message: message,
-      icon: Icons.check_circle_outline,
+      icon: MoaiIcons.checkCircleOutline,
       duration: const Duration(seconds: 2),
     );
   }
@@ -84,7 +85,7 @@ class NotificationHelper {
   static void showInfo(String message) {
     show(
       message: message,
-      icon: Icons.info_outline,
+      icon: MoaiIcons.infoOutline,
       duration: const Duration(seconds: 2),
     );
   }
@@ -93,7 +94,7 @@ class NotificationHelper {
   static void showWarning(String message) {
     show(
       message: message,
-      icon: Icons.warning_amber_outlined,
+      icon: MoaiIcons.warningAmberOutlined,
       duration: const Duration(seconds: 3),
     );
   }

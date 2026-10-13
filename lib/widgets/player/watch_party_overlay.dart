@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/services/modal_route_tracker.dart';
 import 'package:moai3/services/watch_party_voice_coordinator.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
@@ -10,6 +9,7 @@ import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_friends_dialog.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Overlay de voz y presencia en pantalla completa para "Miremos Juntos" (SPEC-37).
 /// Se muestra únicamente si:
@@ -306,7 +306,7 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Symbols.person,
+              MoaiIcons.person,
               color: fg,
               size: 16,
             ),
@@ -370,7 +370,7 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
       ),
       child: Center(
         child: Icon(
-          isRecording ? Icons.stop_rounded : Symbols.mic,
+          isRecording ? MoaiIcons.stopRounded : MoaiIcons.mic,
           color: iconColor,
           size: 18,
         ),
@@ -501,7 +501,7 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Symbols.voice_selection,
+              MoaiIcons.voiceSelection,
               color: fg,
               size: 16,
             ),

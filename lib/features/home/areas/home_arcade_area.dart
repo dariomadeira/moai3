@@ -1,6 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/features/games/screens/arcade_games_screen.dart';
 import 'package:moai3/features/games/screens/arcade_screen.dart';
 import 'package:moai3/features/games/services/arcade_netplay_service.dart';
@@ -15,6 +14,7 @@ import 'package:moai3/widgets/dialogs/tv_gamepad_config_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Área principal de Arcade en HomeScreen: 1 único panel con el mismo diseño que Ajustes.
 class HomeArcadeArea extends StatefulWidget {
@@ -91,7 +91,7 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
       MoaiSnackBar.show(
         context,
         message: 'arcade_no_game_installed_snack'.tr(),
-        icon: Icons.info_outline,
+        icon: MoaiIcons.infoOutline,
       );
       return;
     }
@@ -157,7 +157,7 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
       'arcade_panel_title'.tr(),
     ];
     const icons = [
-      Icons.sports_esports_outlined,
+      MoaiIcons.sportsEsportsOutlined,
     ];
 
     return TvAccordionRowPreview(
@@ -189,7 +189,7 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
                 focusNode: widget.selectGameFocus,
                 label: 'arcade_action_select_game'.tr(),
                 description: _resolveCurrentGameName(),
-                icon: Symbols.joystick,
+                icon: MoaiIcons.joystick,
                 onPressed: _onSelectGame,
                 onKeyLeft: widget.onExitLeft,
                 onKeyDown: () => widget.gamepadFocus.requestFocus(),
@@ -201,7 +201,7 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
                 focusNode: widget.gamepadFocus,
                 label: 'arcade_gamepad_config_title'.tr(),
                 description: 'arcade_gamepad_config_desc'.tr(),
-                icon: Symbols.gamepad,
+                icon: MoaiIcons.gamepad,
                 onPressed: _onConfigGamepad,
                 onKeyLeft: widget.onExitLeft,
                 onKeyUp: () => widget.selectGameFocus.requestFocus(),
@@ -217,7 +217,7 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
                   focusNode: widget.startFocus,
                   label: 'arcade_action_start_game'.tr(),
                   description: 'arcade_action_start_game_desc'.tr(),
-                  icon: Icons.play_arrow_rounded,
+                  icon: MoaiIcons.playArrowRounded,
                   onPressed: widget.onStartGame,
                   onKeyLeft: widget.onExitLeft,
                   onKeyUp: () => widget.gamepadFocus.requestFocus(),
@@ -231,7 +231,7 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
                     focusNode: widget.playTogetherFocus,
                     label: 'arcade_action_play_together'.tr(),
                     description: 'arcade_action_play_together_desc'.tr(),
-                    icon: Icons.group_outlined,
+                    icon: MoaiIcons.groupOutlined,
                     onPressed: _onPlayTogether,
                     onKeyLeft: widget.onExitLeft,
                     onKeyUp: () => widget.startFocus.requestFocus(),

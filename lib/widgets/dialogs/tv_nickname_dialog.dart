@@ -4,6 +4,7 @@ import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
 import 'package:moai3/widgets/tv_input/tv_text_field.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Diálogo TV para configurar o cambiar el apodo (Nickname) del usuario.
 ///
@@ -104,7 +105,7 @@ class _TvNicknameDialogState extends State<TvNicknameDialog> {
 
     final dialog = TvDialog(
       width: 640,
-      icon: Icons.badge_outlined,
+      icon: MoaiIcons.badgeOutlined,
       title: title,
       subtitle: subtitle,
       content: Column(
@@ -118,7 +119,7 @@ class _TvNicknameDialogState extends State<TvNicknameDialog> {
             hint: 'nickname_dialog_hint'.tr(),
             keyboardType: TvKeyboardType.text,
             textInputAction: TvTextInputAction.done,
-            leadingIcon: Icons.person_outline,
+            leadingIcon: MoaiIcons.personOutline,
             maxLength: 30,
             onFocusDown: () => _saveFocusNode.requestFocus(),
             onSubmitted: (_) => _saveFocusNode.requestFocus(),

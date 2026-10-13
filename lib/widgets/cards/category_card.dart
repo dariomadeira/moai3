@@ -1,49 +1,49 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/widgets/cards/tv_icon_list_card.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Ítem de categoría: mismo [TvIconListCard] que países, con ícono por nombre.
 class CategoryCard extends StatelessWidget {
   static const Map<String, IconData> icons = {
-    'Aire': Symbols.airware,
-    'Interior': Symbols.location_city,
-    'Provinciales': Symbols.location_city,
-    'Deportes': Icons.sports_soccer_outlined,
-    'Noticias': Icons.newspaper_outlined,
-    'Infantiles': Symbols.child_hat,
-    'Infantil': Symbols.child_hat,
-    'Entretenimiento': Symbols.confirmation_number,
-    'Comedia': Icons.theater_comedy_outlined,
-    'Reality': Symbols.visibility,
-    'Anime': Symbols.animation,
-    'Cocina': Icons.restaurant_menu_outlined,
-    'Radios': Symbols.radio,
-    'Series': Symbols.tv,
-    'Películas': Symbols.movie,
-    'Cine y Series': Symbols.movie,
-    'Documentales': Symbols.library_books,
-    'Música': Symbols.music_note,
-    'Niños': Symbols.child_care,
-    'Educación': Symbols.school,
-    'Religión': Symbols.church,
-    'Religioso': Symbols.church,
-    'Conciertos': Symbols.music_note,
-    'Telenovelas': Symbols.favorite,
-    'Novelas': Symbols.favorite,
-    'Cine': Symbols.movie,
-    'Cultura': Symbols.book_2,
-    'Cultural': Symbols.book_2,
-    'General': Symbols.remote_gen,
-    'Teleshows': Symbols.confirmation_number,
-    'Otros': Symbols.more,
-    'Internacional': Symbols.globe,
-    'Comunitarios': Symbols.groups,
-    'Culturales': Symbols.theaters,
-    'Adultos': Symbols.lock,
+    'Aire': MoaiIcons.airware,
+    'Interior': MoaiIcons.locationCity,
+    'Provinciales': MoaiIcons.locationCity,
+    'Deportes': MoaiIcons.sportsSoccerOutlined,
+    'Noticias': MoaiIcons.newspaperOutlined,
+    'Infantiles': MoaiIcons.childHat,
+    'Infantil': MoaiIcons.childHat,
+    'Entretenimiento': MoaiIcons.confirmationNumber,
+    'Comedia': MoaiIcons.theaterComedyOutlined,
+    'Reality': MoaiIcons.visibility,
+    'Anime': MoaiIcons.animation,
+    'Cocina': MoaiIcons.restaurantMenuOutlined,
+    'Radios': MoaiIcons.radio,
+    'Series': MoaiIcons.symbolTv,
+    'Películas': MoaiIcons.movie,
+    'Cine y Series': MoaiIcons.movie,
+    'Documentales': MoaiIcons.libraryBooks,
+    'Música': MoaiIcons.musicNote,
+    'Niños': MoaiIcons.childCare,
+    'Educación': MoaiIcons.school,
+    'Religión': MoaiIcons.church,
+    'Religioso': MoaiIcons.church,
+    'Conciertos': MoaiIcons.musicNote,
+    'Telenovelas': MoaiIcons.symbolFavorite,
+    'Novelas': MoaiIcons.symbolFavorite,
+    'Cine': MoaiIcons.movie,
+    'Cultura': MoaiIcons.book2,
+    'Cultural': MoaiIcons.book2,
+    'General': MoaiIcons.remoteGen,
+    'Teleshows': MoaiIcons.confirmationNumber,
+    'Otros': MoaiIcons.more,
+    'Internacional': MoaiIcons.globe,
+    'Comunitarios': MoaiIcons.groups,
+    'Culturales': MoaiIcons.theaters,
+    'Adultos': MoaiIcons.lock,
   };
 
   static IconData iconFor(String category) =>
-      icons[category] ?? Icons.tv_outlined;
+      icons[category] ?? MoaiIcons.tvOutlined;
 
   final String category;
   final bool isSelected;

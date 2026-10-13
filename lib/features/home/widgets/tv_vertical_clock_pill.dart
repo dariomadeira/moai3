@@ -5,6 +5,7 @@ import 'package:lottie/lottie.dart';
 import 'package:moai3/state/weather_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Componente de reloj en formato Cápsula (Pill) Vertical.
 ///
@@ -130,7 +131,7 @@ class _TvVerticalClockPillState extends State<TvVerticalClockPill> {
                       lottieUrl,
                       fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) => Icon(
-                        Icons.wb_sunny_outlined,
+                        MoaiIcons.wbSunnyOutlined,
                         size: 20,
                         color: scheme.onSurfaceVariant,
                       ),

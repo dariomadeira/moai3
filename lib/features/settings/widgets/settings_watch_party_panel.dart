@@ -1,6 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/features/settings/widgets/tv_tile.dart';
 import 'package:moai3/state/watch_party_provider.dart';
@@ -12,6 +11,7 @@ import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 import 'package:moai3/widgets/tv_common/tv_value_chip.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 enum _SettingsWatchPartyItemType {
   watchPartySwitch,
@@ -171,7 +171,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
       case _SettingsWatchPartyItemType.watchPartySwitch:
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: Symbols.voice_selection,
+          icon: MoaiIcons.voiceSelection,
           label: 'settings_tv_watch_party'.tr(),
           description: 'settings_tv_watch_party_desc'.tr(),
           value: watchParty?.enabled ?? false,
@@ -187,7 +187,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
             currentNickname != null && currentNickname.trim().isNotEmpty;
         return TvTile(
           focusNode: focusNode,
-          icon: Icons.person_outline,
+          icon: MoaiIcons.personOutline,
           label: 'settings_watch_party_nickname'.tr(),
           description: 'settings_watch_party_nickname_desc'.tr(),
           onPressed: () => _openEditNicknameDialog(context, watchParty),
@@ -207,7 +207,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
       case _SettingsWatchPartyItemType.watchPartyCodeCard:
         return TvTile(
           focusNode: focusNode,
-          icon: Icons.badge_outlined,
+          icon: MoaiIcons.badgeOutlined,
           label: 'settings_tv_watch_party_code'.tr(),
           description: 'settings_tv_watch_party_code_desc'.tr(),
           onKeyLeft: widget.onKeyLeft,
@@ -238,7 +238,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
         }
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: Icons.people_outline,
+          icon: MoaiIcons.peopleOutline,
           label: 'settings_tv_manage_friends'.tr(),
           description: statusDesc,
           onPressed: () {
@@ -252,7 +252,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
       case _SettingsWatchPartyItemType.micTest:
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: Symbols.mic_gear,
+          icon: MoaiIcons.micGear,
           label: 'settings_tv_mic_test'.tr(),
           description: 'settings_tv_mic_test_desc'.tr(),
           onPressed: () {
@@ -324,7 +324,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
           MoaiSnackBar.show(
             context,
             message: 'nickname_dialog_saved_success'.tr(),
-            icon: Icons.check_circle_outline,
+            icon: MoaiIcons.checkCircleOutline,
           );
         }
       } catch (e) {
@@ -332,7 +332,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
           MoaiSnackBar.show(
             context,
             message: 'nickname_dialog_saved_error'.tr(),
-            icon: Icons.error_outline,
+            icon: MoaiIcons.errorOutline,
           );
         }
       }

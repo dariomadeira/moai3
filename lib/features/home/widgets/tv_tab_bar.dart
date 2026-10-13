@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Floating Toolbar M3 Expressive para las pestañas Explorar / Mis grupos.
 ///
@@ -57,8 +58,8 @@ class TvTabBar extends StatelessWidget {
             children: [
               _M3EFloatingTabPill(
                 title: 'home_tab_explore'.tr(),
-                icon: Icons.explore_outlined,
-                selectedIcon: Icons.explore,
+                icon: MoaiIcons.exploreOutlined,
+                selectedIcon: MoaiIcons.explore,
                 isSelected: selectedTab == 'explore',
                 focusNode: exploreFocusNode,
                 onSelect: () => onTabChanged('explore'),
@@ -69,8 +70,8 @@ class TvTabBar extends StatelessWidget {
               const SizedBox(width: 4),
               _M3EFloatingTabPill(
                 title: 'home_tab_search'.tr(),
-                icon: Icons.search_outlined,
-                selectedIcon: Icons.search,
+                icon: MoaiIcons.searchOutlined,
+                selectedIcon: MoaiIcons.search,
                 isSelected: selectedTab == 'search',
                 focusNode: searchFocusNode,
                 onSelect: () => onTabChanged('search'),
@@ -81,8 +82,8 @@ class TvTabBar extends StatelessWidget {
               const SizedBox(width: 4),
               _M3EFloatingTabPill(
                 title: 'home_tab_groups'.tr(),
-                icon: Icons.bookmarks_outlined,
-                selectedIcon: Icons.bookmarks,
+                icon: MoaiIcons.bookmarksOutlined,
+                selectedIcon: MoaiIcons.bookmarks,
                 isSelected: selectedTab == 'groups',
                 focusNode: groupsFocusNode,
                 onSelect: () => onTabChanged('groups'),

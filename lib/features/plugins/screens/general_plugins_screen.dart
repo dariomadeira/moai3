@@ -1,10 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/services/arcade_plugin_service.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Pantalla de gestión de Plugins Generales para Android TV (idéntica a la estructura de SourcesScreen).
 class GeneralPluginsScreen extends StatefulWidget {
@@ -150,7 +150,7 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                               child: !isInstalled
                                   ? TvEmptyStateCard(
                                       focusNode: _emptyFocusNode,
-                                      icon: Icons.extension_off_outlined,
+                                      icon: MoaiIcons.extensionOffOutlined,
                                       message: 'plugins_empty_installed_msg'.tr(),
                                       onFocusUp: () => _backFocusNode.requestFocus(),
                                       onFocusRight: () => _availableFocusNode.requestFocus(),
@@ -255,7 +255,7 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Icon(
-              Symbols.extension,
+              MoaiIcons.extension,
               color: scheme.onPrimaryContainer,
               size: 26,
             ),
@@ -389,7 +389,7 @@ class _BackButtonState extends State<_BackButton> {
               width: 52,
               height: 52,
               child: Icon(
-                Icons.arrow_back_rounded,
+                MoaiIcons.arrowBackRounded,
                 color: fg,
                 size: 24,
               ),
@@ -482,7 +482,7 @@ class _InstalledPluginTileState extends State<_InstalledPluginTile> {
               child: Padding(
                 padding: const EdgeInsets.all(10),
                 child: Icon(
-                  Symbols.electrical_services,
+                  MoaiIcons.electricalServices,
                   size: 22,
                   color: iconColor,
                 ),
@@ -525,7 +525,7 @@ class _InstalledPluginTileState extends State<_InstalledPluginTile> {
             _IconButtonAction(
               focusNode: widget.updateFocus,
               tooltip: 'plugins_reinstall_tooltip'.tr(),
-              icon: Icons.sync_rounded,
+              icon: MoaiIcons.syncRounded,
               onPressed: widget.onUpdate,
               parentFocused: isFocused,
               onKeyRight: () => widget.removeFocus.requestFocus(),
@@ -535,7 +535,7 @@ class _InstalledPluginTileState extends State<_InstalledPluginTile> {
             _IconButtonAction(
               focusNode: widget.removeFocus,
               tooltip: 'plugins_uninstall_tooltip'.tr(),
-              icon: Icons.delete_outline_rounded,
+              icon: MoaiIcons.deleteOutlineRounded,
               onPressed: widget.onRemove,
               parentFocused: isFocused,
               onKeyLeft: () => widget.updateFocus.requestFocus(),
@@ -660,7 +660,7 @@ class _AvailablePluginTileState extends State<_AvailablePluginTile> {
                       child: Padding(
                         padding: const EdgeInsets.all(10),
                         child: Icon(
-                          Symbols.electrical_services,
+                          MoaiIcons.electricalServices,
                           size: 22,
                           color: iconColor,
                         ),
@@ -746,7 +746,7 @@ class _AvailablePluginTileState extends State<_AvailablePluginTile> {
                               ),
                             ] else if (widget.isInstalled) ...[
                               Icon(
-                                Icons.check_circle_outline_rounded,
+                                MoaiIcons.checkCircleOutlineRounded,
                                 size: 16,
                                 color: _isFocused
                                     ? scheme.onPrimary
@@ -766,7 +766,7 @@ class _AvailablePluginTileState extends State<_AvailablePluginTile> {
                               ),
                             ] else ...[
                               Icon(
-                                Symbols.download,
+                                MoaiIcons.download,
                                 size: 16,
                                 color: _isFocused
                                     ? scheme.primary

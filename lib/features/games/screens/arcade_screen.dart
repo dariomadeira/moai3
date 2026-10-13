@@ -11,6 +11,7 @@ import 'package:moai3/services/arcade_plugin_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Pantalla principal para emular y jugar juegos de Arcade (FBNeo / Libretro).
 class ArcadeScreen extends StatefulWidget {
@@ -61,12 +62,12 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
         final String message;
         final IconData icon;
         if (assignment.isRemote) {
-          icon = Icons.settings_remote;
+          icon = MoaiIcons.settingsRemote;
           message = assignment.player == 0
               ? 'arcade_remote_connected_p1'.tr()
               : 'arcade_remote_connected_p2'.tr();
         } else {
-          icon = Icons.sports_esports;
+          icon = MoaiIcons.sportsEsports;
           message = assignment.player == 0
               ? 'arcade_pad_detected_p1'.tr()
               : 'arcade_pad_detected_p2'.tr();
@@ -91,7 +92,7 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
             message: 'arcade_netplay_connected'.tr(namedArgs: {
               'friend': widget.netplaySession!.peerNickname,
             }),
-            icon: Icons.sports_esports,
+            icon: MoaiIcons.sportsEsports,
           );
         }
       });
@@ -290,7 +291,7 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
                 top: overlapY + 8,
                 left: overlapX + 8,
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white70),
+                  icon: const Icon(MoaiIcons.arrowBack, color: Colors.white70),
                   onPressed: () => Navigator.pop(context),
                 ),
               ),

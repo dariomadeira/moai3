@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:moai3/widgets/cards/tv_icon_list_card.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Ítem de grupo: mismo [TvIconListCard] que países / categorías.
 class GroupCard extends StatelessWidget {
   static final Map<String, IconData> icons = {
-    'favorite': Icons.favorite_outline,
-    'no_adults': Icons.explicit_outlined,
-    'sports_soccer': Icons.sports_soccer_outlined,
-    'movie': Icons.movie_outlined,
-    'child_hat': Icons.child_care_outlined,
-    'newspaper': Icons.newspaper_outlined,
-    'tv_gen': Icons.tv_outlined,
-    'language': Icons.language_outlined,
+    'favorite': MoaiIcons.favoriteOutline,
+    'no_adults': MoaiIcons.explicitOutlined,
+    'sports_soccer': MoaiIcons.sportsSoccerOutlined,
+    'movie': MoaiIcons.movieOutlined,
+    'child_hat': MoaiIcons.childCareOutlined,
+    'newspaper': MoaiIcons.newspaperOutlined,
+    'tv_gen': MoaiIcons.tvOutlined,
+    'language': MoaiIcons.languageOutlined,
   };
 
   static IconData iconFor(String iconKey) =>
-      icons[iconKey] ?? Icons.group_outlined;
+      icons[iconKey] ?? MoaiIcons.groupOutlined;
 
   final String groupName;
   final String iconKey;

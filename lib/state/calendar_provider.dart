@@ -7,6 +7,7 @@ import 'package:moai3/models/sport_subscription.dart';
 import 'package:moai3/services/calendar/argentina_time.dart';
 import 'package:moai3/services/calendar/f1_calendar_service.dart';
 import 'package:moai3/services/calendar/sports_schedule_service.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Proveedor de estado central para Suscripciones Deportivas y Calendario de Eventos en Moai TV.
 class CalendarProvider extends ChangeNotifier {
@@ -23,7 +24,7 @@ class CalendarProvider extends ChangeNotifier {
       name: 'Fórmula 1',
       sport: 'motorsport',
       description: 'Prácticas, clasificación y carreras en vivo.',
-      icon: Icons.sports_motorsports_outlined,
+      icon: MoaiIcons.sportsMotorsportsOutlined,
       isSubscribed: false,
     ),
     const SportSubscription(
@@ -31,7 +32,7 @@ class CalendarProvider extends ChangeNotifier {
       name: 'Fútbol Argentino (LPF)',
       sport: 'soccer',
       description: 'Torneo y Copa de la Liga Profesional.',
-      icon: Icons.sports_soccer_outlined,
+      icon: MoaiIcons.sportsSoccerOutlined,
       isSubscribed: false,
     ),
     const SportSubscription(
@@ -39,7 +40,7 @@ class CalendarProvider extends ChangeNotifier {
       name: 'Champions League',
       sport: 'soccer',
       description: 'Encuentros de la UEFA Champions League.',
-      icon: Icons.emoji_events_outlined,
+      icon: MoaiIcons.emojiEventsOutlined,
       isSubscribed: false,
     ),
     const SportSubscription(
@@ -47,7 +48,7 @@ class CalendarProvider extends ChangeNotifier {
       name: 'Premier League',
       sport: 'soccer',
       description: 'Partidos de la Premier League inglesa.',
-      icon: Icons.sports_soccer_outlined,
+      icon: MoaiIcons.sportsSoccerOutlined,
       isSubscribed: false,
     ),
     const SportSubscription(
@@ -55,7 +56,7 @@ class CalendarProvider extends ChangeNotifier {
       name: 'NFL (Fútbol Americano)',
       sport: 'american_football',
       description: 'Temporada regular, playoffs y Super Bowl.',
-      icon: Icons.sports_football_outlined,
+      icon: MoaiIcons.sportsFootballOutlined,
       isSubscribed: false,
     ),
     const SportSubscription(
@@ -63,7 +64,7 @@ class CalendarProvider extends ChangeNotifier {
       name: 'MotoGP',
       sport: 'motorsport',
       description: 'Mundial de motociclismo y carrera Sprint.',
-      icon: Icons.two_wheeler_outlined,
+      icon: MoaiIcons.twoWheelerOutlined,
       isSubscribed: false,
     ),
     const SportSubscription(
@@ -71,7 +72,7 @@ class CalendarProvider extends ChangeNotifier {
       name: 'NBA (Básquet)',
       sport: 'basketball',
       description: 'Temporada regular y playoffs de la NBA.',
-      icon: Icons.sports_basketball_outlined,
+      icon: MoaiIcons.sportsBasketballOutlined,
       isSubscribed: false,
     ),
   ];
@@ -84,15 +85,15 @@ class CalendarProvider extends ChangeNotifier {
       }
     }
     final lower = subscriptionId.toLowerCase();
-    if (lower.contains('f1')) return Icons.sports_motorsports_outlined;
-    if (lower.contains('motogp')) return Icons.two_wheeler_outlined;
-    if (lower.contains('nfl') || lower.contains('football')) return Icons.sports_football_outlined;
-    if (lower.contains('nba') || lower.contains('basket')) return Icons.sports_basketball_outlined;
-    if (lower.contains('champions')) return Icons.emoji_events_outlined;
+    if (lower.contains('f1')) return MoaiIcons.sportsMotorsportsOutlined;
+    if (lower.contains('motogp')) return MoaiIcons.twoWheelerOutlined;
+    if (lower.contains('nfl') || lower.contains('football')) return MoaiIcons.sportsFootballOutlined;
+    if (lower.contains('nba') || lower.contains('basket')) return MoaiIcons.sportsBasketballOutlined;
+    if (lower.contains('champions')) return MoaiIcons.emojiEventsOutlined;
     if (lower.contains('premier') || lower.contains('lpf') || lower.contains('soccer')) {
-      return Icons.sports_soccer_outlined;
+      return MoaiIcons.sportsSoccerOutlined;
     }
-    return Icons.sports_outlined;
+    return MoaiIcons.sportsOutlined;
   }
 
   List<SportSubscription> _subscriptions = [];
@@ -497,7 +498,7 @@ class CalendarProvider extends ChangeNotifier {
 
   /// Obtiene el ícono representativo para la notificación en vivo.
   static IconData getLiveEventsIcon(List<CalendarEvent> events) {
-    if (events.isEmpty) return Icons.live_tv_outlined;
+    if (events.isEmpty) return MoaiIcons.liveTvOutlined;
     if (events.length == 1) {
       return getSubscriptionIcon(events.first.subscriptionId);
     }
@@ -505,7 +506,7 @@ class CalendarProvider extends ChangeNotifier {
     if (events.every((e) => e.subscriptionId == firstSub)) {
       return getSubscriptionIcon(firstSub);
     }
-    return Icons.live_tv_outlined;
+    return MoaiIcons.liveTvOutlined;
   }
 
   /// Genera eventos representativos para una semana (del Lunes al Domingo dado).

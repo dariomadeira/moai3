@@ -8,6 +8,7 @@ import 'package:moai3/widgets/cards/group_card.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
 import 'package:moai3/widgets/lists/tv_fixed_window_viewport.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Panel Marcadores: mismo diseño windowed de 6 que Países / Categorías.
 class GroupListPanel extends StatefulWidget {
@@ -103,7 +104,7 @@ class GroupListPanelState extends State<GroupListPanel> {
             child: widget.groups.isEmpty
                 ? TvEmptyStateCard(
                     focusNode: _emptyFocusNode,
-                    icon: Icons.bookmarks_outlined,
+                    icon: MoaiIcons.bookmarksOutlined,
                     message: 'browser_groups_empty'.tr(),
                     onFocusUp: widget.onFocusUp,
                   )

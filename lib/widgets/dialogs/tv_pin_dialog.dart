@@ -2,11 +2,11 @@ import 'dart:math';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Curva sinusoidal para sacudida suave (shake) ante errores de validación de PIN.
 class _PinShakeCurve extends Curve {
@@ -84,7 +84,7 @@ class TvPinDialog extends StatefulWidget {
           MoaiSnackBar.show(
             context,
             message: 'parental_adult_unlocked'.tr(),
-            icon: Symbols.lock_open,
+            icon: MoaiIcons.lockOpen,
           );
         }
         return true;
@@ -109,7 +109,7 @@ class TvPinDialog extends StatefulWidget {
       MoaiSnackBar.show(
         context,
         message: 'parental_adult_unlocked'.tr(),
-        icon: Symbols.lock_open,
+        icon: MoaiIcons.lockOpen,
       );
       return true;
     }
@@ -135,7 +135,7 @@ class TvPinDialog extends StatefulWidget {
       MoaiSnackBar.show(
         context,
         message: 'parental_pin_created_success'.tr(),
-        icon: Icons.check_circle_outline,
+        icon: MoaiIcons.checkCircleOutline,
       );
       return true;
     }
@@ -165,7 +165,7 @@ class TvPinDialog extends StatefulWidget {
       MoaiSnackBar.show(
         context,
         message: 'parental_pin_changed_success'.tr(),
-        icon: Icons.check_circle_outline,
+        icon: MoaiIcons.checkCircleOutline,
       );
       return true;
     }
@@ -488,7 +488,7 @@ class _TvPinDialogState extends State<TvPinDialog>
       onKeyEvent: _handleGlobalKeyEvent,
       child: TvDialog(
         width: 440,
-        icon: Symbols.lock,
+        icon: MoaiIcons.lock,
         titleWidget: AnimatedSwitcher(
           duration: const Duration(milliseconds: 220),
           child: Text(
@@ -553,7 +553,7 @@ class _TvPinDialogState extends State<TvPinDialog>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.error_outline,
+                          MoaiIcons.errorOutline,
                           size: 13,
                           color: scheme.error,
                         ),
@@ -688,7 +688,7 @@ class _TvPinDialogState extends State<TvPinDialog>
             _buildKey(
               3,
               0,
-              icon: Icons.backspace_outlined,
+              icon: MoaiIcons.backspaceOutlined,
               isAction: true,
               scheme: scheme,
               onTap: _onBackspace,
@@ -697,7 +697,7 @@ class _TvPinDialogState extends State<TvPinDialog>
             _buildKey(
               3,
               2,
-              icon: Icons.close_outlined,
+              icon: MoaiIcons.closeOutlined,
               isAction: true,
               scheme: scheme,
               onTap: () => Navigator.of(context).pop(null),

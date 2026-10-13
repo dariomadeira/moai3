@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moai3/features/settings/widgets/tv_tile.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 class TvSettingsActionRow extends StatelessWidget {
   final FocusNode focusNode;
@@ -47,7 +48,7 @@ class TvSettingsActionRow extends StatelessWidget {
       trailingBuilder: (context, isFocused) {
         final scheme = context.scheme;
         return Icon(
-          Icons.chevron_right,
+          MoaiIcons.chevronRight,
           size: 26,
           color: isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
         );

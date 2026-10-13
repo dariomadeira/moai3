@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:moai3/features/settings/widgets/tv_tile.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 class SettingsAgendaSnackDurationRow extends StatelessWidget {
   final FocusNode focusNode;
@@ -53,7 +54,7 @@ class SettingsAgendaSnackDurationRow extends StatelessWidget {
       focusNode: focusNode,
       label: 'settings_agenda_snack_duration'.tr(),
       description: 'settings_agenda_snack_duration_desc'.tr(),
-      icon: Icons.timer_outlined,
+      icon: MoaiIcons.timerOutlined,
       onKeyUp: onKeyUp,
       onKeyDown: onKeyDown,
       onKeyEvent: (node, event) {

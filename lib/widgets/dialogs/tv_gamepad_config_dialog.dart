@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/features/games/services/arcade_emulator_service.dart';
 import 'package:moai3/features/games/services/gamepad_manager_service.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Modal interactivo para diagnosticar, probar y listar mandos físicos (Bluetooth / USB).
 /// Diseñado con estética Material 3 Expressive para Android TV:
@@ -181,7 +181,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
 
           return TvDialog(
             width: 820,
-            icon: Symbols.sports_esports,
+            icon: MoaiIcons.symbolSportsEsports,
             title: 'gamepad_dialog_title'.tr(),
             subtitle: 'gamepad_test_focus_hint'.tr(),
             trailingHeader: Material(
@@ -196,8 +196,8 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                   children: [
                     Icon(
                       isConnected
-                          ? Icons.check_circle_outline_rounded
-                          : Icons.videogame_asset_off_outlined,
+                          ? MoaiIcons.checkCircleOutlineRounded
+                          : MoaiIcons.videogameAssetOffOutlined,
                       size: 15,
                       color: isConnected
                           ? scheme.onTertiaryContainer
@@ -241,7 +241,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                         padding: const EdgeInsets.only(left: 4, bottom: 8),
                         child: Row(
                           children: [
-                            Icon(Symbols.gamepad, size: 14, color: scheme.primary),
+                            Icon(MoaiIcons.gamepad, size: 14, color: scheme.primary),
                             const SizedBox(width: 6),
                             Text(
                               'gamepad_detected_section_header'.tr(),
@@ -275,7 +275,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Icon(
-                                  Symbols.videogame_asset_off,
+                                  MoaiIcons.videogameAssetOff,
                                   size: 28,
                                   color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
                                 ),
@@ -326,7 +326,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Symbols.info, size: 14, color: scheme.primary),
+                            Icon(MoaiIcons.info, size: 14, color: scheme.primary),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -359,7 +359,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                           children: [
                             Row(
                               children: [
-                                Icon(Symbols.joystick, size: 14, color: scheme.primary),
+                                Icon(MoaiIcons.joystick, size: 14, color: scheme.primary),
                                 const SizedBox(width: 6),
                                 Text(
                                   'PRUEBA DE BOTONES',
@@ -413,7 +413,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                                       Positioned(
                                         top: 0,
                                         child: _SquircleButton(
-                                          icon: Icons.arrow_upward_rounded,
+                                          icon: MoaiIcons.arrowUpwardRounded,
                                           isPressed: (_activeTestMask & ArcadeButtons.up) != 0,
                                           size: 34,
                                         ),
@@ -422,7 +422,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                                       Positioned(
                                         left: 0,
                                         child: _SquircleButton(
-                                          icon: Icons.arrow_back_rounded,
+                                          icon: MoaiIcons.arrowBackRounded,
                                           isPressed: (_activeTestMask & ArcadeButtons.left) != 0,
                                           size: 34,
                                         ),
@@ -440,7 +440,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                                       Positioned(
                                         right: 0,
                                         child: _SquircleButton(
-                                          icon: Icons.arrow_forward_rounded,
+                                          icon: MoaiIcons.arrowForwardRounded,
                                           isPressed: (_activeTestMask & ArcadeButtons.right) != 0,
                                           size: 34,
                                         ),
@@ -449,7 +449,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                                       Positioned(
                                         bottom: 0,
                                         child: _SquircleButton(
-                                          icon: Icons.arrow_downward_rounded,
+                                          icon: MoaiIcons.arrowDownwardRounded,
                                           isPressed: (_activeTestMask & ArcadeButtons.down) != 0,
                                           size: 34,
                                         ),
@@ -598,14 +598,14 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
             actions: [
               TvDialogButton(
                 focusNode: _refreshFocus,
-                icon: Icons.refresh_rounded,
+                icon: MoaiIcons.refreshRounded,
                 label: 'gamepad_action_reset'.tr(),
                 variant: TvDialogButtonVariant.neutral,
                 onPressed: _clearTest,
               ),
               TvDialogButton(
                 focusNode: _closeFocus,
-                icon: Icons.check_rounded,
+                icon: MoaiIcons.checkRounded,
                 label: 'gamepad_action_close'.tr(),
                 variant: TvDialogButtonVariant.primary,
                 onPressed: () => Navigator.of(context).pop(),
@@ -757,7 +757,7 @@ class _GamepadDeviceCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
-              Symbols.sports_esports,
+              MoaiIcons.symbolSportsEsports,
               size: 20,
               color: scheme.onPrimaryContainer,
             ),

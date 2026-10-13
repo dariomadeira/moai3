@@ -12,6 +12,7 @@ import 'package:moai3/widgets/dialogs/tv_weather_location_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 enum _SettingsGeneralItemType {
   plugins,
@@ -182,7 +183,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       case _SettingsGeneralItemType.plugins:
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: Icons.extension_outlined,
+          icon: MoaiIcons.extensionOutlined,
           label: 'settings_general_plugins_title'.tr(),
           description: 'settings_general_plugins_desc'.tr(),
           onPressed: () {
@@ -200,7 +201,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       case _SettingsGeneralItemType.overscan:
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: Icons.aspect_ratio_outlined,
+          icon: MoaiIcons.aspectRatioOutlined,
           label: 'settings_general_overscan'.tr(),
           description: 'settings_general_overscan_desc'.tr(),
           onPressed: () {
@@ -220,7 +221,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
         final weather = context.watch<WeatherProvider>();
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: Icons.cloud_outlined,
+          icon: MoaiIcons.cloudOutlined,
           label: 'settings_general_weather_title'.tr(),
           description: weather.locationDisplayName,
           onPressed: () {
@@ -235,7 +236,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
         final skipCatalog = context.watch<TvSettingsProvider>().skipCatalogUpdate;
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: Icons.cloud_off_outlined,
+          icon: MoaiIcons.cloudOffOutlined,
           label: _skipCatalogLabel(),
           description: 'settings_general_skip_catalog_desc'.tr(),
           value: skipCatalog,
@@ -250,7 +251,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       case _SettingsGeneralItemType.darkMode:
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: Icons.dark_mode_outlined,
+          icon: MoaiIcons.darkModeOutlined,
           label: 'settings_general_dark_mode'.tr(),
           description: 'settings_general_dark_mode_desc'.tr(),
           value: theme.themeMode == ThemeMode.dark,
@@ -265,7 +266,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       case _SettingsGeneralItemType.accentColor:
         return SettingsAccentColorRow(
           focusNode: focusNode,
-          icon: Icons.palette_outlined,
+          icon: MoaiIcons.paletteOutlined,
           selectedIndex: theme.accentColorIndex,
           onChanged: (index) => theme.setAccentColorIndex(index),
           onKeyUp: onKeyUp,
@@ -274,7 +275,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       case _SettingsGeneralItemType.autoAccent:
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: Icons.auto_awesome_outlined,
+          icon: MoaiIcons.autoAwesomeOutlined,
           label: 'settings_general_auto_accent'.tr(),
           description: 'settings_general_auto_accent_desc'.tr(),
           value: isAutoAccent,

@@ -8,6 +8,7 @@ import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/dialogs/tv_friends_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Diálogo para invitar a un amigo a jugar, con el listado TV de ventana fija.
 class TvArcadeSelectFriendDialog extends StatefulWidget {
@@ -97,7 +98,7 @@ class _TvArcadeSelectFriendDialogState
 
     return TvDialog(
       width: 580,
-      icon: Icons.person_search_rounded,
+      icon: MoaiIcons.personSearchRounded,
       iconColor: scheme.primary,
       iconBgColor: scheme.primary.withValues(alpha: 0.15),
       title: 'arcade_select_friend_title'.tr(),
@@ -166,13 +167,13 @@ class _FriendWindow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               label: friend.displayName,
               description: 'friends_status_online'.tr(),
-              icon: Icons.person_outline_rounded,
+              icon: MoaiIcons.personOutlineRounded,
               onPressed: () => onSelect(friend),
               onKeyUp: onKeyUp,
               onKeyDown: onKeyDown,
               trailingBuilder: (context, isFocused) {
                 return Icon(
-                  Icons.sports_esports_rounded,
+                  MoaiIcons.sportsEsportsRounded,
                   size: 20,
                   color: isFocused
                       ? scheme.onPrimary
@@ -204,7 +205,7 @@ class _EmptyFriends extends StatelessWidget {
       child: Column(
         children: [
           Icon(
-            Icons.group_off_outlined,
+            MoaiIcons.groupOffOutlined,
             size: 36,
             color: scheme.onSurfaceVariant,
           ),

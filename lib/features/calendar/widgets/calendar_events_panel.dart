@@ -15,6 +15,7 @@ import 'package:moai3/features/settings/widgets/tv_tile.dart';
 import 'package:moai3/widgets/cards/new_channel_card.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 enum _FocusSection {
   header,
@@ -456,7 +457,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                   child: Row(
                     children: [
                       Icon(
-                        Icons.calendar_month_outlined,
+                        MoaiIcons.calendarMonthOutlined,
                         size: 20,
                         color: scheme.primary,
                       ),
@@ -492,7 +493,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                         return Padding(
                           padding: const EdgeInsets.only(right: 6),
                           child: _HeaderButton(
-                            icon: Icons.sync_outlined,
+                            icon: MoaiIcons.syncOutlined,
                             tooltip: 'calendar_refresh'.tr(),
                             isFocused: isFocused,
                             isLoading: calendar.isLoading,
@@ -507,7 +508,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                         return Padding(
                           padding: const EdgeInsets.only(right: 6),
                           child: _HeaderButton(
-                            icon: Icons.chevron_left,
+                            icon: MoaiIcons.chevronLeft,
                             tooltip: 'calendar_week_nav_prev'.tr(),
                             isFocused: isFocused,
                             onTap: () {
@@ -521,7 +522,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                         return Padding(
                           padding: const EdgeInsets.only(right: 6),
                           child: _HeaderButton(
-                            icon: Icons.today_outlined,
+                            icon: MoaiIcons.todayOutlined,
                             label: 'calendar_week_current'.tr(),
                             isFocused: isFocused,
                             onTap: () {
@@ -533,7 +534,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                         );
                       case _HeaderAction.next:
                         return _HeaderButton(
-                          icon: Icons.chevron_right,
+                          icon: MoaiIcons.chevronRight,
                           tooltip: 'calendar_week_nav_next'.tr(),
                           isFocused: isFocused,
                           onTap: () {
@@ -882,7 +883,7 @@ class _DayColumn extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
-                          Icons.keyboard_arrow_up,
+                          MoaiIcons.keyboardArrowUp,
                           size: 12,
                           color: scheme.onTertiaryContainer,
                         ),
@@ -919,7 +920,7 @@ class _DayColumn extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
-                          Icons.keyboard_arrow_down,
+                          MoaiIcons.keyboardArrowDown,
                           size: 12,
                           color: scheme.onTertiaryContainer,
                         ),
@@ -954,7 +955,7 @@ class _DayColumn extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(
-              Icons.event_busy_outlined,
+              MoaiIcons.eventBusyOutlined,
               size: 24,
               color: isFocused ? scheme.onSecondaryContainer : scheme.outline,
             ),
@@ -1243,20 +1244,20 @@ class _CalendarEventDialogContentState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TvInfoTile(
-          icon: Icons.schedule_outlined,
+          icon: MoaiIcons.scheduleOutlined,
           label: 'calendar_event_time'.tr(),
           description: '${event.formattedDate} • ${event.formattedTime} hs',
         ),
         const SizedBox(height: 8),
         TvInfoTile(
-          icon: Icons.sports_outlined,
+          icon: MoaiIcons.sportsOutlined,
           label: 'calendar_event_sport'.tr(),
           description: event.sessionType ?? event.competition,
         ),
         if (event.broadcaster != null && event.broadcaster!.isNotEmpty) ...[
           const SizedBox(height: 8),
           TvInfoTile(
-            icon: Icons.tv_outlined,
+            icon: MoaiIcons.tvOutlined,
             label: 'calendar_event_broadcaster'.tr(),
             description: event.broadcaster!,
           ),
@@ -1316,7 +1317,7 @@ class _CalendarEventDialogContentState
 
     return TvDialog(
       width: hasChannels ? 800 : 480,
-      icon: Icons.event_note_outlined,
+      icon: MoaiIcons.eventNoteOutlined,
       title: event.title,
       subtitle: event.competition,
       trailingHeader: widget.isLive

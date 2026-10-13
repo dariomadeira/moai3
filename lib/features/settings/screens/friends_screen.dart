@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/models/friend_info.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -14,6 +13,7 @@ import 'package:moai3/widgets/tv_common/tv_m3.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
 import 'package:moai3/widgets/tv_input/tv_text_field.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 String _formatFriendsCount(int total, int online) {
   if (total == 0) return '';
@@ -110,7 +110,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
         MoaiSnackBar.show(
           context,
           message: 'friend_add_dialog_success'.tr(),
-          icon: Icons.check_circle_outline,
+          icon: MoaiIcons.checkCircleOutline,
         );
       }
     } catch (e) {
@@ -123,7 +123,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
         MoaiSnackBar.show(
           context,
           message: localizedError,
-          icon: Icons.error_outline,
+          icon: MoaiIcons.errorOutline,
         );
       }
     } finally {
@@ -143,7 +143,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
         final deleteFocus = FocusNode(debugLabel: 'delete_confirm');
         return TvDialog(
           width: 460,
-          icon: Icons.person_remove_outlined,
+          icon: MoaiIcons.personRemoveOutlined,
           title: 'friends_delete_confirm_title'.tr(),
           subtitle: 'friends_delete_confirm_desc'.tr(
             namedArgs: {'name': friend.nickname ?? friend.userCode},
@@ -175,7 +175,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
           MoaiSnackBar.show(
             context,
             message: 'friends_delete_success'.tr(),
-            icon: Icons.check,
+            icon: MoaiIcons.check,
           );
         }
       } catch (e) {
@@ -183,7 +183,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
           MoaiSnackBar.show(
             context,
             message: 'friends_delete_error'.tr(),
-            icon: Icons.error_outline,
+            icon: MoaiIcons.errorOutline,
           );
         }
       }
@@ -226,7 +226,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                       child: Row(
                         children: [
                           Icon(
-                            Icons.error_outline_rounded,
+                            MoaiIcons.errorOutlineRounded,
                             color: scheme.onErrorContainer,
                             size: 20,
                           ),
@@ -285,7 +285,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Icon(
-              Icons.people_alt_rounded,
+              MoaiIcons.peopleAltRounded,
               color: scheme.onPrimaryContainer,
               size: 26,
             ),
@@ -359,7 +359,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
             hint: 'friends_input_hint'.tr(),
             keyboardType: TvKeyboardType.text,
             doneLabel: 'friends_add_button'.tr(),
-            leadingIcon: Icons.badge_outlined,
+            leadingIcon: MoaiIcons.badgeOutlined,
             maxLength: 10,
             onSubmitted: (val) => _handleAddFriend(val),
             onFocusLeft: () => _backFocus.requestFocus(),
@@ -374,7 +374,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
         TvFocusButton(
           focusNode: _addFocus,
           label: 'friends_add_button'.tr(),
-          icon: Symbols.person_add,
+          icon: MoaiIcons.personAdd,
           height: 60,
           variant: TvButtonVariant.tonal,
           loading: _isSubmitting,
@@ -420,7 +420,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     if (friends.isEmpty) {
       return TvEmptyStateCard(
         focusNode: _emptyFocusNode,
-        icon: Icons.group_off_outlined,
+        icon: MoaiIcons.groupOffOutlined,
         message: 'friends_empty_title'.tr(),
         onFocusUp: () => _addFocus.requestFocus(),
       );
@@ -549,7 +549,7 @@ class _FriendTileState extends State<_FriendTile> {
               child: Padding(
                 padding: const EdgeInsets.all(10),
                 child: Icon(
-                  Icons.person_rounded,
+                  MoaiIcons.personRounded,
                   size: 22,
                   color: iconColor,
                 ),
@@ -648,7 +648,7 @@ class _FriendTileState extends State<_FriendTile> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  Icons.tv_rounded,
+                                  MoaiIcons.tvRounded,
                                   size: 11,
                                   color: isFocused
                                       ? scheme.onPrimary
@@ -684,7 +684,7 @@ class _FriendTileState extends State<_FriendTile> {
             _IconButtonAction(
               focusNode: widget.focusNode,
               tooltip: 'friends_delete_button'.tr(),
-              icon: Icons.delete_outline_rounded,
+              icon: MoaiIcons.deleteOutlineRounded,
               onPressed: widget.onDelete,
               parentFocused: isFocused,
               onKeyUp: widget.onKeyUp,
@@ -776,7 +776,7 @@ class _BackButtonState extends State<_BackButton> {
               width: 52,
               height: 52,
               child: Icon(
-                Icons.arrow_back_rounded,
+                MoaiIcons.arrowBackRounded,
                 color: fg,
                 size: 24,
               ),

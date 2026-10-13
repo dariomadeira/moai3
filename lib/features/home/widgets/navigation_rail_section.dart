@@ -7,6 +7,7 @@ import 'package:moai3/services/arcade_plugin_service.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Rail lateral de navegación para Android TV: TV, Calendario, Arcade (si está instalado) y Ajustes.
 class NavigationRailSection extends StatefulWidget {
@@ -185,22 +186,22 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
 
     switch (index) {
       case 0:
-        iconData = isSelected ? Icons.tv : Icons.tv_outlined;
+        iconData = isSelected ? MoaiIcons.tv : MoaiIcons.tvOutlined;
         label = 'home_rail_tv_title'.tr();
         break;
       case 1:
         iconData =
-            isSelected ? Icons.calendar_month : Icons.calendar_month_outlined;
+            isSelected ? MoaiIcons.calendarMonth : MoaiIcons.calendarMonthOutlined;
         label = 'home_rail_calendar_title'.tr();
         break;
       case 2:
         iconData =
-            isSelected ? Icons.sports_esports : Icons.sports_esports_outlined;
+            isSelected ? MoaiIcons.sportsEsports : MoaiIcons.sportsEsportsOutlined;
         label = 'home_rail_arcade_title'.tr();
         break;
       case 3:
       default:
-        iconData = isSelected ? Icons.settings : Icons.settings_outlined;
+        iconData = isSelected ? MoaiIcons.settings : MoaiIcons.settingsOutlined;
         label = 'home_rail_settings_title'.tr();
         break;
     }

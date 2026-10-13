@@ -5,6 +5,7 @@ import 'package:moai3/features/games/services/arcade_netplay_service.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Diálogo modal estándar de TV para sincronizar la preparación y descarga de ROMs
 /// entre dos jugadores a la distancia antes de iniciar la partida.
@@ -97,7 +98,7 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
 
     return TvDialog(
       width: 560,
-      icon: Icons.sports_esports_rounded,
+      icon: MoaiIcons.sportsEsportsRounded,
       iconColor: scheme.primary,
       iconBgColor: scheme.primary.withValues(alpha: 0.15),
       title: 'arcade_prep_title'.tr(namedArgs: {'game': gameTitle}),
@@ -144,7 +145,7 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
             child: Row(
               children: [
                 Icon(
-                  Icons.info_outline_rounded,
+                  MoaiIcons.infoOutlineRounded,
                   size: 18,
                   color: scheme.onSurfaceVariant,
                 ),
@@ -213,7 +214,7 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
               Row(
                 children: [
                   if (isDone)
-                    Icon(Icons.check_circle_rounded, size: 16, color: activeColor)
+                    Icon(MoaiIcons.checkCircleRounded, size: 16, color: activeColor)
                   else if (progress > 0.0 && progress < 1.0)
                     SizedBox(
                       width: 12,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/widgets/cards/tv_icon_list_card.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Ítem de país/grupo: [TvIconListCard] con ícono TV options / tv_displays.
 class CountryCard extends StatelessWidget {
@@ -31,7 +31,7 @@ class CountryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return TvIconListCard(
       label: country,
-      icon: Symbols.tv_displays,
+      icon: MoaiIcons.tvDisplays,
       isSelected: isSelected,
       onTap: onTap,
       focusNode: focusNode,

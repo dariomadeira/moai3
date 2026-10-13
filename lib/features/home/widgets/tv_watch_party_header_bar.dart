@@ -2,11 +2,11 @@ import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/services/watch_party_voice_coordinator.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Componente de la barra superior en Modo TV para la funcionalidad "Mirar juntos".
 ///
@@ -142,7 +142,7 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Symbols.voice_selection,
+                          MoaiIcons.voiceSelection,
                           color: scheme.onPrimary,
                           size: 16,
                         ),
@@ -304,7 +304,7 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                isRecording ? Icons.stop_rounded : Symbols.mic,
+                isRecording ? MoaiIcons.stopRounded : MoaiIcons.mic,
                 color: foregroundColor,
                 size: 18,
               ),

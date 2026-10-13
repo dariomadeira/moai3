@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/services/modal_route_tracker.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Sistema unificado de SnackBar estilo Pill para Moai.
 /// Centrado, flotante, colores del rail activo y sombra negra.
@@ -95,7 +96,7 @@ class MoaiSnackBar {
     show(
       context,
       message: message,
-      icon: Icons.check_circle_outline,
+      icon: MoaiIcons.checkCircleOutline,
       bottomMargin: bottomMargin,
       duration: duration,
     );
@@ -111,7 +112,7 @@ class MoaiSnackBar {
     show(
       context,
       message: message,
-      icon: Icons.error_outline,
+      icon: MoaiIcons.errorOutline,
       bottomMargin: bottomMargin,
       duration: duration,
     );
@@ -127,7 +128,7 @@ class MoaiSnackBar {
     show(
       context,
       message: message,
-      icon: Icons.info_outline,
+      icon: MoaiIcons.infoOutline,
       bottomMargin: bottomMargin,
       duration: duration,
     );
@@ -143,7 +144,7 @@ class MoaiSnackBar {
     show(
       context,
       message: message,
-      icon: Icons.warning_amber_outlined,
+      icon: MoaiIcons.warningAmberOutlined,
       bottomMargin: bottomMargin,
       duration: duration,
     );

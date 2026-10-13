@@ -6,6 +6,7 @@ import 'package:moai3/helpers/notification_helper.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 class ClearFavoritesButton extends StatefulWidget {
   final FocusNode focusNode;
@@ -113,7 +114,7 @@ class _ClearFavoritesButtonState extends State<ClearFavoritesButton> {
               ),
               child: Center(
                 child: Icon(
-                  Icons.delete_outline_rounded,
+                  MoaiIcons.deleteOutlineRounded,
                   color: iconColor,
                   size: 16,
                 ),
@@ -160,7 +161,7 @@ class _ClearConfirmDialogContentState
     final scheme = context.scheme;
 
     return TvDialog(
-      icon: Icons.delete_sweep_outlined,
+      icon: MoaiIcons.deleteSweepOutlined,
       iconBgColor: scheme.errorContainer,
       iconColor: scheme.onErrorContainer,
       title: 'favorites_clear_title'.tr(),

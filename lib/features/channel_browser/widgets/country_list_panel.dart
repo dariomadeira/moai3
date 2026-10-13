@@ -7,6 +7,7 @@ import 'package:moai3/widgets/cards/country_card.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
 import 'package:moai3/widgets/lists/tv_fixed_window_viewport.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Panel Países: lista por ventana de 6 (sin ListView).
 class CountryListPanel extends StatefulWidget {
@@ -102,7 +103,7 @@ class CountryListPanelState extends State<CountryListPanel> {
             child: widget.countries.isEmpty
                 ? TvEmptyStateCard(
                     focusNode: _emptyFocusNode,
-                    icon: Icons.grid_view_outlined,
+                    icon: MoaiIcons.gridViewOutlined,
                     message: 'browser_countries_empty'.tr(),
                     onFocusUp: widget.onFocusUp,
                   )

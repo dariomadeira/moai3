@@ -6,6 +6,7 @@ import 'package:moai3/models/channel.dart';
 import 'package:moai3/services/playback_stats_controller.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Título + meta del canal alineados con [PanelListHeader].
 class ChannelViewerHeader extends StatelessWidget {
@@ -64,14 +65,14 @@ class ChannelViewerHeader extends StatelessWidget {
             _MetaPill(
               color: scheme.tertiaryContainer,
               foreground: scheme.onTertiaryContainer,
-              icon: Icons.grid_view_outlined,
+              icon: MoaiIcons.gridViewOutlined,
               label: channel.country,
               textStyle: metaStyle.copyWith(color: scheme.onTertiaryContainer),
             ),
             _MetaPill(
               color: scheme.tertiaryContainer,
               foreground: scheme.onTertiaryContainer,
-              icon: Icons.category_outlined,
+              icon: MoaiIcons.categoryOutlined,
               label: channel.category,
               textStyle: metaStyle.copyWith(color: scheme.onTertiaryContainer),
             ),
@@ -79,7 +80,7 @@ class ChannelViewerHeader extends StatelessWidget {
               _MetaPill(
                 color: scheme.tertiaryContainer,
                 foreground: scheme.onTertiaryContainer,
-                icon: Icons.extension_outlined,
+                icon: MoaiIcons.extensionOutlined,
                 label: channel.pluginTag!.trim(),
                 textStyle:
                     metaStyle.copyWith(color: scheme.onTertiaryContainer),
@@ -88,7 +89,7 @@ class ChannelViewerHeader extends StatelessWidget {
               _MetaPill(
                 color: scheme.tertiaryContainer,
                 foreground: scheme.onTertiaryContainer,
-                icon: Icons.dns_outlined,
+                icon: MoaiIcons.dnsOutlined,
                 label: 'player_server_n'.tr(
                   namedArgs: {'n': '$displayServerNumber'},
                 ),

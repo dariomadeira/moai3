@@ -10,6 +10,7 @@ import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_input/tv_text_field.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Diálogo modal estándar de TV para configurar la ubicación del clima
 /// con búsqueda y autocompletado en tiempo real, soportando TvWindowedList con dots.
@@ -121,7 +122,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
       message: 'weather_location_configured'.tr(
         namedArgs: {'location': loc.displayName},
       ),
-      icon: Icons.check_circle_rounded,
+      icon: MoaiIcons.checkCircleRounded,
     );
   }
 
@@ -134,7 +135,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
     MoaiSnackBar.show(
       context,
       message: 'weather_location_reset_auto'.tr(),
-      icon: Icons.my_location_rounded,
+      icon: MoaiIcons.myLocationRounded,
     );
   }
 
@@ -146,7 +147,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
 
     return TvDialog(
       width: 580,
-      icon: Icons.location_on_outlined,
+      icon: MoaiIcons.locationOnOutlined,
       iconColor: scheme.primary,
       iconBgColor: scheme.primary.withValues(alpha: 0.15),
       title: 'weather_location_dialog_title'.tr(),
@@ -161,7 +162,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
             label: isAuto
                 ? 'weather_location_auto_active'.tr()
                 : 'weather_location_auto_btn'.tr(),
-            icon: Icons.my_location_rounded,
+            icon: MoaiIcons.myLocationRounded,
             variant: isAuto
                 ? TvDialogButtonVariant.primary
                 : TvDialogButtonVariant.neutral,
@@ -183,7 +184,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
             description: _searchQuery.isEmpty
                 ? 'weather_location_search_desc_empty'.tr()
                 : 'weather_location_search_desc_modify'.tr(),
-            icon: Icons.search_rounded,
+            icon: MoaiIcons.searchRounded,
             onPressed: _openKeyboardAndSearch,
             onKeyUp: () => _autoBtnFocus.requestFocus(),
             onKeyDown: () {
@@ -195,7 +196,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
             },
             trailingBuilder: (context, isFocused) {
               return Icon(
-                Icons.keyboard_outlined,
+                MoaiIcons.keyboardOutlined,
                 size: 20,
                 color: isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
               );
@@ -272,7 +273,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.location_off_outlined,
+              MoaiIcons.locationOffOutlined,
               size: 30,
               color: scheme.onSurfaceVariant,
             ),
@@ -329,13 +330,13 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
                     ),
                     label: item.displayName,
                     description: item.subtitle,
-                    icon: Icons.location_on_outlined,
+                    icon: MoaiIcons.locationOnOutlined,
                     onPressed: () => _selectLocation(item),
                     onKeyUp: onKeyUp,
                     onKeyDown: onKeyDown,
                     trailingBuilder: (context, isFocused) {
                       return Icon(
-                        Icons.check_rounded,
+                        MoaiIcons.checkRounded,
                         size: 18,
                         color: isFocused
                             ? scheme.onPrimary
@@ -362,7 +363,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.info_outline_rounded,
+            MoaiIcons.infoOutlineRounded,
             size: 20,
             color: scheme.primary.withValues(alpha: 0.8),
           ),

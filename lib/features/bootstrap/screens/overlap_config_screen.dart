@@ -7,6 +7,7 @@ import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 class OverlapConfigScreen extends StatefulWidget {
   /// Primera vez (bootstrap) → al guardar va a home.
@@ -70,10 +71,10 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
   }
 
   IconData _cornerIcon(Alignment alignment) {
-    if (alignment == Alignment.topLeft) return Icons.north_west;
-    if (alignment == Alignment.topRight) return Icons.north_east;
-    if (alignment == Alignment.bottomLeft) return Icons.south_west;
-    return Icons.south_east;
+    if (alignment == Alignment.topLeft) return MoaiIcons.northWest;
+    if (alignment == Alignment.topRight) return MoaiIcons.northEast;
+    if (alignment == Alignment.bottomLeft) return MoaiIcons.southWest;
+    return MoaiIcons.southEast;
   }
 
   @override
@@ -148,7 +149,7 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
                             child: Padding(
                               padding: const EdgeInsets.all(12),
                               child: Icon(
-                                Icons.aspect_ratio_outlined,
+                                MoaiIcons.aspectRatioOutlined,
                                 color: scheme.onPrimaryContainer,
                                 size: 26,
                               ),
@@ -203,7 +204,7 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
                       TvFocusButton(
                         focusNode: _buttonFocus,
                         label: 'overlap_save'.tr(),
-                        icon: Icons.check_outlined,
+                        icon: MoaiIcons.checkOutlined,
                         onPressed: _save,
                         onArrowUp: () => _yFocus.requestFocus(),
                       ),

@@ -7,6 +7,7 @@ import 'package:moai3/widgets/cards/category_card.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
 import 'package:moai3/widgets/lists/tv_fixed_window_viewport.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Panel Categorías: mismo diseño windowed de 6 que Países.
 class CategoryListPanel extends StatefulWidget {
@@ -104,7 +105,7 @@ class CategoryListPanelState extends State<CategoryListPanel> {
             child: widget.categories.isEmpty
                 ? TvEmptyStateCard(
                     focusNode: _emptyFocusNode,
-                    icon: Icons.category_outlined,
+                    icon: MoaiIcons.categoryOutlined,
                     message: 'browser_categories_empty'.tr(),
                     onFocusUp: widget.onFocusUp,
                   )

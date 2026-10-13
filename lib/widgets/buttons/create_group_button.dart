@@ -8,6 +8,7 @@ import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/tv_input/tv_input.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 class CreateGroupButton extends StatefulWidget {
   final FocusNode focusNode;
@@ -115,7 +116,7 @@ class _CreateGroupButtonState extends State<CreateGroupButton> {
               ),
               child: Center(
                 child: Icon(
-                  Icons.add_rounded,
+                  MoaiIcons.addRounded,
                   color: iconColor,
                   size: 16,
                 ),
@@ -183,7 +184,7 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
         MoaiSnackBar.show(
           widget.originContext,
           message: 'groups_created_success'.tr(namedArgs: {'name': name}),
-          icon: Icons.bookmark_add_outlined,
+          icon: MoaiIcons.bookmarkAddOutlined,
         );
       }
     } catch (e) {
@@ -191,7 +192,7 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
         MoaiSnackBar.show(
           widget.originContext,
           message: 'groups_create_error'.tr(namedArgs: {'error': '$e'}),
-          icon: Icons.error_outline,
+          icon: MoaiIcons.errorOutline,
         );
       }
     }
@@ -202,7 +203,7 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
     final scheme = context.scheme;
 
     return TvDialog(
-      icon: Icons.bookmark_add_outlined,
+      icon: MoaiIcons.bookmarkAddOutlined,
       title: 'groups_create_title'.tr(),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -215,7 +216,7 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
             hint: 'groups_name_hint'.tr(),
             keyboardType: TvKeyboardType.text,
             textInputAction: TvTextInputAction.done,
-            leadingIcon: Icons.playlist_add_outlined,
+            leadingIcon: MoaiIcons.playlistAddOutlined,
             onFocusDown: () => _createFocusNode.requestFocus(),
             onSubmitted: (_) => _createFocusNode.requestFocus(),
             onChanged: (_) {

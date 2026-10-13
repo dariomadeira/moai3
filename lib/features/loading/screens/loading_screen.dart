@@ -13,6 +13,7 @@ import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Pantalla inicial de verificación de presencia y carga con estética Material 3 Expressive (SPEC-22 §4.1).
 class LoadingScreen extends StatefulWidget {
@@ -585,7 +586,7 @@ class _LoadingScreenState extends State<LoadingScreen>
               color: scheme.errorContainer.withValues(alpha: 0.25),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.wifi_off_rounded, size: 38, color: scheme.error),
+            child: Icon(MoaiIcons.wifiOffRounded, size: 38, color: scheme.error),
           ),
           const SizedBox(height: 18),
           Text(
@@ -612,7 +613,7 @@ class _LoadingScreenState extends State<LoadingScreen>
             focusNode: _retryFocusNode,
             label: 'update_action_retry'.tr(),
             variant: TvDialogButtonVariant.primary,
-            icon: Icons.refresh_rounded,
+            icon: MoaiIcons.refreshRounded,
             onPressed: _startVerification,
           ),
         ],

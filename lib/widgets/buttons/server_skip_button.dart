@@ -1,10 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 class ServerSkipButton extends StatefulWidget {
   final FocusNode focusNode;
@@ -86,7 +86,7 @@ class _ServerSkipButtonState extends State<ServerSkipButton> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Symbols.host,
+                MoaiIcons.host,
                 color: _isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
                 size: 20,
               ),

@@ -1,6 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/features/home/widgets/panel_list_header.dart';
 import 'package:moai3/focus/focus_retry.dart';
 import 'package:moai3/models/channel.dart';
@@ -8,6 +7,7 @@ import 'package:moai3/widgets/cards/channel_grid_tile.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
 import 'package:moai3/widgets/lists/tv_fixed_window_viewport.dart';
 import 'package:moai3/widgets/lists/tv_windowed_grid.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Panel Canales: grilla windowed 2×3 con D-pad.
 class ChannelListPanel extends StatefulWidget {
@@ -111,7 +111,7 @@ class ChannelListPanelState extends State<ChannelListPanel> {
             child: widget.channels.isEmpty
                 ? TvEmptyStateCard(
                     focusNode: _emptyFocusNode,
-                    icon: Symbols.hourglass_empty,
+                    icon: MoaiIcons.hourglassEmpty,
                     message: 'browser_channels_empty'.tr(),
                     onFocusUp: widget.onFocusUp,
                   )

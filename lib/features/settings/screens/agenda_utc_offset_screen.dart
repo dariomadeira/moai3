@@ -7,6 +7,7 @@ import 'package:moai3/state/agenda_clock_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Pantalla para elegir el país de la agenda.
 /// Misma métrica que [CalendarSubscriptionsPanel]: encabezado arriba y
@@ -110,7 +111,7 @@ class _AgendaUtcOffsetScreenState extends State<AgendaUtcOffsetScreen> {
                                     ),
                                     child: TvTile(
                                       focusNode: focusNode,
-                                      icon: Icons.public_outlined,
+                                      icon: MoaiIcons.publicOutlined,
                                       label: zone.nameKey.tr(),
                                       description: ArgentinaTime.formatOffset(
                                         zone.offsetHours,
@@ -124,7 +125,7 @@ class _AgendaUtcOffsetScreenState extends State<AgendaUtcOffsetScreen> {
                                           return const SizedBox(width: 26);
                                         }
                                         return Icon(
-                                          Icons.check,
+                                          MoaiIcons.check,
                                           size: 26,
                                           color: isFocused
                                               ? scheme.onPrimary

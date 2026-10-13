@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moai3/features/games/services/arcade_emulator_service.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Overlay visual de controles táctiles estilo Arcade (CPS-2 Capcom: 6 Botones + D-Pad + Coin/Start).
 class ArcadeControllerOverlay extends StatefulWidget {
@@ -103,16 +104,16 @@ class _ArcadeControllerOverlayState extends State<ArcadeControllerOverlay> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildDPadButton('UP', ArcadeButtons.up, Icons.arrow_drop_up),
+        _buildDPadButton('UP', ArcadeButtons.up, MoaiIcons.arrowDropUp),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildDPadButton('LEFT', ArcadeButtons.left, Icons.arrow_left),
+            _buildDPadButton('LEFT', ArcadeButtons.left, MoaiIcons.arrowLeft),
             const SizedBox(width: 44, height: 44),
-            _buildDPadButton('RIGHT', ArcadeButtons.right, Icons.arrow_right),
+            _buildDPadButton('RIGHT', ArcadeButtons.right, MoaiIcons.arrowRight),
           ],
         ),
-        _buildDPadButton('DOWN', ArcadeButtons.down, Icons.arrow_drop_down),
+        _buildDPadButton('DOWN', ArcadeButtons.down, MoaiIcons.arrowDropDown),
       ],
     );
   }

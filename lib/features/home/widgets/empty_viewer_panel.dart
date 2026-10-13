@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Panel mostrado en el área derecha cuando no hay canal activo / seleccionado.
 class EmptyViewerPanel extends StatelessWidget {
@@ -75,7 +76,7 @@ class EmptyViewerPanel extends StatelessWidget {
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          Icons.live_tv_outlined,
+                          MoaiIcons.liveTvOutlined,
                           size: 40,
                           color: isFocused
                               ? scheme.primary

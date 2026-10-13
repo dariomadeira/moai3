@@ -9,6 +9,7 @@ import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 enum _SettingsAgendaItemType { utcOffset, notifyLead, snackDuration }
 
@@ -107,7 +108,7 @@ class SettingsAgendaPanelState extends State<SettingsAgendaPanel> {
                                 _SettingsAgendaItemType.utcOffset =>
                                   TvSettingsActionRow(
                                     focusNode: focusNode,
-                                    icon: Icons.public_outlined,
+                                    icon: MoaiIcons.publicOutlined,
                                     label: 'settings_agenda_utc'.tr(),
                                     description: 'settings_agenda_utc_desc'.tr(
                                       namedArgs: {

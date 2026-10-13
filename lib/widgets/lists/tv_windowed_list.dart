@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Tipo de indicador de scroll para listas TV por ventana.
 enum TvScrollIndicator { none, dots, arrows }
@@ -433,7 +434,7 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Icon(
-        isUp ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+        isUp ? MoaiIcons.keyboardArrowUp : MoaiIcons.keyboardArrowDown,
         size: 16,
         color: scheme.onTertiaryContainer,
       ),

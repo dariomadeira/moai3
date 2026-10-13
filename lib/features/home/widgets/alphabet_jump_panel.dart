@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/cards/alphabet_letter_card.dart';
 
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 class AlphabetDeleteCard extends StatefulWidget {
   final VoidCallback onTap;
@@ -86,7 +86,7 @@ class _AlphabetDeleteCardState extends State<AlphabetDeleteCard> {
               ),
               alignment: Alignment.center,
               child: Icon(
-                Symbols.delete,
+                MoaiIcons.delete,
                 size: 15,
                 color: _isFocused ? scheme.onErrorContainer : scheme.error,
               ),
