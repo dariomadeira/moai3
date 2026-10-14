@@ -66,10 +66,10 @@ class _TvIconListCardState extends State<TvIconListCard> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
     final isFocused = _isFocused || (widget.focusNode?.hasFocus ?? false);
+    // Foco con relleno primary, igual que las opciones de ajustes ([TvTile]).
     final itemStyle = TvListCardStyle.resolve(
-      scheme: scheme,
+      scheme: context.scheme,
       focused: isFocused,
       selected: widget.isSelected,
     );

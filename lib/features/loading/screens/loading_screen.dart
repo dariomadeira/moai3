@@ -153,15 +153,29 @@ class _LoadingScreenState extends State<LoadingScreen>
         return;
       }
 
-      final skipCatalogUpdate =
-          context.read<TvSettingsProvider>().skipCatalogUpdate;
+      final tvSettings = context.read<TvSettingsProvider>();
+      final skipCatalogUpdate = tvSettings.skipCatalogUpdate;
+      final catalogSavedAt =
+          await MoiamovApiService.instance.lastSavedCatalogAt();
+      final shouldSyncCatalog = !skipCatalogUpdate &&
+          TvSettingsProvider.shouldAttemptCatalogUpdate(
+            savedAt: catalogSavedAt,
+            frequency: tvSettings.catalogUpdateFrequency,
+          );
 
-      // Catálogo incluido: no conectar ni descargar.
-      if (skipCatalogUpdate) {
+      // Sin sync: catálogo incluido / local (skip o frecuencia aún no vencida).
+      if (!shouldSyncCatalog) {
         if (mounted) {
           setState(() => _statusText = 'loading_catalog_cached'.tr());
         }
-        MoiamovApiService.logLine('Catálogo incluido, sin actualización.');
+        if (skipCatalogUpdate) {
+          MoiamovApiService.logLine('Catálogo incluido, sin actualización.');
+        } else {
+          MoiamovApiService.logLine(
+            'Frecuencia de catálogo: aún no corresponde actualizar '
+            '(${tvSettings.catalogUpdateFrequency.storageValue}).',
+          );
+        }
         await MoiamovApiService.instance.loadFallbackCatalog(
           section: 'masnew_movies',
         );
@@ -188,7 +202,28 @@ class _LoadingScreenState extends State<LoadingScreen>
       bool sessionOk = false;
       const int maxNodes = 4;
 
-      for (int node = 0; node < maxNodes && !sessionOk; node++) {
+      void onVpnStatus(String key) {
+        if (mounted && !_catalogCancelRequested) {
+          setState(() => _statusText = key.tr());
+        }
+      }
+
+      // Pedir permiso VPN una sola vez y esperar el OK del sistema.
+      // Sin esto, el loop de nodos reabría el diálogo una y otra vez.
+      final vpnPermissionOk =
+          await VpnService.instance.ensureAndroidVpnPermission(
+        onStatusUpdate: onVpnStatus,
+      );
+
+      if (!vpnPermissionOk) {
+        MoiamovApiService.logLine(
+          'Permiso VPN no concedido. Se usa catálogo de respaldo.',
+        );
+      }
+
+      for (int node = 0;
+          vpnPermissionOk && node < maxNodes && !sessionOk;
+          node++) {
         if (!mounted || _catalogCancelRequested) break;
         setState(() {
           _statusText = 'loading_secure_connecting'.tr();
@@ -198,11 +233,7 @@ class _LoadingScreenState extends State<LoadingScreen>
         vpnConnected = await VpnService.instance.connectMexico(
           nodeIndex: node,
           timeout: const Duration(seconds: 14),
-          onStatusUpdate: (key) {
-            if (mounted && !_catalogCancelRequested) {
-              setState(() => _statusText = key.tr());
-            }
-          },
+          onStatusUpdate: onVpnStatus,
         );
 
         if (_catalogCancelRequested) break;
@@ -356,7 +387,6 @@ class _LoadingScreenState extends State<LoadingScreen>
       if (!mounted) return;
 
       // Dispositivo activo -> Ir a Overlap, NicknameSetup o Home
-      final tvSettings = context.read<TvSettingsProvider>();
       final effectiveNick =
           (record.nickname != null && record.nickname!.trim().isNotEmpty)
           ? record.nickname!.trim()

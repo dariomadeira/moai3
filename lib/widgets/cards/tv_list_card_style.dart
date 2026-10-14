@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Estilo de ítems de lista TV (paridad moaiSmart):
-/// foco = borde primary; selección = overlay; sin scale.
+/// Estilo de ítems de lista TV (paridad moaiSmart / ajustes):
+/// foco = relleno primary; selección = overlay; sin scale.
 @immutable
 class TvListCardStyle {
   final Color backgroundColor;
@@ -23,13 +23,22 @@ class TvListCardStyle {
     required bool focused,
     required bool selected,
   }) {
+    // Mismo criterio de borde que [TvTile]: primary con foco,
+    // outlineVariant suave en reposo / selección.
+    final Border border = Border.all(
+      color: focused
+          ? scheme.primary
+          : scheme.outlineVariant.withValues(alpha: 0.12),
+      width: 1.0,
+    );
+
     if (focused) {
       return TvListCardStyle(
         backgroundColor: scheme.primary,
         foregroundColor: scheme.onPrimary,
         iconColor: scheme.onPrimary,
         fontWeight: FontWeight.w700,
-        border: Border.all(color: Colors.transparent, width: 2),
+        border: border,
       );
     }
 
@@ -39,7 +48,7 @@ class TvListCardStyle {
         foregroundColor: scheme.onPrimaryContainer,
         iconColor: scheme.onPrimaryContainer,
         fontWeight: FontWeight.w700,
-        border: Border.all(color: Colors.transparent, width: 2),
+        border: border,
       );
     }
 
@@ -48,7 +57,7 @@ class TvListCardStyle {
       foregroundColor: scheme.onSurface,
       iconColor: scheme.onSurfaceVariant,
       fontWeight: FontWeight.w600,
-      border: Border.all(color: Colors.transparent, width: 2),
+      border: border,
     );
   }
 }

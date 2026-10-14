@@ -267,6 +267,11 @@ class MainActivity : FlutterActivity() {
                     finishAndRemoveTask()
                     result.success(null)
                 }
+                "setUiDpadSoundsEnabled" -> {
+                    val enabled = call.argument<Boolean>("enabled") ?: true
+                    uiDpadSounds?.setEnabled(enabled)
+                    result.success(null)
+                }
                 "installApk" -> {
                     val path = call.argument<String>("path")
                     if (path.isNullOrEmpty()) {

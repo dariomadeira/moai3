@@ -46,17 +46,28 @@ class EmptyViewerPanel extends StatelessWidget {
         child: Builder(
           builder: (context) {
             final isFocused = Focus.of(context).hasFocus;
+            final baseColor = scheme.surface;
+            final endColor = Color.alphaBlend(
+              scheme.onSurface.withValues(alpha: 0.05),
+              baseColor,
+            );
+            final borderColor = isFocused
+                ? scheme.primary
+                : scheme.outlineVariant.withValues(alpha: 0.48);
             return AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(top: 8, left: 8, right: 0, bottom: 0),
+              margin: const EdgeInsets.only(left: 8),
               decoration: BoxDecoration(
-                color: isFocused
-                    ? scheme.primary.withValues(alpha: 0.06)
-                    : scheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(20),
+                gradient: LinearGradient(
+                  begin: Alignment.bottomRight,
+                  end: Alignment.topLeft,
+                  colors: [baseColor, baseColor, endColor],
+                  stops: const [0.0, 0.62, 1.0],
+                ),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isFocused ? scheme.primary : Colors.transparent,
-                  width: 2,
+                  color: borderColor,
+                  width: isFocused ? 1.0 : 0.6,
                 ),
               ),
               child: Center(

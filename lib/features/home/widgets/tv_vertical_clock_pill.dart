@@ -53,7 +53,7 @@ class _TvVerticalClockPillState extends State<TvVerticalClockPill> {
       width: 56,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow.withValues(alpha: 0.8),
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(

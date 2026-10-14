@@ -4,6 +4,7 @@ import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/settings/widgets/settings_about_panel.dart';
 import 'package:moai3/features/settings/widgets/settings_agenda_panel.dart';
 import 'package:moai3/features/settings/widgets/settings_general_panel.dart';
+import 'package:moai3/features/settings/widgets/settings_movies_series_panel.dart';
 import 'package:moai3/features/settings/widgets/settings_tv_panel.dart';
 import 'package:moai3/features/settings/widgets/settings_watch_party_panel.dart';
 import 'package:moai3/layout/settings_panel_layout.dart';
@@ -14,6 +15,7 @@ import 'package:moai3/theme/moai_icons.dart';
 class HomeSettingsArea extends StatelessWidget {
   final int activePanelIndex;
   final FocusNode tvPanelFocus;
+  final FocusNode moviesSeriesPanelFocus;
   final FocusNode agendaPanelFocus;
   final FocusNode watchPartyPanelFocus;
   final FocusNode generalPanelFocus;
@@ -25,6 +27,7 @@ class HomeSettingsArea extends StatelessWidget {
     super.key,
     required this.activePanelIndex,
     required this.tvPanelFocus,
+    required this.moviesSeriesPanelFocus,
     required this.agendaPanelFocus,
     required this.watchPartyPanelFocus,
     required this.generalPanelFocus,
@@ -35,6 +38,7 @@ class HomeSettingsArea extends StatelessWidget {
 
   static const icons = [
     MoaiIcons.settingsRemoteOutlined,
+    MoaiIcons.movieOutlined,
     MoaiIcons.calendarMonthOutlined,
     MoaiIcons.adaptiveAudioMic,
     MoaiIcons.tuneOutlined,
@@ -50,9 +54,11 @@ class HomeSettingsArea extends StatelessWidget {
       scheme.surface.withValues(alpha: 0.8),
       scheme.surface.withValues(alpha: 0.8),
       scheme.surface.withValues(alpha: 0.8),
+      scheme.surface.withValues(alpha: 0.8),
     ];
     final titles = [
       'settings_tv_title'.tr(),
+      'settings_movies_series_title'.tr(),
       'settings_agenda_title'.tr(),
       'settings_watch_party_title'.tr(),
       'settings_general_title'.tr(),
@@ -72,6 +78,18 @@ class HomeSettingsArea extends StatelessWidget {
             focusNode: tvPanelFocus,
             onKeyLeft: onExitLeft,
             onKeyRight: () => onPanelIndexChanged(
+              SettingsPanelLayout.configMoviesSeriesPanelIndex,
+            ),
+          );
+        }
+
+        if (SettingsPanelLayout.isConfigMoviesSeriesPanel(index)) {
+          return SettingsMoviesSeriesPanel(
+            focusNode: moviesSeriesPanelFocus,
+            onKeyLeft: () => onPanelIndexChanged(
+              SettingsPanelLayout.configTvPanelIndex,
+            ),
+            onKeyRight: () => onPanelIndexChanged(
               SettingsPanelLayout.configAgendaPanelIndex,
             ),
           );
@@ -81,7 +99,7 @@ class HomeSettingsArea extends StatelessWidget {
           return SettingsAgendaPanel(
             focusNode: agendaPanelFocus,
             onKeyLeft: () => onPanelIndexChanged(
-              SettingsPanelLayout.configTvPanelIndex,
+              SettingsPanelLayout.configMoviesSeriesPanelIndex,
             ),
             onKeyRight: () => onPanelIndexChanged(
               SettingsPanelLayout.watchPartyPanelIndex,
@@ -123,4 +141,3 @@ class HomeSettingsArea extends StatelessWidget {
     );
   }
 }
-

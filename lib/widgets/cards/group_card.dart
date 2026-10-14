@@ -16,7 +16,7 @@ class GroupCard extends StatelessWidget {
   };
 
   static IconData iconFor(String iconKey) =>
-      icons[iconKey] ?? MoaiIcons.groupOutlined;
+      icons[iconKey] ?? MoaiIcons.bookmarkHeart;
 
   final String groupName;
   final String iconKey;

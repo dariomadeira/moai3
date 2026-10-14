@@ -73,7 +73,7 @@ class TvEmptyStateCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isFocused ? scheme.primary : Colors.transparent,
-                  width: 3,
+                  width: isFocused ? 1.0 : 0.6,
                 ),
               ),
               child: Column(

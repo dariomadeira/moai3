@@ -220,6 +220,12 @@ abstract final class MoaiIcons {
   /// - TV / canales: `home_tab_groups` (`features/home/widgets/tv_tab_bar.dart`)
   static const bookmarksOutlined = Icons.bookmarks_outlined;
 
+  /// Origen: `Symbols.bookmark_heart`
+  ///
+  /// Usos:
+  /// - Marcadores / grupos (`widgets/cards/group_card.dart`)
+  static const bookmarkHeart = Symbols.bookmark_heart;
+
   /// Origen: `Symbols.browser_updated`
   ///
   /// Usos:
@@ -1167,8 +1173,14 @@ abstract final class MoaiIcons {
   /// Origen: `Symbols.tv_displays`
   ///
   /// Usos:
-  /// - Tarjetas de listado (`widgets/cards/country_card.dart`)
+  /// - (reservado; listado de países usa [tvWithAssistant])
   static const tvDisplays = Symbols.tv_displays;
+
+  /// Origen: `Symbols.tv_with_assistant`
+  ///
+  /// Usos:
+  /// - Tarjetas de listado de países/grupos (`widgets/cards/country_card.dart`)
+  static const tvWithAssistant = Symbols.tv_with_assistant;
 
   /// Origen: `Symbols.tv_guide`
   ///
@@ -1226,6 +1238,13 @@ abstract final class MoaiIcons {
   /// Usos:
   /// - Amigos / Ver juntos: `mic_test_btn_stop_play` (`widgets/dialogs/tv_voice_test_dialog.dart`)
   static const volumeUpOutlined = Icons.volume_up_outlined;
+
+  /// Origen: `Icons.volume_off_outlined`
+  ///
+  /// Usos:
+  /// - Ajustes Generales: desactivar audio de interfaz
+  ///   (`features/settings/widgets/settings_general_panel.dart`)
+  static const volumeOffOutlined = Icons.volume_off_outlined;
 
   /// Origen: `Symbols.warning`
   ///

@@ -33,6 +33,10 @@ class VpnService {
 
   bool _connectCancelled = false;
 
+  /// Resultado del diálogo de VPN de Android en esta sesión de proceso.
+  /// `null` = aún no se pidió; evita reabrir el aviso al rotar nodos.
+  bool? _androidVpnPermissionGranted;
+
   /// Corta el intento de conexión en curso para salir del arranque sin esperar el timeout.
   void cancelConnect() {
     _connectCancelled = true;
@@ -69,6 +73,37 @@ class VpnService {
     debugPrint('🔒 [VPN] OpenVPN inicializado correctamente.');
   }
 
+  /// Pide (una vez) el consentimiento VPN de Android y espera el resultado.
+  ///
+  /// Si el usuario deniega, no se vuelve a mostrar el diálogo en esta sesión
+  /// de proceso (el loop de nodos no debe reabrirlo).
+  Future<bool> ensureAndroidVpnPermission({
+    void Function(String message)? onStatusUpdate,
+  }) async {
+    if (_androidVpnPermissionGranted == true) return true;
+    if (_androidVpnPermissionGranted == false) return false;
+
+    await initialize();
+    if (_connectCancelled) return false;
+
+    try {
+      onStatusUpdate?.call('loading_permission_required');
+      final hasPerm = await _engine?.requestPermissionAndroid() ?? true;
+      _androidVpnPermissionGranted = hasPerm;
+      if (!hasPerm) {
+        debugPrint('⚠️ [VPN] Permiso de VPN denegado o no concedido.');
+      } else {
+        debugPrint('🔒 [VPN] Permiso de VPN concedido.');
+      }
+      return hasPerm;
+    } catch (e) {
+      debugPrint('⚠️ [VPN] Error al consultar permisos Android: $e');
+      // No marcar como denegado permanente: un fallo del plugin no debe
+      // bloquear reintentos si el sistema ya tenía el consentimiento.
+      return false;
+    }
+  }
+
   /// Conecta a un nodo de México usando los perfiles dedicados garantizados de Salvavida (Saltamontes).
   Future<bool> connectMexico({
     int nodeIndex = 0,
@@ -79,15 +114,12 @@ class VpnService {
     await initialize();
     if (_connectCancelled) return false;
 
-    // 1. Verificar / Solicitar permiso en Android
-    try {
-      final hasPerm = await _engine?.requestPermissionAndroid() ?? true;
-      if (!hasPerm) {
-        onStatusUpdate?.call('loading_permission_required');
-        debugPrint('⚠️ [VPN] Permiso de VPN requerido en Android.');
-      }
-    } catch (e) {
-      debugPrint('⚠️ [VPN] Error al consultar permisos Android: $e');
+    // 1. Sin permiso Android no intentar connect (evita reabrir el diálogo).
+    final hasPerm = await ensureAndroidVpnPermission(
+      onStatusUpdate: onStatusUpdate,
+    );
+    if (!hasPerm || _connectCancelled) {
+      return false;
     }
 
     // 2. Lista de perfiles verificados

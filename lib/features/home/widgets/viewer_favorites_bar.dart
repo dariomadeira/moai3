@@ -54,9 +54,26 @@ class ViewerFavoritesBar extends StatelessWidget {
           right: TvLayoutConstants.viewerHorizontalPaddingEnd,
         ),
         child: Container(
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: scheme.surface,
-            borderRadius: BorderRadius.circular(14),
+            gradient: LinearGradient(
+              begin: Alignment.bottomRight,
+              end: Alignment.topLeft,
+              colors: [
+                scheme.surface,
+                scheme.surface,
+                Color.alphaBlend(
+                  scheme.onSurface.withValues(alpha: 0.05),
+                  scheme.surface,
+                ),
+              ],
+              stops: const [0.0, 0.62, 1.0],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: scheme.outlineVariant.withValues(alpha: 0.48),
+              width: 1.0,
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -87,7 +104,7 @@ class ViewerFavoritesBar extends StatelessWidget {
                 width: double.infinity,
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(14),
+                    bottom: Radius.circular(16),
                   ),
                   child: favoriteChannels.isEmpty
                       ? Padding(

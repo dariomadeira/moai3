@@ -4,7 +4,6 @@ import 'package:moai3/features/bootstrap/screens/overlap_config_screen.dart';
 import 'package:moai3/features/plugins/screens/general_plugins_screen.dart';
 import 'package:moai3/features/settings/widgets/settings_accent_color_row.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
-import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/state/theme_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/state/weather_provider.dart';
@@ -18,10 +17,10 @@ enum _SettingsGeneralItemType {
   plugins,
   overscan,
   weatherLocation,
-  skipCatalog,
   darkMode,
   accentColor,
   autoAccent,
+  muteUiSounds,
 }
 
 class SettingsGeneralPanel extends StatefulWidget {
@@ -46,29 +45,6 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
 
   final _listKey = GlobalKey<TvWindowedListState<_SettingsGeneralItemType>>();
   int _selectedIndex = 0;
-  DateTime? _catalogSavedAt;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCatalogSavedAt();
-  }
-
-  Future<void> _loadCatalogSavedAt() async {
-    final savedAt = await MoiamovApiService.instance.lastSavedCatalogAt();
-    if (!mounted) return;
-    setState(() => _catalogSavedAt = savedAt);
-  }
-
-  String _skipCatalogLabel() {
-    final title = 'settings_general_skip_catalog'.tr();
-    final savedAt = _catalogSavedAt;
-    if (savedAt == null) return title;
-    final local = savedAt.toLocal();
-    final day = local.day.toString().padLeft(2, '0');
-    final month = local.month.toString().padLeft(2, '0');
-    return '$title · $day/$month/${local.year}';
-  }
 
   void focusSelected() {
     _listKey.currentState?.ensureVisible(_selectedIndex);
@@ -83,10 +59,10 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       _SettingsGeneralItemType.plugins,
       _SettingsGeneralItemType.overscan,
       _SettingsGeneralItemType.weatherLocation,
-      _SettingsGeneralItemType.skipCatalog,
       _SettingsGeneralItemType.darkMode,
       if (!isAutoAccent) _SettingsGeneralItemType.accentColor,
       _SettingsGeneralItemType.autoAccent,
+      _SettingsGeneralItemType.muteUiSounds,
     ];
 
     if (_selectedIndex >= items.length) {
@@ -232,22 +208,6 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
           onKeyUp: onKeyUp,
           onKeyDown: onKeyDown,
         );
-      case _SettingsGeneralItemType.skipCatalog:
-        final skipCatalog = context.watch<TvSettingsProvider>().skipCatalogUpdate;
-        return TvSettingsSwitchRow(
-          focusNode: focusNode,
-          icon: MoaiIcons.cloudOffOutlined,
-          label: _skipCatalogLabel(),
-          description: 'settings_general_skip_catalog_desc'.tr(),
-          value: skipCatalog,
-          onChanged: (value) {
-            context.read<TvSettingsProvider>().setSkipCatalogUpdate(value);
-          },
-          onKeyLeft: widget.onKeyLeft,
-          onKeyRight: widget.onKeyRight,
-          onKeyUp: onKeyUp,
-          onKeyDown: onKeyDown,
-        );
       case _SettingsGeneralItemType.darkMode:
         return TvSettingsSwitchRow(
           focusNode: focusNode,
@@ -281,6 +241,22 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
           value: isAutoAccent,
           onChanged: (auto) {
             theme.setAutoAccent(auto);
+          },
+          onKeyLeft: widget.onKeyLeft,
+          onKeyRight: widget.onKeyRight,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+        );
+      case _SettingsGeneralItemType.muteUiSounds:
+        final muted = context.watch<TvSettingsProvider>().uiSoundsDisabled;
+        return TvSettingsSwitchRow(
+          focusNode: focusNode,
+          icon: MoaiIcons.volumeOffOutlined,
+          label: 'settings_general_mute_ui_sounds'.tr(),
+          description: 'settings_general_mute_ui_sounds_desc'.tr(),
+          value: muted,
+          onChanged: (value) {
+            context.read<TvSettingsProvider>().setUiSoundsDisabled(value);
           },
           onKeyLeft: widget.onKeyLeft,
           onKeyRight: widget.onKeyRight,

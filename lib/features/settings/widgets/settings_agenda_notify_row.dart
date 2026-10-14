@@ -1,9 +1,9 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/features/settings/widgets/tv_option_selector.dart';
 import 'package:moai3/features/settings/widgets/tv_tile.dart';
 import 'package:moai3/state/calendar_provider.dart';
-import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
 class SettingsAgendaNotifyRow extends StatelessWidget {
@@ -82,47 +82,12 @@ class SettingsAgendaNotifyRow extends StatelessWidget {
         return KeyEventResult.ignored;
       },
       trailingBuilder: (context, isFocused) {
-        final scheme = context.scheme;
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(options.length, (i) {
-            final isSelected = i == selectedIndex;
-            final fg = isSelected
-                ? (isFocused ? scheme.primary : scheme.onPrimaryContainer)
-                : (isFocused
-                    ? scheme.onPrimary.withValues(alpha: 0.7)
-                    : scheme.onSurfaceVariant);
-            final bg = isSelected
-                ? (isFocused ? scheme.onPrimary : scheme.primaryContainer)
-                : Colors.transparent;
-
-            return Padding(
-              padding: const EdgeInsets.only(left: 6),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: bg,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: isSelected
-                        ? (isFocused ? scheme.onPrimary : scheme.primary)
-                        : scheme.outlineVariant.withValues(alpha: 0.5),
-                    width: isSelected ? 2 : 1,
-                  ),
-                ),
-                child: Text(
-                  _labelKeys[options[i]]!.tr(),
-                  style: MoaiText.body(
-                    context,
-                    color: fg,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            );
-          }),
+        return TvOptionSelector<int>(
+          options: options,
+          selectedValue: selectedMinutes,
+          onSelect: onChanged,
+          labelBuilder: (option) => _labelKeys[option]!.tr(),
+          isFocused: isFocused,
         );
       },
     );

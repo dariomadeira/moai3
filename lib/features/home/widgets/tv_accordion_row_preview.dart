@@ -39,6 +39,8 @@ class TvAccordionRowPreview extends StatelessWidget {
         final expandedWidth =
             totalWidth - (collapsedWidth * (panelCount - 1)) - totalGaps;
 
+        final scheme = Theme.of(context).colorScheme;
+
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           physics: const NeverScrollableScrollPhysics(),
@@ -53,6 +55,16 @@ class TvAccordionRowPreview extends StatelessWidget {
                   alphabetPanelBuilder != null;
               final isLast = index == panelCount - 1;
 
+              final baseColor = colors[index];
+              final endColor = Color.alphaBlend(
+                scheme.onSurface.withValues(alpha: isExpanded ? 0.05 : 0.04),
+                baseColor,
+              );
+
+              final borderColor = scheme.outlineVariant.withValues(
+                alpha: isExpanded ? 0.48 : 0.38,
+              );
+
               return RepaintBoundary(
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
@@ -61,20 +73,31 @@ class TvAccordionRowPreview extends StatelessWidget {
                   margin: EdgeInsets.only(right: isLast ? 0 : gap),
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
-                    color: colors[index],
-                    borderRadius: BorderRadius.circular(18),
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomRight,
+                      end: Alignment.topLeft,
+                      // Degradé corto: casi todo el panel en base,
+                      // el tono más claro queda arriba a la izquierda.
+                      colors: [baseColor, baseColor, endColor],
+                      stops: const [0.0, 0.62, 1.0],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: borderColor,
+                      width: 1.0,
+                    ),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       if (showAlphabet)
                         SizedBox(
-                          width: collapsedWidth,
+                          width: collapsedWidth - 2.0,
                           child: alphabetPanelBuilder!(index),
                         )
                       else if (tabBuilder != null)
                         SizedBox(
-                          width: collapsedWidth,
+                          width: collapsedWidth - 2.0,
                           child: tabBuilder!(index, isExpanded),
                         )
                       else
@@ -82,7 +105,7 @@ class TvAccordionRowPreview extends StatelessWidget {
                           child: InkWell(
                             onTap: () => onPanelTap(index),
                             child: SizedBox(
-                              width: collapsedWidth,
+                              width: collapsedWidth - 2.0,
                               child: CollapsedPanelTabPreview(
                                 title: title,
                                 icon: icon,
@@ -106,9 +129,7 @@ class TvAccordionRowPreview extends StatelessWidget {
                               return content;
                             },
                           ),
-                        )
-                      else
-                        const Spacer(),
+                        ),
                     ],
                   ),
                 ),

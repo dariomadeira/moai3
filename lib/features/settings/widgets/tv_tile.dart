@@ -168,12 +168,20 @@ class _TvTileChrome extends StatelessWidget {
     final iconColor =
         isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
 
+    final borderColor = isFocused
+        ? scheme.primary
+        : scheme.outlineVariant.withValues(alpha: 0.12);
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 120),
       constraints: BoxConstraints(minHeight: minHeight ?? 58),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: borderColor,
+          width: 1.0,
+        ),
       ),
       padding:
           padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

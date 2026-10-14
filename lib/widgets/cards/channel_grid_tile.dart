@@ -78,7 +78,7 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
         context.watchOptional<TvSettingsProvider>()?.showChannelLabels ?? false;
     final showLabel = showLabelSetting || !_logoOk;
     final isFocused = _isFocused || (widget.focusNode?.hasFocus ?? false);
-    // Foco en grilla: sin relleno primary; borde = color que antes era el fondo.
+    // Canales: foco SOLO con borde primary (sin relleno).
     final baseStyle = TvListCardStyle.resolve(
       scheme: scheme,
       focused: false,

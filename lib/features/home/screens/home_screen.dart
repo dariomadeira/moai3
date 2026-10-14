@@ -74,6 +74,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _activeCalendarPanelIndex = 0;
 
   final FocusNode _settingsTvFocus = FocusNode(debugLabel: 'settings_tv');
+  final FocusNode _settingsMoviesSeriesFocus =
+      FocusNode(debugLabel: 'settings_movies_series');
   final FocusNode _settingsAgendaFocus =
       FocusNode(debugLabel: 'settings_agenda');
   final FocusNode _settingsWatchPartyFocus =
@@ -345,6 +347,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _calendarEventsFocus.dispose();
     _calendarSubscriptionsFocus.dispose();
     _settingsTvFocus.dispose();
+    _settingsMoviesSeriesFocus.dispose();
     _settingsAgendaFocus.dispose();
     _settingsWatchPartyFocus.dispose();
     _settingsGeneralFocus.dispose();
@@ -390,6 +393,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void _focusSettingsPanelByIndex(int index) {
     if (SettingsPanelLayout.isConfigTvPanel(index)) {
       _requestFocusWithRetry(_settingsTvFocus);
+    } else if (SettingsPanelLayout.isConfigMoviesSeriesPanel(index)) {
+      _requestFocusWithRetry(_settingsMoviesSeriesFocus);
     } else if (SettingsPanelLayout.isConfigAgendaPanel(index)) {
       _requestFocusWithRetry(_settingsAgendaFocus);
     } else if (SettingsPanelLayout.isWatchPartyPanel(index)) {
@@ -523,6 +528,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               ? HomeSettingsArea(
                                   activePanelIndex: _activeSettingsPanelIndex,
                                   tvPanelFocus: _settingsTvFocus,
+                                  moviesSeriesPanelFocus:
+                                      _settingsMoviesSeriesFocus,
                                   agendaPanelFocus: _settingsAgendaFocus,
                                   watchPartyPanelFocus:
                                       _settingsWatchPartyFocus,
