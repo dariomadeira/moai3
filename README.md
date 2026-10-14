@@ -46,7 +46,6 @@
 moai3/
 ├── android/               # Host nativo Android (Kotlin, ExoPlayer, PluginLoader)
 ├── assets/                # Traducciones i18n (es.json) y recursos gráficos
-├── docs/                  # Documentos técnicos, guías y propuestas de diseño
 ├── lib/
 │   ├── engine/            # MoaiEnginePlayer y vista de textura de video
 │   ├── features/
