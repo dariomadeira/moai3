@@ -143,7 +143,13 @@ class PluginHostService {
       'install',
       {'url': url},
     );
-    return PluginSource.fromMap(map!);
+    if (map == null) {
+      throw PlatformException(
+        code: 'PLUGIN_INSTALL_NULL',
+        message: 'El host nativo no devolvió datos al instalar el plugin',
+      );
+    }
+    return PluginSource.fromMap(map);
   }
 
   Future<PluginSource> updateSource(String url) async {
@@ -151,7 +157,13 @@ class PluginHostService {
       'update',
       {'url': url},
     );
-    return PluginSource.fromMap(map!);
+    if (map == null) {
+      throw PlatformException(
+        code: 'PLUGIN_UPDATE_NULL',
+        message: 'El host nativo no devolvió datos al actualizar el plugin',
+      );
+    }
+    return PluginSource.fromMap(map);
   }
 
   Future<void> remove(String id) async {
@@ -166,7 +178,13 @@ class PluginHostService {
       'resolve',
       {'pluginId': pluginId, 'channelId': channelId},
     );
-    return PluginResolveResult.fromMap(map!);
+    if (map == null) {
+      throw PlatformException(
+        code: 'PLUGIN_RESOLVE_NULL',
+        message: 'El host nativo no devolvió URL al resolver el canal',
+      );
+    }
+    return PluginResolveResult.fromMap(map);
   }
 }
 

@@ -18,60 +18,61 @@ class CalendarProvider extends ChangeNotifier {
   static const List<int> snackDurationOptions = [2, 4, 8];
   static const int defaultSnackDurationSeconds = 4;
 
-  static final List<SportSubscription> defaultSubscriptions = [
-    const SportSubscription(
+  /// name/description guardan claves i18n; traducir en UI con `.tr()`.
+  static const List<SportSubscription> defaultSubscriptions = [
+    SportSubscription(
       id: 'f1',
-      name: 'Fórmula 1',
+      name: 'calendar_sub_f1_name',
       sport: 'motorsport',
-      description: 'Prácticas, clasificación y carreras en vivo.',
+      description: 'calendar_sub_f1_desc',
       icon: MoaiIcons.sportsMotorsportsOutlined,
       isSubscribed: false,
     ),
-    const SportSubscription(
+    SportSubscription(
       id: 'lpf_ar',
-      name: 'Fútbol Argentino (LPF)',
+      name: 'calendar_sub_lpf_name',
       sport: 'soccer',
-      description: 'Torneo y Copa de la Liga Profesional.',
+      description: 'calendar_sub_lpf_desc',
       icon: MoaiIcons.sportsSoccerOutlined,
       isSubscribed: false,
     ),
-    const SportSubscription(
+    SportSubscription(
       id: 'champions',
-      name: 'Champions League',
+      name: 'calendar_sub_champions_name',
       sport: 'soccer',
-      description: 'Encuentros de la UEFA Champions League.',
+      description: 'calendar_sub_champions_desc',
       icon: MoaiIcons.emojiEventsOutlined,
       isSubscribed: false,
     ),
-    const SportSubscription(
+    SportSubscription(
       id: 'premier',
-      name: 'Premier League',
+      name: 'calendar_sub_premier_name',
       sport: 'soccer',
-      description: 'Partidos de la Premier League inglesa.',
+      description: 'calendar_sub_premier_desc',
       icon: MoaiIcons.sportsSoccerOutlined,
       isSubscribed: false,
     ),
-    const SportSubscription(
+    SportSubscription(
       id: 'nfl',
-      name: 'NFL (Fútbol Americano)',
+      name: 'calendar_sub_nfl_name',
       sport: 'american_football',
-      description: 'Temporada regular, playoffs y Super Bowl.',
+      description: 'calendar_sub_nfl_desc',
       icon: MoaiIcons.sportsFootballOutlined,
       isSubscribed: false,
     ),
-    const SportSubscription(
+    SportSubscription(
       id: 'motogp',
-      name: 'MotoGP',
+      name: 'calendar_sub_motogp_name',
       sport: 'motorsport',
-      description: 'Mundial de motociclismo y carrera Sprint.',
+      description: 'calendar_sub_motogp_desc',
       icon: MoaiIcons.twoWheelerOutlined,
       isSubscribed: false,
     ),
-    const SportSubscription(
+    SportSubscription(
       id: 'nba',
-      name: 'NBA (Básquet)',
+      name: 'calendar_sub_nba_name',
       sport: 'basketball',
-      description: 'Temporada regular y playoffs de la NBA.',
+      description: 'calendar_sub_nba_desc',
       icon: MoaiIcons.sportsBasketballOutlined,
       isSubscribed: false,
     ),

@@ -74,8 +74,10 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final showLabelSetting =
-        context.watchOptional<TvSettingsProvider>()?.showChannelLabels ?? false;
+    final showLabelSetting = context.selectOptional<TvSettingsProvider, bool>(
+          (s) => s.showChannelLabels,
+        ) ??
+        false;
     final showLabel = showLabelSetting || !_logoOk;
     final isFocused = _isFocused || (widget.focusNode?.hasFocus ?? false);
     // Canales: foco SOLO con borde primary (sin relleno).

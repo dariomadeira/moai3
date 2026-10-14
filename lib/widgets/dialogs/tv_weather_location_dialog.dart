@@ -211,7 +211,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
       actions: [
         TvDialogButton(
           focusNode: _closeBtnFocus,
-          label: 'Cerrar',
+          label: 'common_close'.tr(),
           variant: TvDialogButtonVariant.neutral,
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
           onKeyUp: () {

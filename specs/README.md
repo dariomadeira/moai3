@@ -45,8 +45,14 @@ Todas las decisiones de diseño, contratos de plugins, modelos de datos y flujos
   *Configuración de funcionalidad social, visualización de código MOAI-XXXX, lista de amigos y acceso a prueba de audio TV.*
 - [SPEC-37: Overlay de Voz "Miremos Juntos" y Control de Foco en Reproductor Fullscreen](features/watch_party_playback_overlay.md)  
   *Icono flotante de micrófono en centro superior, visibilidad ligada a presencia de amigos, captura exclusiva de foco y retorno tras notificaciones.*
+- [SPEC-38: Arcade Netplay (partida a distancia 2P)](features/arcade_netplay.md)  
+  *Lobby Supabase, prep ROM, WebRTC DataChannel + TURN, lockstep nativo (delay 3 frames).*
+- [SPEC-39: Catálogo Películas/Series (Moiamov) y Ajustes de Actualización](features/movies_series_catalog_settings.md)  
+  *Panel ajustes índice 1, skip/frecuencia, VPN+sync cancelable en LoadingScreen.*
+- [SPEC-41: Estilos de Foco TV y Audio D-Pad (SoundPool)](features/tv_focus_styles_and_dpad_audio.md)  
+  *Relleno primary vs borde en canales; clicks UI con SoundPool y mute por preferencia.*
 
 ### 5. Verificación y Calidad
-- [SPEC-40: Matriz de Criterios de Aceptación (Baseline v3.0.14)](verification/baseline_acceptance_matrix.md)  
-  *Casos de prueba Given-When-Then verificables para validar el comportamiento del sistema.*
+- [SPEC-40: Matriz de Criterios de Aceptación (Baseline v3.0.14 + xumovies)](verification/baseline_acceptance_matrix.md)  
+  *Casos de prueba Given-When-Then verificables para validar el comportamiento del sistema (incluye CASO-NP/CAT/FOCO/SND).*
 

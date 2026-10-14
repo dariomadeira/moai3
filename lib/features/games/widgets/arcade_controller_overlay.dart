@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:moai3/features/games/services/arcade_emulator_service.dart';
+import 'package:moai3/features/games/services/arcade_netplay_service.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
 /// Overlay visual de controles táctiles estilo Arcade (CPS-2 Capcom: 6 Botones + D-Pad + Coin/Start).
 class ArcadeControllerOverlay extends StatefulWidget {
   final ArcadeEmulatorService service;
   final bool showControls;
+  final bool netplayActive;
 
   const ArcadeControllerOverlay({
     super.key,
     required this.service,
     this.showControls = true,
+    this.netplayActive = false,
   });
 
   @override
@@ -20,7 +23,7 @@ class ArcadeControllerOverlay extends StatefulWidget {
 class _ArcadeControllerOverlayState extends State<ArcadeControllerOverlay> {
   int _activeInputMask = 0;
 
-  void _updateButtonState(int buttonBitmask, bool isPressed) {
+  void _updateButtonState(int buttonBitmask, bool isPressed) async {
     setState(() {
       if (isPressed) {
         _activeInputMask |= buttonBitmask;
@@ -28,7 +31,23 @@ class _ArcadeControllerOverlayState extends State<ArcadeControllerOverlay> {
         _activeInputMask &= ~buttonBitmask;
       }
     });
-    widget.service.sendInputMask(_activeInputMask);
+    final localPlayer =
+        ArcadeNetplayService.instance.currentSession?.isHost == false ? 1 : 0;
+    await widget.service.sendInputMask(
+      _activeInputMask,
+      player: widget.netplayActive ? localPlayer : 0,
+    );
+    if (widget.netplayActive) {
+      final frame = await widget.service.netplayGetFrame();
+      await widget.service.netplaySubmitLocalInput(
+        frame: frame,
+        mask: _activeInputMask,
+      );
+      ArcadeNetplayService.instance.sendLocalInput(
+        _activeInputMask,
+        frame: frame,
+      );
+    }
   }
 
   Widget _buildArcadeButton({

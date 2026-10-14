@@ -253,9 +253,14 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
 
     final showTvLog = tvSettings.showTvLog;
     if (showTvLog != _lastShowTvLog) {
+      final remapped = TvPanelLayout.remapPanelIndex(
+        _activePanelIndex,
+        _lastShowTvLog,
+        showTvLog,
+      );
       setState(() {
         _lastShowTvLog = showTvLog;
-        _activePanelIndex = TvPanelLayout.channelPanelIndex(showTvLog);
+        _activePanelIndex = remapped;
       });
     }
 

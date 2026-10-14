@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:moai3/features/games/models/arcade_netplay_state.dart';
 import 'package:moai3/features/games/services/arcade_emulator_service.dart';
 import 'package:moai3/features/games/services/arcade_netplay_service.dart';
+import 'package:moai3/features/games/services/arcade_webrtc_transport.dart';
 import 'package:moai3/features/games/widgets/arcade_controller_overlay.dart';
 import 'package:moai3/features/games/widgets/arcade_view_container.dart';
 import 'package:moai3/services/arcade_plugin_service.dart';
@@ -36,7 +37,8 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
   int _activeInputMask = 0;
   StreamSubscription<void>? _exitSubscription;
   StreamSubscription<GamepadAssignment>? _gamepadSubscription;
-  StreamSubscription<int>? _remoteInputSubscription;
+  StreamSubscription<ArcadeNetplayInputPacket>? _remoteInputSubscription;
+  Timer? _netplayInputTicker;
   bool _isExiting = false;
   final Set<int> _notifiedPlayers = {};
 
@@ -81,9 +83,12 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
     });
 
     if (widget.netplaySession != null) {
-      _remoteInputSubscription = ArcadeNetplayService.instance.onRemoteInputReceived.listen((mask) {
-        final remotePlayer = widget.netplaySession!.isHost ? 1 : 0;
-        _emulatorService.sendInputMask(mask, player: remotePlayer);
+      _remoteInputSubscription =
+          ArcadeNetplayService.instance.onRemoteInputPacket.listen((packet) {
+        _emulatorService.netplaySubmitRemoteInput(
+          frame: packet.frame,
+          mask: packet.mask,
+        );
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -113,6 +118,17 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
       await _emulatorService.setCustomCorePath(corePath);
     }
     await _emulatorService.initializeEmulator();
+    final session = widget.netplaySession;
+    if (session != null) {
+      await _emulatorService.netplayEnable(
+        enabled: true,
+        delayFrames: ArcadeNetplayService.netplayInputDelayFrames,
+        isHost: session.isHost,
+      );
+      _netplayInputTicker = Timer.periodic(const Duration(milliseconds: 16), (_) {
+        unawaited(_pushNetplayLocalInput());
+      });
+    }
     final String romToLoad = widget.initialRomPath ?? _defaultRomPath;
     if (romToLoad.isNotEmpty) {
       await _emulatorService.loadRom(romToLoad);
@@ -122,13 +138,28 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
     }
   }
 
+  Future<void> _pushNetplayLocalInput() async {
+    if (widget.netplaySession == null || !mounted) return;
+    final frame = await _emulatorService.netplayGetFrame();
+    await _emulatorService.netplaySubmitLocalInput(
+      frame: frame,
+      mask: _activeInputMask,
+    );
+    ArcadeNetplayService.instance.sendLocalInput(
+      _activeInputMask,
+      frame: frame,
+    );
+  }
+
   @override
   void dispose() {
+    _netplayInputTicker?.cancel();
     _remoteInputSubscription?.cancel();
     if (widget.netplaySession != null) {
-      ArcadeNetplayService.instance.cancelSession(
+      unawaited(_emulatorService.netplayEnable(enabled: false));
+      unawaited(ArcadeNetplayService.instance.cancelSession(
         reason: 'arcade_player_left'.tr(),
-      );
+      ));
     }
     _exitSubscription?.cancel();
     _gamepadSubscription?.cancel();
@@ -229,7 +260,7 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
       if (widget.netplaySession != null) {
         final localPlayer = widget.netplaySession!.isHost ? 0 : 1;
         _emulatorService.sendInputMask(_activeInputMask, player: localPlayer);
-        ArcadeNetplayService.instance.sendLocalInput(_activeInputMask);
+        unawaited(_pushNetplayLocalInput());
       } else {
         _emulatorService.sendInputMask(_activeInputMask);
       }
@@ -283,6 +314,7 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
                 child: ArcadeControllerOverlay(
                   service: _emulatorService,
                   showControls: _showOverlay,
+                  netplayActive: widget.netplaySession != null,
                 ),
               ),
 

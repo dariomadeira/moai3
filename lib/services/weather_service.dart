@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:moai3/config/constants.dart';
 
 /// Modelo de datos para el clima actual.
 class WeatherData {
@@ -129,11 +130,16 @@ class WeatherLocationSearchResult {
 /// Servicio que consulta la API de WeatherAPI tanto por auto:ip como por búsqueda
 /// de localidades específicas con autocompletado en tiempo real.
 class WeatherService {
-  static const String _apiKey = 'ec23b57a160c4d07a70125728212705';
   static const String _baseUrl = 'https://api.weatherapi.com/v1/current.json';
   static const String _searchUrl = 'https://api.weatherapi.com/v1/search.json';
 
+  String get _apiKey => kWeatherApiKey;
+
   Future<WeatherData?> fetchWeatherByIp({String query = 'auto:ip'}) async {
+    if (_apiKey.isEmpty) {
+      debugPrint('[WeatherService] WEATHER_API_KEY vacía; se omite la consulta');
+      return null;
+    }
     try {
       final safeQuery = query.trim().isEmpty ? 'auto:ip' : query.trim();
       final url = Uri.parse(
@@ -168,6 +174,10 @@ class WeatherService {
   ) async {
     final trimmed = query.trim();
     if (trimmed.length < 2) return const [];
+    if (_apiKey.isEmpty) {
+      debugPrint('[WeatherService] WEATHER_API_KEY vacía; se omite la búsqueda');
+      return const [];
+    }
 
     try {
       final url = Uri.parse(

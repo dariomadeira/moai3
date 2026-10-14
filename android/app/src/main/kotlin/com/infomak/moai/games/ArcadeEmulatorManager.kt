@@ -80,6 +80,28 @@ class ArcadeEmulatorManager(
                 nativeSendPlayerInputMask(player, mask)
                 result.success(true)
             }
+            "netplayEnable" -> {
+                val enabled = call.argument<Boolean>("enabled") ?: false
+                val delay = call.argument<Int>("delayFrames") ?: 3
+                val isHost = call.argument<Boolean>("isHost") ?: true
+                nativeNetplayEnable(enabled, delay, isHost)
+                result.success(true)
+            }
+            "netplaySubmitLocalInput" -> {
+                val frame = (call.argument<Number>("frame") ?: 0).toLong()
+                val mask = call.argument<Int>("mask") ?: 0
+                nativeNetplaySubmitLocalInput(frame, mask)
+                result.success(true)
+            }
+            "netplaySubmitRemoteInput" -> {
+                val frame = (call.argument<Number>("frame") ?: 0).toLong()
+                val mask = call.argument<Int>("mask") ?: 0
+                nativeNetplaySubmitRemoteInput(frame, mask)
+                result.success(true)
+            }
+            "netplayGetFrame" -> {
+                result.success(nativeNetplayGetFrame())
+            }
             "pause" -> {
                 isPaused = true
                 nativePause()
@@ -462,6 +484,10 @@ class ArcadeEmulatorManager(
     private external fun nativeLoadRom(path: String)
     private external fun nativeSendInputMask(mask: Int)
     private external fun nativeSendPlayerInputMask(player: Int, mask: Int)
+    private external fun nativeNetplayEnable(enabled: Boolean, delayFrames: Int, isHost: Boolean)
+    private external fun nativeNetplaySubmitLocalInput(frame: Long, mask: Int)
+    private external fun nativeNetplaySubmitRemoteInput(frame: Long, mask: Int)
+    private external fun nativeNetplayGetFrame(): Long
     private external fun nativePause()
     private external fun nativeResume()
     private external fun nativeReset()

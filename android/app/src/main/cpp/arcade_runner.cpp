@@ -10,6 +10,9 @@
 #include <atomic>
 #include <mutex>
 #include <string>
+#include <unordered_map>
+#include <condition_variable>
+#include <chrono>
 #include "libretro.h"
 
 #define LOG_TAG "ArcadeRunner"
@@ -42,6 +45,18 @@ static std::atomic<uint16_t> g_input_bitmask_p2{0};
 static std::atomic<bool> g_is_running{false};
 static std::atomic<bool> g_is_paused{false};
 static std::thread g_emu_thread;
+
+// --- Netplay lockstep ---
+static std::atomic<bool> g_netplay_enabled{false};
+static std::atomic<int> g_netplay_delay_frames{3};
+static std::atomic<bool> g_netplay_is_host{true};
+static std::atomic<int64_t> g_netplay_frame{0};
+static std::mutex g_netplay_mutex;
+static std::condition_variable g_netplay_cv;
+static std::unordered_map<int64_t, uint16_t> g_netplay_local_inputs;
+static std::unordered_map<int64_t, uint16_t> g_netplay_remote_inputs;
+static std::atomic<uint16_t> g_netplay_pending_local_mask{0};
+static constexpr int64_t kNetplayWaitMs = 500;
 
 static enum retro_pixel_format g_pixel_format = RETRO_PIXEL_FORMAT_RGB565;
 static std::string g_system_dir = "/sdcard";
@@ -368,6 +383,44 @@ static int16_t core_input_state_cb(unsigned port, unsigned device, unsigned inde
    }
 }
 
+static bool netplay_wait_inputs_for_frame(int64_t frame) {
+   std::unique_lock<std::mutex> lock(g_netplay_mutex);
+   // Registrar input local actual para este frame si aún no está.
+   if (g_netplay_local_inputs.find(frame) == g_netplay_local_inputs.end()) {
+      g_netplay_local_inputs[frame] = g_netplay_pending_local_mask.load();
+   }
+   const auto deadline = std::chrono::steady_clock::now() +
+                         std::chrono::milliseconds(kNetplayWaitMs);
+   while (g_is_running.load() &&
+          g_netplay_remote_inputs.find(frame) == g_netplay_remote_inputs.end()) {
+      if (g_netplay_cv.wait_until(lock, deadline) == std::cv_status::timeout) {
+         return false;
+      }
+   }
+   if (!g_is_running.load()) return false;
+
+   const uint16_t local = g_netplay_local_inputs[frame];
+   const uint16_t remote = g_netplay_remote_inputs[frame];
+   if (g_netplay_is_host.load()) {
+      g_input_bitmask_p1.store(local);
+      g_input_bitmask_p2.store(remote);
+   } else {
+      g_input_bitmask_p1.store(remote);
+      g_input_bitmask_p2.store(local);
+   }
+   // Limpiar frames viejos (antes de frame - delay - 60)
+   const int64_t prune_before = frame - 120;
+   for (auto it = g_netplay_local_inputs.begin(); it != g_netplay_local_inputs.end();) {
+      if (it->first < prune_before) it = g_netplay_local_inputs.erase(it);
+      else ++it;
+   }
+   for (auto it = g_netplay_remote_inputs.begin(); it != g_netplay_remote_inputs.end();) {
+      if (it->first < prune_before) it = g_netplay_remote_inputs.erase(it);
+      else ++it;
+   }
+   return true;
+}
+
 static void emulation_loop() {
    LOGI("Loop de emulación iniciado.");
    using clock = std::chrono::steady_clock;
@@ -376,10 +429,26 @@ static void emulation_loop() {
    auto frame_duration = std::chrono::duration_cast<clock::duration>(std::chrono::duration<double>(1.0 / fps));
 
    auto next_frame = clock::now();
+   g_netplay_frame.store(0);
 
    while (g_is_running.load()) {
       if (!g_is_paused.load() && core_retro_run) {
-         core_retro_run();
+         if (g_netplay_enabled.load()) {
+            const int64_t frame = g_netplay_frame.load();
+            // Delay: no ejecutamos hasta tener inputs del frame actual;
+            // el delay se percibe porque ambos lados alinean tras handshake.
+            if (!netplay_wait_inputs_for_frame(frame)) {
+               LOGI("Netplay: timeout esperando input remoto en frame %lld",
+                    (long long)frame);
+               // Micro-pausa: no avanzar frame; reintentar el próximo tick.
+               std::this_thread::sleep_for(std::chrono::milliseconds(8));
+               continue;
+            }
+            core_retro_run();
+            g_netplay_frame.store(frame + 1);
+         } else {
+            core_retro_run();
+         }
       }
 
       next_frame += frame_duration;
@@ -569,11 +638,53 @@ Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeSendInputMask(JNIEnv *en
 
 JNIEXPORT void JNICALL
 Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeSendPlayerInputMask(JNIEnv *env, jobject thiz, jint player, jint mask) {
+   if (g_netplay_enabled.load()) {
+      // En netplay el pad local alimenta el buffer pending; P1/P2 los fija el lockstep.
+      g_netplay_pending_local_mask.store(static_cast<uint16_t>(mask));
+      return;
+   }
    if (player == 0) {
       g_input_bitmask_p1.store(static_cast<uint16_t>(mask));
    } else if (player == 1) {
       g_input_bitmask_p2.store(static_cast<uint16_t>(mask));
    }
+}
+
+JNIEXPORT void JNICALL
+Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeNetplayEnable(JNIEnv *env, jobject thiz, jboolean enabled, jint delayFrames, jboolean isHost) {
+   std::lock_guard<std::mutex> lock(g_netplay_mutex);
+   g_netplay_enabled.store(enabled == JNI_TRUE);
+   g_netplay_delay_frames.store(delayFrames > 0 ? delayFrames : 3);
+   g_netplay_is_host.store(isHost == JNI_TRUE);
+   g_netplay_frame.store(0);
+   g_netplay_local_inputs.clear();
+   g_netplay_remote_inputs.clear();
+   g_netplay_pending_local_mask.store(0);
+   LOGI("Netplay %s delay=%d host=%d", enabled ? "ON" : "OFF", delayFrames, (int)isHost);
+}
+
+JNIEXPORT void JNICALL
+Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeNetplaySubmitLocalInput(JNIEnv *env, jobject thiz, jlong frame, jint mask) {
+   {
+      std::lock_guard<std::mutex> lock(g_netplay_mutex);
+      g_netplay_local_inputs[(int64_t)frame] = static_cast<uint16_t>(mask);
+      g_netplay_pending_local_mask.store(static_cast<uint16_t>(mask));
+   }
+   g_netplay_cv.notify_all();
+}
+
+JNIEXPORT void JNICALL
+Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeNetplaySubmitRemoteInput(JNIEnv *env, jobject thiz, jlong frame, jint mask) {
+   {
+      std::lock_guard<std::mutex> lock(g_netplay_mutex);
+      g_netplay_remote_inputs[(int64_t)frame] = static_cast<uint16_t>(mask);
+   }
+   g_netplay_cv.notify_all();
+}
+
+JNIEXPORT jlong JNICALL
+Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeNetplayGetFrame(JNIEnv *env, jobject thiz) {
+   return (jlong)g_netplay_frame.load();
 }
 
 JNIEXPORT void JNICALL
@@ -617,6 +728,7 @@ JNIEXPORT void JNICALL
 Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeStop(JNIEnv *env, jobject thiz) {
    LOGI("Deteniendo emulación Arcade...");
    g_is_running.store(false);
+   g_netplay_cv.notify_all();
    if (g_emu_thread.joinable()) {
       g_emu_thread.join();
    }
@@ -628,6 +740,12 @@ Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeStop(JNIEnv *env, jobjec
    }
    g_input_bitmask_p1.store(0);
    g_input_bitmask_p2.store(0);
+   g_netplay_enabled.store(false);
+   {
+      std::lock_guard<std::mutex> lock(g_netplay_mutex);
+      g_netplay_local_inputs.clear();
+      g_netplay_remote_inputs.clear();
+   }
    // NOTA: NO llamamos a core_retro_deinit() ni dlclose() porque libfbneo.so
    // permanece en el espacio de memoria de Android y su re-inicialización
    // causaría corrupción de heap en allocators como Scudo.

@@ -80,7 +80,11 @@ MoAI 3 se rige bajo la metodología **Spec-Driven Development**. Toda decisión 
 - [SPEC-33: Componentes de Interfaz de Usuario TV, Pestañas y Diálogos](specs/features/tv_ui_components_and_layout.md)
 - [SPEC-34: Diagnóstico y Captura de Voz del Control Remoto](specs/features/tv_remote_voice_input.md)
 - [SPEC-35: Agenda Deportiva de Eventos en Vivo y Notificaciones](specs/features/sports_calendar_and_events.md)
-- [SPEC-40: Matriz de Criterios de Aceptación (Baseline v3.0.14)](specs/verification/baseline_acceptance_matrix.md)
+- [SPEC-38: Arcade Netplay (WebRTC + lockstep)](specs/features/arcade_netplay.md)
+- [SPEC-39: Catálogo Películas/Series y sync Moiamov](specs/features/movies_series_catalog_settings.md)
+- [SPEC-40: Matriz de Criterios de Aceptación](specs/verification/baseline_acceptance_matrix.md)
+- [SPEC-41: Foco TV y audio D-Pad](specs/features/tv_focus_styles_and_dpad_audio.md)
+- Índice completo: [`specs/README.md`](specs/README.md)
 
 ---
 

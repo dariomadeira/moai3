@@ -58,6 +58,7 @@ class MoaiSnackBar {
   }
 
   /// Muestra un SnackBar genérico estilo pill usando el BuildContext.
+  /// [onDismiss] se llama si el snack se cierra sin ejecutar [onAction].
   static void show(
     BuildContext context, {
     required String message,
@@ -66,12 +67,14 @@ class MoaiSnackBar {
     Color? backgroundColor,
     String? hint,
     VoidCallback? onAction,
+    VoidCallback? onDismiss,
     double bottomMargin = defaultBottomMargin,
     Duration duration = defaultDuration,
   }) {
     final messenger = ScaffoldMessenger.of(context);
     messenger.removeCurrentSnackBar();
-    messenger.showSnackBar(
+    var acted = false;
+    final controller = messenger.showSnackBar(
       buildSnackBar(
         context: context,
         message: message,
@@ -79,11 +82,22 @@ class MoaiSnackBar {
         iconColor: iconColor,
         backgroundColor: backgroundColor,
         hint: hint,
-        onAction: onAction,
+        onAction: onAction == null
+            ? null
+            : () {
+                acted = true;
+                onAction();
+                messenger.hideCurrentSnackBar();
+              },
         bottomMargin: bottomMargin,
         duration: duration,
       ),
     );
+    if (onDismiss != null) {
+      controller.closed.then((_) {
+        if (!acted) onDismiss();
+      });
+    }
   }
 
   /// Muestra un snackbar de éxito.

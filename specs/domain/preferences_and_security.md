@@ -1,6 +1,6 @@
 # SPEC-21: Preferencias del Sistema, Temas y Seguridad Parental
 
-> **Estado**: Congelado (Baseline v3.0.11)  
+> **Estado**: Vigente (ampliado en `xumovies`)  
 > **Área**: Dominio / Preferencias y Seguridad  
 > **Archivos de Referencia**: `lib/state/tv_settings_provider.dart`, `lib/state/theme_provider.dart`, `lib/state/channel_provider.dart`
 
@@ -39,6 +39,12 @@ MoAI 3 implementa un mecanismo de protección para canales y contenidos cataloga
 2. **Superposición de Registros en Pantalla (Debug Log TV)**:
    - Permite visualizar sobre la interfaz una consola flotante con los eventos de reproducción y ciclo de vida de plugins.
    - Clave de persistencia: `'show_tv_log'`.
+3. **Sonidos UI D-Pad**:
+   - Clave: `'ui_sounds_disabled'`. Si `true`, el host nativo no reproduce clicks de navegación (SPEC-41).
+4. **Catálogo Películas/Series (Moiamov)**:
+   - `'skip_catalog_update'` (bool, default `true`): omite VPN/sync al arrancar.
+   - `'catalog_update_frequency'`: `always` | `weekly` (default) | `monthly`.
+   - UI y flujo: [SPEC-39](../features/movies_series_catalog_settings.md).
 
 ---
 

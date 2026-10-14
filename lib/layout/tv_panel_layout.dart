@@ -30,5 +30,28 @@ abstract final class TvPanelLayout {
 
   static bool isChannelPanel(int index, bool showTvLog) =>
       index == channelPanelIndex(showTvLog);
+
+  /// Conserva el panel lógico al activar/desactivar el panel de log.
+  static int remapPanelIndex(int oldIndex, bool oldShowTvLog, bool newShowTvLog) {
+    if (oldShowTvLog == newShowTvLog) return oldIndex;
+    late final int next;
+    if (isLogPanel(oldIndex, oldShowTvLog)) {
+      next = hasLogPanel(newShowTvLog)
+          ? logPanelIndex(newShowTvLog)
+          : countryPanelIndex(newShowTvLog);
+    } else if (isCountryPanel(oldIndex, oldShowTvLog)) {
+      next = countryPanelIndex(newShowTvLog);
+    } else if (isCategoryPanel(oldIndex, oldShowTvLog)) {
+      next = categoryPanelIndex(newShowTvLog);
+    } else if (isChannelPanel(oldIndex, oldShowTvLog)) {
+      next = channelPanelIndex(newShowTvLog);
+    } else {
+      next = countryPanelIndex(newShowTvLog);
+    }
+    final max = panelCount(newShowTvLog) - 1;
+    if (next < 0) return 0;
+    if (next > max) return max;
+    return next;
+  }
 }
 

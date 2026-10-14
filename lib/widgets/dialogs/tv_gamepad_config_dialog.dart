@@ -121,13 +121,13 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
       label = 'gamepad_dpad_right'.tr();
     } else if (key == LogicalKeyboardKey.gameButtonX || key == LogicalKeyboardKey.keyY || key == LogicalKeyboardKey.keyJ) {
       bit = ArcadeButtons.punchLight;
-      label = 'Golpe Débil (LP)';
+      label = 'gamepad_btn_lp'.tr();
     } else if (key == LogicalKeyboardKey.gameButtonY || key == LogicalKeyboardKey.keyX || key == LogicalKeyboardKey.keyI) {
       bit = ArcadeButtons.punchMedium;
-      label = 'Golpe Medio (MP)';
+      label = 'gamepad_btn_mp'.tr();
     } else if (key == LogicalKeyboardKey.gameButtonRight1 || key == LogicalKeyboardKey.keyL || key == LogicalKeyboardKey.keyO) {
       bit = ArcadeButtons.punchHeavy;
-      label = 'Golpe Fuerte (HP)';
+      label = 'gamepad_btn_hp'.tr();
     } else if (key == LogicalKeyboardKey.gameButtonA ||
         key == LogicalKeyboardKey.select ||
         key == LogicalKeyboardKey.enter ||
@@ -135,19 +135,19 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
         key == LogicalKeyboardKey.keyB ||
         key == LogicalKeyboardKey.keyK) {
       bit = ArcadeButtons.kickLight;
-      label = 'Patada Débil (LK)';
+      label = 'gamepad_btn_lk'.tr();
     } else if (key == LogicalKeyboardKey.gameButtonB || key == LogicalKeyboardKey.keyA || key == LogicalKeyboardKey.keyM) {
       bit = ArcadeButtons.kickMedium;
-      label = 'Patada Media (MK)';
+      label = 'gamepad_btn_mk'.tr();
     } else if (key == LogicalKeyboardKey.gameButtonRight2 || key == LogicalKeyboardKey.keyR || key == LogicalKeyboardKey.comma) {
       bit = ArcadeButtons.kickHeavy;
-      label = 'Patada Fuerte (HK)';
+      label = 'gamepad_btn_hk'.tr();
     } else if (key == LogicalKeyboardKey.gameButtonSelect || key == LogicalKeyboardKey.digit9 || key == LogicalKeyboardKey.digit5) {
       bit = ArcadeButtons.coin;
-      label = 'Ficha (COIN)';
+      label = 'gamepad_btn_coin'.tr();
     } else if (key == LogicalKeyboardKey.gameButtonStart || key == LogicalKeyboardKey.digit1) {
       bit = ArcadeButtons.start;
-      label = 'START';
+      label = 'gamepad_btn_start'.tr();
     }
 
     if (bit != 0) {
@@ -183,7 +183,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
             width: 820,
             icon: MoaiIcons.symbolSportsEsports,
             title: 'gamepad_dialog_title'.tr(),
-            subtitle: 'gamepad_test_focus_hint'.tr(),
+            subtitle: 'gamepad_dialog_subtitle'.tr(),
             trailingHeader: Material(
               color: isConnected
                   ? scheme.tertiaryContainer
@@ -464,7 +464,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                                     Row(
                                       children: [
                                         _SquircleButton(
-                                          label: 'COIN',
+                                          label: 'gamepad_btn_coin'.tr(),
                                           isPressed: (_activeTestMask & ArcadeButtons.coin) != 0,
                                           width: 58,
                                           height: 34,
@@ -472,7 +472,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                                         ),
                                         const SizedBox(width: 8),
                                         _SquircleButton(
-                                          label: 'START',
+                                          label: 'gamepad_btn_start'.tr(),
                                           isPressed: (_activeTestMask & ArcadeButtons.start) != 0,
                                           width: 58,
                                           height: 34,
@@ -531,7 +531,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 _SquircleButton(
-                                  label: 'LP',
+                                  label: 'gamepad_btn_lp'.tr(),
                                   subtitle: 'X',
                                   isPressed: (_activeTestMask & ArcadeButtons.punchLight) != 0,
                                   width: 64,
@@ -539,7 +539,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                                   activeColor: const Color(0xFFE53935),
                                 ),
                                 _SquircleButton(
-                                  label: 'MP',
+                                  label: 'gamepad_btn_mp'.tr(),
                                   subtitle: 'Y',
                                   isPressed: (_activeTestMask & ArcadeButtons.punchMedium) != 0,
                                   width: 64,
@@ -547,7 +547,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                                   activeColor: const Color(0xFFFB8C00),
                                 ),
                                 _SquircleButton(
-                                  label: 'HP',
+                                  label: 'gamepad_btn_hp'.tr(),
                                   subtitle: 'R1',
                                   isPressed: (_activeTestMask & ArcadeButtons.punchHeavy) != 0,
                                   width: 64,
@@ -562,7 +562,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 _SquircleButton(
-                                  label: 'LK',
+                                  label: 'gamepad_btn_lk'.tr(),
                                   subtitle: 'A',
                                   isPressed: (_activeTestMask & ArcadeButtons.kickLight) != 0,
                                   width: 64,
@@ -570,7 +570,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                                   activeColor: const Color(0xFFD81B60),
                                 ),
                                 _SquircleButton(
-                                  label: 'MK',
+                                  label: 'gamepad_btn_mk'.tr(),
                                   subtitle: 'B',
                                   isPressed: (_activeTestMask & ArcadeButtons.kickMedium) != 0,
                                   width: 64,
@@ -578,7 +578,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                                   activeColor: const Color(0xFF8E24AA),
                                 ),
                                 _SquircleButton(
-                                  label: 'HK',
+                                  label: 'gamepad_btn_hk'.tr(),
                                   subtitle: 'R2',
                                   isPressed: (_activeTestMask & ArcadeButtons.kickHeavy) != 0,
                                   width: 64,

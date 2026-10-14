@@ -1,8 +1,8 @@
 # SPEC-11: Especificación de Canales de Plataforma (MethodChannels)
 
-> **Estado**: Congelado (Baseline v3.0.11)  
+> **Estado**: Vigente (ampliado en `xumovies`, v3.0.36+)  
 > **Área**: Plataforma / Interoperabilidad Flutter <-> Android  
-> **Implementación Nativa**: `android/app/src/main/kotlin/com/infomak/moai/MainActivity.kt`
+> **Implementación Nativa**: `android/app/src/main/kotlin/com/infomak/moai/MainActivity.kt`, `games/ArcadeEmulatorManager.kt`
 
 ---
 
@@ -13,7 +13,9 @@
 | `com.infomak.moai.tv/player` | `MethodChannel` | Control del ciclo de vida del reproductor ExoPlayer sobre Texture |
 | `com.infomak.moai.tv/player/events/{handle}` | `EventChannel` | Emisión continua de eventos de reproducción y métricas de video |
 | `com.infomak.moai.tv/plugin` | `MethodChannel` | Gestión del ciclo de vida y resolución de plugins `.dex` |
-| `com.infomak.moai.tv/device` | `MethodChannel` | Consulta de características del hardware y emulador |
+| `com.infomak.moai.tv/device` | `MethodChannel` | Hardware, emulador, mute de clicks UI D-Pad |
+| `com.infomak.moai/arcade_channel` | `MethodChannel` | Emulador FBNeo/libretro, ROMs, gamepad, **netplay lockstep** |
+| `com.infomak.moai.tv/remote_voice` | `MethodChannel` | PoC micrófono del control remoto (SPEC-34) |
 
 ---
 
@@ -135,3 +137,23 @@ Emite eventos de estado como mapas JSON:
 
 #### `isEmulator`
 - **Respuesta**: `bool` (Heurística basada en `Build.FINGERPRINT`, `Build.MODEL` y `Build.HARDWARE`).
+
+#### `setUiDpadSoundsEnabled` (xumovies)
+- **Argumentos**: `{"enabled": bool}` — `false` silencia clicks UI (preferencia `ui_sounds_disabled`).
+- **Respuesta**: `null` / éxito void.
+- **Nativo**: `UiDpadSounds` (SoundPool). Ver [SPEC-41](../features/tv_focus_styles_and_dpad_audio.md).
+
+---
+
+## 6. Canal Arcade: `com.infomak.moai/arcade_channel` (xumovies)
+
+Además de `initializeEmulator`, `loadRom`, `sendInputState`, `pause`/`resume`/`stop`, ROMs y gamepad:
+
+| Método | Argumentos | Respuesta |
+| :--- | :--- | :--- |
+| `netplayEnable` | `enabled`, `delayFrames`, `isHost` | `true` |
+| `netplaySubmitLocalInput` | `frame`, `mask` | `true` |
+| `netplaySubmitRemoteInput` | `frame`, `mask` | `true` |
+| `netplayGetFrame` | — | `int`/`long` |
+
+Detalle de comportamiento: [SPEC-38](../features/arcade_netplay.md).

@@ -114,8 +114,8 @@ class CalendarSubscriptionsPanelState
                                     child: TvSettingsSwitchRow(
                                       focusNode: focusNode,
                                       icon: sub.icon,
-                                      label: sub.name,
-                                      description: sub.description,
+                                      label: sub.name.tr(),
+                                      description: sub.description?.tr(),
                                       value: sub.isSubscribed,
                                       onChanged: (_) => calendar
                                           .toggleSubscription(sub.id),

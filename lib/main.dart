@@ -54,7 +54,11 @@ void main() async {
   PaintingBinding.instance.imageCache.maximumSize = kImageCacheMaximumSize;
   PaintingBinding.instance.imageCache.maximumSizeBytes =
       kImageCacheMaximumSizeBytes;
-  await dotenv.load(fileName: '.env');
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (e, st) {
+    debugPrint('dotenv: no se pudo cargar .env ($e)\n$st');
+  }
   await AppConfig.initialize();
   await PlayerConfig.initialize();
   await ArcadePluginService.instance.init();

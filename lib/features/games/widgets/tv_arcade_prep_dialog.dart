@@ -69,8 +69,8 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
       return;
     }
 
-    // Si ambos están 100% listos para arrancar
-    if (session.status == ArcadeNetplayStatus.ready && !_hasStartedGame) {
+    // ROM lista + WebRTC conectado (inGame). "ready" = aún negociando P2P.
+    if (session.status == ArcadeNetplayStatus.inGame && !_hasStartedGame) {
       _hasStartedGame = true;
       Navigator.of(context, rootNavigator: true).pop();
       widget.onReadyToPlay(session);

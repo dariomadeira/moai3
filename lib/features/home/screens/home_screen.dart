@@ -120,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
           'game': invite.romName,
         }),
         icon: MoaiIcons.sportsEsports,
-        hint: 'arcade_invite_hint_accept'.tr(),
+        hint: 'arcade_invite_hint_accept_reject'.tr(),
         onAction: () async {
           final identity = context.read<DeviceIdentityService>();
           final myDeviceId = identity.getOrCreateDeviceId();
@@ -151,6 +151,11 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
         },
+        onDismiss: () async {
+          final identity = context.read<DeviceIdentityService>();
+          final myDeviceId = identity.getOrCreateDeviceId();
+          await ArcadeNetplayService.instance.rejectIncomingInvite(myDeviceId);
+        },
         duration: const Duration(seconds: 25),
       );
     });
@@ -165,19 +170,29 @@ class _HomeScreenState extends State<HomeScreen> {
     _tvPresenceHeartbeatTimer?.cancel();
     _tvPresenceHeartbeatTimer = null;
 
-    if (index == _sectionTv) {
-      // Estado Online exclusivamente en la sección TV
+    // Online en TV (watch party) y Arcade (invites netplay).
+    if (index == _sectionTv || index == _sectionArcade) {
       presence.updateOnlineStatus(deviceId: deviceId, online: true);
-      final ch = context.read<ChannelProvider>().selectedChannel;
-      if (ch != null) {
-        watchParty.reportCurrentChannel(channelId: ch.id, channelName: ch.name);
+      if (index == _sectionTv) {
+        final ch = context.read<ChannelProvider>().selectedChannel;
+        if (ch != null) {
+          watchParty.reportCurrentChannel(
+            channelId: ch.id,
+            channelName: ch.name,
+          );
+        }
+      } else {
+        watchParty.reportCurrentChannel(channelId: null);
       }
       _tvPresenceHeartbeatTimer = Timer.periodic(_tvPresenceHeartbeatInterval, (_) {
-        if (!mounted || _selectedIndex != _sectionTv) return;
+        if (!mounted) return;
+        if (_selectedIndex != _sectionTv && _selectedIndex != _sectionArcade) {
+          return;
+        }
         presence.sendHeartbeat(deviceId: deviceId);
       });
     } else {
-      // Offline y limpiar canal sintonizado en Agenda, Arcade o Ajustes
+      // Offline en Agenda / Ajustes
       presence.updateOnlineStatus(deviceId: deviceId, online: false);
       watchParty.reportCurrentChannel(channelId: null);
     }

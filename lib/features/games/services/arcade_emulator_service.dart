@@ -169,6 +169,53 @@ class ArcadeEmulatorService extends ChangeNotifier {
     }
   }
 
+  Future<void> netplayEnable({
+    required bool enabled,
+    int delayFrames = 3,
+    bool isHost = true,
+  }) async {
+    try {
+      await _channel.invokeMethod('netplayEnable', {
+        'enabled': enabled,
+        'delayFrames': delayFrames,
+        'isHost': isHost,
+      });
+    } on PlatformException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[ArcadeEmulatorService] netplayEnable: ${e.message}');
+      }
+    }
+  }
+
+  Future<void> netplaySubmitLocalInput({required int frame, required int mask}) async {
+    try {
+      await _channel.invokeMethod('netplaySubmitLocalInput', {
+        'frame': frame,
+        'mask': mask,
+      });
+    } on PlatformException catch (_) {}
+  }
+
+  Future<void> netplaySubmitRemoteInput({required int frame, required int mask}) async {
+    try {
+      await _channel.invokeMethod('netplaySubmitRemoteInput', {
+        'frame': frame,
+        'mask': mask,
+      });
+    } on PlatformException catch (_) {}
+  }
+
+  Future<int> netplayGetFrame() async {
+    try {
+      final v = await _channel.invokeMethod<dynamic>('netplayGetFrame');
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      return 0;
+    } on PlatformException catch (_) {
+      return 0;
+    }
+  }
+
   /// Pausa la emulación.
   Future<void> pause() async {
     try {

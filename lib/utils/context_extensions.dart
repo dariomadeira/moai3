@@ -22,4 +22,13 @@ extension SafeProviderContext on BuildContext {
       return null;
     }
   }
+
+  /// [select] opcional: solo reconstruye cuando cambia el valor seleccionado.
+  R? selectOptional<T, R>(R Function(T value) selector) {
+    try {
+      return select<T, R>(selector);
+    } catch (_) {
+      return null;
+    }
+  }
 }

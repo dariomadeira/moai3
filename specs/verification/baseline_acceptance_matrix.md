@@ -162,4 +162,50 @@
 - **When**: Se renderiza `TvClockPill`.
 - **Then**: Debe mostrar la hora en formato `HH:mm` sin contenedor ni iconos, cifras tabulares con fuente a 28 pt, dos puntos parpadeantes cada 1 segundo y estar envuelto en `ExcludeFocus` para que el D-Pad lo ignore en su recorrido.
 
+---
+
+## 11. Módulo: Arcade Netplay (SPEC-38) — xumovies
+
+### CASO-NP-01: Host también prepara ROM
+- **Given**: Un host que envía invite y un guest que acepta.
+- **When**: Ambos entran en `preparingRoms`.
+- **Then**: Host y guest ejecutan `startRomPreparation` y pueden alcanzar `myProgress >= 1` en ambos lados.
+
+### CASO-NP-02: Prep dialog espera WebRTC
+- **Given**: Ambos con ROM lista (`ready`).
+- **When**: Aún no abrió el DataChannel.
+- **Then**: `TvArcadePrepDialog` no navega a `ArcadeScreen` hasta `status == inGame`.
+
+### CASO-NP-03: Presencia en Arcade
+- **Given**: El usuario está en la sección Arcade del rail.
+- **When**: Se consulta presencia Supabase.
+- **Then**: El dispositivo figura `online = true` (igual que en TV).
+
+---
+
+## 12. Módulo: Catálogo Películas/Series (SPEC-39) — xumovies
+
+### CASO-CAT-01: Skip por defecto
+- **Given**: Preferencias de fábrica (`skipCatalogUpdate = true`).
+- **When**: Arranque de la app.
+- **Then**: No se inicia VPN/sync Moiamov; se usa catálogo guardado o bundled.
+
+### CASO-CAT-02: Panel dedicado
+- **Given**: Ajustes con 6 paneles.
+- **When**: Se abre el índice 1.
+- **Then**: Se muestra `SettingsMoviesSeriesPanel` y Generales no incluye skip/frecuencia.
+
+---
+
+## 13. Módulo: Foco y Audio D-Pad (SPEC-41) — xumovies
+
+### CASO-FOCO-01: Canales solo borde
+- **Given**: Grilla de canales.
+- **When**: Un `ChannelGridTile` tiene foco.
+- **Then**: Borde primary width 2 sin relleno primary de fondo.
+
+### CASO-SND-01: Mute UI
+- **Given**: `ui_sounds_disabled = true`.
+- **When**: Navegación D-Pad en la UI.
+- **Then**: `UiDpadSounds` no reproduce clicks.
 

@@ -40,6 +40,14 @@ String get kMoiamovDeviceCipherKey => _env('MOIAMOV_DEVICE_CIPHER_KEY', '');
 String get kTunnelUsername => _env('TUNNEL_USER', '');
 String get kTunnelPassword => _env('TUNNEL_PASS', '');
 
+// WeatherAPI (clima). Vive solo en `.env`.
+String get kWeatherApiKey => _env('WEATHER_API_KEY', '');
+
+// TURN para WebRTC netplay (recomendado fuera de LAN).
+String get kTurnUrl => _env('TURN_URL', '');
+String get kTurnUsername => _env('TURN_USER', '');
+String get kTurnPassword => _env('TURN_PASS', '');
+
 // Paquete local de lectura de documentos de respaldo
 String get kMoiamovDocPackage =>
     _env('MOIAMOV_DOC_PACKAGE', '');
