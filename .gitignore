@@ -13,6 +13,10 @@ _tmp_*.txt
 .swiftpm/
 migrate_working_dir/
 
+# Local secrets and private notes (never commit)
+.env
+docs/
+
 # IntelliJ related
 *.iml
 *.ipr
