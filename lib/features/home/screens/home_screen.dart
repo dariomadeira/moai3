@@ -10,6 +10,7 @@ import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
 import 'package:moai3/features/games/widgets/tv_arcade_prep_dialog.dart';
 import 'package:moai3/features/home/areas/home_arcade_area.dart';
 import 'package:moai3/features/home/areas/home_calendar_area.dart';
+import 'package:moai3/features/home/areas/home_movies_area.dart';
 import 'package:moai3/features/home/areas/home_settings_area.dart';
 import 'package:moai3/features/home/areas/home_tv_area.dart';
 import 'package:moai3/features/home/widgets/double_back_exit_scope.dart';
@@ -46,9 +47,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   static const int _sectionTv = 0;
-  static const int _sectionCalendar = 1;
-  static const int _sectionArcade = 2;
-  static const int _sectionSettings = 3;
+  static const int _sectionMovies = 1;
+  static const int _sectionCalendar = 2;
+  static const int _sectionArcade = 3;
+  static const int _sectionSettings = 4;
 
   final FocusNode _arcadeSelectGameFocus =
       FocusNode(debugLabel: 'arcade_select_game');
@@ -65,6 +67,8 @@ class _HomeScreenState extends State<HomeScreen> {
       FocusScopeNode(debugLabel: 'rail_scope');
   final FocusNode _railFocusNode = FocusNode(debugLabel: 'home_rail');
   final GlobalKey<HomeTvAreaState> _tvAreaKey = GlobalKey<HomeTvAreaState>();
+  final GlobalKey<HomeMoviesAreaState> _moviesAreaKey =
+      GlobalKey<HomeMoviesAreaState>();
   final GlobalKey<DoubleBackExitScopeState> _doubleBackKey =
       GlobalKey<DoubleBackExitScopeState>();
 
@@ -436,6 +440,10 @@ class _HomeScreenState extends State<HomeScreen> {
       _requestFocusWithRetry(_arcadeSelectGameFocus);
       return;
     }
+    if (_selectedIndex == _sectionMovies) {
+      _moviesAreaKey.currentState?.requestEntryFocus();
+      return;
+    }
     _tvAreaKey.currentState?.requestEntryFocus();
   }
 
@@ -448,23 +456,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_selectedIndex == _sectionTv) {
       return _tvAreaKey.currentState?.handleBack() ?? false;
     }
-    if (_selectedIndex == _sectionCalendar) {
-      if (_railFocusNode.hasFocus) {
-        _switchSection(_sectionTv);
-        return true;
-      }
-      _focusRail();
-      return true;
-    }
-    if (_selectedIndex == _sectionArcade) {
-      if (_railFocusNode.hasFocus) {
-        _switchSection(_sectionTv);
-        return true;
-      }
-      _focusRail();
-      return true;
-    }
-    if (_selectedIndex == _sectionSettings) {
+    if (_selectedIndex == _sectionMovies ||
+        _selectedIndex == _sectionCalendar ||
+        _selectedIndex == _sectionArcade ||
+        _selectedIndex == _sectionSettings) {
       if (_railFocusNode.hasFocus) {
         _switchSection(_sectionTv);
         return true;
@@ -596,10 +591,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                         });
                                       },
                                     )
-                                  : HomeTvArea(
-                                      key: _tvAreaKey,
-                                      onExitLeft: _focusRail,
-                                    ),
+                                  : _selectedIndex == _sectionMovies
+                                      ? HomeMoviesArea(
+                                          key: _moviesAreaKey,
+                                          onExitLeft: _focusRail,
+                                        )
+                                      : HomeTvArea(
+                                          key: _tvAreaKey,
+                                          onExitLeft: _focusRail,
+                                        ),
                         ),
                       ),
                     ),

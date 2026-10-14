@@ -26,6 +26,7 @@ import 'package:moai3/state/agenda_clock_provider.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/favorites_provider.dart';
+import 'package:moai3/state/featured_movies_provider.dart';
 import 'package:moai3/state/theme_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/state/watch_party_provider.dart';
@@ -85,6 +86,7 @@ void main() async {
   final agendaClock = AgendaClockProvider(appPreferences);
   final weatherProvider = WeatherProvider(appPreferences);
   final calendarProvider = CalendarProvider();
+  final featuredMoviesProvider = FeaturedMoviesProvider();
   final playbackStats = PlaybackStatsController();
   final debugLog = DebugLogController();
 
@@ -172,6 +174,7 @@ void main() async {
         ChangeNotifierProvider.value(value: channelProvider),
         ChangeNotifierProvider.value(value: favoritesProvider),
         ChangeNotifierProvider.value(value: calendarProvider),
+        ChangeNotifierProvider.value(value: featuredMoviesProvider),
         ChangeNotifierProvider.value(value: playbackStats),
         ChangeNotifierProvider.value(value: debugLog),
         ChangeNotifierProvider.value(value: channelProvider.pluginHost),

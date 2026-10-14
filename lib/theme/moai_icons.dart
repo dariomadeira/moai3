@@ -773,12 +773,16 @@ abstract final class MoaiIcons {
   ///
   /// Usos:
   /// - Categorías de canales (mapa por nombre) (`widgets/cards/category_card.dart`)
+  /// - Inicio / menú lateral: `home_rail_movies_title` (`features/home/widgets/navigation_rail_section.dart`)
+  /// - Tarjeta de película (`features/home/widgets/tv_movie_card.dart`)
   static const movie = Symbols.movie;
 
   /// Origen: `Icons.movie_outlined`
   ///
   /// Usos:
   /// - Grupos (mapa por clave) (`widgets/cards/group_card.dart`)
+  /// - Inicio / menú lateral: `home_rail_movies_title` (`features/home/widgets/navigation_rail_section.dart`)
+  /// - Área películas (`features/home/areas/home_movies_area.dart`)
   static const movieOutlined = Icons.movie_outlined;
 
   /// Origen: `Symbols.music_note`

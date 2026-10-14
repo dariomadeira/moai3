@@ -9,7 +9,7 @@ import 'package:moai3/theme/moai_text.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
-/// Rail lateral de navegación para Android TV: TV, Calendario, Arcade (si está instalado) y Ajustes.
+/// Rail lateral: TV, Películas, Agenda, Arcade (si instalado) y Ajustes.
 class NavigationRailSection extends StatefulWidget {
   final int selectedIndex;
   final FocusScopeNode railScopeNode;
@@ -31,6 +31,12 @@ class NavigationRailSection extends StatefulWidget {
 }
 
 class _NavigationRailSectionState extends State<NavigationRailSection> {
+  static const int _sectionTv = 0;
+  static const int _sectionMovies = 1;
+  static const int _sectionCalendar = 2;
+  static const int _sectionArcade = 3;
+  static const int _sectionSettings = 4;
+
   bool _isFocused = false;
   late int _focusedIndex;
   final ArcadePluginService _arcadePlugin = ArcadePluginService.instance;
@@ -63,6 +69,39 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
     }
   }
 
+  void _moveFocusDown({required bool isArcadeInstalled}) {
+    if (isArcadeInstalled) {
+      if (_focusedIndex < _sectionSettings) {
+        setState(() => _focusedIndex++);
+      }
+      return;
+    }
+    // Sin Arcade: 0 ↔ 1 ↔ 2 ↔ 4
+    if (_focusedIndex == _sectionTv) {
+      setState(() => _focusedIndex = _sectionMovies);
+    } else if (_focusedIndex == _sectionMovies) {
+      setState(() => _focusedIndex = _sectionCalendar);
+    } else if (_focusedIndex == _sectionCalendar) {
+      setState(() => _focusedIndex = _sectionSettings);
+    }
+  }
+
+  void _moveFocusUp({required bool isArcadeInstalled}) {
+    if (isArcadeInstalled) {
+      if (_focusedIndex > _sectionTv) {
+        setState(() => _focusedIndex--);
+      }
+      return;
+    }
+    if (_focusedIndex == _sectionSettings) {
+      setState(() => _focusedIndex = _sectionCalendar);
+    } else if (_focusedIndex == _sectionCalendar) {
+      setState(() => _focusedIndex = _sectionMovies);
+    } else if (_focusedIndex == _sectionMovies) {
+      setState(() => _focusedIndex = _sectionTv);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
@@ -89,7 +128,6 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
           if (event is! KeyDownEvent) return KeyEventResult.ignored;
           final key = event.logicalKey;
 
-          // → : sincronizar sección o entrar al panel de contenido.
           if (key == LogicalKeyboardKey.arrowRight) {
             final selected = _toSelectedIndex(_focusedIndex);
             if (selected != widget.selectedIndex) {
@@ -99,35 +137,16 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
             return KeyEventResult.handled;
           }
 
-          // ↓ : bajar en el rail
           if (key == LogicalKeyboardKey.arrowDown) {
-            if (isArcadeInstalled) {
-              if (_focusedIndex < 3) setState(() => _focusedIndex++);
-            } else {
-              if (_focusedIndex == 0) {
-                setState(() => _focusedIndex = 1);
-              } else if (_focusedIndex == 1) {
-                setState(() => _focusedIndex = 3);
-              }
-            }
+            _moveFocusDown(isArcadeInstalled: isArcadeInstalled);
             return KeyEventResult.handled;
           }
 
-          // ↑ : subir en el rail
           if (key == LogicalKeyboardKey.arrowUp) {
-            if (isArcadeInstalled) {
-              if (_focusedIndex > 0) setState(() => _focusedIndex--);
-            } else {
-              if (_focusedIndex == 3) {
-                setState(() => _focusedIndex = 1);
-              } else if (_focusedIndex == 1) {
-                setState(() => _focusedIndex = 0);
-              }
-            }
+            _moveFocusUp(isArcadeInstalled: isArcadeInstalled);
             return KeyEventResult.handled;
           }
 
-          // OK / Enter: seleccionar sección
           if (TvKeyHandler.isActionKey(key)) {
             final selected = _toSelectedIndex(_focusedIndex);
             if (selected != widget.selectedIndex) {
@@ -146,27 +165,20 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
               mainAxisSize: MainAxisSize.max,
               children: [
                 const SizedBox(height: 12),
-                // Destino 0: TV
-                _buildRailDestination(0, scheme, todayEvents),
+                _buildRailDestination(_sectionTv, scheme, todayEvents),
                 const SizedBox(height: 12),
-                // Destino 1: Calendario
-                _buildRailDestination(1, scheme, todayEvents),
+                _buildRailDestination(_sectionMovies, scheme, todayEvents),
                 const SizedBox(height: 12),
-                // Destino 2: Arcade (solo si el plugin está instalado)
+                _buildRailDestination(_sectionCalendar, scheme, todayEvents),
+                const SizedBox(height: 12),
                 if (isArcadeInstalled) ...[
-                  _buildRailDestination(2, scheme, todayEvents),
+                  _buildRailDestination(_sectionArcade, scheme, todayEvents),
                   const SizedBox(height: 12),
                 ],
-
-                // Espaciador flexible que posiciona Ajustes al final de la pantalla
                 const Spacer(),
-
-                // Reloj cápsula vertical sobre Ajustes
                 const TvVerticalClockPill(),
                 const SizedBox(height: 12),
-
-                // Destino 3: Ajustes (al fondo)
-                _buildRailDestination(3, scheme, todayEvents),
+                _buildRailDestination(_sectionSettings, scheme, todayEvents),
                 const SizedBox(height: 16),
               ],
             ),
@@ -178,28 +190,31 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
 
   Widget _buildRailDestination(int index, ColorScheme scheme, int todayEvents) {
     final bool isSelected = widget.selectedIndex == index;
-
     final isHovered = _isFocused && _focusedIndex == index;
 
     final IconData iconData;
     final String label;
 
     switch (index) {
-      case 0:
+      case _sectionTv:
         iconData = isSelected ? MoaiIcons.tv : MoaiIcons.tvOutlined;
         label = 'home_rail_tv_title'.tr();
         break;
-      case 1:
+      case _sectionMovies:
+        iconData = isSelected ? MoaiIcons.movie : MoaiIcons.movieOutlined;
+        label = 'home_rail_movies_title'.tr();
+        break;
+      case _sectionCalendar:
         iconData =
             isSelected ? MoaiIcons.calendarMonth : MoaiIcons.calendarMonthOutlined;
         label = 'home_rail_calendar_title'.tr();
         break;
-      case 2:
+      case _sectionArcade:
         iconData =
             isSelected ? MoaiIcons.sportsEsports : MoaiIcons.sportsEsportsOutlined;
         label = 'home_rail_arcade_title'.tr();
         break;
-      case 3:
+      case _sectionSettings:
       default:
         iconData = isSelected ? MoaiIcons.settings : MoaiIcons.settingsOutlined;
         label = 'home_rail_settings_title'.tr();
@@ -230,7 +245,7 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
       color: iconColor,
     );
 
-    if (index == 1 && todayEvents > 0) {
+    if (index == _sectionCalendar && todayEvents > 0) {
       iconWidget = Badge(
         isLabelVisible: true,
         backgroundColor: scheme.tertiaryContainer,
