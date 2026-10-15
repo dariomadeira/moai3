@@ -16,6 +16,7 @@
 | `com.infomak.moai.tv/device` | `MethodChannel` | Hardware, emulador, mute de clicks UI D-Pad |
 | `com.infomak.moai/arcade_channel` | `MethodChannel` | Emulador FBNeo/libretro, ROMs, gamepad, **netplay lockstep** |
 | `com.infomak.moai.tv/remote_voice` | `MethodChannel` | PoC micrófono del control remoto (SPEC-34) |
+| `com.infomak.moai.tv/vpn_permission` | `MethodChannel` | Nativo → Flutter: denegación del aviso VPN del SO (SPEC-39) |
 
 ---
 
@@ -157,3 +158,16 @@ Además de `initializeEmulator`, `loadRom`, `sendInputState`, `pause`/`resume`/`
 | `netplayGetFrame` | — | `int`/`long` |
 
 Detalle de comportamiento: [SPEC-38](../features/arcade_netplay.md).
+
+---
+
+## 7. Canal VPN permiso: `com.infomak.moai.tv/vpn_permission` (xumovies)
+
+Canal **solo nativo → Flutter** (el handler lo registra `VpnService`).
+
+| Dirección | Método | Cuándo |
+| :--- | :--- | :--- |
+| Nativo → Dart | `denied` | `MainActivity.onActivityResult(24)` con `resultCode != RESULT_OK` |
+
+- **Efecto en Dart**: marca permiso VPN denegado para la sesión y cancela el connect en curso; el arranque cae a `loadSavedOrBundled`.  
+- **Nota**: el OK del diálogo no usa este canal; se resuelve con `OpenVPNFlutterPlugin.connectWhileGranted(true)` **solo si** hay config OpenVPN pendiente (ver [SPEC-39](../features/movies_series_catalog_settings.md) § VPN).

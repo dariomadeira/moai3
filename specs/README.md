@@ -48,7 +48,7 @@ Todas las decisiones de diseño, contratos de plugins, modelos de datos y flujos
 - [SPEC-38: Arcade Netplay (partida a distancia 2P)](features/arcade_netplay.md)  
   *Lobby Supabase, prep ROM, WebRTC DataChannel + TURN, lockstep nativo (delay 3 frames).*
 - [SPEC-39: Catálogo Películas/Series (Moiamov) y Ajustes de Actualización](features/movies_series_catalog_settings.md)  
-  *Panel ajustes índice 1, skip/frecuencia, VPN+sync cancelable en LoadingScreen.*
+  *Panel índice 1 (switch positivo + frecuencia), VPN MX con permiso seguro, sync cancelable, fallback assets/guardado.*
 - [SPEC-41: Estilos de Foco TV y Audio D-Pad (SoundPool)](features/tv_focus_styles_and_dpad_audio.md)  
   *Relleno primary vs borde en canales; clicks UI con SoundPool y mute por preferencia.*
 

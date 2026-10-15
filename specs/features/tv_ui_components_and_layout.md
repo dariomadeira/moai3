@@ -227,6 +227,10 @@ Las acciones de gestión se agrupan en la fila superior del panel, a la derecha 
    - `TvPanelHeaderMetrics.viewerTopInset` se fijó en 0 dp al coexistir con la barra de estado superior de 64 dp.
 3. **Consistencia de Iconografía**:
    - La píldora de país/grupo en la cabecera del visor utiliza `Icons.grid_view_outlined` para mantener armonía visual directa con el icono del acordeón de grupos.
+   - **Catálogo de iconos**: todos los `IconData` de UI pasan por `MoaiIcons` (`lib/theme/moai_icons.dart`). No usar `Icons.*` / `Symbols.*` / `ReiconIcons.*` sueltos fuera de ese archivo.
+   - **Rail de navegación**: iconos Reicon vía paquete `reicons` (`MoaiIcons.railTv` / `railTvSelected`, etc.; outline idle / filled selected). Catálogo: https://reicon.dev/icons
+   - Panel **Países** (`CountryCard`): `MoaiIcons.tvDisplays` (`Symbols.tv_displays`).
+   - Grupo **Marcadores** (`GroupCard`, key `bookmark`): `MoaiIcons.tvSignin` (`Symbols.tv_signin`). Detalle de mapa de grupos: [SPEC-20](../domain/channels_and_categories.md) §3.1.
 
 ---
 

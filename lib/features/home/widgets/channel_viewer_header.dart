@@ -65,14 +65,14 @@ class ChannelViewerHeader extends StatelessWidget {
             _MetaPill(
               color: scheme.tertiaryContainer,
               foreground: scheme.onTertiaryContainer,
-              icon: MoaiIcons.gridViewOutlined,
+              icon: MoaiIcons.tvViewerPillCountry,
               label: channel.country,
               textStyle: metaStyle.copyWith(color: scheme.onTertiaryContainer),
             ),
             _MetaPill(
               color: scheme.tertiaryContainer,
               foreground: scheme.onTertiaryContainer,
-              icon: MoaiIcons.categoryOutlined,
+              icon: MoaiIcons.tvViewerPillCategory,
               label: channel.category,
               textStyle: metaStyle.copyWith(color: scheme.onTertiaryContainer),
             ),
@@ -80,7 +80,7 @@ class ChannelViewerHeader extends StatelessWidget {
               _MetaPill(
                 color: scheme.tertiaryContainer,
                 foreground: scheme.onTertiaryContainer,
-                icon: MoaiIcons.extensionOutlined,
+                icon: MoaiIcons.tvViewerPillPlugin,
                 label: channel.pluginTag!.trim(),
                 textStyle:
                     metaStyle.copyWith(color: scheme.onTertiaryContainer),

@@ -10,6 +10,7 @@ class SettingsCatalogFrequencyRow extends StatelessWidget {
   final FocusNode focusNode;
   final CatalogUpdateFrequency selected;
   final ValueChanged<CatalogUpdateFrequency> onChanged;
+  final bool enabled;
   final VoidCallback? onKeyUp;
   final VoidCallback? onKeyDown;
 
@@ -18,6 +19,7 @@ class SettingsCatalogFrequencyRow extends StatelessWidget {
     required this.focusNode,
     required this.selected,
     required this.onChanged,
+    this.enabled = true,
     this.onKeyUp,
     this.onKeyDown,
   });
@@ -37,6 +39,7 @@ class SettingsCatalogFrequencyRow extends StatelessWidget {
   }
 
   void _selectIndex(int index) {
+    if (!enabled) return;
     final options = CatalogUpdateFrequency.options;
     if (index < 0 || index >= options.length) return;
     final next = options[index];
@@ -49,49 +52,56 @@ class SettingsCatalogFrequencyRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final options = CatalogUpdateFrequency.options;
     final selectedIndex = _selectedIndex;
+    final description = enabled
+        ? 'settings_general_catalog_frequency_desc'.tr()
+        : 'settings_general_catalog_frequency_disabled_desc'.tr();
 
-    return TvTile(
-      focusNode: focusNode,
-      label: 'settings_general_catalog_frequency'.tr(),
-      description: 'settings_general_catalog_frequency_desc'.tr(),
-      icon: MoaiIcons.syncOutlined,
-      onKeyUp: onKeyUp,
-      onKeyDown: onKeyDown,
-      onKeyEvent: (node, event) {
-        if (event is! KeyDownEvent) return KeyEventResult.ignored;
-        final key = event.logicalKey;
+    return Opacity(
+      opacity: enabled ? 1 : 0.45,
+      child: TvTile(
+        focusNode: focusNode,
+        label: 'settings_general_catalog_frequency'.tr(),
+        description: description,
+        icon: MoaiIcons.syncOutlined,
+        onKeyUp: onKeyUp,
+        onKeyDown: onKeyDown,
+        onKeyEvent: (node, event) {
+          if (event is! KeyDownEvent) return KeyEventResult.ignored;
+          final key = event.logicalKey;
 
-        if (key == LogicalKeyboardKey.arrowUp && onKeyUp != null) {
-          onKeyUp!();
-          return KeyEventResult.handled;
-        }
-        if (key == LogicalKeyboardKey.arrowDown && onKeyDown != null) {
-          onKeyDown!();
-          return KeyEventResult.handled;
-        }
-        if (key == LogicalKeyboardKey.arrowLeft) {
-          if (selectedIndex > 0) {
-            _selectIndex(selectedIndex - 1);
+          if (key == LogicalKeyboardKey.arrowUp && onKeyUp != null) {
+            onKeyUp!();
+            return KeyEventResult.handled;
           }
-          return KeyEventResult.handled;
-        }
-        if (key == LogicalKeyboardKey.arrowRight) {
-          if (selectedIndex < options.length - 1) {
-            _selectIndex(selectedIndex + 1);
+          if (key == LogicalKeyboardKey.arrowDown && onKeyDown != null) {
+            onKeyDown!();
+            return KeyEventResult.handled;
           }
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      trailingBuilder: (context, isFocused) {
-        return TvOptionSelector<CatalogUpdateFrequency>(
-          options: options,
-          selectedValue: selected,
-          onSelect: onChanged,
-          labelBuilder: (option) => _labelKeys[option]!.tr(),
-          isFocused: isFocused,
-        );
-      },
+          if (!enabled) return KeyEventResult.ignored;
+          if (key == LogicalKeyboardKey.arrowLeft) {
+            if (selectedIndex > 0) {
+              _selectIndex(selectedIndex - 1);
+            }
+            return KeyEventResult.handled;
+          }
+          if (key == LogicalKeyboardKey.arrowRight) {
+            if (selectedIndex < options.length - 1) {
+              _selectIndex(selectedIndex + 1);
+            }
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        trailingBuilder: (context, isFocused) {
+          return TvOptionSelector<CatalogUpdateFrequency>(
+            options: options,
+            selectedValue: selected,
+            onSelect: enabled ? onChanged : (_) {},
+            labelBuilder: (option) => _labelKeys[option]!.tr(),
+            isFocused: isFocused && enabled,
+          );
+        },
+      ),
     );
   }
 }

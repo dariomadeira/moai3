@@ -36,7 +36,9 @@ class TvSettingsProvider extends ChangeNotifier {
   static const String _overlapPaddingYKey = 'overlap_padding_y';
   static const String _hasOverlapConfigKey = 'has_overlap_config';
   static const String _parentalPinKey = 'parental_pin';
-  static const String _skipCatalogUpdateKey = 'skip_catalog_update';
+  /// v2: default false. La clave anterior (`skip_catalog_update`) quedaba en true
+  /// de fábrica y bloqueaba VPN/sync aunque la frecuencia dijera "Siempre".
+  static const String _skipCatalogUpdateKey = 'skip_catalog_update_v2';
   static const String _uiSoundsDisabledKey = 'ui_sounds_disabled';
   static const String _catalogUpdateFrequencyKey = 'catalog_update_frequency';
 
@@ -68,7 +70,7 @@ class TvSettingsProvider extends ChangeNotifier {
     _hasOverlapConfig = _prefs.readPreferenceBool(_hasOverlapConfigKey);
     _skipCatalogUpdate = _prefs.readPreferenceBool(
       _skipCatalogUpdateKey,
-      defaultValue: true,
+      defaultValue: false,
     );
     _uiSoundsDisabled = _prefs.readPreferenceBool(
       _uiSoundsDisabledKey,

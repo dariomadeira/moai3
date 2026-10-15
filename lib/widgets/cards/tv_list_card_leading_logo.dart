@@ -117,7 +117,7 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
 
     final errorPlaceholder = Center(
       child: Icon(
-        MoaiIcons.tvOutlined,
+        MoaiIcons.tvChannelLogoFallback,
         color: iconColor,
         size: (widget.height * 0.55).clamp(0.0, 48.0),
       ),

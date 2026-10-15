@@ -58,8 +58,8 @@ class TvTabBar extends StatelessWidget {
             children: [
               _M3EFloatingTabPill(
                 title: 'home_tab_explore'.tr(),
-                icon: MoaiIcons.exploreOutlined,
-                selectedIcon: MoaiIcons.explore,
+                icon: MoaiIcons.tvTabExplorar,
+                selectedIcon: MoaiIcons.tvTabExplorarSelected,
                 isSelected: selectedTab == 'explore',
                 focusNode: exploreFocusNode,
                 onSelect: () => onTabChanged('explore'),
@@ -70,8 +70,8 @@ class TvTabBar extends StatelessWidget {
               const SizedBox(width: 4),
               _M3EFloatingTabPill(
                 title: 'home_tab_search'.tr(),
-                icon: MoaiIcons.searchOutlined,
-                selectedIcon: MoaiIcons.search,
+                icon: MoaiIcons.tvTabBuscar,
+                selectedIcon: MoaiIcons.tvTabBuscarSelected,
                 isSelected: selectedTab == 'search',
                 focusNode: searchFocusNode,
                 onSelect: () => onTabChanged('search'),
@@ -82,8 +82,8 @@ class TvTabBar extends StatelessWidget {
               const SizedBox(width: 4),
               _M3EFloatingTabPill(
                 title: 'home_tab_groups'.tr(),
-                icon: MoaiIcons.bookmarksOutlined,
-                selectedIcon: MoaiIcons.bookmarks,
+                icon: MoaiIcons.tvTabMarcadores,
+                selectedIcon: MoaiIcons.tvTabMarcadoresSelected,
                 isSelected: selectedTab == 'groups',
                 focusNode: groupsFocusNode,
                 onSelect: () => onTabChanged('groups'),

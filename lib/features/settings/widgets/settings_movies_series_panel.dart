@@ -52,7 +52,7 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
     setState(() => _catalogSavedAt = savedAt);
   }
 
-  String _skipCatalogLabel() {
+  String _catalogUpdateLabel() {
     final title = 'settings_general_skip_catalog'.tr();
     final savedAt = _catalogSavedAt;
     if (savedAt == null) return title;
@@ -69,12 +69,11 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
   @override
   Widget build(BuildContext context) {
     final tvSettings = context.watch<TvSettingsProvider>();
-    final showCatalogFrequency =
-        !tvSettings.skipCatalogUpdate && _catalogSavedAt != null;
+    final updateOnLaunch = !tvSettings.skipCatalogUpdate;
 
     final items = <_SettingsMoviesSeriesItemType>[
       _SettingsMoviesSeriesItemType.skipCatalog,
-      if (showCatalogFrequency) _SettingsMoviesSeriesItemType.catalogFrequency,
+      if (updateOnLaunch) _SettingsMoviesSeriesItemType.catalogFrequency,
     ];
 
     if (_selectedIndex >= items.length) {
@@ -162,16 +161,19 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
   }) {
     switch (item) {
       case _SettingsMoviesSeriesItemType.skipCatalog:
-        final skipCatalog =
-            context.watch<TvSettingsProvider>().skipCatalogUpdate;
+        // Pref interna: skipCatalogUpdate. UI positiva: ON = actualizar.
+        final updateOnLaunch =
+            !context.watch<TvSettingsProvider>().skipCatalogUpdate;
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: MoaiIcons.cloudOffOutlined,
-          label: _skipCatalogLabel(),
+          icon: updateOnLaunch
+              ? MoaiIcons.cloudSyncOutlined
+              : MoaiIcons.cloudOffOutlined,
+          label: _catalogUpdateLabel(),
           description: 'settings_general_skip_catalog_desc'.tr(),
-          value: skipCatalog,
+          value: updateOnLaunch,
           onChanged: (value) {
-            context.read<TvSettingsProvider>().setSkipCatalogUpdate(value);
+            context.read<TvSettingsProvider>().setSkipCatalogUpdate(!value);
           },
           onKeyLeft: widget.onKeyLeft,
           onKeyRight: widget.onKeyRight,

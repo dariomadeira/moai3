@@ -185,15 +185,40 @@
 
 ## 12. Módulo: Catálogo Películas/Series (SPEC-39) — xumovies
 
-### CASO-CAT-01: Skip por defecto
-- **Given**: Preferencias de fábrica (`skipCatalogUpdate = true`).
+### CASO-CAT-01: Sync por defecto
+- **Given**: Preferencias de fábrica (`skipCatalogUpdate = false`, frequency = always).
 - **When**: Arranque de la app.
-- **Then**: No se inicia VPN/sync Moiamov; se usa catálogo guardado o bundled.
+- **Then**: Se intenta VPN/sync Moiamov (salvo cancelación o error → fallback).
 
 ### CASO-CAT-02: Panel dedicado
 - **Given**: Ajustes con 6 paneles.
 - **When**: Se abre el índice 1.
 - **Then**: Se muestra `SettingsMoviesSeriesPanel` y Generales no incluye skip/frecuencia.
+
+### CASO-CAT-03: Frecuencia no vencida
+- **Given**: Update ON, frequency weekly, último catálogo &lt; 7 días.
+- **When**: Arranque.
+- **Then**: Sin VPN; se carga última descarga (`loadSavedOrBundled`).
+
+### CASO-CAT-04: Permiso VPN primera vez
+- **Given**: Sync requerido y el SO muestra el aviso VPN.
+- **When**: El usuario acepta.
+- **Then**: `connectWhileGranted` solo corre si hay config; no se tumba la app; sigue el handshake.
+
+### CASO-CAT-05: Update OFF → assets
+- **Given**: Switch «Actualizar catálogo» OFF (`skipCatalogUpdate = true`).
+- **When**: Arranque.
+- **Then**: Sin VPN; `loadFallbackCatalog` (assets); la fila de frecuencia no aparece en ajustes.
+
+### CASO-CAT-06: Primera vez sin guardado
+- **Given**: Update ON, frequency weekly, `lastSavedCatalogAt == null`.
+- **When**: Arranque.
+- **Then**: Se intenta sync (caso inicial).
+
+### CASO-UI-ICON-01: Países y Marcadores
+- **Given**: Panel Países y grupo Marcadores visibles.
+- **When**: Se renderizan las tarjetas.
+- **Then**: Países usan `MoaiIcons.tvDisplays`; Marcadores usan `MoaiIcons.tvSignin`.
 
 ---
 

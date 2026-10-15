@@ -1,38 +1,367 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:reicons/reicons.dart';
 
 /// Catálogo único de iconos de Moai.
 ///
 /// Cada constante apunta a un [IconData] concreto. El comentario describe
 /// en qué zona de la UI se usa (y la ruta del archivo). Cambiar el valor
 /// aquí actualiza todos los lugares que referencian la constante.
+///
+/// Rail: usa [ReiconIcons] / [ReiconFilledIcons] (paquete `reicons`).
+/// El resto de la app sigue en Material / Material Symbols salvo que se migre.
 abstract final class MoaiIcons {
   MoaiIcons._();
 
   // ---------------------------------------------------------------------------
-  // Rail de navegacion (orden de UI)
+  // Rail de navegacion (Reicon — outline idle / filled selected)
+  // Buscador: https://reicon.dev/icons
+  // ---------------------------------------------------------------------------
+
+  /// Rail TV (idle). Origen: `ReiconIcons.tv`
+  static const railTv = ReiconIcons.tv;
+
+  /// Rail TV (selected). Origen: `ReiconFilledIcons.tv`
+  static const railTvSelected = ReiconFilledIcons.tv;
+
+  /// Rail Películas (idle). Origen: `ReiconIcons.clapperboard`
+  static const railMovies = ReiconIcons.videoFrame2;
+
+  /// Rail Películas (selected). Origen: `ReiconFilledIcons.clapperboard`
+  static const railMoviesSelected = ReiconFilledIcons.videoFrame2;
+
+  /// Rail Agenda (idle). Origen: `ReiconIcons.calendar`
+  static const railCalendar = ReiconIcons.calendar;
+
+  /// Rail Agenda (selected). Origen: `ReiconFilledIcons.calendar`
+  static const railCalendarSelected = ReiconFilledIcons.calendar;
+
+  /// Rail Arcade (idle). Origen: `ReiconIcons.gamepad`
+  static const railArcade = ReiconIcons.gamepad;
+
+  /// Rail Arcade (selected). Origen: `ReiconFilledIcons.gamepad`
+  static const railArcadeSelected = ReiconFilledIcons.gamepad;
+
+  /// Rail Ajustes (idle). Origen: `ReiconIcons.settings`
+  static const railSettings = ReiconIcons.gear;
+
+  /// Rail Ajustes (selected). Origen: `ReiconFilledIcons.settings`
+  static const railSettingsSelected = ReiconFilledIcons.gear;
+
+  // ---------------------------------------------------------------------------
+  // Acordeón Explorar TV (paneles verticales: Grupos / Categorías / Canales)
+  // Usado en `_icons()` de `features/home/areas/home_tv_area.dart`.
+  // Cambiá solo estas constantes para retocar el acordeón sin afectar empty
+  // states ni cabeceras que siguen usando gridViewOutlined / etc.
+  // ---------------------------------------------------------------------------
+
+  /// Acordeón «Grupos» (`home_panel_countries` → texto UI "Grupos").
+  /// Origen actual: `Icons.grid_view_outlined` (grilla 2×2).
+  /// Panel: países/fuentes en el explorador.
+  static const tvAccordionGrupos = ReiconIcons.category2;
+
+  /// Acordeón «Categorías» (`home_panel_categories`).
+  /// Origen actual: `Icons.category_outlined` (triángulo / cuadrado / círculo).
+  static const tvAccordionCategorias = ReiconIcons.menuSquare;
+
+  /// Acordeón «Canales» (`home_panel_channels`).
+  /// Origen actual: `Icons.live_tv_outlined` (pantalla con antena + play).
+  static const tvAccordionCanales = ReiconIcons.remote;
+
+  // ---------------------------------------------------------------------------
+  // Pestañas flotantes TV (Explorar / Buscar / Marcadores)
+  // Usado en `features/home/widgets/tv_tab_bar.dart`.
+  // Idle = outlined; selected = filled. Cambiá el par sin tocar otros usos.
+  // ---------------------------------------------------------------------------
+
+  /// Pestaña «Explorar» idle (`home_tab_explore`). Brújula / compass.
+  /// Origen actual: `Icons.explore_outlined`
+  static const tvTabExplorar = ReiconIcons.compass;
+
+  /// Pestaña «Explorar» selected.
+  /// Origen actual: `Icons.explore`
+  static const tvTabExplorarSelected = ReiconFilledIcons.compass;
+
+  /// Pestaña «Buscar» idle (`home_tab_search`). Lupa.
+  /// Origen actual: `Icons.search_outlined`
+  static const tvTabBuscar = ReiconIcons.search4;
+
+  /// Pestaña «Buscar» selected.
+  /// Origen actual: `Icons.search`
+  static const tvTabBuscarSelected = ReiconFilledIcons.search4;
+
+  /// Pestaña «Marcadores» idle (`home_tab_groups`). Dos bookmarks.
+  /// Origen actual: `Icons.bookmarks_outlined`
+  static const tvTabMarcadores = ReiconIcons.bookmarks;
+
+  /// Pestaña «Marcadores» selected.
+  /// Origen actual: `Icons.bookmarks`
+  static const tvTabMarcadoresSelected = ReiconFilledIcons.bookmarks;
+
+  // ---------------------------------------------------------------------------
+  // Meta pills del visor de canal (país / categoría / plugin)
+  // Usado en `features/home/widgets/channel_viewer_header.dart`.
+  // Ej. UI: [Argentina] [Aire] [ar]
+  // ---------------------------------------------------------------------------
+
+  /// Pill país/grupo del canal (ej. "Argentina"). Grilla 2×2.
+  /// Origen actual: `Icons.grid_view_outlined`
+  static const tvViewerPillCountry = ReiconIcons.category2;
+
+  /// Pill categoría del canal (ej. "Aire"). Formas geométricas.
+  /// Origen actual: `Icons.category_outlined`
+  static const tvViewerPillCategory = ReiconIcons.menuSquare;
+
+  /// Pill extensión/plugin del canal (ej. "ar"). Pieza de puzzle.
+  /// Origen actual: `Icons.extension_outlined`
+  static const tvViewerPillPlugin = ReiconIcons.puzzle;
+
+  // ---------------------------------------------------------------------------
+  // Acciones de favoritos (barra bajo el visor: + / borrar / corazón)
+  // create_group_button · clear_favorites_button · favorite_button
+  // ---------------------------------------------------------------------------
+
+  /// Crear grupo de marcadores (`CreateGroupButton`). Plus / +.
+  /// Origen actual: `Icons.add_rounded`
+  static const tvFavoritesAdd = ReiconIcons.plus;
+
+  /// Vaciar favoritos (`ClearFavoritesButton`). Papelera.
+  /// Origen actual: `Icons.delete_outline_rounded` / `ReiconIcons.trash4`
+  static const tvFavoritesClear = ReiconIcons.trash4;
+
+  /// Toggle favorito idle — no está en favoritos (`FavoriteButton`).
+  /// Origen actual: `Icons.favorite_outline`
+  static const tvFavoritesHeart = ReiconIcons.heart;
+
+  /// Toggle favorito active — canal en favoritos (`FavoriteButton`).
+  /// Origen actual: `Icons.favorite`
+  static const tvFavoritesHeartSelected = ReiconFilledIcons.heart;
+
+  // ---------------------------------------------------------------------------
+  // Tarjeta de canal — placeholder sin logo
+  // Consumidor: `widgets/cards/tv_list_card_leading_logo.dart`
+  // ---------------------------------------------------------------------------
+
+  /// Sin logo / logo fallido en la grilla o lista de canales.
+  /// Origen: `ReiconIcons.display`
+  static const tvChannelLogoFallback = ReiconIcons.display;
+
+  // ---------------------------------------------------------------------------
+  // Categorías de canales (lista Categorías / CategoryCard)
+  // Mapa por nombre exacto del canal. Cambiá el IconData de cada constante.
+  // Consumidor: `widgets/cards/category_card.dart` → [tvCategoryIconFor].
+  // ---------------------------------------------------------------------------
+
+  /// «Aire» — ondas / aire.
+  static const tvCategoryAire = Symbols.airware;
+
+  /// «Interior» / «Provinciales» — ciudad.
+  static const tvCategoryInterior = ReiconIcons.city;
+
+  /// «Deportes» — pelota.
+  static const tvCategoryDeportes = ReiconIcons.football;
+
+  /// «Noticias» — periódico.
+  static const tvCategoryNoticias = Icons.newspaper_outlined;
+
+  /// «Infantiles» / «Infantil» — gorro niño.
+  static const tvCategoryInfantiles = Symbols.child_hat;
+
+  /// «Entretenimiento» / «Teleshows» — ticket.
+  static const tvCategoryEntretenimiento = Symbols.confirmation_number;
+
+  /// «Comedia» — máscaras teatro.
+  static const tvCategoryComedia = Icons.theater_comedy_outlined;
+
+  /// «Reality» — ojo.
+  static const tvCategoryReality = Symbols.visibility;
+
+  /// «Anime» — animación.
+  static const tvCategoryAnime = Symbols.animation;
+
+  /// «Cocina» — menú / cubiertos.
+  static const tvCategoryCocina = ReiconIcons.chefHat;
+
+  /// «Radios» — radio.
+  static const tvCategoryRadios = ReiconIcons.radio;
+
+  /// «Series» — TV.
+  static const tvCategorySeries = Symbols.tv;
+
+  /// «Películas» / «Cine» / «Cine y Series» — claqueta / movie.
+  static const tvCategoryCine = ReiconIcons.clapperboardOpen;
+
+  /// «Documentales» — libros.
+  static const tvCategoryDocumentales = Symbols.library_books;
+
+  /// «Música» / «Conciertos» — nota musical.
+  static const tvCategoryMusica = ReiconIcons.musicNote;
+
+  /// «Niños» — child care.
+  static const tvCategoryNinos = Symbols.child_care;
+
+  /// «Educación» — escuela.
+  static const tvCategoryEducacion = Symbols.school;
+
+  /// «Religión» / «Religioso» — iglesia.
+  static const tvCategoryReligion = Symbols.church;
+
+  /// «Telenovelas» / «Novelas» — corazón.
+  static const tvCategoryNovelas = ReiconIcons.heart2;
+
+  /// «Cultura» / «Cultural» — libro.
+  static const tvCategoryCultura = ReiconIcons.book3;
+
+  /// «General» — control remoto.
+  static const tvCategoryGeneral = ReiconIcons.remote;
+
+  /// «Otros» — more.
+  static const tvCategoryOtros = Symbols.more;
+
+  /// «Internacional» — globo.
+  static const tvCategoryInternacional = Symbols.globe;
+
+  /// «Comunitarios» — grupos.
+  static const tvCategoryComunitarios = Symbols.groups;
+
+  /// «Culturales» — teatros.
+  static const tvCategoryCulturales = Symbols.theaters;
+
+  /// «Adultos» — candado.
+  static const tvCategoryAdultos = Symbols.lock;
+
+  /// Fallback si la categoría no está en el mapa.
+  static const tvCategoryFallback = Icons.tv_outlined;
+
+  /// Nombre de categoría (exacto) → icono. Alias y sinónimos incluidos.
+  static const Map<String, IconData> tvCategoryIcons = {
+    'Aire': tvCategoryAire,
+    'Interior': tvCategoryInterior,
+    'Provinciales': tvCategoryInterior,
+    'Deportes': tvCategoryDeportes,
+    'Noticias': tvCategoryNoticias,
+    'Infantiles': tvCategoryInfantiles,
+    'Infantil': tvCategoryInfantiles,
+    'Entretenimiento': tvCategoryEntretenimiento,
+    'Comedia': tvCategoryComedia,
+    'Reality': tvCategoryReality,
+    'Anime': tvCategoryAnime,
+    'Cocina': tvCategoryCocina,
+    'Radios': tvCategoryRadios,
+    'Series': tvCategorySeries,
+    'Películas': tvCategoryCine,
+    'Cine y Series': tvCategoryCine,
+    'Documentales': tvCategoryDocumentales,
+    'Música': tvCategoryMusica,
+    'Niños': tvCategoryNinos,
+    'Educación': tvCategoryEducacion,
+    'Religión': tvCategoryReligion,
+    'Religioso': tvCategoryReligion,
+    'Conciertos': tvCategoryMusica,
+    'Telenovelas': tvCategoryNovelas,
+    'Novelas': tvCategoryNovelas,
+    'Cine': tvCategoryCine,
+    'Cultura': tvCategoryCultura,
+    'Cultural': tvCategoryCultura,
+    'General': tvCategoryGeneral,
+    'Teleshows': tvCategoryEntretenimiento,
+    'Otros': tvCategoryOtros,
+    'Internacional': tvCategoryInternacional,
+    'Comunitarios': tvCategoryComunitarios,
+    'Culturales': tvCategoryCulturales,
+    'Adultos': tvCategoryAdultos,
+  };
+
+  /// Resuelve el icono de una categoría por nombre (o [tvCategoryFallback]).
+  static IconData tvCategoryIconFor(String category) =>
+      tvCategoryIcons[category] ?? tvCategoryFallback;
+
+  // ---------------------------------------------------------------------------
+  // Agenda — suscripciones deportivas + acordeón «Suscripciones»
+  // Consumidores: `state/calendar_provider.dart`, `features/home/areas/home_calendar_area.dart`.
+  // ---------------------------------------------------------------------------
+
+  /// Acordeón Agenda: panel «Suscripciones» (calendario +).
+  /// Origen: `ReiconIcons.calendarAdd`
+  static const calendarAccordionSuscripciones = ReiconIcons.calendarAdd;
+
+  /// Suscripción F1 — casco motorsport.
+  static const calendarSubF1 = Icons.sports_motorsports_outlined;
+
+  /// Suscripción LPF AR — fútbol.
+  /// Origen: `ReiconIcons.football`
+  static const calendarSubLpf = ReiconIcons.football;
+
+  /// Suscripción Champions League — trofeo.
+  static const calendarSubChampions = ReiconIcons.trophy;
+
+  /// Suscripción Premier League — fútbol.
+  /// Origen: `ReiconIcons.football`
+  static const calendarSubPremier = ReiconIcons.football;
+
+  /// Suscripción NFL — fútbol americano (pelota oval / rugby en Reicon).
+  /// Origen: `ReiconIcons.rugby`
+  static const calendarSubNfl = ReiconIcons.rugby;
+
+  /// Suscripción MotoGP — moto.
+  static const calendarSubMotogp = Icons.two_wheeler_outlined;
+
+  /// Suscripción NBA — básquet.
+  /// Origen: `ReiconIcons.basketball`
+  static const calendarSubNba = ReiconIcons.basketball;
+
+  /// Fallback genérico de deporte / evento sin match.
+  static const calendarSubFallback = Icons.sports_outlined;
+
+  /// Mapa id de suscripción → icono (alineado con [CalendarProvider.defaultSubscriptions]).
+  static const Map<String, IconData> calendarSubIcons = {
+    'f1': calendarSubF1,
+    'lpf_ar': calendarSubLpf,
+    'champions': calendarSubChampions,
+    'premier': calendarSubPremier,
+    'nfl': calendarSubNfl,
+    'motogp': calendarSubMotogp,
+    'nba': calendarSubNba,
+  };
+
+  /// Resuelve el icono de una suscripción por id (heurística + [calendarSubFallback]).
+  static IconData calendarSubIconFor(String subscriptionId) {
+    final exact = calendarSubIcons[subscriptionId];
+    if (exact != null) return exact;
+    final lower = subscriptionId.toLowerCase();
+    if (lower.contains('f1')) return calendarSubF1;
+    if (lower.contains('motogp')) return calendarSubMotogp;
+    if (lower.contains('nfl') || lower.contains('football')) {
+      return calendarSubNfl;
+    }
+    if (lower.contains('nba') || lower.contains('basket')) {
+      return calendarSubNba;
+    }
+    if (lower.contains('champions')) return calendarSubChampions;
+    if (lower.contains('premier') ||
+        lower.contains('lpf') ||
+        lower.contains('soccer')) {
+      return calendarSubLpf;
+    }
+    return calendarSubFallback;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Material / Symbols (resto de la UI)
   // ---------------------------------------------------------------------------
 
   /// Origen: `Icons.tv`
-  ///
-  /// Usos:
-  /// - Inicio / menú lateral: `home_rail_tv_title` (`features/home/widgets/navigation_rail_section.dart`)
   static const tv = Icons.tv;
 
   /// Origen: `Icons.tv_outlined`
   ///
   /// Usos:
   /// - Agenda: `calendar_event_broadcaster` (`features/calendar/widgets/calendar_events_panel.dart`)
-  /// - Categorías de canales (mapa por nombre) (`widgets/cards/category_card.dart`)
   /// - Grupos (mapa por clave) (`widgets/cards/group_card.dart`)
-  /// - Inicio / menú lateral: `home_rail_tv_title` (`features/home/widgets/navigation_rail_section.dart`)
-  /// - Tarjetas de listado (`widgets/cards/tv_list_card_leading_logo.dart`)
+  /// - Placeholder sin logo: ver [tvChannelLogoFallback]
   static const tvOutlined = Icons.tv_outlined;
 
   /// Origen: `Icons.calendar_month`
-  ///
-  /// Usos:
-  /// - Inicio / menú lateral: `home_rail_tv_title` (`features/home/widgets/navigation_rail_section.dart`)
   static const calendarMonth = Icons.calendar_month;
 
   /// Origen: `Icons.calendar_month_outlined`
@@ -41,8 +370,7 @@ abstract final class MoaiIcons {
   /// - Agenda (`features/calendar/widgets/calendar_events_panel.dart`)
   /// - Agenda (`features/home/areas/home_calendar_area.dart`)
   /// - Inicio / menú lateral (`features/home/areas/home_settings_area.dart`)
-  /// - Inicio / menú lateral: `home_rail_tv_title` (`features/home/widgets/navigation_rail_section.dart`)
-  static const calendarMonthOutlined = Icons.calendar_month_outlined;
+  static const calendarMonthOutlined = ReiconIcons.calendarDay;
 
   /// Origen: `Icons.sports_esports`
   ///
@@ -50,7 +378,6 @@ abstract final class MoaiIcons {
   /// - Arcade (`features/games/screens/arcade_games_screen.dart`)
   /// - Arcade: `arcade_remote_connected_p1` (`features/games/screens/arcade_screen.dart`)
   /// - Inicio: `arcade_invite_received` (`features/home/screens/home_screen.dart`)
-  /// - Inicio / menú lateral: `home_rail_calendar_title` (`features/home/widgets/navigation_rail_section.dart`)
   static const sportsEsports = Icons.sports_esports;
 
   /// Origen: `Icons.sports_esports_outlined`
@@ -58,19 +385,12 @@ abstract final class MoaiIcons {
   /// Usos:
   /// - Arcade: `arcade_empty_installed_msg` (`features/games/screens/arcade_games_screen.dart`)
   /// - Arcade: `arcade_panel_title` (`features/home/areas/home_arcade_area.dart`)
-  /// - Inicio / menú lateral: `home_rail_calendar_title` (`features/home/widgets/navigation_rail_section.dart`)
   static const sportsEsportsOutlined = Icons.sports_esports_outlined;
 
   /// Origen: `Icons.settings`
-  ///
-  /// Usos:
-  /// - Inicio / menú lateral: `home_rail_arcade_title` (`features/home/widgets/navigation_rail_section.dart`)
   static const settings = Icons.settings;
 
   /// Origen: `Icons.settings_outlined`
-  ///
-  /// Usos:
-  /// - Inicio / menú lateral: `home_rail_arcade_title` (`features/home/widgets/navigation_rail_section.dart`)
   static const settingsOutlined = Icons.settings_outlined;
 
   /// Origen: `Symbols.adaptive_audio_mic`
@@ -82,7 +402,7 @@ abstract final class MoaiIcons {
   /// Origen: `Icons.add_rounded`
   ///
   /// Usos:
-  /// - Botones compartidos (`widgets/buttons/create_group_button.dart`)
+  /// - Favoritos barra: ver alias [tvFavoritesAdd]
   static const addRounded = Icons.add_rounded;
 
   /// Origen: `Symbols.airware`
@@ -210,14 +530,14 @@ abstract final class MoaiIcons {
   /// Origen: `Icons.bookmarks`
   ///
   /// Usos:
-  /// - TV / canales: `home_tab_groups` (`features/home/widgets/tv_tab_bar.dart`)
+  /// - Pestañas TV: ver alias [tvTabMarcadoresSelected]
   static const bookmarks = Icons.bookmarks;
 
   /// Origen: `Icons.bookmarks_outlined`
   ///
   /// Usos:
   /// - TV / canales: `browser_groups_empty` (`features/groups/widgets/group_list_panel.dart`)
-  /// - TV / canales: `home_tab_groups` (`features/home/widgets/tv_tab_bar.dart`)
+  /// - Pestañas TV: ver alias [tvTabMarcadores]
   static const bookmarksOutlined = Icons.bookmarks_outlined;
 
   /// Origen: `Symbols.bookmark_heart`
@@ -242,8 +562,8 @@ abstract final class MoaiIcons {
   /// Origen: `Symbols.calendar_add_on`
   ///
   /// Usos:
-  /// - Agenda (`features/home/areas/home_calendar_area.dart`)
-  static const calendarAddOn = Symbols.calendar_add_on;
+  /// - Alias agrupado: [calendarAccordionSuscripciones]
+  static const calendarAddOn = ReiconIcons.calendarAdd;
 
   /// Origen: `Icons.cancel_outlined`
   ///
@@ -255,8 +575,8 @@ abstract final class MoaiIcons {
   ///
   /// Usos:
   /// - TV / canales: `browser_categories_empty` (`features/channel_browser/widgets/category_list_panel.dart`)
-  /// - TV / canales (`features/home/areas/home_tv_area.dart`)
-  /// - TV / canales (`features/home/widgets/channel_viewer_header.dart`)
+  /// - Acordeón Explorar: ver alias [tvAccordionCategorias]
+  /// - Visor canal: ver alias [tvViewerPillCategory]
   static const categoryOutlined = Icons.category_outlined;
 
   /// Origen: `Icons.check`
@@ -360,7 +680,7 @@ abstract final class MoaiIcons {
   /// Origen: `Icons.cloud_off_outlined`
   ///
   /// Usos:
-  /// - Ajustes: `settings_general_skip_catalog_desc` (`features/settings/widgets/settings_general_panel.dart`)
+  /// - Ajustes películas: actualizar catálogo apagado
   static const cloudOffOutlined = Icons.cloud_off_outlined;
 
   /// Origen: `Icons.cloud_outlined`
@@ -368,6 +688,12 @@ abstract final class MoaiIcons {
   /// Usos:
   /// - Ajustes: `settings_general_weather_title` (`features/settings/widgets/settings_general_panel.dart`)
   static const cloudOutlined = Icons.cloud_outlined;
+
+  /// Origen: `Icons.cloud_sync_outlined`
+  ///
+  /// Usos:
+  /// - Ajustes películas: actualizar catálogo al arrancar
+  static const cloudSyncOutlined = Icons.cloud_sync_outlined;
 
   /// Origen: `Symbols.confirmation_number`
   ///
@@ -396,13 +722,13 @@ abstract final class MoaiIcons {
   /// - Botones compartidos (`widgets/buttons/clear_favorites_button.dart`)
   /// - Extensiones: `plugins_uninstall_tooltip` (`features/plugins/screens/general_plugins_screen.dart`)
   /// - Extensiones: `sources_remove` (`features/sources/screens/sources_screen.dart`)
-  static const deleteOutlineRounded = Icons.delete_outline_rounded;
+  static const deleteOutlineRounded = ReiconIcons.trash4;
 
   /// Origen: `Icons.delete_sweep_outlined`
   ///
   /// Usos:
   /// - Botones compartidos: `favorites_clear_title` (`widgets/buttons/clear_favorites_button.dart`)
-  static const deleteSweepOutlined = Icons.delete_sweep_outlined;
+  static const deleteSweepOutlined = ReiconIcons.trash4;
 
   /// Origen: `Icons.dns_outlined`
   ///
@@ -429,7 +755,7 @@ abstract final class MoaiIcons {
   /// Origen: `Icons.emoji_events_outlined`
   ///
   /// Usos:
-  /// - Agenda (`state/calendar_provider.dart`)
+  /// - Alias agrupado: [calendarSubChampions]
   static const emojiEventsOutlined = Icons.emoji_events_outlined;
 
   /// Origen: `Symbols.error`
@@ -487,14 +813,14 @@ abstract final class MoaiIcons {
   /// Origen: `Icons.explore`
   ///
   /// Usos:
-  /// - TV / canales: `home_tab_explore` (`features/home/widgets/tv_tab_bar.dart`)
+  /// - Pestañas TV: ver alias [tvTabExplorarSelected]
   static const explore = Icons.explore;
 
   /// Origen: `Icons.explore_outlined`
   ///
   /// Usos:
-  /// - TV / canales: `home_tab_explore` (`features/home/widgets/tv_tab_bar.dart`)
   /// - TV / canales (`features/search/widgets/search_panel.dart`)
+  /// - Pestañas TV: ver alias [tvTabExplorar]
   static const exploreOutlined = Icons.explore_outlined;
 
   /// Origen: `Symbols.extension`
@@ -517,20 +843,20 @@ abstract final class MoaiIcons {
   ///
   /// Usos:
   /// - Ajustes: `settings_general_plugins_title` (`features/settings/widgets/settings_general_panel.dart`)
-  /// - TV / canales (`features/home/widgets/channel_viewer_header.dart`)
+  /// - Visor canal: ver alias [tvViewerPillPlugin]
   static const extensionOutlined = Icons.extension_outlined;
 
   /// Origen: `Icons.favorite`
   ///
   /// Usos:
-  /// - Botones compartidos (`widgets/buttons/favorite_button.dart`)
+  /// - Favoritos barra: ver alias [tvFavoritesHeartSelected]
   static const favorite = Icons.favorite;
 
   /// Origen: `Icons.favorite_outline`
   ///
   /// Usos:
-  /// - Botones compartidos (`widgets/buttons/favorite_button.dart`)
   /// - Grupos (mapa por clave) (`widgets/cards/group_card.dart`)
+  /// - Favoritos barra: ver alias [tvFavoritesHeart]
   static const favoriteOutline = Icons.favorite_outline;
 
   /// Origen: `Icons.fiber_manual_record`
@@ -556,8 +882,8 @@ abstract final class MoaiIcons {
   ///
   /// Usos:
   /// - TV / canales: `browser_countries_empty` (`features/channel_browser/widgets/country_list_panel.dart`)
-  /// - TV / canales (`features/home/areas/home_tv_area.dart`)
-  /// - TV / canales (`features/home/widgets/channel_viewer_header.dart`)
+  /// - Acordeón Explorar: ver alias [tvAccordionGrupos]
+  /// - Visor canal: ver alias [tvViewerPillCountry]
   static const gridViewOutlined = Icons.grid_view_outlined;
 
   /// Origen: `Icons.group_off_outlined`
@@ -634,14 +960,14 @@ abstract final class MoaiIcons {
   ///
   /// Usos:
   /// - Amigos / Ver juntos (`widgets/dialogs/tv_add_friend_dialog.dart`)
-  static const keyboard = Icons.keyboard;
+  static const keyboard = ReiconIcons.keyboard;
 
   /// Origen: `Icons.keyboard_alt_outlined`
   ///
   /// Usos:
   /// - Componentes TV compartidos (`widgets/tv_input/tv_text_field.dart`)
   /// - TV / canales: `search_field_label` (`features/search/widgets/search_panel.dart`)
-  static const keyboardAltOutlined = Icons.keyboard_alt_outlined;
+  static const keyboardAltOutlined = ReiconIcons.keyboard;
 
   /// Origen: `Icons.keyboard_arrow_down`
   ///
@@ -700,8 +1026,8 @@ abstract final class MoaiIcons {
   ///
   /// Usos:
   /// - Agenda (`state/calendar_provider.dart`)
-  /// - TV / canales: `home_panel_groups` (`features/home/areas/home_tv_area.dart`)
   /// - TV / canales (`features/home/widgets/empty_viewer_panel.dart`)
+  /// - Acordeón Explorar: ver alias [tvAccordionCanales]
   static const liveTvOutlined = Icons.live_tv_outlined;
 
   /// Origen: `Symbols.location_city`
@@ -984,13 +1310,13 @@ abstract final class MoaiIcons {
   /// Origen: `Icons.search`
   ///
   /// Usos:
-  /// - TV / canales: `home_tab_search` (`features/home/widgets/tv_tab_bar.dart`)
+  /// - Pestañas TV: ver alias [tvTabBuscarSelected]
   static const search = Icons.search;
 
   /// Origen: `Icons.search_outlined`
   ///
   /// Usos:
-  /// - TV / canales: `home_tab_search` (`features/home/widgets/tv_tab_bar.dart`)
+  /// - Pestañas TV: ver alias [tvTabBuscar]
   static const searchOutlined = Icons.search_outlined;
 
   /// Origen: `Icons.search_rounded`
@@ -1027,7 +1353,7 @@ abstract final class MoaiIcons {
   /// Origen: `Icons.sports_basketball_outlined`
   ///
   /// Usos:
-  /// - Agenda (`state/calendar_provider.dart`)
+  /// - Alias agrupado: [calendarSubNba]
   static const sportsBasketballOutlined = Icons.sports_basketball_outlined;
 
   /// Origen: `Icons.sports_esports_rounded`
@@ -1040,27 +1366,26 @@ abstract final class MoaiIcons {
   /// Origen: `Icons.sports_football_outlined`
   ///
   /// Usos:
-  /// - Agenda (`state/calendar_provider.dart`)
+  /// - Alias agrupado: [calendarSubNfl]
   static const sportsFootballOutlined = Icons.sports_football_outlined;
 
   /// Origen: `Icons.sports_motorsports_outlined`
   ///
   /// Usos:
-  /// - Agenda (`state/calendar_provider.dart`)
+  /// - Alias agrupado: [calendarSubF1]
   static const sportsMotorsportsOutlined = Icons.sports_motorsports_outlined;
 
   /// Origen: `Icons.sports_outlined`
   ///
   /// Usos:
   /// - Agenda: `calendar_event_time` (`features/calendar/widgets/calendar_events_panel.dart`)
-  /// - Agenda (`state/calendar_provider.dart`)
+  /// - Alias agrupado: [calendarSubFallback]
   static const sportsOutlined = Icons.sports_outlined;
 
   /// Origen: `Icons.sports_soccer_outlined`
   ///
   /// Usos:
-  /// - Agenda (`state/calendar_provider.dart`)
-  /// - Categorías de canales (mapa por nombre) (`widgets/cards/category_card.dart`)
+  /// - Alias agrupado: [calendarSubLpf] / [calendarSubPremier]
   /// - Grupos (mapa por clave) (`widgets/cards/group_card.dart`)
   static const sportsSoccerOutlined = Icons.sports_soccer_outlined;
 
@@ -1177,8 +1502,14 @@ abstract final class MoaiIcons {
   /// Origen: `Symbols.tv_displays`
   ///
   /// Usos:
-  /// - (reservado; listado de países usa [tvWithAssistant])
-  static const tvDisplays = Symbols.tv_displays;
+  /// - TV / canales: listado de países (`widgets/cards/country_card.dart`)
+  static const tvDisplays = ReiconIcons.page;
+
+  /// Origen: `Symbols.tv_signin`
+  ///
+  /// Usos:
+  /// - TV / canales: grupo Marcadores (`widgets/cards/group_card.dart`)
+  static const tvSignin = Symbols.tv_signin;
 
   /// Origen: `Symbols.tv_with_assistant`
   ///
@@ -1202,7 +1533,7 @@ abstract final class MoaiIcons {
   /// Origen: `Icons.two_wheeler_outlined`
   ///
   /// Usos:
-  /// - Agenda (`state/calendar_provider.dart`)
+  /// - Alias agrupado: [calendarSubMotogp]
   static const twoWheelerOutlined = Icons.two_wheeler_outlined;
 
   /// Origen: `Symbols.videogame_asset_off`
@@ -1286,5 +1617,4 @@ abstract final class MoaiIcons {
   /// Usos:
   /// - Pantalla de carga: `loading_error_title` (`features/loading/screens/loading_screen.dart`)
   static const wifiOffRounded = Icons.wifi_off_rounded;
-
 }

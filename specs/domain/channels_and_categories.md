@@ -73,4 +73,31 @@ class ChannelGroup {
 Las agrupaciones pueden basarse en:
 - **Categorías temáticas**: Noticias, Deportes, Variedades, Cine, Infantil, Adultos.
 - **Fuentes / Plugins**: Canales aportados por cada plugin instalado (identificados con su `pluginTag` visual).
-- **Favoritos**: Colección persistida de canales marcados por el usuario.
+- **Favoritos / Marcadores**: Colección persistida de canales marcados por el usuario.
+
+### 3.1. Iconografía de grupos (`GroupCard` / `MoaiIcons`)
+
+Claves `icon` persistidas → `IconData` centralizado en `lib/theme/moai_icons.dart`:
+
+| `icon` key | IconData |
+| :--- | :--- |
+| `bookmark` (grupo Marcadores) | `MoaiIcons.tvSignin` (`Symbols.tv_signin`) |
+| `favorite` | `MoaiIcons.favoriteOutline` |
+| `no_adults` | `MoaiIcons.explicitOutlined` |
+| `sports_soccer` | `MoaiIcons.sportsSoccerOutlined` |
+| `movie` | `MoaiIcons.movieOutlined` |
+| `child_hat` | `MoaiIcons.childCareOutlined` |
+| `newspaper` | `MoaiIcons.newspaperOutlined` |
+| `tv_gen` | `MoaiIcons.tvOutlined` |
+| `language` | `MoaiIcons.languageOutlined` |
+| *(desconocida)* | `MoaiIcons.tvSignin` (fallback) |
+
+### 3.2. Iconografía de países (`CountryCard`)
+
+Todos los ítems del panel Países usan `MoaiIcons.tvDisplays` (`Symbols.tv_displays`).
+
+### 3.3. Iconografía de categorías (`CategoryCard`)
+
+Mapa canónico en `MoaiIcons.tvCategoryIcons` / constantes `tvCategory*` (Aire, Deportes, Cine, …).  
+Resolución: `MoaiIcons.tvCategoryIconFor(name)` → fallback `tvCategoryFallback`.  
+No duplicar el mapa en `category_card.dart`.

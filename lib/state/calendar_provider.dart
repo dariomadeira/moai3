@@ -25,7 +25,7 @@ class CalendarProvider extends ChangeNotifier {
       name: 'calendar_sub_f1_name',
       sport: 'motorsport',
       description: 'calendar_sub_f1_desc',
-      icon: MoaiIcons.sportsMotorsportsOutlined,
+      icon: MoaiIcons.calendarSubF1,
       isSubscribed: false,
     ),
     SportSubscription(
@@ -33,7 +33,7 @@ class CalendarProvider extends ChangeNotifier {
       name: 'calendar_sub_lpf_name',
       sport: 'soccer',
       description: 'calendar_sub_lpf_desc',
-      icon: MoaiIcons.sportsSoccerOutlined,
+      icon: MoaiIcons.calendarSubLpf,
       isSubscribed: false,
     ),
     SportSubscription(
@@ -41,7 +41,7 @@ class CalendarProvider extends ChangeNotifier {
       name: 'calendar_sub_champions_name',
       sport: 'soccer',
       description: 'calendar_sub_champions_desc',
-      icon: MoaiIcons.emojiEventsOutlined,
+      icon: MoaiIcons.calendarSubChampions,
       isSubscribed: false,
     ),
     SportSubscription(
@@ -49,7 +49,7 @@ class CalendarProvider extends ChangeNotifier {
       name: 'calendar_sub_premier_name',
       sport: 'soccer',
       description: 'calendar_sub_premier_desc',
-      icon: MoaiIcons.sportsSoccerOutlined,
+      icon: MoaiIcons.calendarSubPremier,
       isSubscribed: false,
     ),
     SportSubscription(
@@ -57,7 +57,7 @@ class CalendarProvider extends ChangeNotifier {
       name: 'calendar_sub_nfl_name',
       sport: 'american_football',
       description: 'calendar_sub_nfl_desc',
-      icon: MoaiIcons.sportsFootballOutlined,
+      icon: MoaiIcons.calendarSubNfl,
       isSubscribed: false,
     ),
     SportSubscription(
@@ -65,7 +65,7 @@ class CalendarProvider extends ChangeNotifier {
       name: 'calendar_sub_motogp_name',
       sport: 'motorsport',
       description: 'calendar_sub_motogp_desc',
-      icon: MoaiIcons.twoWheelerOutlined,
+      icon: MoaiIcons.calendarSubMotogp,
       isSubscribed: false,
     ),
     SportSubscription(
@@ -73,29 +73,14 @@ class CalendarProvider extends ChangeNotifier {
       name: 'calendar_sub_nba_name',
       sport: 'basketball',
       description: 'calendar_sub_nba_desc',
-      icon: MoaiIcons.sportsBasketballOutlined,
+      icon: MoaiIcons.calendarSubNba,
       isSubscribed: false,
     ),
   ];
 
   /// Retorna el ícono representativo de una suscripción o deporte para identificar el evento.
-  static IconData getSubscriptionIcon(String subscriptionId) {
-    for (final s in defaultSubscriptions) {
-      if (s.id == subscriptionId) {
-        return s.icon;
-      }
-    }
-    final lower = subscriptionId.toLowerCase();
-    if (lower.contains('f1')) return MoaiIcons.sportsMotorsportsOutlined;
-    if (lower.contains('motogp')) return MoaiIcons.twoWheelerOutlined;
-    if (lower.contains('nfl') || lower.contains('football')) return MoaiIcons.sportsFootballOutlined;
-    if (lower.contains('nba') || lower.contains('basket')) return MoaiIcons.sportsBasketballOutlined;
-    if (lower.contains('champions')) return MoaiIcons.emojiEventsOutlined;
-    if (lower.contains('premier') || lower.contains('lpf') || lower.contains('soccer')) {
-      return MoaiIcons.sportsSoccerOutlined;
-    }
-    return MoaiIcons.sportsOutlined;
-  }
+  static IconData getSubscriptionIcon(String subscriptionId) =>
+      MoaiIcons.calendarSubIconFor(subscriptionId);
 
   List<SportSubscription> _subscriptions = [];
   List<CalendarEvent> _events = [];

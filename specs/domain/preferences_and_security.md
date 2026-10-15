@@ -42,8 +42,10 @@ MoAI 3 implementa un mecanismo de protección para canales y contenidos cataloga
 3. **Sonidos UI D-Pad**:
    - Clave: `'ui_sounds_disabled'`. Si `true`, el host nativo no reproduce clicks de navegación (SPEC-41).
 4. **Catálogo Películas/Series (Moiamov)**:
-   - `'skip_catalog_update'` (bool, default `true`): omite VPN/sync al arrancar.
-   - `'catalog_update_frequency'`: `always` | `weekly` (default) | `monthly`.
+   - `'skip_catalog_update_v2'` (bool, default `false`): si `true`, omite VPN/sync y usa solo assets.
+   - UI del switch es **positiva** («Actualizar catálogo al arrancar»: ON ⇒ `skip=false`).
+   - `'catalog_update_frequency'`: `always` (**default**) | `weekly` | `monthly`.
+   - La clave legacy `'skip_catalog_update'` no se lee.
    - UI y flujo: [SPEC-39](../features/movies_series_catalog_settings.md).
 
 ---

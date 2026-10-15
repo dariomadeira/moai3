@@ -129,7 +129,42 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        OpenVPNFlutterPlugin.connectWhileGranted(requestCode == 24 && resultCode == RESULT_OK)
+        // openvpn_flutter: requestCode 24 = VpnService.prepare.
+        // connectWhileGranted llama startVPN con la config estática del plugin.
+        // Si solo se pidió permiso (config vacía), startVPN crashea / tumba la app.
+        if (requestCode == 24) {
+            if (resultCode == RESULT_OK) {
+                try {
+                    val configField =
+                        OpenVPNFlutterPlugin::class.java.getDeclaredField("config")
+                    configField.isAccessible = true
+                    val cfg = configField.get(null) as? String
+                    if (!cfg.isNullOrBlank()) {
+                        OpenVPNFlutterPlugin.connectWhileGranted(true)
+                    } else {
+                        Log.i(
+                            "MainActivity",
+                            "VPN permiso OK; connect diferido a Flutter (sin config pendiente)",
+                        )
+                    }
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "VPN onActivityResult: ${e.message}", e)
+                }
+            } else {
+                Log.w("MainActivity", "VPN permiso denegado por el usuario")
+                val engine = flutterEngine
+                if (engine != null) {
+                    try {
+                        MethodChannel(
+                            engine.dartExecutor.binaryMessenger,
+                            "com.infomak.moai.tv/vpn_permission",
+                        ).invokeMethod("denied", null)
+                    } catch (e: Exception) {
+                        Log.w("MainActivity", "No se pudo notificar deny VPN: ${e.message}")
+                    }
+                }
+            }
+        }
         super.onActivityResult(requestCode, resultCode, data)
     }
 

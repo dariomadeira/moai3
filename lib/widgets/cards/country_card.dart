@@ -31,7 +31,7 @@ class CountryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return TvIconListCard(
       label: country,
-      icon: MoaiIcons.tvWithAssistant,
+      icon: MoaiIcons.tvDisplays,
       isSelected: isSelected,
       onTap: onTap,
       focusNode: focusNode,

@@ -197,26 +197,28 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
 
     switch (index) {
       case _sectionTv:
-        iconData = isSelected ? MoaiIcons.tv : MoaiIcons.tvOutlined;
+        iconData = isSelected ? MoaiIcons.railTvSelected : MoaiIcons.railTv;
         label = 'home_rail_tv_title'.tr();
         break;
       case _sectionMovies:
-        iconData = isSelected ? MoaiIcons.movie : MoaiIcons.movieOutlined;
+        iconData =
+            isSelected ? MoaiIcons.railMoviesSelected : MoaiIcons.railMovies;
         label = 'home_rail_movies_title'.tr();
         break;
       case _sectionCalendar:
         iconData =
-            isSelected ? MoaiIcons.calendarMonth : MoaiIcons.calendarMonthOutlined;
+            isSelected ? MoaiIcons.railCalendarSelected : MoaiIcons.railCalendar;
         label = 'home_rail_calendar_title'.tr();
         break;
       case _sectionArcade:
         iconData =
-            isSelected ? MoaiIcons.sportsEsports : MoaiIcons.sportsEsportsOutlined;
+            isSelected ? MoaiIcons.railArcadeSelected : MoaiIcons.railArcade;
         label = 'home_rail_arcade_title'.tr();
         break;
       case _sectionSettings:
       default:
-        iconData = isSelected ? MoaiIcons.settings : MoaiIcons.settingsOutlined;
+        iconData =
+            isSelected ? MoaiIcons.railSettingsSelected : MoaiIcons.railSettings;
         label = 'home_rail_settings_title'.tr();
         break;
     }

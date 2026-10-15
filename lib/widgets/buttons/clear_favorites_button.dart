@@ -114,7 +114,7 @@ class _ClearFavoritesButtonState extends State<ClearFavoritesButton> {
               ),
               child: Center(
                 child: Icon(
-                  MoaiIcons.deleteOutlineRounded,
+                  MoaiIcons.tvFavoritesClear,
                   color: iconColor,
                   size: 16,
                 ),

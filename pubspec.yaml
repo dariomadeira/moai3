@@ -47,10 +47,15 @@ dependencies:
   uuid: ^4.5.1
   intl: ^0.20.3
   lottie: ^3.3.1
-  openvpn_flutter: ^1.3.4
+  # 1.3.4 en pub aún trae .so a 4 KB; la rama android_16kb los alinea a 16 KB.
+  openvpn_flutter:
+    git:
+      url: https://github.com/nizwar/openvpn_flutter.git
+      ref: android_16kb
   http: ^1.6.0
   pointycastle: ^4.0.0
   flutter_webrtc: ^1.6.2+hotfix.4
+  reicons: ^1.0.8
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -26,7 +26,10 @@ android {
 
         externalNativeBuild {
             cmake {
-                arguments("-DANDROID_PLATFORM=android-26")
+                arguments(
+                    "-DANDROID_PLATFORM=android-26",
+                    "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+                )
             }
         }
     }
@@ -51,6 +54,8 @@ android {
 
     packaging {
         jniLibs {
+            // openvpn_flutter: libs extraídas al instalar (equiv. extractNativeLibs).
+            // Los .so de la rama android_16kb ya vienen alineados a 16 KB.
             useLegacyPackaging = true
         }
     }

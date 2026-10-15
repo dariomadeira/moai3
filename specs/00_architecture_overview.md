@@ -12,9 +12,10 @@
 **MoAI 3** es una aplicación de streaming y reproducción de contenidos en vivo diseñada primariamente para entornos de **Android TV y Smart TV** (control remoto por D-Pad), con soporte extendido para dispositivos móviles.
 
 El sistema se apoya en una arquitectura modular desacoplada:
-1. **Host UI & Orquestador (Flutter)**: Gestión visual bajo Material 3 Expressive, control del foco direccional, gestión de favoritos, control parental y catálogo unificado.
+1. **Host UI & Orquestador (Flutter)**: Gestión visual bajo Material 3 Expressive, control del foco direccional, gestión de favoritos, control parental y catálogo unificado (TV en vivo + VOD Moiamov).
 2. **Motor Nativo de Reproducción (ExoPlayer + SurfaceTexture)**: Reproducción de video de alto rendimiento sin sobrecarga de PlatformViews, renderizando directamente a un `Texture` de Flutter.
 3. **Motor Dinámico de Plugins (`.dex`)**: Carga en tiempo de ejecución de plugins externos aislados en formato `.dex` a través de `DexClassLoader`, protegiendo la app mediante contratos versionados inmutables.
+4. **Túnel OpenVPN (México) para sync VOD** (rama `xumovies`): `openvpn_flutter` (`android_16kb`) + perfiles `assets/vpn/`; flujo y permiso SO en [SPEC-39](features/movies_series_catalog_settings.md).
 
 ---
 

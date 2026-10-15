@@ -131,7 +131,9 @@ class _FavoriteButtonState extends State<FavoriteButton> {
             ),
             child: Center(
               child: Icon(
-                isFav ? MoaiIcons.favorite : MoaiIcons.favoriteOutline,
+                isFav
+                    ? MoaiIcons.tvFavoritesHeartSelected
+                    : MoaiIcons.tvFavoritesHeart,
                 color: iconColor,
                 size: 15,
               ),
