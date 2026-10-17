@@ -103,7 +103,7 @@ class CountryListPanelState extends State<CountryListPanel> {
             child: widget.countries.isEmpty
                 ? TvEmptyStateCard(
                     focusNode: _emptyFocusNode,
-                    icon: MoaiIcons.gridViewOutlined,
+                    icon: MoaiIcons.tvAccordionGrupos,
                     message: 'browser_countries_empty'.tr(),
                     onFocusUp: widget.onFocusUp,
                   )

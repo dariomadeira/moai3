@@ -305,9 +305,9 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
               );
             }
             return Icon(
-              MoaiIcons.symbolChevronRight,
+              MoaiIcons.chevronRight,
               color: isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
-              size: 20,
+              size: 22,
             );
           },
         );

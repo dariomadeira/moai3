@@ -152,7 +152,7 @@ class SearchPanelState extends State<SearchPanel> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          MoaiIcons.exploreOutlined,
+                          MoaiIcons.tvTabBuscar,
                           size: 36,
                           color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
                         ),

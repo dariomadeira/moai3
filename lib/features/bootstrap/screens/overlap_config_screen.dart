@@ -8,6 +8,7 @@ import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:reicons/reicons.dart';
 
 class OverlapConfigScreen extends StatefulWidget {
   /// Primera vez (bootstrap) → al guardar va a home.
@@ -81,9 +82,21 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
     final isDark = scheme.brightness == Brightness.dark;
-    final boxColor = isDark
+    final boxBaseColor = isDark
         ? scheme.primaryContainer.withValues(alpha: 0.35)
         : Color.lerp(scheme.primaryContainer, scheme.primary, 0.32)!;
+    final boxEndColor = Color.alphaBlend(
+      scheme.onSurface.withValues(alpha: 0.06),
+      boxBaseColor,
+    );
+    final boxBorderColor = scheme.outlineVariant.withValues(alpha: 0.38);
+
+    final dialogBaseColor = scheme.surface;
+    final dialogEndColor = Color.alphaBlend(
+      scheme.onSurface.withValues(alpha: 0.05),
+      dialogBaseColor,
+    );
+    final dialogBorderColor = scheme.outlineVariant.withValues(alpha: 0.48);
 
     return PopScope(
       canPop: !widget.isFirstRun,
@@ -101,8 +114,17 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
               ),
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: boxColor,
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomRight,
+                    end: Alignment.topLeft,
+                    colors: [boxBaseColor, boxBaseColor, boxEndColor],
+                    stops: const [0.0, 0.62, 1.0],
+                  ),
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: boxBorderColor,
+                    width: 1.0,
+                  ),
                 ),
                 child: Stack(
                   children: [
@@ -133,80 +155,110 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
               constraints: const BoxConstraints(maxWidth: 520),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 28),
-                child: TvPanel(
-                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                child: Container(
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomRight,
+                      end: Alignment.topLeft,
+                      colors: [dialogBaseColor, dialogBaseColor, dialogEndColor],
+                      stops: const [0.0, 0.62, 1.0],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: dialogBorderColor,
+                      width: 1.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.45),
+                        blurRadius: 36,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
                     children: [
-                      Row(
-                        children: [
-                          Material(
-                            color: scheme.primaryContainer,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Icon(
-                                MoaiIcons.aspectRatioOutlined,
-                                color: scheme.onPrimaryContainer,
-                                size: 26,
-                              ),
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: Opacity(
+                            opacity: 0.18,
+                            child: Image.asset(
+                              'assets/images/fondo.png',
+                              fit: BoxFit.cover,
                             ),
                           ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
                               children: [
-                                Text(
-                                  'overlap_title'.tr(),
-                                  style: MoaiText.display(
-                                    context,
-                                    color: scheme.onSurface,
-                                    fontSize: 22,
-                                  ),
+                                Icon(
+                                  MoaiIcons.aspectRatioOutlined,
+                                  color: scheme.primary,
+                                  size: 30,
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'overlap_subtitle'.tr(),
-                                  style: MoaiText.body(
-                                    context,
-                                    color: scheme.onSurfaceVariant,
-                                    fontSize: 13,
-                                    height: 1.35,
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'overlap_title'.tr(),
+                                        style: MoaiText.display(
+                                          context,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: scheme.onSurface,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'overlap_subtitle'.tr(),
+                                        style: MoaiText.body(
+                                          context,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                          color: scheme.onSurface.withValues(alpha: 0.72),
+                                          height: 1.35,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-                      _PaddingAdjuster(
-                        title: 'overlap_horizontal'.tr(),
-                        value: _tempX,
-                        focusNode: _xFocus,
-                        onChanged: (v) => setState(() => _tempX = v),
-                        onFocusDown: () => _yFocus.requestFocus(),
-                      ),
-                      const SizedBox(height: 10),
-                      _PaddingAdjuster(
-                        title: 'overlap_vertical'.tr(),
-                        value: _tempY,
-                        focusNode: _yFocus,
-                        onChanged: (v) => setState(() => _tempY = v),
-                        onFocusUp: () => _xFocus.requestFocus(),
-                        onFocusDown: () => _buttonFocus.requestFocus(),
-                      ),
-                      const SizedBox(height: 18),
-                      TvFocusButton(
-                        focusNode: _buttonFocus,
-                        label: 'overlap_save'.tr(),
-                        icon: MoaiIcons.checkOutlined,
-                        onPressed: _save,
-                        onArrowUp: () => _yFocus.requestFocus(),
+                            const SizedBox(height: 16),
+                            _PaddingAdjuster(
+                              title: 'overlap_horizontal'.tr(),
+                              value: _tempX,
+                              focusNode: _xFocus,
+                              onChanged: (v) => setState(() => _tempX = v),
+                              onFocusDown: () => _yFocus.requestFocus(),
+                            ),
+                            const SizedBox(height: 10),
+                            _PaddingAdjuster(
+                              title: 'overlap_vertical'.tr(),
+                              value: _tempY,
+                              focusNode: _yFocus,
+                              onChanged: (v) => setState(() => _tempY = v),
+                              onFocusUp: () => _xFocus.requestFocus(),
+                              onFocusDown: () => _buttonFocus.requestFocus(),
+                            ),
+                            const SizedBox(height: 16),
+                            TvFocusButton(
+                              focusNode: _buttonFocus,
+                              label: 'overlap_save'.tr(),
+                              onPressed: _save,
+                              onArrowUp: () => _yFocus.requestFocus(),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -269,10 +321,13 @@ class _PaddingAdjusterState extends State<_PaddingAdjuster> {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final bg = _focused ? scheme.primary : scheme.surface;
+    final bg = _focused ? scheme.primary : scheme.surfaceContainerLow;
     final labelColor =
         _focused ? scheme.onPrimary.withValues(alpha: 0.85) : scheme.onSurfaceVariant;
     final valueColor = _focused ? scheme.onPrimary : scheme.onSurface;
+    final borderColor = _focused
+        ? scheme.primary
+        : scheme.outlineVariant.withValues(alpha: 0.12);
 
     return Focus(
       focusNode: widget.focusNode,
@@ -301,54 +356,62 @@ class _PaddingAdjusterState extends State<_PaddingAdjuster> {
         scale: _focused ? 1.02 : 1.0,
         duration: const Duration(milliseconds: 100),
         curve: Curves.easeOutCubic,
-        child: Material(
-          color: bg,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          decoration: BoxDecoration(
+            color: bg,
             borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.title,
-                        style: MoaiText.body(
-                          context,
-                          color: labelColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${widget.value.round()} px',
-                        style: MoaiText.body(
-                          context,
-                          color: valueColor,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  '← →',
-                  style: MoaiText.body(
-                    context,
-                    color: labelColor,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
+            border: Border.all(
+              color: borderColor,
+              width: 1.0,
             ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
+                      style: MoaiText.body(
+                        context,
+                        color: labelColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${widget.value.round()} px',
+                      style: MoaiText.body(
+                        context,
+                        color: valueColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    ReiconIcons.arrowLeft,
+                    size: 16,
+                    color: labelColor,
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    ReiconIcons.arrowRight,
+                    size: 16,
+                    color: labelColor,
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

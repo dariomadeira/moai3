@@ -96,6 +96,7 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
                         alignment: Alignment.topCenter,
                         child: TvWindowedList<_SettingsTvItemType>(
                           key: _listKey,
+                          focusOnMount: false,
                           items: items,
                           windowSize: _windowSize,
                           itemExtent: _itemExtent,

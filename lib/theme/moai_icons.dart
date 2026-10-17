@@ -116,6 +116,43 @@ abstract final class MoaiIcons {
   /// Origen actual: `Icons.extension_outlined`
   static const tvViewerPillPlugin = ReiconIcons.puzzle;
 
+  /// Pill canales totales / fuentes en cabecera de extensiones. Enchufe plug2.
+  static const tvSourcesTotalChannels = ReiconIcons.plug2;
+
+  /// Icono para campo de URL de extensiones (TvTextField). Link cuadrado.
+  static const tvSourcesUrlInput = ReiconIcons.linkSquare;
+
+  /// Icono botón instalar en barra superior de extensiones. Bandeja de entrada (inboxIn).
+  static const tvSourcesInstallAction = ReiconIcons.inboxIn;
+
+  // ---------------------------------------------------------------------------
+  // Centro de emulación / Arcade en Home
+  // ---------------------------------------------------------------------------
+
+  /// 1. Seleccionar juego Arcade (fantasma sonriente)
+  static const arcadeActionSelectGame = ReiconIcons.ghostSmile;
+
+  /// 2. Configurar Gamepad Arcade (botones gamepad)
+  static const arcadeActionConfigGamepad = ReiconIcons.gamepadButtons;
+
+  /// 3. Iniciar juego Arcade (play3)
+  static const arcadeActionStartGame = ReiconIcons.play3;
+
+  /// Refrescar catálogo de ROMs (refreshSquare22 / refreshSquare2)
+  static const arcadeCatalogRefresh = ReiconIcons.refreshSquare22;
+
+  /// Ícono de ROM / Juego en catálogo
+  static const arcadeRomItem = ReiconIcons.ghostSmile;
+
+  /// Ícono del badge/pill de instalados en cabecera de Arcade (gameboy3)
+  static const arcadeRomInstalledBadge = ReiconIcons.gameboy3;
+
+  /// Ícono de la tarjeta de juego instalado (gamepad4)
+  static const arcadeRomCard = ReiconIcons.gamepad4;
+
+  /// Eliminar ROM instalada (papelera trash4)
+  static const arcadeRomDelete = ReiconIcons.trash4;
+
   // ---------------------------------------------------------------------------
   // Acciones de favoritos (barra bajo el visor: + / borrar / corazón)
   // create_group_button · clear_favorites_button · favorite_button
@@ -129,6 +166,15 @@ abstract final class MoaiIcons {
   /// Origen actual: `Icons.delete_outline_rounded` / `ReiconIcons.trash4`
   static const tvFavoritesClear = ReiconIcons.trash4;
 
+  /// Icono cabecera modal crear grupo de marcadores (`CreateGroupButton`).
+  static const tvGroupCreateDialogTitle = ReiconIcons.bookmark;
+
+  /// Icono campo de texto nombre en modal crear grupo de marcadores (`CreateGroupButton`).
+  static const tvGroupCreateDialogInput = ReiconIcons.keyboard;
+
+  /// Icono por defecto de tarjeta de grupo de marcadores (`GroupCard`).
+  static const tvBookmarkGroupLeading = ReiconIcons.shareCircle;
+
   /// Toggle favorito idle — no está en favoritos (`FavoriteButton`).
   /// Origen actual: `Icons.favorite_outline`
   static const tvFavoritesHeart = ReiconIcons.heart;
@@ -136,6 +182,9 @@ abstract final class MoaiIcons {
   /// Toggle favorito active — canal en favoritos (`FavoriteButton`).
   /// Origen actual: `Icons.favorite`
   static const tvFavoritesHeartSelected = ReiconFilledIcons.heart;
+
+  /// Visor vacío de TV sin canal seleccionado o sin canales (`empty_viewer_panel.dart`).
+  static const tvEmptyViewer = ReiconIcons.tv;
 
   // ---------------------------------------------------------------------------
   // Tarjeta de canal — placeholder sin logo
@@ -145,6 +194,10 @@ abstract final class MoaiIcons {
   /// Sin logo / logo fallido en la grilla o lista de canales.
   /// Origen: `ReiconIcons.display`
   static const tvChannelLogoFallback = ReiconIcons.display;
+
+  /// Estado vacío sin canales (`browser_channels_empty`).
+  /// Consumidor: `features/channel_browser/widgets/channel_list_panel.dart`
+  static const tvChannelsEmpty = ReiconIcons.magnifierFaceWorried;
 
   // ---------------------------------------------------------------------------
   // Categorías de canales (lista Categorías / CategoryCard)
@@ -393,11 +446,11 @@ abstract final class MoaiIcons {
   /// Origen: `Icons.settings_outlined`
   static const settingsOutlined = Icons.settings_outlined;
 
-  /// Origen: `Symbols.adaptive_audio_mic`
+  /// Origen: `ReiconIcons.msgBubbleUser`
   ///
   /// Usos:
   /// - Inicio / menú lateral (`features/home/areas/home_settings_area.dart`)
-  static const adaptiveAudioMic = Symbols.adaptive_audio_mic;
+  static const adaptiveAudioMic = ReiconIcons.msgBubbleUser;
 
   /// Origen: `Icons.add_rounded`
   ///
@@ -423,11 +476,11 @@ abstract final class MoaiIcons {
   /// - Arcade (`features/games/screens/arcade_screen.dart`)
   static const arrowBack = Icons.arrow_back;
 
-  /// Origen: `Icons.arrow_back_outlined`
+  /// Origen: `ReiconIcons.arrowLeft2`
   ///
   /// Usos:
   /// - Componentes TV compartidos (`widgets/tv_common/tv_panel_header.dart`)
-  static const arrowBackOutlined = Icons.arrow_back_outlined;
+  static const arrowBackOutlined = ReiconIcons.arrowLeft2;
 
   /// Origen: `Icons.arrow_back_rounded`
   ///
@@ -481,18 +534,18 @@ abstract final class MoaiIcons {
   /// - Arcade / gamepad (`widgets/dialogs/tv_gamepad_config_dialog.dart`)
   static const arrowUpwardRounded = Icons.arrow_upward_rounded;
 
-  /// Origen: `Icons.aspect_ratio_outlined`
+  /// Origen: `ReiconIcons.fullscreenSquare`
   ///
   /// Usos:
   /// - Ajustes: `settings_general_overscan_desc` (`features/settings/widgets/settings_general_panel.dart`)
   /// - Configuración inicial (`features/bootstrap/screens/overlap_config_screen.dart`)
-  static const aspectRatioOutlined = Icons.aspect_ratio_outlined;
+  static const aspectRatioOutlined = ReiconIcons.fullscreenSquare;
 
-  /// Origen: `Icons.auto_awesome_outlined`
+  /// Origen: `ReiconIcons.sparkles`
   ///
   /// Usos:
   /// - Ajustes: `settings_general_auto_accent_desc` (`features/settings/widgets/settings_general_panel.dart`)
-  static const autoAwesomeOutlined = Icons.auto_awesome_outlined;
+  static const autoAwesomeOutlined = ReiconIcons.sparkles;
 
   /// Origen: `Icons.backspace_outlined`
   ///
@@ -500,14 +553,14 @@ abstract final class MoaiIcons {
   /// - Amigos / Ver juntos (`widgets/dialogs/tv_pin_dialog.dart`)
   static const backspaceOutlined = Icons.backspace_outlined;
 
-  /// Origen: `Icons.badge_outlined`
+  /// Origen: `ReiconIcons.userId`
   ///
   /// Usos:
   /// - Ajustes: `friends_input_label` (`features/settings/screens/friends_screen.dart`)
   /// - Ajustes: `settings_tv_watch_party_code_desc` (`features/settings/widgets/settings_watch_party_panel.dart`)
   /// - Amigos / Ver juntos: `friends_input_label` (`widgets/dialogs/tv_friends_dialog.dart`)
   /// - Amigos / Ver juntos: `nickname_dialog_subtitle_setup` (`widgets/dialogs/tv_nickname_dialog.dart`)
-  static const badgeOutlined = Icons.badge_outlined;
+  static const badgeOutlined = ReiconIcons.userId;
 
   /// Origen: `Icons.block`
   ///
@@ -546,12 +599,12 @@ abstract final class MoaiIcons {
   /// - Marcadores / grupos (`widgets/cards/group_card.dart`)
   static const bookmarkHeart = Symbols.bookmark_heart;
 
-  /// Origen: `Symbols.browser_updated`
+  /// Origen: `ReiconIcons.desktopDownload`
   ///
   /// Usos:
   /// - Actualizaciones: `update_mandatory_title` (`widgets/dialogs/update_dialog.dart`)
   /// - Ajustes: `settings_about_check_updates_desc` (`features/settings/widgets/settings_about_panel.dart`)
-  static const browserUpdated = Symbols.browser_updated;
+  static const browserUpdated = ReiconIcons.desktopDownload;
 
   /// Origen: `Icons.bug_report_outlined`
   ///
@@ -619,32 +672,32 @@ abstract final class MoaiIcons {
   /// - Clima: `weather_location_configured` (`widgets/dialogs/tv_weather_location_dialog.dart`)
   static const checkCircleRounded = Icons.check_circle_rounded;
 
-  /// Origen: `Icons.check_outlined`
+  /// Origen: `ReiconIcons.check`
   ///
   /// Usos:
   /// - Configuración inicial: `overlap_save` (`features/bootstrap/screens/overlap_config_screen.dart`)
-  static const checkOutlined = Icons.check_outlined;
+  static const checkOutlined = ReiconIcons.check;
 
-  /// Origen: `Icons.check_rounded`
+  /// Origen: `ReiconIcons.check`
   ///
   /// Usos:
   /// - Amigos / Ver juntos (`widgets/dialogs/tv_friends_dialog.dart`)
   /// - Arcade / gamepad: `gamepad_action_close` (`widgets/dialogs/tv_gamepad_config_dialog.dart`)
   /// - Clima (`widgets/dialogs/tv_weather_location_dialog.dart`)
-  static const checkRounded = Icons.check_rounded;
+  static const checkRounded = ReiconIcons.check;
 
-  /// Origen: `Icons.chevron_left`
+  /// Origen: `ReiconIcons.chevronLeft`
   ///
   /// Usos:
   /// - Agenda: `calendar_week_nav_prev` (`features/calendar/widgets/calendar_events_panel.dart`)
-  static const chevronLeft = Icons.chevron_left;
+  static const chevronLeft = ReiconIcons.chevronLeft;
 
-  /// Origen: `Icons.chevron_right`
+  /// Origen: `ReiconIcons.arrowRight2`
   ///
   /// Usos:
   /// - Agenda: `calendar_week_nav_next` (`features/calendar/widgets/calendar_events_panel.dart`)
   /// - Ajustes (`features/settings/widgets/settings_widgets.dart`)
-  static const chevronRight = Icons.chevron_right;
+  static const chevronRight = ReiconIcons.arrowRight2;
 
   /// Origen: `Symbols.child_care`
   ///
@@ -683,17 +736,17 @@ abstract final class MoaiIcons {
   /// - Ajustes películas: actualizar catálogo apagado
   static const cloudOffOutlined = Icons.cloud_off_outlined;
 
-  /// Origen: `Icons.cloud_outlined`
+  /// Origen: `ReiconIcons.cloudSun2`
   ///
   /// Usos:
   /// - Ajustes: `settings_general_weather_title` (`features/settings/widgets/settings_general_panel.dart`)
-  static const cloudOutlined = Icons.cloud_outlined;
+  static const cloudOutlined = ReiconIcons.cloudSun2;
 
-  /// Origen: `Icons.cloud_sync_outlined`
+  /// Origen: `ReiconIcons.globalRefresh2`
   ///
   /// Usos:
   /// - Ajustes películas: actualizar catálogo al arrancar
-  static const cloudSyncOutlined = Icons.cloud_sync_outlined;
+  static const cloudSyncOutlined = ReiconIcons.globalRefresh2;
 
   /// Origen: `Symbols.confirmation_number`
   ///
@@ -701,11 +754,11 @@ abstract final class MoaiIcons {
   /// - Categorías de canales (mapa por nombre) (`widgets/cards/category_card.dart`)
   static const confirmationNumber = Symbols.confirmation_number;
 
-  /// Origen: `Icons.dark_mode_outlined`
+  /// Origen: `ReiconIcons.darkLight`
   ///
   /// Usos:
   /// - Ajustes: `settings_general_dark_mode_desc` (`features/settings/widgets/settings_general_panel.dart`)
-  static const darkModeOutlined = Icons.dark_mode_outlined;
+  static const darkModeOutlined = ReiconIcons.darkLight;
 
   /// Origen: `Symbols.delete`
   ///
@@ -744,13 +797,13 @@ abstract final class MoaiIcons {
   /// - Extensiones (`features/sources/screens/sources_screen.dart`)
   static const download = Symbols.download;
 
-  /// Origen: `Symbols.electrical_services`
+  /// Origen: `ReiconIcons.plugCircle`
   ///
   /// Usos:
   /// - Actualizaciones (`widgets/dialogs/plugin_update_dialog.dart`)
   /// - Extensiones (`features/plugins/screens/general_plugins_screen.dart`)
   /// - Extensiones (`features/sources/screens/sources_screen.dart`)
-  static const electricalServices = Symbols.electrical_services;
+  static const electricalServices = ReiconIcons.plugCircle;
 
   /// Origen: `Icons.emoji_events_outlined`
   ///
@@ -823,28 +876,28 @@ abstract final class MoaiIcons {
   /// - Pestañas TV: ver alias [tvTabExplorar]
   static const exploreOutlined = Icons.explore_outlined;
 
-  /// Origen: `Symbols.extension`
+  /// Origen: `ReiconIcons.puzzle`
   ///
   /// Usos:
   /// - Actualizaciones: `plugin_update_title_singular` (`widgets/dialogs/plugin_update_dialog.dart`)
   /// - Ajustes: `settings_general_sources_desc` (`features/settings/widgets/settings_tv_panel.dart`)
   /// - Extensiones (`features/plugins/screens/general_plugins_screen.dart`)
   /// - Extensiones (`features/sources/screens/sources_screen.dart`)
-  static const extension = Symbols.extension;
+  static const extension = ReiconIcons.puzzle;
 
-  /// Origen: `Icons.extension_off_outlined`
+  /// Origen: `ReiconIcons.lightbulb3`
   ///
   /// Usos:
   /// - Extensiones: `plugins_empty_installed_msg` (`features/plugins/screens/general_plugins_screen.dart`)
   /// - Extensiones: `sources_empty` (`features/sources/screens/sources_screen.dart`)
-  static const extensionOffOutlined = Icons.extension_off_outlined;
+  static const extensionOffOutlined = ReiconIcons.lightbulb3;
 
-  /// Origen: `Icons.extension_outlined`
+  /// Origen: `ReiconIcons.puzzle`
   ///
   /// Usos:
   /// - Ajustes: `settings_general_plugins_title` (`features/settings/widgets/settings_general_panel.dart`)
   /// - Visor canal: ver alias [tvViewerPillPlugin]
-  static const extensionOutlined = Icons.extension_outlined;
+  static const extensionOutlined = ReiconIcons.puzzle;
 
   /// Origen: `Icons.favorite`
   ///
@@ -925,7 +978,7 @@ abstract final class MoaiIcons {
   /// - Arcade / gamepad: `gamepad_support_two_players` (`widgets/dialogs/tv_gamepad_config_dialog.dart`)
   static const info = Symbols.info;
 
-  /// Origen: `Icons.info_outline`
+  /// Origen: `ReiconIcons.circleInfo`
   ///
   /// Usos:
   /// - Arcade: `arcade_no_game_installed_snack` (`features/home/areas/home_arcade_area.dart`)
@@ -933,7 +986,7 @@ abstract final class MoaiIcons {
   /// - Avisos (`widgets/feedback/moai_snackbar.dart`)
   /// - Inicio: `arcade_no_game_installed_snack` (`features/home/screens/home_screen.dart`)
   /// - Inicio / menú lateral (`features/home/areas/home_settings_area.dart`)
-  static const infoOutline = Icons.info_outline;
+  static const infoOutline = ReiconIcons.circleInfo;
 
   /// Origen: `Icons.info_outline_rounded`
   ///
@@ -991,11 +1044,11 @@ abstract final class MoaiIcons {
   /// - Clima (`widgets/dialogs/tv_weather_location_dialog.dart`)
   static const keyboardOutlined = Icons.keyboard_outlined;
 
-  /// Origen: `Icons.label_outline`
+  /// Origen: `ReiconIcons.tag2`
   ///
   /// Usos:
   /// - Ajustes: `settings_tv_channel_labels_desc` (`features/settings/widgets/settings_tv_panel.dart`)
-  static const labelOutline = Icons.label_outline;
+  static const labelOutline = ReiconIcons.tag2;
 
   /// Origen: `Icons.language_outlined`
   ///
@@ -1042,26 +1095,32 @@ abstract final class MoaiIcons {
   /// - Clima (`widgets/dialogs/tv_weather_location_dialog.dart`)
   static const locationOffOutlined = Icons.location_off_outlined;
 
-  /// Origen: `Icons.location_on_outlined`
+  /// Origen: `ReiconIcons.pinSearch`
   ///
   /// Usos:
   /// - Clima: `weather_location_dialog_title` (`widgets/dialogs/tv_weather_location_dialog.dart`)
-  static const locationOnOutlined = Icons.location_on_outlined;
+  static const locationOnOutlined = ReiconIcons.pinSearch;
 
-  /// Origen: `Symbols.lock`
+  /// Origen: `ReiconIcons.mapPoint`
+  ///
+  /// Usos:
+  /// - Clima: ítems de localidad sugerida (`widgets/dialogs/tv_weather_location_dialog.dart`)
+  static const weatherLocationItem = ReiconIcons.mapPoint;
+
+  /// Origen: `ReiconIcons.lockPassword`
   ///
   /// Usos:
   /// - Ajustes: `settings_tv_adult_content_desc` (`features/settings/widgets/settings_tv_panel.dart`)
   /// - Amigos / Ver juntos (`widgets/dialogs/tv_pin_dialog.dart`)
   /// - Categorías de canales (mapa por nombre) (`widgets/cards/category_card.dart`)
-  static const lock = Symbols.lock;
+  static const lock = ReiconIcons.lockPassword;
 
-  /// Origen: `Symbols.lock_open`
+  /// Origen: `ReiconIcons.lockPasswordOpen`
   ///
   /// Usos:
   /// - Ajustes: `settings_tv_adult_content_desc` (`features/settings/widgets/settings_tv_panel.dart`)
   /// - Amigos / Ver juntos: `parental_adult_unlocked` (`widgets/dialogs/tv_pin_dialog.dart`)
-  static const lockOpen = Symbols.lock_open;
+  static const lockOpen = ReiconIcons.lockPasswordOpen;
 
   /// Origen: `Icons.mark_email_read_outlined`
   ///
@@ -1076,12 +1135,12 @@ abstract final class MoaiIcons {
   /// - Inicio (`features/home/widgets/tv_watch_party_header_bar.dart`)
   static const mic = Symbols.mic;
 
-  /// Origen: `Symbols.mic_gear`
+  /// Origen: `ReiconIcons.tuning3`
   ///
   /// Usos:
   /// - Ajustes: `settings_tv_mic_test_desc` (`features/settings/widgets/settings_watch_party_panel.dart`)
   /// - Amigos / Ver juntos (`widgets/dialogs/tv_voice_test_dialog.dart`)
-  static const micGear = Symbols.mic_gear;
+  static const micGear = ReiconIcons.tuning3;
 
   /// Origen: `Icons.mic_none_outlined`
   ///
@@ -1103,13 +1162,13 @@ abstract final class MoaiIcons {
   /// - Tarjeta de película (`features/home/widgets/tv_movie_card.dart`)
   static const movie = Symbols.movie;
 
-  /// Origen: `Icons.movie_outlined`
+  /// Origen: `ReiconIcons.clapperboardOpen`
   ///
   /// Usos:
   /// - Grupos (mapa por clave) (`widgets/cards/group_card.dart`)
   /// - Inicio / menú lateral: `home_rail_movies_title` (`features/home/widgets/navigation_rail_section.dart`)
   /// - Área películas (`features/home/areas/home_movies_area.dart`)
-  static const movieOutlined = Icons.movie_outlined;
+  static const movieOutlined = ReiconIcons.clapperboardOpen;
 
   /// Origen: `Symbols.music_note`
   ///
@@ -1117,11 +1176,11 @@ abstract final class MoaiIcons {
   /// - Categorías de canales (mapa por nombre) (`widgets/cards/category_card.dart`)
   static const musicNote = Symbols.music_note;
 
-  /// Origen: `Icons.my_location_rounded`
+  /// Origen: `ReiconIcons.location2`
   ///
   /// Usos:
   /// - Clima: `weather_location_reset_auto` (`widgets/dialogs/tv_weather_location_dialog.dart`)
-  static const myLocationRounded = Icons.my_location_rounded;
+  static const myLocationRounded = ReiconIcons.location2;
 
   /// Origen: `Icons.newspaper_outlined`
   ///
@@ -1130,29 +1189,29 @@ abstract final class MoaiIcons {
   /// - Grupos (mapa por clave) (`widgets/cards/group_card.dart`)
   static const newspaperOutlined = Icons.newspaper_outlined;
 
-  /// Origen: `Icons.north_east`
+  /// Origen: `ReiconIcons.arrowRightUp`
   ///
   /// Usos:
   /// - Configuración inicial (`features/bootstrap/screens/overlap_config_screen.dart`)
-  static const northEast = Icons.north_east;
+  static const northEast = ReiconIcons.arrowRightUp;
 
-  /// Origen: `Icons.north_west`
+  /// Origen: `ReiconIcons.arrowLeftUp`
   ///
   /// Usos:
   /// - Configuración inicial (`features/bootstrap/screens/overlap_config_screen.dart`)
-  static const northWest = Icons.north_west;
+  static const northWest = ReiconIcons.arrowLeftUp;
 
-  /// Origen: `Icons.notifications_active_outlined`
+  /// Origen: `ReiconIcons.bell`
   ///
   /// Usos:
   /// - Ajustes: `settings_agenda_notify_desc` (`features/settings/widgets/settings_agenda_notify_row.dart`)
-  static const notificationsActiveOutlined = Icons.notifications_active_outlined;
+  static const notificationsActiveOutlined = ReiconIcons.bell;
 
-  /// Origen: `Icons.palette_outlined`
+  /// Origen: `ReiconIcons.palette2`
   ///
   /// Usos:
   /// - Ajustes (`features/settings/widgets/settings_general_panel.dart`)
-  static const paletteOutlined = Icons.palette_outlined;
+  static const paletteOutlined = ReiconIcons.palette2;
 
   /// Origen: `Icons.people_alt_rounded`
   ///
@@ -1161,11 +1220,11 @@ abstract final class MoaiIcons {
   /// - Amigos / Ver juntos: `friends_screen_title` (`widgets/dialogs/tv_friends_dialog.dart`)
   static const peopleAltRounded = Icons.people_alt_rounded;
 
-  /// Origen: `Icons.people_outline`
+  /// Origen: `ReiconIcons.people2`
   ///
   /// Usos:
   /// - Ajustes: `settings_tv_manage_friends` (`features/settings/widgets/settings_watch_party_panel.dart`)
-  static const peopleOutline = Icons.people_outline;
+  static const peopleOutline = ReiconIcons.people2;
 
   /// Origen: `Icons.people_outline_rounded`
   ///
@@ -1205,12 +1264,12 @@ abstract final class MoaiIcons {
   /// - Amigos / Ver juntos (`widgets/dialogs/tv_friends_dialog.dart`)
   static const personAddRounded = Icons.person_add_rounded;
 
-  /// Origen: `Icons.person_outline`
+  /// Origen: `ReiconIcons.userSquare`
   ///
   /// Usos:
   /// - Ajustes: `settings_watch_party_nickname_desc` (`features/settings/widgets/settings_watch_party_panel.dart`)
   /// - Amigos / Ver juntos: `nickname_dialog_label` (`widgets/dialogs/tv_nickname_dialog.dart`)
-  static const personOutline = Icons.person_outline;
+  static const personOutline = ReiconIcons.userSquare;
 
   /// Origen: `Icons.person_outline_rounded`
   ///
@@ -1256,12 +1315,12 @@ abstract final class MoaiIcons {
   /// - Botones compartidos: `groups_name_label` (`widgets/buttons/create_group_button.dart`)
   static const playlistAddOutlined = Icons.playlist_add_outlined;
 
-  /// Origen: `Icons.public_outlined`
+  /// Origen: `ReiconIcons.globe2`
   ///
   /// Usos:
   /// - Ajustes (`features/settings/screens/agenda_utc_offset_screen.dart`)
   /// - Ajustes: `settings_agenda_utc_desc` (`features/settings/widgets/settings_agenda_panel.dart`)
-  static const publicOutlined = Icons.public_outlined;
+  static const publicOutlined = ReiconIcons.globe2;
 
   /// Origen: `Symbols.radio`
   ///
@@ -1331,24 +1390,24 @@ abstract final class MoaiIcons {
   /// - Arcade: `arcade_remote_connected_p1` (`features/games/screens/arcade_screen.dart`)
   static const settingsRemote = Icons.settings_remote;
 
-  /// Origen: `Icons.settings_remote_outlined`
+  /// Origen: `ReiconIcons.tv`
   ///
   /// Usos:
   /// - Amigos / Ver juntos (`widgets/dialogs/tv_voice_test_dialog.dart`)
   /// - Inicio / menú lateral (`features/home/areas/home_settings_area.dart`)
-  static const settingsRemoteOutlined = Icons.settings_remote_outlined;
+  static const settingsRemoteOutlined = ReiconIcons.tv;
 
-  /// Origen: `Icons.south_east`
+  /// Origen: `ReiconIcons.arrowRightDown`
   ///
   /// Usos:
   /// - Configuración inicial (`features/bootstrap/screens/overlap_config_screen.dart`)
-  static const southEast = Icons.south_east;
+  static const southEast = ReiconIcons.arrowRightDown;
 
-  /// Origen: `Icons.south_west`
+  /// Origen: `ReiconIcons.arrowLeftDown`
   ///
   /// Usos:
   /// - Configuración inicial (`features/bootstrap/screens/overlap_config_screen.dart`)
-  static const southWest = Icons.south_west;
+  static const southWest = ReiconIcons.arrowLeftDown;
 
   /// Origen: `Icons.sports_basketball_outlined`
   ///
@@ -1420,11 +1479,11 @@ abstract final class MoaiIcons {
   /// - TV / canales: `home_panel_groups` (`features/home/areas/home_tv_area.dart`)
   static const symbolBookmarks = Symbols.bookmarks;
 
-  /// Origen: `Symbols.chevron_right`
+  /// Origen: `ReiconIcons.arrowRight2` (unificado con `chevronRight`)
   ///
   /// Usos:
   /// - Ajustes (`features/settings/widgets/settings_about_panel.dart`)
-  static const symbolChevronRight = Symbols.chevron_right;
+  static const symbolChevronRight = chevronRight;
 
   /// Origen: `Symbols.favorite`
   ///
@@ -1444,11 +1503,11 @@ abstract final class MoaiIcons {
   /// - Categorías de canales (mapa por nombre) (`widgets/cards/category_card.dart`)
   static const symbolTv = Symbols.tv;
 
-  /// Origen: `Icons.sync_outlined`
+  /// Origen: `ReiconIcons.refresh`
   ///
   /// Usos:
   /// - Agenda: `calendar_refresh` (`features/calendar/widgets/calendar_events_panel.dart`)
-  static const syncOutlined = Icons.sync_outlined;
+  static const syncOutlined = ReiconIcons.refresh;
 
   /// Origen: `Icons.sync_rounded`
   ///
@@ -1463,11 +1522,11 @@ abstract final class MoaiIcons {
   /// - Extensiones: `sources_update_to_version` (`features/sources/screens/sources_screen.dart`)
   static const systemUpdateRounded = Symbols.system_update_rounded;
 
-  /// Origen: `Icons.terminal_outlined`
+  /// Origen: `ReiconIcons.searchBug`
   ///
   /// Usos:
   /// - Ajustes: `settings_tv_log_desc` (`features/settings/widgets/settings_tv_panel.dart`)
-  static const terminalOutlined = Icons.terminal_outlined;
+  static const terminalOutlined = ReiconIcons.searchBug;
 
   /// Origen: `Icons.theater_comedy_outlined`
   ///
@@ -1481,23 +1540,23 @@ abstract final class MoaiIcons {
   /// - Categorías de canales (mapa por nombre) (`widgets/cards/category_card.dart`)
   static const theaters = Symbols.theaters;
 
-  /// Origen: `Icons.timer_outlined`
+  /// Origen: `ReiconIcons.timer2`
   ///
   /// Usos:
   /// - Ajustes: `settings_agenda_snack_duration_desc` (`features/settings/widgets/settings_agenda_snack_duration_row.dart`)
-  static const timerOutlined = Icons.timer_outlined;
+  static const timerOutlined = ReiconIcons.timer2;
 
-  /// Origen: `Icons.today_outlined`
+  /// Origen: `ReiconIcons.calendarDate`
   ///
   /// Usos:
   /// - Agenda: `calendar_week_current` (`features/calendar/widgets/calendar_events_panel.dart`)
-  static const todayOutlined = Icons.today_outlined;
+  static const todayOutlined = ReiconIcons.calendarDate;
 
-  /// Origen: `Icons.tune_outlined`
+  /// Origen: `ReiconIcons.tuning`
   ///
   /// Usos:
   /// - Inicio / menú lateral (`features/home/areas/home_settings_area.dart`)
-  static const tuneOutlined = Icons.tune_outlined;
+  static const tuneOutlined = ReiconIcons.tuning;
 
   /// Origen: `Symbols.tv_displays`
   ///
@@ -1517,11 +1576,11 @@ abstract final class MoaiIcons {
   /// - Tarjetas de listado de países/grupos (`widgets/cards/country_card.dart`)
   static const tvWithAssistant = Symbols.tv_with_assistant;
 
-  /// Origen: `Symbols.tv_guide`
+  /// Origen: `ReiconIcons.videoLib`
   ///
   /// Usos:
   /// - Ajustes: `settings_about_channels_loaded` (`features/settings/widgets/settings_about_panel.dart`)
-  static const tvGuide = Symbols.tv_guide;
+  static const tvGuide = ReiconIcons.videoLib;
 
   /// Origen: `Icons.tv_rounded`
   ///
@@ -1554,13 +1613,13 @@ abstract final class MoaiIcons {
   /// - Categorías de canales (mapa por nombre) (`widgets/cards/category_card.dart`)
   static const visibility = Symbols.visibility;
 
-  /// Origen: `Symbols.voice_selection`
+  /// Origen: `ReiconIcons.userSpeak`
   ///
   /// Usos:
   /// - Ajustes: `settings_tv_watch_party_desc` (`features/settings/widgets/settings_watch_party_panel.dart`)
   /// - Amigos / Ver juntos (`widgets/player/watch_party_overlay.dart`)
   /// - Inicio (`features/home/widgets/tv_watch_party_header_bar.dart`)
-  static const voiceSelection = Symbols.voice_selection;
+  static const voiceSelection = ReiconIcons.userSpeak;
 
   /// Origen: `Icons.volume_up`
   ///
@@ -1574,12 +1633,12 @@ abstract final class MoaiIcons {
   /// - Amigos / Ver juntos: `mic_test_btn_stop_play` (`widgets/dialogs/tv_voice_test_dialog.dart`)
   static const volumeUpOutlined = Icons.volume_up_outlined;
 
-  /// Origen: `Icons.volume_off_outlined`
+  /// Origen: `ReiconIcons.volumeX`
   ///
   /// Usos:
   /// - Ajustes Generales: desactivar audio de interfaz
   ///   (`features/settings/widgets/settings_general_panel.dart`)
-  static const volumeOffOutlined = Icons.volume_off_outlined;
+  static const volumeOffOutlined = ReiconIcons.volumeX;
 
   /// Origen: `Symbols.warning`
   ///

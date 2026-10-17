@@ -81,7 +81,7 @@ class HomeMoviesAreaState extends State<HomeMoviesArea> {
     return TvAccordionRowPreview(
       panelCount: 1,
       activeIndex: 0,
-      colors: [scheme.surface],
+      colors: [scheme.surface.withValues(alpha: 0.8)],
       titles: ['movies_panel_featured_title'.tr()],
       icons: HomeMoviesArea.icons,
       onPanelTap: (_) {},
@@ -137,6 +137,7 @@ class HomeMoviesAreaState extends State<HomeMoviesArea> {
                 alignment: Alignment.center,
                 child: TvWindowedGrid<MovieItem>(
                   key: _listKey,
+                  focusOnMount: false,
                   items: movies,
                   windowSize: _windowSize,
                   crossAxisCount: _crossAxisCount,

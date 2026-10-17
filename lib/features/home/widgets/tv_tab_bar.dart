@@ -41,6 +41,14 @@ class TvTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
 
+    // Mismo fondo/borde que TvAccordionRowPreview (panel expandido).
+    final baseColor = scheme.surface;
+    final endColor = Color.alphaBlend(
+      scheme.onSurface.withValues(alpha: 0.05),
+      baseColor,
+    );
+    final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
+
     return Padding(
       // Alineación vertical superior para sincronizar con NavigationRail M3.
       padding: const EdgeInsets.only(top: 12, bottom: 12, right: 8),
@@ -48,9 +56,22 @@ class TvTabBar extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
         child: Container(
+          // decoration: BoxDecoration(
+          //   color: scheme.surface,
+          //   borderRadius: BorderRadius.circular(20),
+          // ),
           decoration: BoxDecoration(
-            color: scheme.surface,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [baseColor, baseColor, endColor],
+              stops: const [0.0, 0.62, 1.0],
+            ),
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: borderColor,
+              width: 1.0,
+            ),
           ),
           padding: const EdgeInsets.all(4),
           child: Row(

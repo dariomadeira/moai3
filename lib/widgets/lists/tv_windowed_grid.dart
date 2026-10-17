@@ -22,6 +22,9 @@ class TvWindowedGrid<T> extends StatefulWidget {
   final VoidCallback? onExitLeft;
   final VoidCallback? onExitRight;
   final ValueChanged<int>? onFocusedGlobalIndex;
+
+  /// Si es false, no toma el foco al montarse (el rail lo conserva hasta →).
+  final bool focusOnMount;
   final Widget Function(
     BuildContext context,
     T item,
@@ -50,6 +53,7 @@ class TvWindowedGrid<T> extends StatefulWidget {
     this.onExitLeft,
     this.onExitRight,
     this.onFocusedGlobalIndex,
+    this.focusOnMount = true,
   });
 
   @override
@@ -146,9 +150,11 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
     super.initState();
     _nodes = List.generate(windowSize, (i) => FocusNode(debugLabel: 'grid_$i'));
     _placeWindowFor(widget.initialGlobalIndex);
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _requestLocalFocus(_localFocus);
-    });
+    if (widget.focusOnMount) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _requestLocalFocus(_localFocus);
+      });
+    }
   }
 
   @override

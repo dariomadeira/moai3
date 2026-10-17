@@ -5,7 +5,7 @@ import 'package:moai3/theme/moai_icons.dart';
 /// Ítem de grupo: mismo [TvIconListCard] que países / categorías.
 class GroupCard extends StatelessWidget {
   static final Map<String, IconData> icons = {
-    'bookmark': MoaiIcons.tvSignin,
+    'bookmark': MoaiIcons.tvBookmarkGroupLeading,
     'favorite': MoaiIcons.favoriteOutline,
     'no_adults': MoaiIcons.explicitOutlined,
     'sports_soccer': MoaiIcons.sportsSoccerOutlined,
@@ -17,7 +17,7 @@ class GroupCard extends StatelessWidget {
   };
 
   static IconData iconFor(String iconKey) =>
-      icons[iconKey] ?? MoaiIcons.tvSignin;
+      icons[iconKey] ?? MoaiIcons.tvBookmarkGroupLeading;
 
   final String groupName;
   final String iconKey;

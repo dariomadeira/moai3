@@ -151,6 +151,11 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
             final selected = _toSelectedIndex(_focusedIndex);
             if (selected != widget.selectedIndex) {
               widget.onIndexChanged(selected);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && !widget.railFocusNode.hasFocus) {
+                  widget.railFocusNode.requestFocus();
+                }
+              });
             }
             return KeyEventResult.handled;
           }

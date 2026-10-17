@@ -35,11 +35,11 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
   final FocusNode _autoBtnFocus = FocusNode(debugLabel: 'weather_auto_btn');
   final FocusNode _searchBtnFocus = FocusNode(debugLabel: 'weather_search_btn');
   final FocusNode _closeBtnFocus = FocusNode(debugLabel: 'weather_close_btn');
+  final TextEditingController _searchController = TextEditingController();
   final GlobalKey<TvWindowedListState<WeatherLocationSearchResult>>
   _resultsListKey =
       GlobalKey<TvWindowedListState<WeatherLocationSearchResult>>();
 
-  String _searchQuery = '';
   bool _isSearching = false;
   bool _hasSearched = false;
   List<WeatherLocationSearchResult> _results = [];
@@ -57,26 +57,15 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     _autoBtnFocus.dispose();
     _searchBtnFocus.dispose();
     _closeBtnFocus.dispose();
     super.dispose();
   }
 
-  Future<void> _openKeyboardAndSearch() async {
-    final text = await TvTextField.open(
-      context,
-      title: 'weather_location_dialog_title'.tr(),
-      initialValue: _searchQuery,
-      hint: 'weather_location_search_hint'.tr(),
-    );
-
-    if (text == null || !mounted) return;
-    final trimmed = text.trim();
-    setState(() {
-      _searchQuery = trimmed;
-    });
-
+  Future<void> _performSearch(String query) async {
+    final trimmed = query.trim();
     if (trimmed.length < 2) {
       setState(() {
         _results = [];
@@ -156,64 +145,63 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. Botón para detección automática
-          TvDialogButton(
-            focusNode: _autoBtnFocus,
-            label: isAuto
-                ? 'weather_location_auto_active'.tr()
-                : 'weather_location_auto_btn'.tr(),
-            icon: MoaiIcons.myLocationRounded,
-            variant: isAuto
-                ? TvDialogButtonVariant.primary
-                : TvDialogButtonVariant.neutral,
-            onPressed: _resetToAuto,
-            onKeyDown: () => _searchBtnFocus.requestFocus(),
-          ),
-          const SizedBox(height: 8),
-
-          // 2. Botón interactivo para abrir teclado y buscar
-          TvTile(
+          // 1. Campo interactivo estándar (TvTextField) idéntico a Buscar
+          TvTextField(
+            controller: _searchController,
             focusNode: _searchBtnFocus,
-            minHeight: 50,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            label: _searchQuery.isEmpty
-                ? 'weather_location_search_hint'.tr()
-                : 'weather_location_search_prefix'.tr(
-                    namedArgs: {'query': _searchQuery},
-                  ),
-            description: _searchQuery.isEmpty
-                ? 'weather_location_search_desc_empty'.tr()
-                : 'weather_location_search_desc_modify'.tr(),
-            icon: MoaiIcons.searchRounded,
-            onPressed: _openKeyboardAndSearch,
-            onKeyUp: () => _autoBtnFocus.requestFocus(),
-            onKeyDown: () {
+            label: 'weather_location_search_hint'.tr(),
+            hint: 'search_field_hint'.tr(),
+            keyboardType: TvKeyboardType.text,
+            textInputAction: TvTextInputAction.search,
+            dense: true,
+            leadingIcon: MoaiIcons.keyboardAltOutlined,
+            onChanged: (val) => _performSearch(val),
+            onSubmitted: (val) {
+              _performSearch(val);
+              if (_results.isNotEmpty) {
+                _resultsListKey.currentState?.ensureVisible(0);
+              }
+            },
+            onFocusDown: () {
               if (_results.isNotEmpty) {
                 _resultsListKey.currentState?.ensureVisible(0);
               } else {
-                _closeBtnFocus.requestFocus();
+                _autoBtnFocus.requestFocus();
               }
             },
-            trailingBuilder: (context, isFocused) {
-              return Icon(
-                MoaiIcons.keyboardOutlined,
-                size: 20,
-                color: isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
-              );
-            },
           ),
-          const SizedBox(height: 8),
-
-          // 3. Área de sugerencias / resultados
-          _buildResultsArea(context, scheme),
+          if (_isSearching || _hasSearched) ...[
+            const SizedBox(height: 16),
+            _buildResultsArea(context, scheme),
+          ],
         ],
       ),
       actions: [
+        TvDialogButton(
+          focusNode: _autoBtnFocus,
+          label: isAuto
+              ? 'weather_location_auto_active'.tr()
+              : 'weather_location_auto_btn'.tr(),
+          icon: MoaiIcons.myLocationRounded,
+          variant: isAuto
+              ? TvDialogButtonVariant.primary
+              : TvDialogButtonVariant.neutral,
+          onPressed: _resetToAuto,
+          onKeyRight: () => _closeBtnFocus.requestFocus(),
+          onKeyUp: () {
+            if (_results.isNotEmpty) {
+              _resultsListKey.currentState?.ensureVisible(_results.length - 1);
+            } else {
+              _searchBtnFocus.requestFocus();
+            }
+          },
+        ),
         TvDialogButton(
           focusNode: _closeBtnFocus,
           label: 'common_close'.tr(),
           variant: TvDialogButtonVariant.neutral,
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+          onKeyLeft: () => _autoBtnFocus.requestFocus(),
           onKeyUp: () {
             if (_results.isNotEmpty) {
               _resultsListKey.currentState?.ensureVisible(_results.length - 1);
@@ -232,7 +220,8 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
         height: 140,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: scheme.surfaceContainerHigh.withValues(alpha: 0.4),
+          // color: scheme.surfaceContainerHigh.withValues(alpha: 0.4),
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -294,7 +283,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
 
     if (_results.isNotEmpty) {
       const windowSize = 3;
-      const itemExtent = 58.0;
+      const itemExtent = 72.0;
       final targetHeight = (windowSize * itemExtent);
 
       return SizedBox(
@@ -307,7 +296,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
           showScrollDots: true,
           initialGlobalIndex: _selectedResultIndex,
           onFocusUpFromFirst: () => _searchBtnFocus.requestFocus(),
-          onFocusDownFromLast: () => _closeBtnFocus.requestFocus(),
+          onFocusDownFromLast: () => _autoBtnFocus.requestFocus(),
           onFocusedGlobalIndex: (idx) => _selectedResultIndex = idx,
           itemBuilder:
               (
@@ -323,26 +312,17 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: TvTile(
                     focusNode: focusNode,
-                    minHeight: 52,
+                    minHeight: 0,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
+                      horizontal: 14,
+                      vertical: 8,
                     ),
                     label: item.displayName,
                     description: item.subtitle,
-                    icon: MoaiIcons.locationOnOutlined,
+                    icon: MoaiIcons.weatherLocationItem,
                     onPressed: () => _selectLocation(item),
                     onKeyUp: onKeyUp,
                     onKeyDown: onKeyDown,
-                    trailingBuilder: (context, isFocused) {
-                      return Icon(
-                        MoaiIcons.checkRounded,
-                        size: 18,
-                        color: isFocused
-                            ? scheme.onPrimary
-                            : scheme.primary.withValues(alpha: 0.6),
-                      );
-                    },
                   ),
                 );
               },
@@ -350,36 +330,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
       );
     }
 
-    // Estado inicial antes de realizar una búsqueda
-    return Container(
-      height: 90,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            MoaiIcons.infoOutlineRounded,
-            size: 20,
-            color: scheme.primary.withValues(alpha: 0.8),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'weather_location_type_to_search'.tr(),
-              style: MoaiText.body(
-                context,
-                fontSize: 13,
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    // Estado inicial antes de realizar una búsqueda (el helperText ya vive en TvTextField)
+    return const SizedBox.shrink();
   }
 }

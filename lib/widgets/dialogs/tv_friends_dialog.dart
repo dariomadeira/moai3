@@ -9,7 +9,6 @@ import 'package:moai3/widgets/dialogs/tv_add_friend_dialog.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
-import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
 import 'package:moai3/widgets/tv_input/tv_text_field.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/theme/moai_icons.dart';

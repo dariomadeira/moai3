@@ -203,7 +203,7 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
     final scheme = context.scheme;
 
     return TvDialog(
-      icon: MoaiIcons.bookmarkAddOutlined,
+      icon: MoaiIcons.tvGroupCreateDialogTitle,
       title: 'groups_create_title'.tr(),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -216,7 +216,7 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
             hint: 'groups_name_hint'.tr(),
             keyboardType: TvKeyboardType.text,
             textInputAction: TvTextInputAction.done,
-            leadingIcon: MoaiIcons.playlistAddOutlined,
+            leadingIcon: MoaiIcons.tvGroupCreateDialogInput,
             onFocusDown: () => _createFocusNode.requestFocus(),
             onSubmitted: (_) => _createFocusNode.requestFocus(),
             onChanged: (_) {

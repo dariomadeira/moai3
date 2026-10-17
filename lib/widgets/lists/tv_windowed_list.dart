@@ -28,6 +28,9 @@ class TvWindowedList<T> extends StatefulWidget {
   final VoidCallback? onFocusUpFromFirst;
   final VoidCallback? onFocusDownFromLast;
   final ValueChanged<int>? onFocusedGlobalIndex;
+
+  /// Si es false, no toma el foco al montarse (el rail lo conserva hasta →).
+  final bool focusOnMount;
   final Widget Function(
     BuildContext context,
     T item,
@@ -52,6 +55,7 @@ class TvWindowedList<T> extends StatefulWidget {
     this.onFocusUpFromFirst,
     this.onFocusDownFromLast,
     this.onFocusedGlobalIndex,
+    this.focusOnMount = true,
   });
 
   @override
@@ -134,9 +138,11 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
     _nodes = [];
     _syncNodes();
     _placeWindowFor(widget.initialGlobalIndex, preferAnchorSlot: false);
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _requestLocalFocus(_localFocus);
-    });
+    if (widget.focusOnMount) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _requestLocalFocus(_localFocus);
+      });
+    }
   }
 
   @override

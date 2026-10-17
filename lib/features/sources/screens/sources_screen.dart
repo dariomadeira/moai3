@@ -2,14 +2,21 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/widgets/buttons/tv_back_pill.dart';
+import 'package:moai3/widgets/buttons/tv_install_pill.dart';
+import 'package:moai3/widgets/lists/tv_windowed_list.dart';
+import 'package:moai3/features/settings/widgets/tv_tile.dart';
+import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/services/plugin_host_service.dart';
 import 'package:moai3/services/plugin_update_service.dart';
+import 'package:moai3/state/tv_settings_provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
-import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
+import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
+import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 import 'package:moai3/widgets/tv_input/tv_text_field.dart';
-import 'package:moai3/theme/moai_icons.dart';
 
 String _formatChannelsCount(int count) {
   final label = count == 1
@@ -30,7 +37,7 @@ class _PresetPlugin {
   });
 }
 
-/// Administración de fuentes de canales (plugins `.dex` por URL).
+/// Pantalla del Administrador de Extensiones con layout de 2 columnas dentro del panel TV.
 class SourcesScreen extends StatefulWidget {
   const SourcesScreen({super.key});
 
@@ -39,17 +46,22 @@ class SourcesScreen extends StatefulWidget {
 }
 
 class _SourcesScreenState extends State<SourcesScreen> {
-  static const bool _showMyPlugs = true;
-
-  final TextEditingController _urlController =
-      TextEditingController(text: 'https://');
-  final FocusNode _backFocus = FocusNode(debugLabel: 'sources_back');
+  final TextEditingController _urlController = TextEditingController(
+    text: 'https://',
+  );
+  final FocusNode _backFocusNode = FocusNode(debugLabel: 'sources_rail_back');
   final FocusNode _urlFocus = FocusNode(debugLabel: 'sources_url');
   final FocusNode _installFocus = FocusNode(debugLabel: 'sources_install');
-  final ScrollController _scrollController = ScrollController();
-  final List<FocusNode> _tileFocuses = [];
-  final List<FocusNode> _presetFocuses = [];
   final FocusNode _emptyFocusNode = FocusNode(debugLabel: 'sources_empty');
+  final GlobalKey<TvWindowedListState<PluginSource>> _installedListKey =
+      GlobalKey<TvWindowedListState<PluginSource>>();
+  final GlobalKey<TvWindowedListState<_PresetPlugin>> _presetsListKey =
+      GlobalKey<TvWindowedListState<_PresetPlugin>>();
+
+  int _selectedInstalledIndex = 0;
+  int _selectedPresetIndex = 0;
+
+  final List<FocusNode> _tileFocuses = [];
 
   static const String _arUrl =
       'https://raw.githubusercontent.com/dariomadeira/moaiplug_ar/refs/heads/main/manifest.json';
@@ -73,13 +85,10 @@ class _SourcesScreenState extends State<SourcesScreen> {
   void initState() {
     super.initState();
     _urlFocus.addListener(_onUrlFocusChange);
-    if (_showMyPlugs) {
-      for (var i = 0; i < _presetPlugins.length; i++) {
-        _presetFocuses.add(FocusNode(debugLabel: 'sources_preset_$i'));
-      }
-    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _urlFocus.requestFocus();
+      if (mounted) {
+        _urlFocus.requestFocus();
+      }
     });
   }
 
@@ -87,8 +96,9 @@ class _SourcesScreenState extends State<SourcesScreen> {
     if (_urlFocus.hasFocus && _urlController.text.trim().isEmpty) {
       setState(() {
         _urlController.text = 'https://';
-        _urlController.selection =
-            TextSelection.collapsed(offset: _urlController.text.length);
+        _urlController.selection = TextSelection.collapsed(
+          offset: _urlController.text.length,
+        );
       });
     }
   }
@@ -97,15 +107,11 @@ class _SourcesScreenState extends State<SourcesScreen> {
   void dispose() {
     _urlFocus.removeListener(_onUrlFocusChange);
     _urlController.dispose();
-    _backFocus.dispose();
+    _backFocusNode.dispose();
     _urlFocus.dispose();
     _installFocus.dispose();
-    _scrollController.dispose();
     _emptyFocusNode.dispose();
     for (final node in _tileFocuses) {
-      node.dispose();
-    }
-    for (final node in _presetFocuses) {
       node.dispose();
     }
     super.dispose();
@@ -120,9 +126,17 @@ class _SourcesScreenState extends State<SourcesScreen> {
     context.read<PluginHostController>().install(url);
   }
 
+  void _focusPresetList() {
+    if (_presetPlugins.isEmpty) return;
+    final index = _selectedPresetIndex.clamp(0, _presetPlugins.length - 1);
+    _presetsListKey.currentState?.ensureVisible(index, requestFocus: true);
+  }
+
   void _resyncFocus(int sourceCount) {
     while (_tileFocuses.length < sourceCount * 2) {
-      _tileFocuses.add(FocusNode(debugLabel: 'sources_tile'));
+      _tileFocuses.add(
+        FocusNode(debugLabel: 'sources_tile_${_tileFocuses.length}'),
+      );
     }
   }
 
@@ -130,385 +144,225 @@ class _SourcesScreenState extends State<SourcesScreen> {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
     final controller = context.watch<PluginHostController>();
-    _resyncFocus(controller.sources.length);
+    final sources = controller.sources;
+    _resyncFocus(sources.length);
 
-    final totalSources = controller.sources.length;
-    final totalChannels = controller.sources.fold<int>(
+    final totalSources = sources.length;
+    final hasSources = sources.isNotEmpty;
+    final totalChannels = sources.fold<int>(
       0,
       (sum, source) => sum + source.canales.length,
     );
 
-    return PopScope(
-      canPop: true,
-      child: Scaffold(
-        backgroundColor: scheme.surface,
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _header(context, scheme, totalChannels),
-                const SizedBox(height: 18),
-                _inputBar(context, scheme, controller),
-                if (controller.error != null) ...[
-                  const SizedBox(height: 12),
-                  Material(
-                    color: scheme.errorContainer,
-                    borderRadius: BorderRadius.circular(16),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      child: Row(
+    final overlapX = context.select(
+      (TvSettingsProvider s) => s.overlapPaddingX,
+    );
+    final overlapY = context.select(
+      (TvSettingsProvider s) => s.overlapPaddingY,
+    );
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: scheme.brightness == Brightness.dark
+                ? [
+                    Color.lerp(
+                      scheme.surfaceContainerHigh,
+                      scheme.primary,
+                      0.08,
+                    )!,
+                    scheme.surfaceContainerLow,
+                  ]
+                : [scheme.surfaceContainerLowest, scheme.surfaceContainerHigh],
+          ),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Opacity(
+                  opacity: 0.3,
+                  child: Image.asset(
+                    'assets/images/fondo.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            ),
+            SafeArea(
+              top: false,
+              bottom: false,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: overlapX,
+                  vertical: overlapY,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      width: 54,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Icon(
-                            MoaiIcons.errorOutlineRounded,
-                            color: scheme.onErrorContainer,
-                            size: 20,
+                          const SizedBox(height: 9),
+                          TvBackPill(
+                            focusNode: _backFocusNode,
+                            onKeyRight: () => _urlFocus.requestFocus(),
+                            onKeyDown: hasSources
+                                ? () => _tileFocuses.first.requestFocus()
+                                : () => _emptyFocusNode.requestFocus(),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              controller.error!,
-                              style: MoaiText.body(
-                                context,
-                                color: scheme.onErrorContainer,
-                                fontSize: 13,
-                                height: 1.3,
-                              ),
-                            ),
-                          ),
+                          const Spacer(),
                         ],
                       ),
                     ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                Expanded(
-                  child: _showMyPlugs
-                      ? _buildTwoColumnLayout(context, scheme, controller, totalSources)
-                      : _buildSingleColumnLayout(context, scheme, controller, totalSources),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+                        child: TvAccordionRowPreview(
+                          panelCount: 1,
+                          activeIndex: 0,
+                          colors: [scheme.surface.withValues(alpha: 0.8)],
+                          titles: ['settings_general_sources'.tr()],
+                          icons: const [MoaiIcons.extensionOutlined],
+                          onPanelTap: (_) {},
+                          tabBuilder: (index, isExpanded) {
+                            return Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: 14,
+                                top: 14,
+                              ),
+                              child: Column(
+                                children: [
+                                  const Spacer(),
+                                  RotatedBox(
+                                    quarterTurns: 3,
+                                    child: Text(
+                                      'settings_general_sources'.tr(),
+                                      maxLines: 1,
+                                      softWrap: false,
+                                      overflow: TextOverflow.fade,
+                                      style: MoaiText.display(
+                                        context,
+                                        color: scheme.onSurface.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 1.0,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Icon(
+                                    MoaiIcons.extensionOutlined,
+                                    size: 20,
+                                    color: scheme.onSurfaceVariant.withValues(
+                                      alpha: 0.85,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          buildExpandedContent: (index, title) {
+                            return Container(
+                              padding: const EdgeInsets.all(10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      Expanded(
+                                        child: TvPanelHeader(
+                                          title: 'sources_title'.tr(),
+                                          subtitle: 'sources_subtitle'.tr(),
+                                          padding: EdgeInsets.zero,
+                                        ),
+                                      ),
+                                      if (totalChannels > 0) ...[
+                                        const SizedBox(width: 12),
+                                        TvMetaPill(
+                                          icon: MoaiIcons.tvSourcesTotalChannels,
+                                          label: _formatChannelsCount(
+                                            totalChannels,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  const SizedBox(height: 14),
+                                  _buildInputBar(context, scheme, controller),
+                                  if (controller.error != null) ...[
+                                    const SizedBox(height: 10),
+                                    Material(
+                                      color: scheme.errorContainer,
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 8,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              MoaiIcons.errorOutlineRounded,
+                                              color: scheme.onErrorContainer,
+                                              size: 18,
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Text(
+                                                controller.error!,
+                                                style: MoaiText.body(
+                                                  context,
+                                                  color:
+                                                      scheme.onErrorContainer,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 22),
+                                  Expanded(
+                                    child: _buildTwoColumnLayout(
+                                      context,
+                                      scheme,
+                                      controller,
+                                      sources,
+                                      totalSources,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildSingleColumnLayout(
-    BuildContext context,
-    ColorScheme scheme,
-    PluginHostController controller,
-    int totalSources,
-  ) {
-    return controller.loading
-        ? Center(
-            child: CircularProgressIndicator(
-              color: scheme.primary,
-              strokeWidth: 3,
-            ),
-          )
-        : totalSources == 0
-            ? TvEmptyStateCard(
-                focusNode: _emptyFocusNode,
-                icon: MoaiIcons.extensionOffOutlined,
-                message: 'sources_empty'.tr(),
-                onFocusUp: () => _installFocus.requestFocus(),
-              )
-            : Scrollbar(
-                controller: _scrollController,
-                thumbVisibility: true,
-                child: ListView.builder(
-                  controller: _scrollController,
-                  itemCount: totalSources,
-                  itemBuilder: (context, i) {
-                    final source = controller.sources[i];
-                    final updateNode = _tileFocuses[i * 2];
-                    final removeNode = _tileFocuses[i * 2 + 1];
-                    final isFirst = i == 0;
-                    final isLast = i == totalSources - 1;
-
-                    return _SourceTile(
-                      key: ValueKey(source.id),
-                      source: source,
-                      updateFocus: updateNode,
-                      removeFocus: removeNode,
-                      onUpdateKeyUp: () {
-                        if (isFirst) {
-                          _urlFocus.requestFocus();
-                        } else {
-                          _tileFocuses[(i - 1) * 2].requestFocus();
-                        }
-                      },
-                      onUpdateKeyDown: () {
-                        if (!isLast) {
-                          _tileFocuses[(i + 1) * 2].requestFocus();
-                        }
-                      },
-                      onRemoveKeyUp: () {
-                        if (isFirst) {
-                          _installFocus.requestFocus();
-                        } else {
-                          _tileFocuses[(i - 1) * 2 + 1].requestFocus();
-                        }
-                      },
-                      onRemoveKeyDown: () {
-                        if (!isLast) {
-                          _tileFocuses[(i + 1) * 2 + 1].requestFocus();
-                        }
-                      },
-                      onUpdate: () => controller.updateSource(source.sourceUrl),
-                      onRemove: () => controller.removePlugin(source.id),
-                    );
-                  },
-                ),
-              );
-  }
-
-  Widget _buildTwoColumnLayout(
-    BuildContext context,
-    ColorScheme scheme,
-    PluginHostController controller,
-    int totalSources,
-  ) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Text(
-                  'sources_installed_header'.tr(),
-                  style: MoaiText.body(
-                    context,
-                    color: scheme.onSurfaceVariant,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: controller.loading
-                    ? Center(
-                        child: CircularProgressIndicator(
-                          color: scheme.primary,
-                          strokeWidth: 3,
-                        ),
-                      )
-                    : totalSources == 0
-                        ? TvEmptyStateCard(
-                            focusNode: _emptyFocusNode,
-                            icon: MoaiIcons.extensionOffOutlined,
-                            message: 'sources_empty'.tr(),
-                            onFocusUp: () => _urlFocus.requestFocus(),
-                            onFocusRight: _presetFocuses.isNotEmpty
-                                ? () => _presetFocuses.first.requestFocus()
-                                : null,
-                          )
-                        : Scrollbar(
-                            controller: _scrollController,
-                            thumbVisibility: true,
-                            child: ListView.builder(
-                              controller: _scrollController,
-                              itemCount: totalSources,
-                              itemBuilder: (context, i) {
-                                final source = controller.sources[i];
-                                final updateNode = _tileFocuses[i * 2];
-                                final removeNode = _tileFocuses[i * 2 + 1];
-                                final isFirst = i == 0;
-                                final isLast = i == totalSources - 1;
-
-                                return _SourceTile(
-                                  key: ValueKey(source.id),
-                                  source: source,
-                                  updateFocus: updateNode,
-                                  removeFocus: removeNode,
-                                  onUpdateKeyUp: () {
-                                    if (isFirst) {
-                                      _urlFocus.requestFocus();
-                                    } else {
-                                      _tileFocuses[(i - 1) * 2].requestFocus();
-                                    }
-                                  },
-                                  onUpdateKeyDown: () {
-                                    if (!isLast) {
-                                      _tileFocuses[(i + 1) * 2].requestFocus();
-                                    }
-                                  },
-                                  onRemoveKeyUp: () {
-                                    if (isFirst) {
-                                      _installFocus.requestFocus();
-                                    } else {
-                                      _tileFocuses[(i - 1) * 2 + 1].requestFocus();
-                                    }
-                                  },
-                                  onRemoveKeyDown: () {
-                                    if (!isLast) {
-                                      _tileFocuses[(i + 1) * 2 + 1].requestFocus();
-                                    }
-                                  },
-                                  onRemoveKeyRight: _presetFocuses.isNotEmpty
-                                      ? () {
-                                          final targetIndex =
-                                              i.clamp(0, _presetFocuses.length - 1);
-                                          _presetFocuses[targetIndex].requestFocus();
-                                        }
-                                      : null,
-                                  onUpdate: () =>
-                                      controller.updateSource(source.sourceUrl),
-                                  onRemove: () =>
-                                      controller.removePlugin(source.id),
-                                );
-                              },
-                            ),
-                          ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 20),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Text(
-                  'sources_preset_header'.tr(),
-                  style: MoaiText.body(
-                    context,
-                    color: scheme.onSurfaceVariant,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _presetPlugins.length,
-                  itemBuilder: (context, i) {
-                    final preset = _presetPlugins[i];
-                    final isInstalled = controller.sources.any(
-                      (s) => s.sourceUrl == preset.url,
-                    );
-                    return _PresetTile(
-                      key: ValueKey(preset.url),
-                      preset: preset,
-                      focusNode: _presetFocuses[i],
-                      isInstalled: isInstalled,
-                      onInstall: () => _install(preset.url),
-                      onKeyLeft: () {
-                        if (totalSources > 0) {
-                          final targetIndex =
-                              (i * 2 + 1).clamp(0, _tileFocuses.length - 1);
-                          _tileFocuses[targetIndex].requestFocus();
-                        } else {
-                          _emptyFocusNode.requestFocus();
-                        }
-                      },
-                      onKeyUp: () {
-                        if (i == 0) {
-                          _installFocus.requestFocus();
-                        } else {
-                          _presetFocuses[i - 1].requestFocus();
-                        }
-                      },
-                      onKeyDown: () {
-                        if (i < _presetPlugins.length - 1) {
-                          _presetFocuses[i + 1].requestFocus();
-                        }
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _header(BuildContext context, ColorScheme scheme, int totalChannels) {
-    return Row(
-      children: [
-        _BackButton(
-          focusNode: _backFocus,
-          onPressed: () => Navigator.of(context).pop(),
-          onFocusRight: () => _urlFocus.requestFocus(),
-          onFocusDown: () => _urlFocus.requestFocus(),
-        ),
-        const SizedBox(width: 14),
-        Material(
-          color: scheme.primaryContainer,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Icon(
-              MoaiIcons.extension,
-              color: scheme.onPrimaryContainer,
-              size: 26,
-            ),
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'sources_title'.tr(),
-                style: MoaiText.display(
-                  context,
-                  color: scheme.onSurface,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'sources_subtitle'.tr(),
-                style: MoaiText.body(
-                  context,
-                  color: scheme.onSurfaceVariant,
-                  fontSize: 13,
-                  height: 1.3,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (totalChannels > 0) ...[
-          const SizedBox(width: 12),
-          Material(
-            color: scheme.tertiaryContainer,
-            borderRadius: BorderRadius.circular(20),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              child: Text(
-                _formatChannelsCount(totalChannels),
-                style: MoaiText.body(
-                  context,
-                  color: scheme.onTertiaryContainer,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _inputBar(
+  Widget _buildInputBar(
     BuildContext context,
     ColorScheme scheme,
     PluginHostController controller,
@@ -526,11 +380,11 @@ class _SourcesScreenState extends State<SourcesScreen> {
             hint: 'sources_url_hint'.tr(),
             keyboardType: TvKeyboardType.text,
             doneLabel: 'sources_install'.tr(),
-            leadingIcon: MoaiIcons.linkRounded,
+            leadingIcon: MoaiIcons.tvSourcesUrlInput,
             onSubmitted: (val) => _install(val),
-            onFocusLeft: () => _backFocus.requestFocus(),
+            onFocusLeft: () => _backFocusNode.requestFocus(),
             onFocusRight: () => _installFocus.requestFocus(),
-            onFocusUp: () => _backFocus.requestFocus(),
+            onFocusUp: () => _backFocusNode.requestFocus(),
             onFocusDown: hasSources
                 ? () => _tileFocuses.first.requestFocus()
                 : () => _emptyFocusNode.requestFocus(),
@@ -540,8 +394,9 @@ class _SourcesScreenState extends State<SourcesScreen> {
         TvFocusButton(
           focusNode: _installFocus,
           label: 'sources_install'.tr(),
-          icon: MoaiIcons.installDesktop,
+          icon: MoaiIcons.tvSourcesInstallAction,
           height: 60,
+          radius: 30,
           variant: TvButtonVariant.tonal,
           onPressed: controller.loading
               ? null
@@ -572,7 +427,8 @@ class _SourcesScreenState extends State<SourcesScreen> {
                   _install(_arUrl);
                 },
           onArrowLeft: () => _urlFocus.requestFocus(),
-          onArrowUp: () => _backFocus.requestFocus(),
+          onArrowRight: _focusPresetList,
+          onArrowUp: () => _backFocusNode.requestFocus(),
           onArrowDown: hasSources
               ? () => _tileFocuses.first.requestFocus()
               : () => _emptyFocusNode.requestFocus(),
@@ -580,95 +436,211 @@ class _SourcesScreenState extends State<SourcesScreen> {
       ],
     );
   }
-}
 
-class _BackButton extends StatefulWidget {
-  final FocusNode focusNode;
-  final VoidCallback onPressed;
-  final VoidCallback? onFocusRight;
-  final VoidCallback? onFocusDown;
-
-  const _BackButton({
-    required this.focusNode,
-    required this.onPressed,
-    this.onFocusRight,
-    this.onFocusDown,
-  });
-
-  @override
-  State<_BackButton> createState() => _BackButtonState();
-}
-
-class _BackButtonState extends State<_BackButton> {
-  bool _isFocused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _isFocused = widget.focusNode.hasFocus;
-    widget.focusNode.addListener(_onFocus);
-  }
-
-  @override
-  void dispose() {
-    widget.focusNode.removeListener(_onFocus);
-    super.dispose();
-  }
-
-  void _onFocus() {
-    if (mounted) setState(() => _isFocused = widget.focusNode.hasFocus);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    final bg = _isFocused ? scheme.primary : scheme.surfaceContainerLow;
-    final fg = _isFocused ? scheme.onPrimary : scheme.onSurface;
-
-    return Focus(
-      focusNode: widget.focusNode,
-      onKeyEvent: (node, event) {
-        if (event is! KeyDownEvent) return KeyEventResult.ignored;
-        final key = event.logicalKey;
-        if (key == LogicalKeyboardKey.arrowRight && widget.onFocusRight != null) {
-          widget.onFocusRight!();
-          return KeyEventResult.handled;
-        }
-        if (key == LogicalKeyboardKey.arrowDown && widget.onFocusDown != null) {
-          widget.onFocusDown!();
-          return KeyEventResult.handled;
-        }
-        if (key == LogicalKeyboardKey.enter ||
-            key == LogicalKeyboardKey.select ||
-            key == LogicalKeyboardKey.space ||
-            key == LogicalKeyboardKey.gameButtonA) {
-          widget.onPressed();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      child: AnimatedScale(
-        scale: _isFocused ? 1.04 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOutCubic,
-        child: Material(
-          color: bg,
-          borderRadius: BorderRadius.circular(16),
-          child: InkWell(
-            onTap: widget.onPressed,
-            borderRadius: BorderRadius.circular(16),
-            child: SizedBox(
-              width: 52,
-              height: 52,
-              child: Icon(
-                MoaiIcons.arrowBackRounded,
-                color: fg,
-                size: 24,
+  Widget _buildTwoColumnLayout(
+    BuildContext context,
+    ColorScheme scheme,
+    PluginHostController controller,
+    List<PluginSource> sources,
+    int totalSources,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'sources_installed_header'.tr(),
+                  style: MoaiText.body(
+                    context,
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-            ),
+              Expanded(
+                child: controller.loading
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          color: scheme.primary,
+                          strokeWidth: 3,
+                        ),
+                      )
+                    : totalSources == 0
+                    ? TvEmptyStateCard(
+                        focusNode: _emptyFocusNode,
+                        icon: MoaiIcons.extensionOffOutlined,
+                        message: 'sources_empty'.tr(),
+                        onFocusLeft: () => _backFocusNode.requestFocus(),
+                        onFocusUp: () => _urlFocus.requestFocus(),
+                        onFocusRight: _focusPresetList,
+                      )
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          const windowSize = 4;
+                          final availableH = constraints.maxHeight;
+                          final itemExtent = (availableH / windowSize).floorToDouble();
+
+                          return SizedBox(
+                            height: availableH,
+                            child: TvWindowedList<PluginSource>(
+                              key: _installedListKey,
+                              items: sources,
+                              windowSize: windowSize,
+                              itemExtent: itemExtent,
+                              showScrollDots: true,
+                              initialGlobalIndex: _selectedInstalledIndex,
+                              focusOnMount: false,
+                              onFocusedGlobalIndex: (idx) {
+                                _selectedInstalledIndex = idx;
+                              },
+                              onFocusUpFromFirst: () =>
+                                  _urlFocus.requestFocus(),
+                              itemBuilder: (
+                                context,
+                                source,
+                                focusNode,
+                                local,
+                                global,
+                                onKeyUp,
+                                onKeyDown,
+                              ) {
+                                final isFirst = global == 0;
+                                final updateNode = _tileFocuses[global * 2];
+                                final removeNode = _tileFocuses[global * 2 + 1];
+
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 3),
+                                  child: _SourceTile(
+                                    key: ValueKey(source.id),
+                                    source: source,
+                                    updateFocus: updateNode,
+                                    removeFocus: removeNode,
+                                    onUpdateKeyLeft: () =>
+                                        _backFocusNode.requestFocus(),
+                                    onUpdateKeyUp: onKeyUp,
+                                    onUpdateKeyDown: onKeyDown,
+                                    onRemoveKeyUp: () {
+                                      if (isFirst) {
+                                        _installFocus.requestFocus();
+                                      } else {
+                                        onKeyUp();
+                                      }
+                                    },
+                                    onRemoveKeyDown: onKeyDown,
+                                    onRemoveKeyRight: _focusPresetList,
+                                    onUpdate: () =>
+                                        controller.updateSource(source.sourceUrl),
+                                    onRemove: () =>
+                                        controller.removePlugin(source.id),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
           ),
         ),
-      ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'sources_presets_header'.tr(),
+                  style: MoaiText.body(
+                    context,
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    const windowSize = 4;
+                    final availableH = constraints.maxHeight;
+                    final itemExtent = (availableH / windowSize).floorToDouble();
+
+                    return SizedBox(
+                      height: availableH,
+                      child: TvWindowedList<_PresetPlugin>(
+                        key: _presetsListKey,
+                        items: _presetPlugins,
+                        windowSize: windowSize,
+                        itemExtent: itemExtent,
+                        showScrollDots: true,
+                        initialGlobalIndex: _selectedPresetIndex,
+                        focusOnMount: false,
+                        onFocusedGlobalIndex: (idx) {
+                          _selectedPresetIndex = idx;
+                        },
+                        onFocusUpFromFirst: () =>
+                            _installFocus.requestFocus(),
+                        itemBuilder: (
+                          context,
+                          preset,
+                          focusNode,
+                          local,
+                          global,
+                          onKeyUp,
+                          onKeyDown,
+                        ) {
+                          final isInstalled = sources.any(
+                            (s) => s.sourceUrl == preset.url,
+                          );
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 3),
+                            child: TvTile(
+                              focusNode: focusNode,
+                              minHeight: 0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              label: preset.name,
+                              description: preset.description,
+                              icon: MoaiIcons.electricalServices,
+                              onPressed: () => _install(preset.url),
+                              onKeyLeft: () {
+                                if (totalSources > 0) {
+                                  final targetIndex = (_selectedInstalledIndex * 2 + 1)
+                                      .clamp(0, _tileFocuses.length - 1);
+                                  _tileFocuses[targetIndex].requestFocus();
+                                } else {
+                                  _emptyFocusNode.requestFocus();
+                                }
+                              },
+                              onKeyUp: onKeyUp,
+                              onKeyDown: onKeyDown,
+                              trailingBuilder: (context, isFocused) =>
+                                  TvInstallPill(
+                                isInstalled: isInstalled,
+                                isFocused: isFocused,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -677,6 +649,7 @@ class _SourceTile extends StatefulWidget {
   final PluginSource source;
   final FocusNode updateFocus;
   final FocusNode removeFocus;
+  final VoidCallback? onUpdateKeyLeft;
   final VoidCallback onUpdateKeyUp;
   final VoidCallback onUpdateKeyDown;
   final VoidCallback onRemoveKeyUp;
@@ -690,6 +663,7 @@ class _SourceTile extends StatefulWidget {
     required this.source,
     required this.updateFocus,
     required this.removeFocus,
+    this.onUpdateKeyLeft,
     required this.onUpdateKeyUp,
     required this.onUpdateKeyDown,
     required this.onRemoveKeyUp,
@@ -724,15 +698,6 @@ class _SourceTileState extends State<_SourceTile> {
   }
 
   @override
-  void didUpdateWidget(covariant _SourceTile oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.source.version != widget.source.version ||
-        oldWidget.source.sourceUrl != widget.source.sourceUrl) {
-      _checkForUpdate();
-    }
-  }
-
-  @override
   void dispose() {
     widget.updateFocus.removeListener(_onFocus);
     widget.removeFocus.removeListener(_onFocus);
@@ -740,377 +705,82 @@ class _SourceTileState extends State<_SourceTile> {
   }
 
   void _onFocus() {
-    if (mounted) {
-      setState(() {});
-      if (widget.updateFocus.hasFocus || widget.removeFocus.hasFocus) {
-        Scrollable.ensureVisible(
-          context,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          alignment: 0.5,
-        );
-      }
-    }
+    if (mounted) setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final isFocused = widget.updateFocus.hasFocus || widget.removeFocus.hasFocus;
+    final isFocused =
+        widget.updateFocus.hasFocus || widget.removeFocus.hasFocus;
 
-    final bg = isFocused ? scheme.primary : scheme.surfaceContainerLow;
-    final titleColor = isFocused ? scheme.onPrimary : scheme.onSurface;
-    final descColor = isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.85)
-        : scheme.onSurfaceVariant;
-    final iconBg = isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.18)
-        : scheme.primaryContainer;
-    final iconColor = isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        constraints: const BoxConstraints(minHeight: 64),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            Material(
-              color: iconBg,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+    return TvInfoTile(
+      isFocused: isFocused,
+      minHeight: 0,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      label: widget.source.nombre,
+      description: 'v${widget.source.version} · ${_formatChannelsCount(widget.source.canales.length)}',
+      icon: MoaiIcons.electricalServices,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_availableVersion != null) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 6,
+                vertical: 1.5,
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Icon(
-                  MoaiIcons.electricalServices,
-                  size: 22,
-                  color: iconColor,
+              decoration: BoxDecoration(
+                color: isFocused
+                    ? scheme.onPrimary.withValues(alpha: 0.22)
+                    : scheme.primaryContainer,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'sources_version_available'.tr(
+                  namedArgs: {'version': _availableVersion!},
+                ),
+                style: MoaiText.body(
+                  context,
+                  color: isFocused
+                      ? scheme.onPrimary
+                      : scheme.onPrimaryContainer,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    widget.source.nombre,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: MoaiText.body(
-                      context,
-                      color: titleColor,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Text(
-                        'v${widget.source.version} · '
-                        '${_formatChannelsCount(widget.source.canales.length)}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: MoaiText.body(
-                          context,
-                          color: descColor,
-                          fontSize: 12,
-                          height: 1.3,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      if (_availableVersion != null) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 1.5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isFocused
-                                ? scheme.onPrimary.withValues(alpha: 0.22)
-                                : scheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'sources_version_available'.tr(
-                              namedArgs: {'version': _availableVersion!},
-                            ),
-                            style: MoaiText.body(
-                              context,
-                              color: isFocused
-                                  ? scheme.onPrimary
-                                  : scheme.onPrimaryContainer,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            _IconButtonAction(
-              focusNode: widget.updateFocus,
-              tooltip: _availableVersion != null
-                  ? 'sources_update_to_version'.tr(
-                      namedArgs: {'version': _availableVersion!},
-                    )
-                  : 'sources_update'.tr(),
-              icon: _availableVersion != null
-                  ? MoaiIcons.systemUpdateRounded
-                  : MoaiIcons.syncRounded,
-              onPressed: () {
-                widget.onUpdate();
-                setState(() => _availableVersion = null);
-              },
-              parentFocused: isFocused,
-              onKeyRight: () => widget.removeFocus.requestFocus(),
-              onKeyUp: widget.onUpdateKeyUp,
-              onKeyDown: widget.onUpdateKeyDown,
             ),
             const SizedBox(width: 8),
-            _IconButtonAction(
-              focusNode: widget.removeFocus,
-              tooltip: 'sources_remove'.tr(),
-              icon: MoaiIcons.deleteOutlineRounded,
-              onPressed: widget.onRemove,
-              parentFocused: isFocused,
-              onKeyLeft: () => widget.updateFocus.requestFocus(),
-              onKeyRight: widget.onRemoveKeyRight,
-              onKeyUp: widget.onRemoveKeyUp,
-              onKeyDown: widget.onRemoveKeyDown,
-            ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PresetTile extends StatefulWidget {
-  final _PresetPlugin preset;
-  final FocusNode focusNode;
-  final bool isInstalled;
-  final VoidCallback onInstall;
-  final VoidCallback onKeyLeft;
-  final VoidCallback onKeyUp;
-  final VoidCallback onKeyDown;
-
-  const _PresetTile({
-    super.key,
-    required this.preset,
-    required this.focusNode,
-    required this.isInstalled,
-    required this.onInstall,
-    required this.onKeyLeft,
-    required this.onKeyUp,
-    required this.onKeyDown,
-  });
-
-  @override
-  State<_PresetTile> createState() => _PresetTileState();
-}
-
-class _PresetTileState extends State<_PresetTile> {
-  bool _isFocused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _isFocused = widget.focusNode.hasFocus;
-    widget.focusNode.addListener(_onFocus);
-  }
-
-  @override
-  void dispose() {
-    widget.focusNode.removeListener(_onFocus);
-    super.dispose();
-  }
-
-  void _onFocus() {
-    if (mounted) {
-      setState(() => _isFocused = widget.focusNode.hasFocus);
-      if (widget.focusNode.hasFocus) {
-        Scrollable.ensureVisible(
-          context,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          alignment: 0.5,
-        );
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    final bg = _isFocused ? scheme.primary : scheme.surfaceContainerLow;
-    final titleColor = _isFocused ? scheme.onPrimary : scheme.onSurface;
-    final descColor = _isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.85)
-        : scheme.onSurfaceVariant;
-    final iconBg = _isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.18)
-        : scheme.primaryContainer;
-    final iconColor = _isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Focus(
-        focusNode: widget.focusNode,
-        onKeyEvent: (node, event) {
-          if (event is! KeyDownEvent) return KeyEventResult.ignored;
-          final key = event.logicalKey;
-          if (key == LogicalKeyboardKey.arrowLeft) {
-            widget.onKeyLeft();
-            return KeyEventResult.handled;
-          }
-          if (key == LogicalKeyboardKey.arrowUp) {
-            widget.onKeyUp();
-            return KeyEventResult.handled;
-          }
-          if (key == LogicalKeyboardKey.arrowDown) {
-            widget.onKeyDown();
-            return KeyEventResult.handled;
-          }
-          if (key == LogicalKeyboardKey.enter ||
-              key == LogicalKeyboardKey.select ||
-              key == LogicalKeyboardKey.space ||
-              key == LogicalKeyboardKey.gameButtonA) {
-            widget.onInstall();
-            return KeyEventResult.handled;
-          }
-          return KeyEventResult.ignored;
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          constraints: const BoxConstraints(minHeight: 64),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(16),
+          _IconButtonAction(
+            focusNode: widget.updateFocus,
+            tooltip: 'sources_update'.tr(),
+            icon: _availableVersion != null
+                ? MoaiIcons.systemUpdateRounded
+                : MoaiIcons.syncRounded,
+            onPressed: () {
+              widget.onUpdate();
+              setState(() => _availableVersion = null);
+            },
+            parentFocused: isFocused,
+            onKeyLeft: widget.onUpdateKeyLeft,
+            onKeyRight: () => widget.removeFocus.requestFocus(),
+            onKeyUp: widget.onUpdateKeyUp,
+            onKeyDown: widget.onUpdateKeyDown,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: InkWell(
-            onTap: widget.onInstall,
-            borderRadius: BorderRadius.circular(16),
-            child: Row(
-              children: [
-                Material(
-                  color: iconBg,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Icon(
-                      MoaiIcons.electricalServices,
-                      size: 22,
-                      color: iconColor,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        widget.preset.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: MoaiText.body(
-                          context,
-                          color: titleColor,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        widget.preset.description,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: MoaiText.body(
-                          context,
-                          color: descColor,
-                          fontSize: 12,
-                          height: 1.3,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Material(
-                  color: widget.isInstalled
-                      ? (_isFocused
-                          ? scheme.onPrimary.withValues(alpha: 0.2)
-                          : scheme.tertiaryContainer)
-                      : (_isFocused
-                          ? scheme.onPrimary
-                          : scheme.primary),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          widget.isInstalled
-                              ? MoaiIcons.checkCircleOutlineRounded
-                              : MoaiIcons.download,
-                          size: 16,
-                          color: widget.isInstalled
-                              ? (_isFocused
-                                  ? scheme.onPrimary
-                                  : scheme.onTertiaryContainer)
-                              : (_isFocused
-                                  ? scheme.primary
-                                  : scheme.onPrimary),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          widget.isInstalled
-                              ? 'sources_status_installed'.tr()
-                              : 'sources_install'.tr(),
-                          style: MoaiText.body(
-                            context,
-                            color: widget.isInstalled
-                                ? (_isFocused
-                                    ? scheme.onPrimary
-                                    : scheme.onTertiaryContainer)
-                                : (_isFocused
-                                    ? scheme.primary
-                                    : scheme.onPrimary),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          const SizedBox(width: 8),
+          _IconButtonAction(
+            focusNode: widget.removeFocus,
+            tooltip: 'sources_remove'.tr(),
+            icon: MoaiIcons.deleteOutlineRounded,
+            onPressed: widget.onRemove,
+            parentFocused: isFocused,
+            onKeyLeft: () => widget.updateFocus.requestFocus(),
+            onKeyRight: widget.onRemoveKeyRight,
+            onKeyUp: widget.onRemoveKeyUp,
+            onKeyDown: widget.onRemoveKeyDown,
           ),
-        ),
+        ],
       ),
     );
   }
@@ -1178,12 +848,14 @@ class _IconButtonActionState extends State<_IconButtonAction> {
         bg = scheme.primary;
         fg = scheme.onPrimary;
       }
-    } else if (widget.parentFocused) {
-      bg = scheme.onPrimary.withValues(alpha: 0.18);
-      fg = scheme.onPrimary;
     } else {
-      bg = scheme.secondaryContainer.withValues(alpha: 0.7);
-      fg = scheme.onSecondaryContainer;
+      if (widget.parentFocused) {
+        bg = scheme.onPrimary.withValues(alpha: 0.16);
+        fg = scheme.onPrimary;
+      } else {
+        bg = scheme.surfaceContainerHighest.withValues(alpha: 0.5);
+        fg = scheme.onSurfaceVariant;
+      }
     }
 
     return Focus(
@@ -1216,32 +888,19 @@ class _IconButtonActionState extends State<_IconButtonAction> {
         }
         return KeyEventResult.ignored;
       },
-      child: Tooltip(
-        message: widget.tooltip,
-        child: GestureDetector(
-          onTap: () {
-            if (_isFocused) {
-              widget.onPressed();
-            } else {
-              widget.focusNode.requestFocus();
-            }
-          },
-          child: AnimatedScale(
-            scale: _isFocused ? 1.08 : 1.0,
-            duration: const Duration(milliseconds: 100),
-            curve: Curves.easeOutCubic,
-            child: Material(
-              color: bg,
-              borderRadius: BorderRadius.circular(12),
-              child: SizedBox(
-                width: 44,
-                height: 44,
-                child: Icon(
-                  widget.icon,
-                  size: 20,
-                  color: fg,
-                ),
-              ),
+      child: AnimatedScale(
+        scale: _isFocused ? 1.08 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: Material(
+          color: bg,
+          borderRadius: BorderRadius.circular(10),
+          child: InkWell(
+            onTap: widget.onPressed,
+            borderRadius: BorderRadius.circular(10),
+            child: SizedBox(
+              width: 36,
+              height: 36,
+              child: Icon(widget.icon, color: fg, size: 18),
             ),
           ),
         ),

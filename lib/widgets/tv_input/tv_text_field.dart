@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
+export 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
 import 'package:moai3/widgets/tv_input/tv_text_input_sheet.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
@@ -19,6 +20,7 @@ class TvTextField extends StatefulWidget {
   final bool enabled;
   final bool dense;
   final IconData? leadingIcon;
+  final String? helperText;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final VoidCallback? onFocusLeft;
@@ -47,6 +49,7 @@ class TvTextField extends StatefulWidget {
     this.onFocusDown,
     this.dense = false,
     this.leadingIcon,
+    this.helperText,
   });
 
   static Future<String?> open(
@@ -231,6 +234,91 @@ class _TvTextFieldState extends State<TvTextField> {
 
     final leading = widget.leadingIcon ?? MoaiIcons.keyboardAltOutlined;
 
+    final borderColor = _focused
+        ? scheme.primary
+        : scheme.outlineVariant.withValues(alpha: 0.12);
+
+    final field = AnimatedContainer(
+      duration: const Duration(milliseconds: 120),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: borderColor,
+          width: 1.0,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: interactive ? _openKeyboard : null,
+          splashColor: (_focused ? scheme.onPrimary : scheme.onSurface)
+              .withValues(alpha: 0.1),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: widget.dense ? 12 : 14,
+              vertical: widget.dense ? 10 : 12,
+            ),
+            child: Row(
+              children: [
+                Material(
+                  color: iconBg,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(widget.dense ? 8 : 10),
+                    child: Icon(
+                      leading,
+                      size: widget.dense ? 20 : 22,
+                      color: iconColor,
+                    ),
+                  ),
+                ),
+                SizedBox(width: widget.dense ? 12 : 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        widget.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: MoaiText.body(
+                          context,
+                          color: titleColor,
+                          fontSize: widget.dense ? 14 : 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        hasValue ? _controller.text : (widget.hint ?? ''),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: MoaiText.body(
+                          context,
+                          color: valueColor,
+                          fontSize: widget.dense ? 12 : 13,
+                          height: 1.3,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
     return Focus(
       focusNode: _focusNode,
       canRequestFocus: interactive,
@@ -238,80 +326,32 @@ class _TvTextFieldState extends State<TvTextField> {
       child: AnimatedOpacity(
         opacity: interactive ? 1 : 0.55,
         duration: const Duration(milliseconds: 140),
-        child: Material(
-            color: bg,
-            elevation: 0,
-            shadowColor: Colors.transparent,
-            surfaceTintColor: Colors.transparent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: interactive ? _openKeyboard : null,
-              splashColor: (_focused ? scheme.onPrimary : scheme.onSurface)
-                  .withValues(alpha: 0.1),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: widget.dense ? 12 : 14,
-                  vertical: widget.dense ? 10 : 12,
-                ),
-                child: Row(
-                  children: [
-                    Material(
-                      color: iconBg,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Padding(
-                        padding: EdgeInsets.all(widget.dense ? 8 : 10),
-                        child: Icon(
-                          leading,
-                          size: widget.dense ? 20 : 22,
-                          color: iconColor,
-                        ),
+        child: widget.helperText == null
+            ? field
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  field,
+                  const SizedBox(height: 6),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      widget.helperText!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: MoaiText.body(
+                        context,
+                        color: scheme.onSurfaceVariant,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    SizedBox(width: widget.dense ? 12 : 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            widget.label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: MoaiText.body(
-                              context,
-                              color: titleColor,
-                              fontSize: widget.dense ? 14 : 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            hasValue ? _controller.text : (widget.hint ?? ''),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: MoaiText.body(
-                              context,
-                              color: valueColor,
-                              fontSize: widget.dense ? 12 : 13,
-                              height: 1.3,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ),
-          ),
-        ),
-      );
+      ),
+    );
   }
 }
 

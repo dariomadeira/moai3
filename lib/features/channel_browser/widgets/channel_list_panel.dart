@@ -111,7 +111,7 @@ class ChannelListPanelState extends State<ChannelListPanel> {
             child: widget.channels.isEmpty
                 ? TvEmptyStateCard(
                     focusNode: _emptyFocusNode,
-                    icon: MoaiIcons.hourglassEmpty,
+                    icon: MoaiIcons.tvChannelsEmpty,
                     message: 'browser_channels_empty'.tr(),
                     onFocusUp: widget.onFocusUp,
                   )

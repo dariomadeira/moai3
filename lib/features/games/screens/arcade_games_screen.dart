@@ -1,16 +1,22 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:moai3/features/games/models/arcade_rom_item.dart';
 import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
-import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
-import 'package:moai3/widgets/tv_common/tv_m3.dart';
-import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
-import 'package:moai3/widgets/tv_input/tv_text_field.dart';
-import 'package:moai3/widgets/lists/tv_fixed_window_viewport.dart';
-import 'package:moai3/widgets/lists/tv_windowed_list.dart';
+import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
+import 'package:moai3/features/settings/widgets/tv_tile.dart';
+import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/buttons/tv_back_pill.dart';
+import 'package:moai3/widgets/buttons/tv_install_pill.dart';
+import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
+import 'package:moai3/widgets/lists/tv_windowed_list.dart';
+import 'package:moai3/widgets/tv_common/tv_m3.dart';
+import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
+import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
+import 'package:moai3/widgets/tv_input/tv_text_field.dart';
 
 /// Pantalla para gestionar y descargar ROMs de Arcade.
 /// Sigue la misma estructura y diseño de 2 columnas que SourcesScreen.
@@ -27,18 +33,20 @@ class ArcadeGamesScreen extends StatefulWidget {
 }
 
 class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
-  static const int _catalogWindowSize = 4;
-  static const double _catalogItemExtent = 74.0;
-
   final TextEditingController _urlController =
       TextEditingController(text: ArcadeRomManagerService.defaultManifestUrl);
-  final FocusNode _backFocus = FocusNode(debugLabel: 'games_back');
+  final FocusNode _backFocusNode = FocusNode(debugLabel: 'games_rail_back');
   final FocusNode _urlFocus = FocusNode(debugLabel: 'games_url');
   final FocusNode _refreshFocus = FocusNode(debugLabel: 'games_refresh');
   final FocusNode _emptyFocusNode = FocusNode(debugLabel: 'games_empty');
 
+  final GlobalKey<TvWindowedListState<ArcadeRomItem>> _installedListKey =
+      GlobalKey<TvWindowedListState<ArcadeRomItem>>();
   final GlobalKey<TvWindowedListState<ArcadeRomItem>> _catalogListKey =
       GlobalKey<TvWindowedListState<ArcadeRomItem>>();
+
+  int _selectedInstalledIndex = 0;
+  int _selectedCatalogIndex = 0;
 
   final List<FocusNode> _installedDeleteFocuses = [];
 
@@ -71,11 +79,17 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
     }
   }
 
+  void _focusCatalogList() {
+    if (widget.romManager.catalog.isEmpty) return;
+    final index = _selectedCatalogIndex.clamp(0, widget.romManager.catalog.length - 1);
+    _catalogListKey.currentState?.ensureVisible(index, requestFocus: true);
+  }
+
   @override
   void dispose() {
     widget.romManager.removeListener(_onManagerUpdated);
     _urlController.dispose();
-    _backFocus.dispose();
+    _backFocusNode.dispose();
     _urlFocus.dispose();
     _refreshFocus.dispose();
     _emptyFocusNode.dispose();
@@ -85,44 +99,9 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
     super.dispose();
   }
 
-  Future<void> _deleteRomDialog(ArcadeRomItem item) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        final scheme = ctx.scheme;
-        return AlertDialog(
-          backgroundColor: scheme.surfaceContainerHigh,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            'arcade_delete_dialog_title'.tr(),
-            style: MoaiText.display(ctx, color: scheme.onSurface, fontSize: 18),
-          ),
-          content: Text(
-            'arcade_delete_dialog_desc'.tr(namedArgs: {
-              'name': item.name,
-              'size': item.sizeLabel,
-            }),
-            style: MoaiText.body(ctx, color: scheme.onSurfaceVariant),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text('common_cancel'.tr(), style: TextStyle(color: scheme.onSurfaceVariant)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: scheme.error),
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: Text('arcade_delete_btn'.tr(), style: TextStyle(color: scheme.onError)),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirm == true) {
-      await widget.romManager.deleteRom(item.filename);
-      _syncFocusNodes();
-    }
+  Future<void> _deleteRom(ArcadeRomItem item) async {
+    await widget.romManager.deleteRom(item.filename);
+    _syncFocusNodes();
   }
 
   @override
@@ -131,126 +110,226 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
     final scheme = context.scheme;
     final installed = widget.romManager.installedRoms;
     final catalog = widget.romManager.catalog;
+    final installedCount = installed.length;
+    final hasInstalled = installed.isNotEmpty;
+
+    final overlapX = context.select(
+      (TvSettingsProvider s) => s.overlapPaddingX,
+    );
+    final overlapY = context.select(
+      (TvSettingsProvider s) => s.overlapPaddingY,
+    );
 
     return Scaffold(
-      backgroundColor: scheme.surface,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(32, 24, 32, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context, scheme, installed.length, catalog.length),
-              const SizedBox(height: 18),
-              _buildUrlRow(context, scheme),
-              const SizedBox(height: 20),
-              Expanded(
+      backgroundColor: Colors.transparent,
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: scheme.brightness == Brightness.dark
+                ? [
+                    Color.lerp(
+                      scheme.surfaceContainerHigh,
+                      scheme.primary,
+                      0.08,
+                    )!,
+                    scheme.surfaceContainerLow,
+                  ]
+                : [scheme.surfaceContainerLowest, scheme.surfaceContainerHigh],
+          ),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Opacity(
+                  opacity: 0.3,
+                  child: Image.asset(
+                    'assets/images/fondo.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            ),
+            SafeArea(
+              top: false,
+              bottom: false,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: overlapX,
+                  vertical: overlapY,
+                ),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Columna 1: Juegos Instalados
-                    Expanded(
-                      flex: 5,
-                      child: _buildInstalledColumn(context, scheme, installed),
+                    SizedBox(
+                      width: 54,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const SizedBox(height: 9),
+                          TvBackPill(
+                            focusNode: _backFocusNode,
+                            onKeyRight: () => _urlFocus.requestFocus(),
+                            onKeyDown: hasInstalled
+                                ? () => _installedDeleteFocuses.first.requestFocus()
+                                : () => _emptyFocusNode.requestFocus(),
+                          ),
+                          const Spacer(),
+                        ],
+                      ),
                     ),
-                    const SizedBox(width: 24),
-                    // Columna 2: Catálogo de Juegos Disponibles
                     Expanded(
-                      flex: 5,
-                      child: _buildCatalogColumn(context, scheme, catalog),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+                        child: TvAccordionRowPreview(
+                          panelCount: 1,
+                          activeIndex: 0,
+                          colors: [scheme.surface.withValues(alpha: 0.8)],
+                          titles: ['arcade_action_select_game'.tr()],
+                          icons: const [MoaiIcons.arcadeRomItem],
+                          onPanelTap: (_) {},
+                          tabBuilder: (index, isExpanded) {
+                            return Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: 14,
+                                top: 14,
+                              ),
+                              child: Column(
+                                children: [
+                                  const Spacer(),
+                                  RotatedBox(
+                                    quarterTurns: 3,
+                                    child: Text(
+                                      'arcade_action_select_game'.tr(),
+                                      maxLines: 1,
+                                      softWrap: false,
+                                      overflow: TextOverflow.fade,
+                                      style: MoaiText.display(
+                                        context,
+                                        color: scheme.onSurface.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 1.0,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Icon(
+                                    MoaiIcons.arcadeRomItem,
+                                    size: 20,
+                                    color: scheme.onSurfaceVariant.withValues(
+                                      alpha: 0.85,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          buildExpandedContent: (index, title) {
+                            return Container(
+                              padding: const EdgeInsets.all(10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Expanded(
+                                        child: TvPanelHeader(
+                                          title: 'arcade_games_title'.tr(),
+                                          subtitle: 'arcade_games_subtitle'.tr(),
+                                          padding: EdgeInsets.zero,
+                                        ),
+                                      ),
+                                      if (installedCount > 0) ...[
+                                        const SizedBox(width: 12),
+                                        TvMetaPill(
+                                          icon: MoaiIcons.arcadeRomInstalledBadge,
+                                          label: installedCount == 1
+                                              ? 'arcade_installed_count_single'
+                                                  .tr(namedArgs: {'count': '1'})
+                                              : 'arcade_installed_count_plural'
+                                                  .tr(namedArgs: {
+                                                  'count': installedCount.toString(),
+                                                }),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  const SizedBox(height: 14),
+                                  _buildUrlRow(context, scheme, hasInstalled),
+                                  if (widget.romManager.errorMessage != null) ...[
+                                    const SizedBox(height: 10),
+                                    Material(
+                                      color: scheme.errorContainer,
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 8,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              MoaiIcons.errorOutlineRounded,
+                                              color: scheme.onErrorContainer,
+                                              size: 18,
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Text(
+                                                widget.romManager.errorMessage!,
+                                                style: MoaiText.body(
+                                                  context,
+                                                  color: scheme.onErrorContainer,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 22),
+                                  Expanded(
+                                    child: _buildTwoColumnLayout(
+                                      context,
+                                      scheme,
+                                      installed,
+                                      catalog,
+                                      hasInstalled,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader(
+  Widget _buildUrlRow(
     BuildContext context,
     ColorScheme scheme,
-    int installedCount,
-    int catalogCount,
+    bool hasInstalled,
   ) {
     return Row(
-      children: [
-        _BackButton(
-          focusNode: _backFocus,
-          onPressed: () => Navigator.of(context).pop(),
-          onFocusRight: () => _urlFocus.requestFocus(),
-          onFocusDown: () => _urlFocus.requestFocus(),
-        ),
-        const SizedBox(width: 14),
-        Material(
-          color: scheme.primaryContainer,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Icon(
-              MoaiIcons.sportsEsports,
-              color: scheme.onPrimaryContainer,
-              size: 28,
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'arcade_games_title'.tr(),
-                style: MoaiText.display(
-                  context,
-                  color: scheme.onSurface,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'arcade_games_subtitle'.tr(),
-                style: MoaiText.body(
-                  context,
-                  color: scheme.onSurfaceVariant,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (installedCount > 0) ...[
-          const SizedBox(width: 12),
-          Material(
-            color: scheme.tertiaryContainer,
-            borderRadius: BorderRadius.circular(20),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              child: Text(
-                installedCount == 1
-                    ? 'arcade_installed_count_single'.tr(namedArgs: {'count': '1'})
-                    : 'arcade_installed_count_plural'.tr(namedArgs: {'count': installedCount.toString()}),
-                style: MoaiText.body(
-                  context,
-                  color: scheme.onTertiaryContainer,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildUrlRow(BuildContext context, ColorScheme scheme) {
-    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: TvTextField(
@@ -260,210 +339,366 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
             hint: 'arcade_input_url_hint'.tr(),
             keyboardType: TvKeyboardType.text,
             doneLabel: 'arcade_input_url_done'.tr(),
-            leadingIcon: MoaiIcons.linkRounded,
+            leadingIcon: MoaiIcons.tvSourcesUrlInput,
             onSubmitted: (val) => _loadData(),
-            onFocusLeft: () => _backFocus.requestFocus(),
+            onFocusLeft: () => _backFocusNode.requestFocus(),
             onFocusRight: () => _refreshFocus.requestFocus(),
-            onFocusUp: () => _backFocus.requestFocus(),
-            onFocusDown: () {
-              if (_installedDeleteFocuses.isNotEmpty) {
-                _installedDeleteFocuses.first.requestFocus();
-              } else if (widget.romManager.catalog.isNotEmpty) {
-                _catalogListKey.currentState?.ensureVisible(0, requestFocus: true);
-              } else {
-                _emptyFocusNode.requestFocus();
-              }
-            },
+            onFocusUp: () => _backFocusNode.requestFocus(),
+            onFocusDown: hasInstalled
+                ? () => _installedDeleteFocuses.first.requestFocus()
+                : () => _emptyFocusNode.requestFocus(),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         TvFocusButton(
           focusNode: _refreshFocus,
           label: 'arcade_btn_refresh'.tr(),
-          icon: MoaiIcons.refreshRounded,
+          icon: MoaiIcons.arcadeCatalogRefresh,
           height: 60,
+          radius: 30,
           variant: TvButtonVariant.tonal,
-          onPressed: () => _loadData(),
+          onPressed: widget.romManager.isLoading ? null : () => _loadData(),
           onArrowLeft: () => _urlFocus.requestFocus(),
-          onArrowUp: () => _backFocus.requestFocus(),
-          onArrowDown: () {
-            if (widget.romManager.catalog.isNotEmpty) {
-              _catalogListKey.currentState?.ensureVisible(0, requestFocus: true);
-            } else if (_installedDeleteFocuses.isNotEmpty) {
-              _installedDeleteFocuses.first.requestFocus();
-            }
-          },
+          onArrowRight: _focusCatalogList,
+          onArrowUp: () => _backFocusNode.requestFocus(),
+          onArrowDown: hasInstalled
+              ? () => _installedDeleteFocuses.first.requestFocus()
+              : () => _emptyFocusNode.requestFocus(),
         ),
       ],
     );
   }
 
-  Widget _buildInstalledColumn(
+  Widget _buildTwoColumnLayout(
     BuildContext context,
     ColorScheme scheme,
     List<ArcadeRomItem> installed,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'arcade_installed_column_title'.tr(),
-          style: MoaiText.body(
-            context,
-            color: scheme.onSurfaceVariant,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Expanded(
-          child: installed.isEmpty
-              ? TvEmptyStateCard(
-                  focusNode: _emptyFocusNode,
-                  icon: MoaiIcons.sportsEsportsOutlined,
-                  message: 'arcade_empty_installed_msg'.tr(),
-                  onFocusUp: () => _urlFocus.requestFocus(),
-                  onFocusRight: () {
-                    if (widget.romManager.catalog.isNotEmpty) {
-                      _catalogListKey.currentState?.ensureVisible(0, requestFocus: true);
-                    }
-                  },
-                )
-              : ListView.builder(
-                  itemCount: installed.length,
-                  itemBuilder: (context, i) {
-                    final item = installed[i];
-                    final isLast = i == installed.length - 1;
-                    return _InstalledRomCard(
-                      key: ValueKey(item.filename),
-                      item: item,
-                      deleteFocusNode: _installedDeleteFocuses[i],
-                      onDelete: () => _deleteRomDialog(item),
-                      onKeyUp: () {
-                        if (i == 0) {
-                          _urlFocus.requestFocus();
-                        } else {
-                          _installedDeleteFocuses[i - 1].requestFocus();
-                        }
-                      },
-                      onKeyDown: () {
-                        if (!isLast) {
-                          _installedDeleteFocuses[i + 1].requestFocus();
-                        }
-                      },
-                      onKeyRight: () {
-                        if (widget.romManager.catalog.isNotEmpty) {
-                          _catalogListKey.currentState?.ensureVisible(
-                            i.clamp(0, widget.romManager.catalog.length - 1),
-                            requestFocus: true,
-                          );
-                        }
-                      },
-                    );
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCatalogColumn(
-    BuildContext context,
-    ColorScheme scheme,
     List<ArcadeRomItem> catalog,
+    bool hasInstalled,
   ) {
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'arcade_available_column_title'.tr(),
-          style: MoaiText.body(
-            context,
-            color: scheme.onSurfaceVariant,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 10),
+        // Columna 1: Juegos Instalados
         Expanded(
-          child: widget.romManager.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : catalog.isEmpty
-                  ? Center(
-                      child: Text(
-                        widget.romManager.errorMessage ?? 'arcade_catalog_empty'.tr(),
-                        style: MoaiText.body(context, color: scheme.error),
-                      ),
-                    )
-                  : TvFixedWindowViewport(
-                      slotCount: _catalogWindowSize,
-                      slotExtent: _catalogItemExtent,
-                      alignment: Alignment.topCenter,
-                      child: TvWindowedList<ArcadeRomItem>(
-                        key: _catalogListKey,
-                        items: catalog,
-                        windowSize: _catalogWindowSize,
-                        itemExtent: _catalogItemExtent,
-                        showScrollDots: true,
-                        scrollIndicator: TvScrollIndicator.dots,
-                        onFocusUpFromFirst: () => _refreshFocus.requestFocus(),
-                        itemBuilder: (
-                          context,
-                          item,
-                          focusNode,
-                          local,
-                          global,
-                          onKeyUp,
-                          onKeyDown,
-                        ) {
-                          final progress =
-                              widget.romManager.downloadProgress[item.filename];
-                          return _CatalogRomTile(
-                            key: ValueKey(item.id),
-                            item: item,
-                            focusNode: focusNode,
-                            downloadProgress: progress,
-                            onInstall: () => widget.romManager.downloadRom(item),
-                            onKeyLeft: () {
-                              if (_installedDeleteFocuses.isNotEmpty) {
-                                final target =
-                                    global.clamp(0, _installedDeleteFocuses.length - 1);
-                                _installedDeleteFocuses[target].requestFocus();
-                              } else {
-                                _emptyFocusNode.requestFocus();
-                              }
-                            },
-                            onKeyUp: onKeyUp,
-                            onKeyDown: onKeyDown,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'arcade_installed_column_title'.tr(),
+                  style: MoaiText.body(
+                    context,
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: !hasInstalled
+                    ? TvEmptyStateCard(
+                        focusNode: _emptyFocusNode,
+                        icon: MoaiIcons.arcadeRomItem,
+                        message: 'arcade_empty_installed_msg'.tr(),
+                        onFocusLeft: () => _backFocusNode.requestFocus(),
+                        onFocusUp: () => _urlFocus.requestFocus(),
+                        onFocusRight: _focusCatalogList,
+                      )
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          const windowSize = 4;
+                          final availableH = constraints.maxHeight;
+                          final itemExtent =
+                              (availableH / windowSize).floorToDouble();
+
+                          return SizedBox(
+                            height: availableH,
+                            child: TvWindowedList<ArcadeRomItem>(
+                              key: _installedListKey,
+                              items: installed,
+                              windowSize: windowSize,
+                              itemExtent: itemExtent,
+                              showScrollDots: true,
+                              initialGlobalIndex: _selectedInstalledIndex,
+                              focusOnMount: false,
+                              onFocusedGlobalIndex: (idx) {
+                                _selectedInstalledIndex = idx;
+                              },
+                              onFocusUpFromFirst: () =>
+                                  _urlFocus.requestFocus(),
+                              itemBuilder: (
+                                context,
+                                item,
+                                focusNode,
+                                local,
+                                global,
+                                onKeyUp,
+                                onKeyDown,
+                              ) {
+                                final isFirst = global == 0;
+                                final deleteNode = _installedDeleteFocuses[global];
+
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 3),
+                                  child: _InstalledRomTile(
+                                    key: ValueKey(item.filename),
+                                    item: item,
+                                    deleteFocus: deleteNode,
+                                    onDeleteKeyUp: () {
+                                      if (isFirst) {
+                                        _urlFocus.requestFocus();
+                                      } else {
+                                        onKeyUp();
+                                      }
+                                    },
+                                    onDeleteKeyDown: onKeyDown,
+                                    onDeleteKeyLeft: () =>
+                                        _backFocusNode.requestFocus(),
+                                    onDeleteKeyRight: _focusCatalogList,
+                                    onDelete: () => _deleteRom(item),
+                                  ),
+                                );
+                              },
+                            ),
                           );
                         },
                       ),
-                    ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 16),
+        // Columna 2: Catálogo de Juegos Disponibles
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'arcade_available_column_title'.tr(),
+                  style: MoaiText.body(
+                    context,
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: widget.romManager.isLoading
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          color: scheme.primary,
+                          strokeWidth: 3,
+                        ),
+                      )
+                    : catalog.isEmpty
+                        ? Center(
+                            child: Text(
+                              widget.romManager.errorMessage ??
+                                  'arcade_catalog_empty'.tr(),
+                              style:
+                                  MoaiText.body(context, color: scheme.error),
+                            ),
+                          )
+                        : LayoutBuilder(
+                            builder: (context, constraints) {
+                              const windowSize = 4;
+                              final availableH = constraints.maxHeight;
+                              final itemExtent =
+                                  (availableH / windowSize).floorToDouble();
+
+                              return SizedBox(
+                                height: availableH,
+                                child: TvWindowedList<ArcadeRomItem>(
+                                  key: _catalogListKey,
+                                  items: catalog,
+                                  windowSize: windowSize,
+                                  itemExtent: itemExtent,
+                                  showScrollDots: true,
+                                  initialGlobalIndex: _selectedCatalogIndex,
+                                  focusOnMount: false,
+                                  onFocusedGlobalIndex: (idx) {
+                                    _selectedCatalogIndex = idx;
+                                  },
+                                  onFocusUpFromFirst: () =>
+                                      _refreshFocus.requestFocus(),
+                                  itemBuilder: (
+                                    context,
+                                    item,
+                                    focusNode,
+                                    local,
+                                    global,
+                                    onKeyUp,
+                                    onKeyDown,
+                                  ) {
+                                    final progress = widget.romManager
+                                        .downloadProgress[item.filename];
+                                    final isDownloading = progress != null;
+
+                                    return Padding(
+                                      padding:
+                                          const EdgeInsets.symmetric(vertical: 3),
+                                      child: TvTile(
+                                        focusNode: focusNode,
+                                        minHeight: 0,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 10,
+                                        ),
+                                        label: item.name,
+                                        description:
+                                            '${item.system} · ${item.year} · ${item.sizeLabel}',
+                                        icon: MoaiIcons.arcadeRomItem,
+                                        onPressed:
+                                            item.isInstalled || isDownloading
+                                                ? null
+                                                : () => widget.romManager
+                                                    .downloadRom(item),
+                                        onKeyLeft: () {
+                                          if (hasInstalled) {
+                                            final targetIndex =
+                                                _selectedInstalledIndex.clamp(
+                                              0,
+                                              _installedDeleteFocuses.length - 1,
+                                            );
+                                            _installedDeleteFocuses[targetIndex]
+                                                .requestFocus();
+                                          } else {
+                                            _emptyFocusNode.requestFocus();
+                                          }
+                                        },
+                                        onKeyUp: onKeyUp,
+                                        onKeyDown: onKeyDown,
+                                        trailingBuilder: (context, isFocused) =>
+                                            TvInstallPill(
+                                          isInstalled: item.isInstalled,
+                                          isFocused: isFocused,
+                                          downloadProgress: progress,
+                                          installLabel: 'arcade_btn_install'.tr(),
+                                          installedLabel:
+                                              'arcade_badge_installed'.tr(),
+                                          onPressed:
+                                              item.isInstalled || isDownloading
+                                                  ? null
+                                                  : () => widget.romManager
+                                                      .downloadRom(item),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
 }
 
-class _BackButton extends StatefulWidget {
-  final FocusNode focusNode;
-  final VoidCallback onPressed;
-  final VoidCallback? onFocusRight;
-  final VoidCallback? onFocusDown;
+class _InstalledRomTile extends StatefulWidget {
+  final ArcadeRomItem item;
+  final FocusNode deleteFocus;
+  final VoidCallback onDeleteKeyUp;
+  final VoidCallback onDeleteKeyDown;
+  final VoidCallback? onDeleteKeyLeft;
+  final VoidCallback? onDeleteKeyRight;
+  final VoidCallback onDelete;
 
-  const _BackButton({
-    required this.focusNode,
-    required this.onPressed,
-    this.onFocusRight,
-    this.onFocusDown,
+  const _InstalledRomTile({
+    super.key,
+    required this.item,
+    required this.deleteFocus,
+    required this.onDeleteKeyUp,
+    required this.onDeleteKeyDown,
+    this.onDeleteKeyLeft,
+    this.onDeleteKeyRight,
+    required this.onDelete,
   });
 
   @override
-  State<_BackButton> createState() => _BackButtonState();
+  State<_InstalledRomTile> createState() => _InstalledRomTileState();
 }
 
-class _BackButtonState extends State<_BackButton> {
-  bool _isFocused = false;
+class _InstalledRomTileState extends State<_InstalledRomTile> {
+  @override
+  void initState() {
+    super.initState();
+    widget.deleteFocus.addListener(_onFocus);
+  }
+
+  @override
+  void dispose() {
+    widget.deleteFocus.removeListener(_onFocus);
+    super.dispose();
+  }
+
+  void _onFocus() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isFocused = widget.deleteFocus.hasFocus;
+
+    return TvInfoTile(
+      isFocused: isFocused,
+      minHeight: 0,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      label: widget.item.name,
+      description: '${widget.item.sizeLabel} · ${'arcade_ready_to_play'.tr()}',
+      icon: MoaiIcons.arcadeRomCard,
+      trailing: _IconButtonAction(
+        focusNode: widget.deleteFocus,
+        tooltip: 'arcade_delete_btn'.tr(),
+        icon: MoaiIcons.arcadeRomDelete,
+        onPressed: widget.onDelete,
+        parentFocused: isFocused,
+        onKeyLeft: widget.onDeleteKeyLeft,
+        onKeyRight: widget.onDeleteKeyRight,
+        onKeyUp: widget.onDeleteKeyUp,
+        onKeyDown: widget.onDeleteKeyDown,
+      ),
+    );
+  }
+}
+
+class _IconButtonAction extends StatefulWidget {
+  final FocusNode focusNode;
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onPressed;
+  final bool parentFocused;
+  final VoidCallback? onKeyUp;
+  final VoidCallback? onKeyDown;
+  final VoidCallback? onKeyLeft;
+  final VoidCallback? onKeyRight;
+
+  const _IconButtonAction({
+    required this.focusNode,
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+    required this.parentFocused,
+    this.onKeyUp,
+    this.onKeyDown,
+    this.onKeyLeft,
+    this.onKeyRight,
+  });
+
+  @override
+  State<_IconButtonAction> createState() => _IconButtonActionState();
+}
+
+class _IconButtonActionState extends State<_IconButtonAction> {
+  late bool _isFocused;
 
   @override
   void initState() {
@@ -485,20 +720,47 @@ class _BackButtonState extends State<_BackButton> {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final bg = _isFocused ? scheme.primary : scheme.surfaceContainerLow;
-    final fg = _isFocused ? scheme.onPrimary : scheme.onSurface;
+
+    final Color bg;
+    final Color fg;
+
+    if (_isFocused) {
+      if (widget.parentFocused) {
+        bg = scheme.onPrimary;
+        fg = scheme.primary;
+      } else {
+        bg = scheme.primary;
+        fg = scheme.onPrimary;
+      }
+    } else {
+      if (widget.parentFocused) {
+        bg = scheme.onPrimary.withValues(alpha: 0.16);
+        fg = scheme.onPrimary;
+      } else {
+        bg = scheme.surfaceContainerHighest.withValues(alpha: 0.5);
+        fg = scheme.onSurfaceVariant;
+      }
+    }
 
     return Focus(
       focusNode: widget.focusNode,
       onKeyEvent: (node, event) {
         if (event is! KeyDownEvent) return KeyEventResult.ignored;
         final key = event.logicalKey;
-        if (key == LogicalKeyboardKey.arrowRight && widget.onFocusRight != null) {
-          widget.onFocusRight!();
+        if (key == LogicalKeyboardKey.arrowUp && widget.onKeyUp != null) {
+          widget.onKeyUp!();
           return KeyEventResult.handled;
         }
-        if (key == LogicalKeyboardKey.arrowDown && widget.onFocusDown != null) {
-          widget.onFocusDown!();
+        if (key == LogicalKeyboardKey.arrowDown && widget.onKeyDown != null) {
+          widget.onKeyDown!();
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.arrowLeft && widget.onKeyLeft != null) {
+          widget.onKeyLeft!();
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.arrowRight && widget.onKeyRight != null) {
+          widget.onKeyRight!();
           return KeyEventResult.handled;
         }
         if (key == LogicalKeyboardKey.enter ||
@@ -511,478 +773,18 @@ class _BackButtonState extends State<_BackButton> {
         return KeyEventResult.ignored;
       },
       child: AnimatedScale(
-        scale: _isFocused ? 1.04 : 1.0,
+        scale: _isFocused ? 1.08 : 1.0,
         duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOutCubic,
         child: Material(
           color: bg,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
           child: InkWell(
             onTap: widget.onPressed,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(10),
             child: SizedBox(
-              width: 52,
-              height: 52,
-              child: Icon(
-                MoaiIcons.arrowBackRounded,
-                color: fg,
-                size: 24,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _InstalledRomCard extends StatefulWidget {
-  final ArcadeRomItem item;
-  final FocusNode deleteFocusNode;
-  final VoidCallback onDelete;
-  final VoidCallback onKeyUp;
-  final VoidCallback onKeyDown;
-  final VoidCallback? onKeyRight;
-
-  const _InstalledRomCard({
-    super.key,
-    required this.item,
-    required this.deleteFocusNode,
-    required this.onDelete,
-    required this.onKeyUp,
-    required this.onKeyDown,
-    this.onKeyRight,
-  });
-
-  @override
-  State<_InstalledRomCard> createState() => _InstalledRomCardState();
-}
-
-class _InstalledRomCardState extends State<_InstalledRomCard> {
-  bool _isFocused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.deleteFocusNode.addListener(_onFocusChange);
-  }
-
-  @override
-  void dispose() {
-    widget.deleteFocusNode.removeListener(_onFocusChange);
-    super.dispose();
-  }
-
-  void _onFocusChange() {
-    if (mounted) setState(() => _isFocused = widget.deleteFocusNode.hasFocus);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    final bg = _isFocused ? scheme.primary : scheme.surfaceContainerLow;
-    final titleColor = _isFocused ? scheme.onPrimary : scheme.onSurface;
-    final descColor = _isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.85)
-        : scheme.onSurfaceVariant;
-    final iconBg = _isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.18)
-        : scheme.primaryContainer;
-    final iconColor = _isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        constraints: const BoxConstraints(minHeight: 64),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            Material(
-              color: iconBg,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Icon(
-                  MoaiIcons.stadiaController,
-                  size: 22,
-                  color: iconColor,
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    widget.item.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: MoaiText.body(
-                      context,
-                      color: titleColor,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${widget.item.sizeLabel} · ${'arcade_ready_to_play'.tr()}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: MoaiText.body(
-                      context,
-                      color: descColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            // Botón Tacho de Basura (idéntico a _IconButtonAction de Extensiones)
-            Focus(
-              focusNode: widget.deleteFocusNode,
-              onKeyEvent: (node, event) {
-                if (event is! KeyDownEvent) return KeyEventResult.ignored;
-                final key = event.logicalKey;
-                if (key == LogicalKeyboardKey.arrowUp) {
-                  widget.onKeyUp();
-                  return KeyEventResult.handled;
-                }
-                if (key == LogicalKeyboardKey.arrowDown) {
-                  widget.onKeyDown();
-                  return KeyEventResult.handled;
-                }
-                if (key == LogicalKeyboardKey.arrowRight && widget.onKeyRight != null) {
-                  widget.onKeyRight!();
-                  return KeyEventResult.handled;
-                }
-                if (key == LogicalKeyboardKey.enter ||
-                    key == LogicalKeyboardKey.select ||
-                    key == LogicalKeyboardKey.space ||
-                    key == LogicalKeyboardKey.gameButtonA) {
-                  widget.onDelete();
-                  return KeyEventResult.handled;
-                }
-                return KeyEventResult.ignored;
-              },
-              child: Builder(
-                builder: (context) {
-                  final Color btnBg;
-                  final Color btnFg;
-
-                  if (_isFocused) {
-                    btnBg = scheme.primary;
-                    btnFg = scheme.onPrimary;
-                  } else {
-                    btnBg = scheme.secondaryContainer.withValues(alpha: 0.7);
-                    btnFg = scheme.onSecondaryContainer;
-                  }
-
-                  return AnimatedScale(
-                    scale: _isFocused ? 1.08 : 1.0,
-                    duration: const Duration(milliseconds: 100),
-                    child: Material(
-                      color: btnBg,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Tooltip(
-                        message: 'arcade_delete_btn'.tr(),
-                        child: InkWell(
-                          onTap: widget.onDelete,
-                          borderRadius: BorderRadius.circular(12),
-                          child: Padding(
-                            padding: const EdgeInsets.all(10),
-                            child: Icon(
-                              MoaiIcons.deleteOutlineRounded,
-                              size: 20,
-                              color: btnFg,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CatalogRomTile extends StatefulWidget {
-  final ArcadeRomItem item;
-  final FocusNode focusNode;
-  final double? downloadProgress;
-  final VoidCallback onInstall;
-  final VoidCallback onKeyLeft;
-  final VoidCallback onKeyUp;
-  final VoidCallback onKeyDown;
-
-  const _CatalogRomTile({
-    super.key,
-    required this.item,
-    required this.focusNode,
-    this.downloadProgress,
-    required this.onInstall,
-    required this.onKeyLeft,
-    required this.onKeyUp,
-    required this.onKeyDown,
-  });
-
-  @override
-  State<_CatalogRomTile> createState() => _CatalogRomTileState();
-}
-
-class _CatalogRomTileState extends State<_CatalogRomTile> {
-  bool _isFocused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _isFocused = widget.focusNode.hasFocus;
-    widget.focusNode.addListener(_onFocus);
-  }
-
-  @override
-  void didUpdateWidget(covariant _CatalogRomTile oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.focusNode != widget.focusNode) {
-      oldWidget.focusNode.removeListener(_onFocus);
-      _isFocused = widget.focusNode.hasFocus;
-      widget.focusNode.addListener(_onFocus);
-    }
-  }
-
-  @override
-  void dispose() {
-    widget.focusNode.removeListener(_onFocus);
-    super.dispose();
-  }
-
-  void _onFocus() {
-    if (mounted) setState(() => _isFocused = widget.focusNode.hasFocus);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    final bg = _isFocused ? scheme.primary : scheme.surfaceContainerLow;
-    final titleColor = _isFocused ? scheme.onPrimary : scheme.onSurface;
-    final descColor = _isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.85)
-        : scheme.onSurfaceVariant;
-    final iconBg = _isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.18)
-        : scheme.primaryContainer;
-    final iconColor = _isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
-
-    final isDownloading = widget.downloadProgress != null;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Focus(
-        focusNode: widget.focusNode,
-        onKeyEvent: (node, event) {
-          if (event is! KeyDownEvent) return KeyEventResult.ignored;
-          final key = event.logicalKey;
-          if (key == LogicalKeyboardKey.arrowLeft) {
-            widget.onKeyLeft();
-            return KeyEventResult.handled;
-          }
-          if (key == LogicalKeyboardKey.arrowUp) {
-            widget.onKeyUp();
-            return KeyEventResult.handled;
-          }
-          if (key == LogicalKeyboardKey.arrowDown) {
-            widget.onKeyDown();
-            return KeyEventResult.handled;
-          }
-          if (key == LogicalKeyboardKey.enter ||
-              key == LogicalKeyboardKey.select ||
-              key == LogicalKeyboardKey.space ||
-              key == LogicalKeyboardKey.gameButtonA) {
-            if (!widget.item.isInstalled && !isDownloading) {
-              widget.onInstall();
-            }
-            return KeyEventResult.handled;
-          }
-          return KeyEventResult.ignored;
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          height: 66,
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: InkWell(
-            onTap: widget.item.isInstalled || isDownloading ? null : widget.onInstall,
-            borderRadius: BorderRadius.circular(16),
-            child: Row(
-              children: [
-                Material(
-                  color: iconBg,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(
-                      MoaiIcons.joystick,
-                      size: 22,
-                      color: iconColor,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        widget.item.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: MoaiText.body(
-                          context,
-                          color: titleColor,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${widget.item.system} · ${widget.item.year} · ${widget.item.sizeLabel}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: MoaiText.body(
-                          context,
-                          color: descColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                // Botón o Badge según estado
-                if (widget.item.isInstalled)
-                  Material(
-                    color: _isFocused
-                        ? scheme.onPrimary.withValues(alpha: 0.2)
-                        : scheme.tertiaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            MoaiIcons.checkCircleOutlineRounded,
-                            size: 16,
-                            color: _isFocused
-                                ? scheme.onPrimary
-                                : scheme.onTertiaryContainer,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'arcade_badge_installed'.tr(),
-                            style: MoaiText.body(
-                              context,
-                              color: _isFocused
-                                  ? scheme.onPrimary
-                                  : scheme.onTertiaryContainer,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                else if (isDownloading)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            value: widget.downloadProgress! > 0
-                                ? widget.downloadProgress
-                                : null,
-                            color: _isFocused ? scheme.onPrimary : scheme.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${(widget.downloadProgress! * 100).toInt()}%',
-                          style: MoaiText.body(
-                            context,
-                            color: _isFocused ? scheme.onPrimary : scheme.primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  Material(
-                    color: _isFocused ? scheme.onPrimary : scheme.primary,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 6,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            MoaiIcons.download,
-                            size: 16,
-                            color: _isFocused ? scheme.primary : scheme.onPrimary,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'arcade_btn_install'.tr(),
-                            style: MoaiText.body(
-                              context,
-                              color: _isFocused ? scheme.primary : scheme.onPrimary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
+              width: 36,
+              height: 36,
+              child: Icon(widget.icon, color: fg, size: 18),
             ),
           ),
         ),

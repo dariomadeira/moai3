@@ -105,7 +105,7 @@ class CategoryListPanelState extends State<CategoryListPanel> {
             child: widget.categories.isEmpty
                 ? TvEmptyStateCard(
                     focusNode: _emptyFocusNode,
-                    icon: MoaiIcons.categoryOutlined,
+                    icon: MoaiIcons.tvAccordionCategorias,
                     message: 'browser_categories_empty'.tr(),
                     onFocusUp: widget.onFocusUp,
                   )

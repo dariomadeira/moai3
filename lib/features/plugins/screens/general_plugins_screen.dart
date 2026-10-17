@@ -1,10 +1,33 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
+import 'package:moai3/features/settings/widgets/tv_tile.dart';
 import 'package:moai3/services/arcade_plugin_service.dart';
-import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
+import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/buttons/tv_back_pill.dart';
+import 'package:moai3/widgets/buttons/tv_install_pill.dart';
+import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
+import 'package:moai3/widgets/lists/tv_windowed_list.dart';
+import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
+import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
+
+class _GeneralPluginItem {
+  final String id;
+  final String name;
+  final String description;
+  final bool isArcade;
+
+  const _GeneralPluginItem({
+    required this.id,
+    required this.name,
+    required this.description,
+    this.isArcade = false,
+  });
+}
 
 /// Pantalla de gestión de Plugins Generales para Android TV (idéntica a la estructura de SourcesScreen).
 class GeneralPluginsScreen extends StatefulWidget {
@@ -19,15 +42,23 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
   final FocusNode _backFocusNode = FocusNode(debugLabel: 'general_plugins_back');
   final FocusNode _emptyFocusNode = FocusNode(debugLabel: 'general_plugins_empty');
 
+  final GlobalKey<TvWindowedListState<_GeneralPluginItem>> _availableListKey =
+      GlobalKey<TvWindowedListState<_GeneralPluginItem>>();
+
+  int _selectedAvailableIndex = 0;
+
   // Focus nodes para plugin instalado (update & remove)
   final FocusNode _installedUpdateFocus = FocusNode(debugLabel: 'arcade_update_focus');
   final FocusNode _installedRemoveFocus = FocusNode(debugLabel: 'arcade_remove_focus');
 
-  // Focus node para plugin disponible en catálogo
-  final FocusNode _availableFocusNode = FocusNode(debugLabel: 'arcade_available_focus');
-
-  final ScrollController _leftScrollController = ScrollController();
-  final ScrollController _rightScrollController = ScrollController();
+  List<_GeneralPluginItem> get _availablePlugins => [
+        _GeneralPluginItem(
+          id: 'arcade_fbneo',
+          name: 'plugins_arcade_available_name'.tr(),
+          description: 'plugins_arcade_available_desc'.tr(),
+          isArcade: true,
+        ),
+      ];
 
   @override
   void initState() {
@@ -39,7 +70,7 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
         if (_arcadePlugin.isInstalled) {
           _installedRemoveFocus.requestFocus();
         } else {
-          _availableFocusNode.requestFocus();
+          _focusAvailableList();
         }
       }
     });
@@ -49,6 +80,12 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
     if (mounted) setState(() {});
   }
 
+  void _focusAvailableList() {
+    if (_availablePlugins.isEmpty) return;
+    final index = _selectedAvailableIndex.clamp(0, _availablePlugins.length - 1);
+    _availableListKey.currentState?.ensureVisible(index, requestFocus: true);
+  }
+
   @override
   void dispose() {
     _arcadePlugin.removeListener(_onPluginUpdated);
@@ -56,47 +93,12 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
     _emptyFocusNode.dispose();
     _installedUpdateFocus.dispose();
     _installedRemoveFocus.dispose();
-    _availableFocusNode.dispose();
-    _leftScrollController.dispose();
-    _rightScrollController.dispose();
     super.dispose();
   }
 
   Future<void> _uninstallArcade() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        final scheme = Theme.of(ctx).colorScheme;
-        return AlertDialog(
-          backgroundColor: scheme.surfaceContainerHigh,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            'plugins_arcade_uninstall_dialog_title'.tr(),
-            style: MoaiText.display(ctx, fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          content: Text(
-            'plugins_arcade_uninstall_dialog_desc'.tr(),
-            style: MoaiText.body(ctx),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text('common_cancel'.tr(), style: TextStyle(color: scheme.onSurfaceVariant)),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: scheme.error),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text('plugins_uninstall_tooltip'.tr()),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirm == true) {
-      await _arcadePlugin.uninstallPlugin();
-      if (mounted) _availableFocusNode.requestFocus();
-    }
+    await _arcadePlugin.uninstallPlugin();
+    if (mounted) _focusAvailableList();
   }
 
   Future<void> _installArcade() async {
@@ -113,290 +115,363 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
     final isInstalled = _arcadePlugin.isInstalled;
     final totalInstalledCount = isInstalled ? 1 : 0;
 
-    return PopScope(
-      canPop: true,
-      child: Scaffold(
-        backgroundColor: scheme.surface,
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _header(context, scheme, totalInstalledCount),
-                const SizedBox(height: 20),
-                Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Columna Izquierda: Plugins Instalados
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: Text(
-                                'plugins_installed_column_title'.tr(),
-                                style: MoaiText.body(
-                                  context,
-                                  color: scheme.onSurfaceVariant,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: !isInstalled
-                                  ? TvEmptyStateCard(
-                                      focusNode: _emptyFocusNode,
-                                      icon: MoaiIcons.extensionOffOutlined,
-                                      message: 'plugins_empty_installed_msg'.tr(),
-                                      onFocusUp: () => _backFocusNode.requestFocus(),
-                                      onFocusRight: () => _availableFocusNode.requestFocus(),
-                                    )
-                                  : SingleChildScrollView(
-                                      controller: _leftScrollController,
-                                      child: _InstalledPluginTile(
-                                        title: 'plugins_arcade_name'.tr(),
-                                        subtitle: 'plugins_arcade_desc'.tr(
-                                          namedArgs: {'abi': ArcadePluginService.getDeviceAbi()},
-                                        ),
-                                        updateFocus: _installedUpdateFocus,
-                                        removeFocus: _installedRemoveFocus,
-                                        onUpdate: _installArcade,
-                                        onRemove: _uninstallArcade,
-                                        onUpdateKeyUp: () => _backFocusNode.requestFocus(),
-                                        onRemoveKeyUp: () => _backFocusNode.requestFocus(),
-                                        onRemoveKeyRight: () => _availableFocusNode.requestFocus(),
-                                      ),
-                                    ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 24),
+    final overlapX = context.select(
+      (TvSettingsProvider s) => s.overlapPaddingX,
+    );
+    final overlapY = context.select(
+      (TvSettingsProvider s) => s.overlapPaddingY,
+    );
 
-                      // Columna Derecha: Plugins Disponibles (Recomendados)
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: Text(
-                                'plugins_available_column_title'.tr(),
-                                style: MoaiText.body(
-                                  context,
-                                  color: scheme.onSurfaceVariant,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: SingleChildScrollView(
-                                controller: _rightScrollController,
-                                child: _AvailablePluginTile(
-                                  title: 'plugins_arcade_available_name'.tr(),
-                                  packageName: 'plugins_arcade_available_desc'.tr(),
-                                  focusNode: _availableFocusNode,
-                                  isInstalled: isInstalled,
-                                  isDownloading: _arcadePlugin.isDownloading,
-                                  downloadProgress: _arcadePlugin.downloadProgress,
-                                  statusMessage: _arcadePlugin.statusMessage,
-                                  onInstall: _installArcade,
-                                  onKeyLeft: () {
-                                    if (isInstalled) {
-                                      _installedRemoveFocus.requestFocus();
-                                    } else {
-                                      _emptyFocusNode.requestFocus();
-                                    }
-                                  },
-                                  onKeyUp: () => _backFocusNode.requestFocus(),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: scheme.brightness == Brightness.dark
+                ? [
+                    Color.lerp(
+                      scheme.surfaceContainerHigh,
+                      scheme.primary,
+                      0.08,
+                    )!,
+                    scheme.surfaceContainerLow,
+                  ]
+                : [scheme.surfaceContainerLowest, scheme.surfaceContainerHigh],
+          ),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Opacity(
+                  opacity: 0.3,
+                  child: Image.asset(
+                    'assets/images/fondo.png',
+                    fit: BoxFit.cover,
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
+            SafeArea(
+              top: false,
+              bottom: false,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: overlapX,
+                  vertical: overlapY,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      width: 54,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const SizedBox(height: 9),
+                          TvBackPill(
+                            focusNode: _backFocusNode,
+                            onKeyRight: () {
+                              if (isInstalled) {
+                                _installedRemoveFocus.requestFocus();
+                              } else {
+                                _focusAvailableList();
+                              }
+                            },
+                            onKeyDown: () {
+                              if (isInstalled) {
+                                _installedRemoveFocus.requestFocus();
+                              } else {
+                                _focusAvailableList();
+                              }
+                            },
+                          ),
+                          const Spacer(),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+                        child: TvAccordionRowPreview(
+                          panelCount: 1,
+                          activeIndex: 0,
+                          colors: [scheme.surface.withValues(alpha: 0.8)],
+                          titles: ['settings_general_plugins_title'.tr()],
+                          icons: const [MoaiIcons.tvViewerPillPlugin],
+                          onPanelTap: (_) {},
+                          tabBuilder: (index, isExpanded) {
+                            return Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: 14,
+                                top: 14,
+                              ),
+                              child: Column(
+                                children: [
+                                  const Spacer(),
+                                  RotatedBox(
+                                    quarterTurns: 3,
+                                    child: Text(
+                                      'settings_general_plugins_title'.tr(),
+                                      maxLines: 1,
+                                      softWrap: false,
+                                      overflow: TextOverflow.fade,
+                                      style: MoaiText.display(
+                                        context,
+                                        color: scheme.onSurface.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 1.0,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Icon(
+                                    MoaiIcons.tvViewerPillPlugin,
+                                    size: 20,
+                                    color: scheme.onSurfaceVariant.withValues(
+                                      alpha: 0.85,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          buildExpandedContent: (index, title) {
+                            return Container(
+                              padding: const EdgeInsets.all(10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Expanded(
+                                        child: TvPanelHeader(
+                                          title: 'plugins_admin_title'.tr(),
+                                          subtitle: 'plugins_admin_subtitle'.tr(),
+                                          padding: EdgeInsets.zero,
+                                        ),
+                                      ),
+                                      if (totalInstalledCount > 0) ...[
+                                        const SizedBox(width: 12),
+                                        TvMetaPill(
+                                          icon: MoaiIcons.tvViewerPillPlugin,
+                                          label: 'plugins_count_single'
+                                              .tr(namedArgs: {'count': '1'}),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  const SizedBox(height: 22),
+                                  Expanded(
+                                    child: _buildTwoColumnLayout(
+                                      context,
+                                      scheme,
+                                      isInstalled,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _header(BuildContext context, ColorScheme scheme, int totalPlugins) {
-    final countText = totalPlugins == 1
-        ? 'plugins_count_single'.tr(namedArgs: {'count': '1'})
-        : 'plugins_count_plural'.tr(namedArgs: {'count': '$totalPlugins'});
-
+  Widget _buildTwoColumnLayout(
+    BuildContext context,
+    ColorScheme scheme,
+    bool isInstalled,
+  ) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _BackButton(
-          focusNode: _backFocusNode,
-          onPressed: () => Navigator.of(context).pop(),
-          onFocusRight: () => _arcadePlugin.isInstalled
-              ? _installedRemoveFocus.requestFocus()
-              : _availableFocusNode.requestFocus(),
-          onFocusDown: () => _arcadePlugin.isInstalled
-              ? _installedRemoveFocus.requestFocus()
-              : _availableFocusNode.requestFocus(),
-        ),
-        const SizedBox(width: 14),
-        Material(
-          color: scheme.primaryContainer,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Icon(
-              MoaiIcons.extension,
-              color: scheme.onPrimaryContainer,
-              size: 26,
-            ),
-          ),
-        ),
-        const SizedBox(width: 14),
+        // Columna Izquierda: Plugins Instalados
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'plugins_admin_title'.tr(),
-                style: MoaiText.display(
-                  context,
-                  color: scheme.onSurface,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'plugins_installed_column_title'.tr(),
+                  style: MoaiText.body(
+                    context,
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                'plugins_admin_subtitle'.tr(),
-                style: MoaiText.body(
-                  context,
-                  color: scheme.onSurfaceVariant,
-                  fontSize: 13,
-                  height: 1.3,
+              Expanded(
+                child: !isInstalled
+                    ? TvEmptyStateCard(
+                        focusNode: _emptyFocusNode,
+                        icon: MoaiIcons.extensionOffOutlined,
+                        message: 'plugins_empty_installed_msg'.tr(),
+                        onFocusLeft: () => _backFocusNode.requestFocus(),
+                        onFocusUp: () => _backFocusNode.requestFocus(),
+                        onFocusRight: _focusAvailableList,
+                      )
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          const windowSize = 5;
+                          final availableH = constraints.maxHeight;
+                          final itemExtent =
+                              (availableH / windowSize).floorToDouble();
+                          final tileMinHeight =
+                              (itemExtent - 6.0).clamp(0.0, double.infinity);
+
+                          return SingleChildScrollView(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 3),
+                              child: _InstalledPluginTile(
+                                title: 'plugins_arcade_name'.tr(),
+                                subtitle: 'plugins_arcade_desc'.tr(
+                                  namedArgs: {'abi': ArcadePluginService.getDeviceAbi()},
+                                ),
+                                minHeight: tileMinHeight,
+                                updateFocus: _installedUpdateFocus,
+                                removeFocus: _installedRemoveFocus,
+                                onUpdate: _installArcade,
+                                onRemove: _uninstallArcade,
+                                onUpdateKeyLeft: () => _backFocusNode.requestFocus(),
+                                onUpdateKeyUp: () => _backFocusNode.requestFocus(),
+                                onRemoveKeyUp: () => _backFocusNode.requestFocus(),
+                                onRemoveKeyRight: _focusAvailableList,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 16),
+        // Columna Derecha: Plugins Disponibles (Windowed List con mock de 8)
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'plugins_available_column_title'.tr(),
+                  style: MoaiText.body(
+                    context,
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    const windowSize = 5;
+                    final availableH = constraints.maxHeight;
+                    final itemExtent = (availableH / windowSize).floorToDouble();
+
+                    return SizedBox(
+                      height: availableH,
+                      child: TvWindowedList<_GeneralPluginItem>(
+                        key: _availableListKey,
+                        items: _availablePlugins,
+                        windowSize: windowSize,
+                        itemExtent: itemExtent,
+                        showScrollDots: true,
+                        initialGlobalIndex: _selectedAvailableIndex,
+                        focusOnMount: false,
+                        onFocusedGlobalIndex: (idx) {
+                          _selectedAvailableIndex = idx;
+                        },
+                        onFocusUpFromFirst: () => _backFocusNode.requestFocus(),
+                        itemBuilder: (
+                          context,
+                          item,
+                          focusNode,
+                          local,
+                          global,
+                          onKeyUp,
+                          onKeyDown,
+                        ) {
+                          final isItemInstalled = item.isArcade && isInstalled;
+                          final isItemDownloading =
+                              item.isArcade && _arcadePlugin.isDownloading;
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 3),
+                            child: TvTile(
+                              focusNode: focusNode,
+                              minHeight: 0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              label: item.name,
+                              description: item.description,
+                              icon: MoaiIcons.tvViewerPillPlugin,
+                              onPressed: () {
+                                if (item.isArcade) {
+                                  if (!isItemInstalled && !isItemDownloading) {
+                                    _installArcade();
+                                  }
+                                }
+                              },
+                              onKeyLeft: () {
+                                if (isInstalled) {
+                                  _installedRemoveFocus.requestFocus();
+                                } else {
+                                  _emptyFocusNode.requestFocus();
+                                }
+                              },
+                              onKeyUp: onKeyUp,
+                              onKeyDown: onKeyDown,
+                              trailingBuilder: (context, isFocused) =>
+                                  TvInstallPill(
+                                isInstalled: isItemInstalled,
+                                isFocused: isFocused,
+                                downloadProgress: isItemDownloading
+                                    ? _arcadePlugin.downloadProgress
+                                    : null,
+                                installLabel: 'sources_install'.tr(),
+                                installedLabel: 'sources_status_installed'.tr(),
+                                onPressed: () {
+                                  if (item.isArcade) {
+                                    if (!isItemInstalled && !isItemDownloading) {
+                                      _installArcade();
+                                    }
+                                  }
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(width: 12),
-        Material(
-          color: scheme.tertiaryContainer,
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: Text(
-              countText,
-              style: MoaiText.body(
-                context,
-                color: scheme.onTertiaryContainer,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ),
       ],
-    );
-  }
-}
-
-class _BackButton extends StatefulWidget {
-  final FocusNode focusNode;
-  final VoidCallback onPressed;
-  final VoidCallback? onFocusRight;
-  final VoidCallback? onFocusDown;
-
-  const _BackButton({
-    required this.focusNode,
-    required this.onPressed,
-    this.onFocusRight,
-    this.onFocusDown,
-  });
-
-  @override
-  State<_BackButton> createState() => _BackButtonState();
-}
-
-class _BackButtonState extends State<_BackButton> {
-  bool _isFocused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _isFocused = widget.focusNode.hasFocus;
-    widget.focusNode.addListener(_onFocus);
-  }
-
-  @override
-  void dispose() {
-    widget.focusNode.removeListener(_onFocus);
-    super.dispose();
-  }
-
-  void _onFocus() {
-    if (mounted) setState(() => _isFocused = widget.focusNode.hasFocus);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    final bg = _isFocused ? scheme.primary : scheme.surfaceContainerLow;
-    final fg = _isFocused ? scheme.onPrimary : scheme.onSurface;
-
-    return Focus(
-      focusNode: widget.focusNode,
-      onKeyEvent: (node, event) {
-        if (event is! KeyDownEvent) return KeyEventResult.ignored;
-        final key = event.logicalKey;
-        if (key == LogicalKeyboardKey.arrowRight && widget.onFocusRight != null) {
-          widget.onFocusRight!();
-          return KeyEventResult.handled;
-        }
-        if (key == LogicalKeyboardKey.arrowDown && widget.onFocusDown != null) {
-          widget.onFocusDown!();
-          return KeyEventResult.handled;
-        }
-        if (key == LogicalKeyboardKey.enter ||
-            key == LogicalKeyboardKey.select ||
-            key == LogicalKeyboardKey.space ||
-            key == LogicalKeyboardKey.gameButtonA) {
-          widget.onPressed();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      child: AnimatedScale(
-        scale: _isFocused ? 1.04 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOutCubic,
-        child: Material(
-          color: bg,
-          borderRadius: BorderRadius.circular(16),
-          child: InkWell(
-            onTap: widget.onPressed,
-            borderRadius: BorderRadius.circular(16),
-            child: SizedBox(
-              width: 52,
-              height: 52,
-              child: Icon(
-                MoaiIcons.arrowBackRounded,
-                color: fg,
-                size: 24,
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -408,9 +483,11 @@ class _InstalledPluginTile extends StatefulWidget {
   final FocusNode removeFocus;
   final VoidCallback onUpdate;
   final VoidCallback onRemove;
+  final VoidCallback? onUpdateKeyLeft;
   final VoidCallback onUpdateKeyUp;
   final VoidCallback onRemoveKeyUp;
   final VoidCallback? onRemoveKeyRight;
+  final double? minHeight;
 
   const _InstalledPluginTile({
     required this.title,
@@ -419,9 +496,11 @@ class _InstalledPluginTile extends StatefulWidget {
     required this.removeFocus,
     required this.onUpdate,
     required this.onRemove,
+    this.onUpdateKeyLeft,
     required this.onUpdateKeyUp,
     required this.onRemoveKeyUp,
     this.onRemoveKeyRight,
+    this.minHeight,
   });
 
   @override
@@ -449,352 +528,40 @@ class _InstalledPluginTileState extends State<_InstalledPluginTile> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
     final isFocused = widget.updateFocus.hasFocus || widget.removeFocus.hasFocus;
 
-    final bg = isFocused ? scheme.primary : scheme.surfaceContainerLow;
-    final titleColor = isFocused ? scheme.onPrimary : scheme.onSurface;
-    final descColor = isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.85)
-        : scheme.onSurfaceVariant;
-    final iconBg = isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.18)
-        : scheme.primaryContainer;
-    final iconColor = isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        constraints: const BoxConstraints(minHeight: 64),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            Material(
-              color: iconBg,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Icon(
-                  MoaiIcons.electricalServices,
-                  size: 22,
-                  color: iconColor,
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    widget.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: MoaiText.body(
-                      context,
-                      color: titleColor,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    widget.subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: MoaiText.body(
-                      context,
-                      color: descColor,
-                      fontSize: 12,
-                      height: 1.3,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            _IconButtonAction(
-              focusNode: widget.updateFocus,
-              tooltip: 'plugins_reinstall_tooltip'.tr(),
-              icon: MoaiIcons.syncRounded,
-              onPressed: widget.onUpdate,
-              parentFocused: isFocused,
-              onKeyRight: () => widget.removeFocus.requestFocus(),
-              onKeyUp: widget.onUpdateKeyUp,
-            ),
-            const SizedBox(width: 8),
-            _IconButtonAction(
-              focusNode: widget.removeFocus,
-              tooltip: 'plugins_uninstall_tooltip'.tr(),
-              icon: MoaiIcons.deleteOutlineRounded,
-              onPressed: widget.onRemove,
-              parentFocused: isFocused,
-              onKeyLeft: () => widget.updateFocus.requestFocus(),
-              onKeyRight: widget.onRemoveKeyRight,
-              onKeyUp: widget.onRemoveKeyUp,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AvailablePluginTile extends StatefulWidget {
-  final String title;
-  final String packageName;
-  final FocusNode focusNode;
-  final bool isInstalled;
-  final bool isDownloading;
-  final double downloadProgress;
-  final String statusMessage;
-  final VoidCallback onInstall;
-  final VoidCallback onKeyLeft;
-  final VoidCallback onKeyUp;
-
-  const _AvailablePluginTile({
-    required this.title,
-    required this.packageName,
-    required this.focusNode,
-    required this.isInstalled,
-    required this.isDownloading,
-    required this.downloadProgress,
-    required this.statusMessage,
-    required this.onInstall,
-    required this.onKeyLeft,
-    required this.onKeyUp,
-  });
-
-  @override
-  State<_AvailablePluginTile> createState() => _AvailablePluginTileState();
-}
-
-class _AvailablePluginTileState extends State<_AvailablePluginTile> {
-  bool _isFocused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _isFocused = widget.focusNode.hasFocus;
-    widget.focusNode.addListener(_onFocus);
-  }
-
-  @override
-  void dispose() {
-    widget.focusNode.removeListener(_onFocus);
-    super.dispose();
-  }
-
-  void _onFocus() {
-    if (mounted) {
-      setState(() => _isFocused = widget.focusNode.hasFocus);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    final bg = _isFocused ? scheme.primary : scheme.surfaceContainerLow;
-    final titleColor = _isFocused ? scheme.onPrimary : scheme.onSurface;
-    final descColor = _isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.85)
-        : scheme.onSurfaceVariant;
-    final iconBg = _isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.18)
-        : scheme.primaryContainer;
-    final iconColor = _isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Focus(
-        focusNode: widget.focusNode,
-        onKeyEvent: (node, event) {
-          if (event is! KeyDownEvent) return KeyEventResult.ignored;
-          final key = event.logicalKey;
-          if (key == LogicalKeyboardKey.arrowLeft) {
-            widget.onKeyLeft();
-            return KeyEventResult.handled;
-          }
-          if (key == LogicalKeyboardKey.arrowUp) {
-            widget.onKeyUp();
-            return KeyEventResult.handled;
-          }
-          if (key == LogicalKeyboardKey.enter ||
-              key == LogicalKeyboardKey.select ||
-              key == LogicalKeyboardKey.space ||
-              key == LogicalKeyboardKey.gameButtonA) {
-            widget.onInstall();
-            return KeyEventResult.handled;
-          }
-          return KeyEventResult.ignored;
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          constraints: const BoxConstraints(minHeight: 64),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(16),
+    return TvInfoTile(
+      isFocused: isFocused,
+      minHeight: widget.minHeight ?? 0,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      label: widget.title,
+      description: widget.subtitle,
+      icon: MoaiIcons.tvViewerPillPlugin,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _IconButtonAction(
+            focusNode: widget.updateFocus,
+            tooltip: 'plugins_reinstall_tooltip'.tr(),
+            icon: MoaiIcons.syncRounded,
+            onPressed: widget.onUpdate,
+            parentFocused: isFocused,
+            onKeyLeft: widget.onUpdateKeyLeft,
+            onKeyRight: () => widget.removeFocus.requestFocus(),
+            onKeyUp: widget.onUpdateKeyUp,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: InkWell(
-            onTap: widget.onInstall,
-            borderRadius: BorderRadius.circular(16),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Material(
-                      color: iconBg,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: Icon(
-                          MoaiIcons.electricalServices,
-                          size: 22,
-                          color: iconColor,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            widget.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: MoaiText.body(
-                              context,
-                              color: titleColor,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            widget.packageName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: MoaiText.body(
-                              context,
-                              color: descColor,
-                              fontSize: 12,
-                              height: 1.3,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Material(
-                      color: widget.isDownloading
-                          ? (_isFocused
-                              ? scheme.onPrimary.withValues(alpha: 0.2)
-                              : scheme.primaryContainer)
-                          : widget.isInstalled
-                              ? (_isFocused
-                                  ? scheme.onPrimary.withValues(alpha: 0.2)
-                                  : scheme.tertiaryContainer)
-                              : (_isFocused
-                                  ? scheme.onPrimary
-                                  : scheme.primary),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (widget.isDownloading) ...[
-                              SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: _isFocused
-                                      ? scheme.onPrimary
-                                      : scheme.onPrimaryContainer,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                '${(widget.downloadProgress * 100).toStringAsFixed(0)}%',
-                                style: MoaiText.body(
-                                  context,
-                                  color: _isFocused
-                                      ? scheme.onPrimary
-                                      : scheme.onPrimaryContainer,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ] else if (widget.isInstalled) ...[
-                              Icon(
-                                MoaiIcons.checkCircleOutlineRounded,
-                                size: 16,
-                                color: _isFocused
-                                    ? scheme.onPrimary
-                                    : scheme.onTertiaryContainer,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'plugins_status_installed'.tr(),
-                                style: MoaiText.body(
-                                  context,
-                                  color: _isFocused
-                                      ? scheme.onPrimary
-                                      : scheme.onTertiaryContainer,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ] else ...[
-                              Icon(
-                                MoaiIcons.download,
-                                size: 16,
-                                color: _isFocused
-                                    ? scheme.primary
-                                    : scheme.onPrimary,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'plugins_action_install'.tr(),
-                                style: MoaiText.body(
-                                  context,
-                                  color: _isFocused
-                                      ? scheme.primary
-                                      : scheme.onPrimary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          const SizedBox(width: 8),
+          _IconButtonAction(
+            focusNode: widget.removeFocus,
+            tooltip: 'plugins_uninstall_tooltip'.tr(),
+            icon: MoaiIcons.deleteOutlineRounded,
+            onPressed: widget.onRemove,
+            parentFocused: isFocused,
+            onKeyLeft: () => widget.updateFocus.requestFocus(),
+            onKeyRight: widget.onRemoveKeyRight,
+            onKeyUp: widget.onRemoveKeyUp,
           ),
-        ),
+        ],
       ),
     );
   }
@@ -806,9 +573,9 @@ class _IconButtonAction extends StatefulWidget {
   final IconData icon;
   final VoidCallback onPressed;
   final bool parentFocused;
+  final VoidCallback? onKeyUp;
   final VoidCallback? onKeyLeft;
   final VoidCallback? onKeyRight;
-  final VoidCallback? onKeyUp;
 
   const _IconButtonAction({
     required this.focusNode,
@@ -816,9 +583,9 @@ class _IconButtonAction extends StatefulWidget {
     required this.icon,
     required this.onPressed,
     required this.parentFocused,
+    this.onKeyUp,
     this.onKeyLeft,
     this.onKeyRight,
-    this.onKeyUp,
   });
 
   @override
@@ -826,7 +593,7 @@ class _IconButtonAction extends StatefulWidget {
 }
 
 class _IconButtonActionState extends State<_IconButtonAction> {
-  bool _isFocused = false;
+  late bool _isFocused;
 
   @override
   void initState() {
@@ -848,33 +615,43 @@ class _IconButtonActionState extends State<_IconButtonAction> {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final bg = _isFocused
-        ? (widget.parentFocused ? scheme.onPrimary : scheme.primary)
-        : (widget.parentFocused
-            ? scheme.onPrimary.withValues(alpha: 0.2)
-            : scheme.surfaceContainerHighest);
 
-    final iconColor = _isFocused
-        ? (widget.parentFocused ? scheme.primary : scheme.onPrimary)
-        : (widget.parentFocused
-            ? scheme.onPrimary
-            : scheme.onSurfaceVariant);
+    final Color bg;
+    final Color fg;
+
+    if (_isFocused) {
+      if (widget.parentFocused) {
+        bg = scheme.onPrimary;
+        fg = scheme.primary;
+      } else {
+        bg = scheme.primary;
+        fg = scheme.onPrimary;
+      }
+    } else {
+      if (widget.parentFocused) {
+        bg = scheme.onPrimary.withValues(alpha: 0.16);
+        fg = scheme.onPrimary;
+      } else {
+        bg = scheme.surfaceContainerHighest.withValues(alpha: 0.5);
+        fg = scheme.onSurfaceVariant;
+      }
+    }
 
     return Focus(
       focusNode: widget.focusNode,
       onKeyEvent: (node, event) {
         if (event is! KeyDownEvent) return KeyEventResult.ignored;
         final key = event.logicalKey;
+        if (key == LogicalKeyboardKey.arrowUp && widget.onKeyUp != null) {
+          widget.onKeyUp!();
+          return KeyEventResult.handled;
+        }
         if (key == LogicalKeyboardKey.arrowLeft && widget.onKeyLeft != null) {
           widget.onKeyLeft!();
           return KeyEventResult.handled;
         }
         if (key == LogicalKeyboardKey.arrowRight && widget.onKeyRight != null) {
           widget.onKeyRight!();
-          return KeyEventResult.handled;
-        }
-        if (key == LogicalKeyboardKey.arrowUp && widget.onKeyUp != null) {
-          widget.onKeyUp!();
           return KeyEventResult.handled;
         }
         if (key == LogicalKeyboardKey.enter ||
@@ -887,25 +664,18 @@ class _IconButtonActionState extends State<_IconButtonAction> {
         return KeyEventResult.ignored;
       },
       child: AnimatedScale(
-        scale: _isFocused ? 1.1 : 1.0,
+        scale: _isFocused ? 1.08 : 1.0,
         duration: const Duration(milliseconds: 100),
-        child: Tooltip(
-          message: widget.tooltip,
-          child: Material(
-            color: bg,
-            borderRadius: BorderRadius.circular(12),
-            child: InkWell(
-              onTap: widget.onPressed,
-              borderRadius: BorderRadius.circular(12),
-              child: SizedBox(
-                width: 40,
-                height: 40,
-                child: Icon(
-                  widget.icon,
-                  size: 20,
-                  color: iconColor,
-                ),
-              ),
+        child: Material(
+          color: bg,
+          borderRadius: BorderRadius.circular(10),
+          child: InkWell(
+            onTap: widget.onPressed,
+            borderRadius: BorderRadius.circular(10),
+            child: SizedBox(
+              width: 36,
+              height: 36,
+              child: Icon(widget.icon, color: fg, size: 18),
             ),
           ),
         ),

@@ -104,7 +104,7 @@ class GroupListPanelState extends State<GroupListPanel> {
             child: widget.groups.isEmpty
                 ? TvEmptyStateCard(
                     focusNode: _emptyFocusNode,
-                    icon: MoaiIcons.bookmarksOutlined,
+                    icon: MoaiIcons.tvTabMarcadores,
                     message: 'browser_groups_empty'.tr(),
                     onFocusUp: widget.onFocusUp,
                   )

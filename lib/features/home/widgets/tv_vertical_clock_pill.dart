@@ -50,7 +50,7 @@ class _TvVerticalClockPillState extends State<TvVerticalClockPill> {
     final minuteStr = DateFormat('mm').format(_now);
 
     // Mismo fondo/borde que TvAccordionRowPreview (panel expandido).
-    final baseColor = scheme.surface;
+    final baseColor = scheme.surface.withValues(alpha: 0.8);
     final endColor = Color.alphaBlend(
       scheme.onSurface.withValues(alpha: 0.05),
       baseColor,
@@ -68,10 +68,7 @@ class _TvVerticalClockPillState extends State<TvVerticalClockPill> {
           stops: const [0.0, 0.62, 1.0],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: borderColor,
-          width: 1.0,
-        ),
+        border: Border.all(color: borderColor, width: 1.0),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -135,7 +132,8 @@ class _TvVerticalClockPillState extends State<TvVerticalClockPill> {
             builder: (context) {
               final weatherProvider = context.watch<WeatherProvider?>();
               final tempStr = weatherProvider?.temperatureDisplay ?? '33°';
-              final lottieUrl = weatherProvider?.lottieUrl ??
+              final lottieUrl =
+                  weatherProvider?.lottieUrl ??
                   'https://cdn.jsdelivr.net/npm/@meteocons/lottie@0.1.0/fill/clear-day.json';
 
               return Column(

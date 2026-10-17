@@ -34,9 +34,12 @@ class TvDialog extends StatelessWidget {
   final List<Widget>? actions;
   final MainAxisAlignment actionsAlignment;
 
+  final EdgeInsetsGeometry padding;
+
   const TvDialog({
     super.key,
     this.width = 480,
+    this.padding = const EdgeInsets.all(16),
     this.icon,
     this.iconWidget,
     this.iconBgColor,
@@ -54,6 +57,14 @@ class TvDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    // Usamos scheme.surface igual que los paneles de TvAccordionRowPreview
+    // para lograr el fondo oscuro característico y contraste perfecto con los TvTile
+    final baseColor = scheme.surface;
+    final endColor = Color.alphaBlend(
+      scheme.onSurface.withValues(alpha: 0.05),
+      baseColor,
+    );
+    final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
 
     return Center(
       child: Material(
@@ -61,13 +72,18 @@ class TvDialog extends StatelessWidget {
         child: Container(
           width: width,
           margin: const EdgeInsets.symmetric(horizontal: 24),
-          padding: const EdgeInsets.all(28),
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: scheme.surfaceContainerHigh,
+            gradient: LinearGradient(
+              begin: Alignment.bottomRight,
+              end: Alignment.topLeft,
+              colors: [baseColor, baseColor, endColor],
+              stops: const [0.0, 0.62, 1.0],
+            ),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: scheme.outlineVariant.withValues(alpha: 0.3),
-              width: 1,
+              color: borderColor,
+              width: 1.0,
             ),
             boxShadow: [
               BoxShadow(
@@ -77,36 +93,43 @@ class TvDialog extends StatelessWidget {
               ),
             ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
             children: [
-              // Encabezado estandarizado
-              if (icon != null ||
-                  iconWidget != null ||
-                  title != null ||
-                  titleWidget != null) ...[
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Opacity(
+                    opacity: 0.18,
+                    child: Image.asset(
+                      'assets/images/fondo.png',
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: padding,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Encabezado estandarizado
+                    if (icon != null ||
+                        iconWidget != null ||
+                        title != null ||
+                        titleWidget != null) ...[
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     if (iconWidget != null)
                       iconWidget!
                     else if (icon != null)
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: iconBgColor ?? scheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          icon,
-                          color: iconColor ?? scheme.onPrimaryContainer,
-                          size: 24,
-                        ),
+                      Icon(
+                        icon,
+                        color: iconColor ?? scheme.primary,
+                        size: 30,
                       ),
                     if (icon != null || iconWidget != null)
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,8 +156,8 @@ class TvDialog extends StatelessWidget {
                               style: MoaiText.body(
                                 context,
                                 fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: scheme.primary,
+                                fontWeight: FontWeight.w500,
+                                color: scheme.onSurface.withValues(alpha: 0.72),
                               ),
                             ),
                           ],
@@ -148,7 +171,7 @@ class TvDialog extends StatelessWidget {
                   ],
                 ),
                 if (content != null || actions != null)
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
               ],
 
               // Contenido
@@ -156,7 +179,7 @@ class TvDialog extends StatelessWidget {
 
               // Botones de acción
               if (actions != null && actions!.isNotEmpty) ...[
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: actionsAlignment,
                   children: [
@@ -171,8 +194,11 @@ class TvDialog extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
+      ],
+    ),
+  ),
+),
+);
   }
 }
 

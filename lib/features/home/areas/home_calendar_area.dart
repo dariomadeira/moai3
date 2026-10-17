@@ -52,8 +52,8 @@ class _HomeCalendarAreaState extends State<HomeCalendarArea> {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
     final panelColors = [
-      scheme.surface,
-      scheme.surface,
+      scheme.surface.withValues(alpha: 0.8),
+      scheme.surface.withValues(alpha: 0.8),
     ];
     final titles = [
       'calendar_panel_events_title'.tr(),

@@ -52,19 +52,24 @@ class _HomeScreenState extends State<HomeScreen> {
   static const int _sectionArcade = 3;
   static const int _sectionSettings = 4;
 
-  final FocusNode _arcadeSelectGameFocus =
-      FocusNode(debugLabel: 'arcade_select_game');
-  final FocusNode _arcadeGamepadFocus =
-      FocusNode(debugLabel: 'arcade_config_gamepad');
-  final FocusNode _arcadeStartFocus =
-      FocusNode(debugLabel: 'arcade_start_game');
-  final FocusNode _arcadePlayTogetherFocus =
-      FocusNode(debugLabel: 'arcade_play_together');
+  final FocusNode _arcadeSelectGameFocus = FocusNode(
+    debugLabel: 'arcade_select_game',
+  );
+  final FocusNode _arcadeGamepadFocus = FocusNode(
+    debugLabel: 'arcade_config_gamepad',
+  );
+  final FocusNode _arcadeStartFocus = FocusNode(
+    debugLabel: 'arcade_start_game',
+  );
+  final FocusNode _arcadePlayTogetherFocus = FocusNode(
+    debugLabel: 'arcade_play_together',
+  );
   final ArcadeRomManagerService _romManager = ArcadeRomManagerService();
   StreamSubscription? _arcadeInviteSubscription;
 
-  final FocusScopeNode _railScopeNode =
-      FocusScopeNode(debugLabel: 'rail_scope');
+  final FocusScopeNode _railScopeNode = FocusScopeNode(
+    debugLabel: 'rail_scope',
+  );
   final FocusNode _railFocusNode = FocusNode(debugLabel: 'home_rail');
   final GlobalKey<HomeTvAreaState> _tvAreaKey = GlobalKey<HomeTvAreaState>();
   final GlobalKey<HomeMoviesAreaState> _moviesAreaKey =
@@ -72,20 +77,27 @@ class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<DoubleBackExitScopeState> _doubleBackKey =
       GlobalKey<DoubleBackExitScopeState>();
 
-  final FocusNode _calendarEventsFocus = FocusNode(debugLabel: 'calendar_events');
-  final FocusNode _calendarSubscriptionsFocus =
-      FocusNode(debugLabel: 'calendar_subscriptions');
+  final FocusNode _calendarEventsFocus = FocusNode(
+    debugLabel: 'calendar_events',
+  );
+  final FocusNode _calendarSubscriptionsFocus = FocusNode(
+    debugLabel: 'calendar_subscriptions',
+  );
   int _activeCalendarPanelIndex = 0;
 
   final FocusNode _settingsTvFocus = FocusNode(debugLabel: 'settings_tv');
-  final FocusNode _settingsMoviesSeriesFocus =
-      FocusNode(debugLabel: 'settings_movies_series');
-  final FocusNode _settingsAgendaFocus =
-      FocusNode(debugLabel: 'settings_agenda');
-  final FocusNode _settingsWatchPartyFocus =
-      FocusNode(debugLabel: 'settings_watch_party');
-  final FocusNode _settingsGeneralFocus =
-      FocusNode(debugLabel: 'settings_general');
+  final FocusNode _settingsMoviesSeriesFocus = FocusNode(
+    debugLabel: 'settings_movies_series',
+  );
+  final FocusNode _settingsAgendaFocus = FocusNode(
+    debugLabel: 'settings_agenda',
+  );
+  final FocusNode _settingsWatchPartyFocus = FocusNode(
+    debugLabel: 'settings_watch_party',
+  );
+  final FocusNode _settingsGeneralFocus = FocusNode(
+    debugLabel: 'settings_general',
+  );
   final FocusNode _settingsAboutFocus = FocusNode(debugLabel: 'settings_about');
 
   int _selectedIndex = _sectionTv;
@@ -114,55 +126,56 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _listenToArcadeInvites() {
-    _arcadeInviteSubscription =
-        ArcadeNetplayService.instance.onIncomingInvite.listen((invite) {
-      if (!mounted) return;
-      MoaiSnackBar.show(
-        context,
-        message: 'arcade_invite_received'.tr(namedArgs: {
-          'name': invite.hostNickname,
-          'game': invite.romName,
-        }),
-        icon: MoaiIcons.sportsEsports,
-        hint: 'arcade_invite_hint_accept_reject'.tr(),
-        onAction: () async {
-          final identity = context.read<DeviceIdentityService>();
-          final myDeviceId = identity.getOrCreateDeviceId();
-          final myNickname =
-              context.read<WatchPartyProvider?>()?.myNickname ??
+    _arcadeInviteSubscription = ArcadeNetplayService.instance.onIncomingInvite
+        .listen((invite) {
+          if (!mounted) return;
+          MoaiSnackBar.show(
+            context,
+            message: 'arcade_invite_received'.tr(
+              namedArgs: {'name': invite.hostNickname, 'game': invite.romName},
+            ),
+            icon: MoaiIcons.sportsEsports,
+            hint: 'arcade_invite_hint_accept_reject'.tr(),
+            onAction: () async {
+              final identity = context.read<DeviceIdentityService>();
+              final myDeviceId = identity.getOrCreateDeviceId();
+              final myNickname =
+                  context.read<WatchPartyProvider?>()?.myNickname ??
                   'arcade_default_player_2'.tr();
 
-          await ArcadeNetplayService.instance.acceptIncomingInvite(
-            myDeviceId: myDeviceId,
-            myNickname: myNickname,
-            romManager: _romManager,
-          );
+              await ArcadeNetplayService.instance.acceptIncomingInvite(
+                myDeviceId: myDeviceId,
+                myNickname: myNickname,
+                romManager: _romManager,
+              );
 
-          if (mounted) {
-            TvArcadePrepDialog.show(
-              context,
-              onReadyToPlay: (session) {
-                final romPath = _romManager.getActiveRomPath();
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ArcadeScreen(
-                      initialRomPath: romPath,
-                      netplaySession: session,
-                    ),
-                  ),
+              if (mounted) {
+                TvArcadePrepDialog.show(
+                  context,
+                  onReadyToPlay: (session) {
+                    final romPath = _romManager.getActiveRomPath();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ArcadeScreen(
+                          initialRomPath: romPath,
+                          netplaySession: session,
+                        ),
+                      ),
+                    );
+                  },
                 );
-              },
-            );
-          }
-        },
-        onDismiss: () async {
-          final identity = context.read<DeviceIdentityService>();
-          final myDeviceId = identity.getOrCreateDeviceId();
-          await ArcadeNetplayService.instance.rejectIncomingInvite(myDeviceId);
-        },
-        duration: const Duration(seconds: 25),
-      );
-    });
+              }
+            },
+            onDismiss: () async {
+              final identity = context.read<DeviceIdentityService>();
+              final myDeviceId = identity.getOrCreateDeviceId();
+              await ArcadeNetplayService.instance.rejectIncomingInvite(
+                myDeviceId,
+              );
+            },
+            duration: const Duration(seconds: 25),
+          );
+        });
   }
 
   void _updatePresenceForSection(int index) {
@@ -188,7 +201,9 @@ class _HomeScreenState extends State<HomeScreen> {
       } else {
         watchParty.reportCurrentChannel(channelId: null);
       }
-      _tvPresenceHeartbeatTimer = Timer.periodic(_tvPresenceHeartbeatInterval, (_) {
+      _tvPresenceHeartbeatTimer = Timer.periodic(_tvPresenceHeartbeatInterval, (
+        _,
+      ) {
         if (!mounted) return;
         if (_selectedIndex != _sectionTv && _selectedIndex != _sectionArcade) {
           return;
@@ -206,6 +221,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_selectedIndex == index) return;
     setState(() => _selectedIndex = index);
     _updatePresenceForSection(index);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _railFocusNode.requestFocus();
+      }
+    });
   }
 
   void _onModalTrackerChanged() {
@@ -237,7 +257,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _cleanExpiredSnackQueue() {
     // Descartar notificaciones atrasadas cuyos eventos ya hayan finalizado
-    _liveSnackQueue.removeWhere((e) => e.status == CalendarEventStatus.finished);
+    _liveSnackQueue.removeWhere(
+      (e) => e.status == CalendarEventStatus.finished,
+    );
   }
 
   void _listenToLiveEvents() {
@@ -272,10 +294,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _currentSnackEvent = event;
     final lead = context.read<CalendarProvider>().notifyLeadMinutes;
     final controller = NotificationHelper.show(
-      message: CalendarProvider.formatLiveEventsMessage(
-        [event],
-        leadMinutes: lead,
-      ),
+      message: CalendarProvider.formatLiveEventsMessage([
+        event,
+      ], leadMinutes: lead),
       icon: CalendarProvider.getLiveEventsIcon([event]),
       hint: 'calendar_live_ok_hint'.tr(),
       onAction: () => _openLiveSnackEvent(event),
@@ -290,7 +311,8 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       _currentSnackEvent = null;
       _liveSnackBusy = false;
-      if (ModalRouteTracker.instance.hasActiveModal || _openingLiveSnackDialog) {
+      if (ModalRouteTracker.instance.hasActiveModal ||
+          _openingLiveSnackDialog) {
         return;
       }
       // Intervalo de 800ms entre notificaciones consecutivas para no saturar al usuario
@@ -344,8 +366,9 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final pluginHost = context.read<PluginHostController>();
       if (pluginHost.sources.isNotEmpty) {
-        final pendingUpdates =
-            await PluginUpdateService.checkForUpdates(pluginHost.sources);
+        final pendingUpdates = await PluginUpdateService.checkForUpdates(
+          pluginHost.sources,
+        );
         if (pendingUpdates.isNotEmpty && mounted) {
           PluginUpdateDialog.show(context, pendingUpdates);
         }
@@ -472,8 +495,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final overlapX = context.select((TvSettingsProvider s) => s.overlapPaddingX);
-    final overlapY = context.select((TvSettingsProvider s) => s.overlapPaddingY);
+    final overlapX = context.select(
+      (TvSettingsProvider s) => s.overlapPaddingX,
+    );
+    final overlapY = context.select(
+      (TvSettingsProvider s) => s.overlapPaddingY,
+    );
     final scheme = context.scheme;
 
     return DoubleBackExitScope(
@@ -497,7 +524,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 end: Alignment.bottomRight,
                 colors: scheme.brightness == Brightness.dark
                     ? [
-                        Color.lerp(scheme.surfaceContainerHigh, scheme.primary, 0.08)!,
+                        Color.lerp(
+                          scheme.surfaceContainerHigh,
+                          scheme.primary,
+                          0.08,
+                        )!,
                         scheme.surfaceContainerLow,
                       ]
                     : [
@@ -506,112 +537,141 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
               ),
             ),
-            child: Scaffold(
-              backgroundColor: Colors.transparent,
-              body: SafeArea(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: overlapX,
-                  vertical: overlapY,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    RepaintBoundary(
-                      child: NavigationRailSection(
-                        selectedIndex: _selectedIndex,
-                        railScopeNode: _railScopeNode,
-                        railFocusNode: _railFocusNode,
-                        onIndexChanged: (index) {
-                          _switchSection(index);
-                        },
-                        onFocusRight: _onRailFocusRight,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Opacity(
+                      opacity: 0.3,
+                      child: Image.asset(
+                        'assets/images/fondo.png',
+                        fit: BoxFit.cover,
                       ),
                     ),
-                    Expanded(
-                      child: RepaintBoundary(
-                        child: Padding(
-                          padding: _selectedIndex == _sectionTv
-                              ? const EdgeInsets.fromLTRB(4, 0, 8, 8)
-                              : const EdgeInsets.fromLTRB(4, 8, 8, 8),
-                          child: _selectedIndex == _sectionSettings
-                              ? HomeSettingsArea(
-                                  activePanelIndex: _activeSettingsPanelIndex,
-                                  tvPanelFocus: _settingsTvFocus,
-                                  moviesSeriesPanelFocus:
-                                      _settingsMoviesSeriesFocus,
-                                  agendaPanelFocus: _settingsAgendaFocus,
-                                  watchPartyPanelFocus:
-                                      _settingsWatchPartyFocus,
-                                  generalPanelFocus: _settingsGeneralFocus,
-                                  aboutPanelFocus: _settingsAboutFocus,
-                                  onPanelIndexChanged:
-                                      _onSettingsPanelIndexChanged,
-                                  onExitLeft: _focusRail,
-                                )
-                              : _selectedIndex == _sectionArcade
-                                  ? HomeArcadeArea(
-                                      selectGameFocus: _arcadeSelectGameFocus,
-                                      gamepadFocus: _arcadeGamepadFocus,
-                                      startFocus: _arcadeStartFocus,
-                                      playTogetherFocus: _arcadePlayTogetherFocus,
-                                      onExitLeft: _focusRail,
-                                      romManager: _romManager,
-                                      onStartGame: () {
-                                        final path = _romManager.getActiveRomPath();
-                                        if (path != null) {
-                                          context.push('/arcade/game', extra: path);
-                                        } else {
-                                          MoaiSnackBar.show(
-                                            context,
-                                            message: 'arcade_no_game_installed_snack'.tr(),
-                                            icon: MoaiIcons.infoOutline,
-                                          );
-                                        }
-                                      },
-                                    )
-                              : _selectedIndex == _sectionCalendar
-                                  ? HomeCalendarArea(
-                                      activePanelIndex:
-                                          _activeCalendarPanelIndex,
-                                      eventsPanelFocus: _calendarEventsFocus,
-                                      subscriptionsPanelFocus:
-                                          _calendarSubscriptionsFocus,
-                                      onPanelIndexChanged:
-                                          _onCalendarPanelIndexChanged,
-                                      onExitLeft: _focusRail,
-                                      onTuneChannel: (channel) {
-                                        context.read<ChannelProvider>().selectChannel(channel);
-                                        _switchSection(_sectionTv);
-                                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                                          if (mounted) {
-                                            _tvAreaKey.currentState?.selectChannel(channel);
-                                            _tvAreaKey.currentState?.requestViewerFocus();
+                  ),
+                ),
+                Scaffold(
+                  backgroundColor: Colors.transparent,
+                  body: SafeArea(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: overlapX,
+                        vertical: overlapY,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          RepaintBoundary(
+                            child: NavigationRailSection(
+                              selectedIndex: _selectedIndex,
+                              railScopeNode: _railScopeNode,
+                              railFocusNode: _railFocusNode,
+                              onIndexChanged: (index) {
+                                _switchSection(index);
+                              },
+                              onFocusRight: _onRailFocusRight,
+                            ),
+                          ),
+                          Expanded(
+                            child: RepaintBoundary(
+                              child: Padding(
+                                padding: _selectedIndex == _sectionTv
+                                    ? const EdgeInsets.fromLTRB(4, 0, 8, 8)
+                                    : const EdgeInsets.fromLTRB(4, 8, 8, 8),
+                                child: _selectedIndex == _sectionSettings
+                                    ? HomeSettingsArea(
+                                        activePanelIndex:
+                                            _activeSettingsPanelIndex,
+                                        tvPanelFocus: _settingsTvFocus,
+                                        moviesSeriesPanelFocus:
+                                            _settingsMoviesSeriesFocus,
+                                        agendaPanelFocus: _settingsAgendaFocus,
+                                        watchPartyPanelFocus:
+                                            _settingsWatchPartyFocus,
+                                        generalPanelFocus:
+                                            _settingsGeneralFocus,
+                                        aboutPanelFocus: _settingsAboutFocus,
+                                        onPanelIndexChanged:
+                                            _onSettingsPanelIndexChanged,
+                                        onExitLeft: _focusRail,
+                                      )
+                                    : _selectedIndex == _sectionArcade
+                                    ? HomeArcadeArea(
+                                        selectGameFocus: _arcadeSelectGameFocus,
+                                        gamepadFocus: _arcadeGamepadFocus,
+                                        startFocus: _arcadeStartFocus,
+                                        playTogetherFocus:
+                                            _arcadePlayTogetherFocus,
+                                        onExitLeft: _focusRail,
+                                        romManager: _romManager,
+                                        onStartGame: () {
+                                          final path = _romManager
+                                              .getActiveRomPath();
+                                          if (path != null) {
+                                            context.push(
+                                              '/arcade/game',
+                                              extra: path,
+                                            );
+                                          } else {
+                                            MoaiSnackBar.show(
+                                              context,
+                                              message:
+                                                  'arcade_no_game_installed_snack'
+                                                      .tr(),
+                                              icon: MoaiIcons.infoOutline,
+                                            );
                                           }
-                                        });
-                                      },
-                                    )
-                                  : _selectedIndex == _sectionMovies
-                                      ? HomeMoviesArea(
-                                          key: _moviesAreaKey,
-                                          onExitLeft: _focusRail,
-                                        )
-                                      : HomeTvArea(
-                                          key: _tvAreaKey,
-                                          onExitLeft: _focusRail,
-                                        ),
-                        ),
+                                        },
+                                      )
+                                    : _selectedIndex == _sectionCalendar
+                                    ? HomeCalendarArea(
+                                        activePanelIndex:
+                                            _activeCalendarPanelIndex,
+                                        eventsPanelFocus: _calendarEventsFocus,
+                                        subscriptionsPanelFocus:
+                                            _calendarSubscriptionsFocus,
+                                        onPanelIndexChanged:
+                                            _onCalendarPanelIndexChanged,
+                                        onExitLeft: _focusRail,
+                                        onTuneChannel: (channel) {
+                                          context
+                                              .read<ChannelProvider>()
+                                              .selectChannel(channel);
+                                          _switchSection(_sectionTv);
+                                          WidgetsBinding.instance
+                                              .addPostFrameCallback((_) {
+                                                if (mounted) {
+                                                  _tvAreaKey.currentState
+                                                      ?.selectChannel(channel);
+                                                  _tvAreaKey.currentState
+                                                      ?.requestViewerFocus();
+                                                }
+                                              });
+                                        },
+                                      )
+                                    : _selectedIndex == _sectionMovies
+                                    ? HomeMoviesArea(
+                                        key: _moviesAreaKey,
+                                        onExitLeft: _focusRail,
+                                      )
+                                    : HomeTvArea(
+                                        key: _tvAreaKey,
+                                        onExitLeft: _focusRail,
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
-}
-

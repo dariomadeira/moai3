@@ -17,17 +17,9 @@ import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
-enum _FocusSection {
-  header,
-  grid,
-}
+enum _FocusSection { header, grid }
 
-enum _HeaderAction {
-  refresh,
-  prev,
-  current,
-  next,
-}
+enum _HeaderAction { refresh, prev, current, next }
 
 /// Panel 0 del acordeón de Calendario: Grilla semanal de 7 días (Lunes a Domingo)
 /// con colores sólidos, sin bordes, sin sombras, optimizado para Android TV.
@@ -173,9 +165,12 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
     return actions;
   }
 
-
-
-  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event, CalendarProvider calendar, List<DateTime> days) {
+  KeyEventResult _handleKeyEvent(
+    FocusNode node,
+    KeyEvent event,
+    CalendarProvider calendar,
+    List<DateTime> days,
+  ) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
     final key = event.logicalKey;
 
@@ -228,10 +223,8 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
     // _focusSection == _FocusSection.grid
     final currentDay = days[_selectedDayIndex];
     final dayEvents = calendar.getEventsForDay(currentDay);
-    final currentEventIndex = (_selectedEventIndices[_selectedDayIndex] ?? 0).clamp(
-      0,
-      dayEvents.isEmpty ? 0 : dayEvents.length - 1,
-    );
+    final currentEventIndex = (_selectedEventIndices[_selectedDayIndex] ?? 0)
+        .clamp(0, dayEvents.isEmpty ? 0 : dayEvents.length - 1);
 
     if (key == LogicalKeyboardKey.arrowLeft) {
       if (_selectedDayIndex > 0) {
@@ -273,7 +266,10 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
 
         if (currentEventIndex > 0) {
           const anchorSlot = _windowSize - 2;
-          final maxStart = (dayEvents.length - _windowSize).clamp(0, dayEvents.length);
+          final maxStart = (dayEvents.length - _windowSize).clamp(
+            0,
+            dayEvents.length,
+          );
           final target = currentEventIndex - 1;
           final newStart = (target - anchorSlot).clamp(0, maxStart);
           setState(() {
@@ -312,7 +308,10 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
         }
 
         if (currentEventIndex < dayEvents.length - 1) {
-          final maxStart = (dayEvents.length - _windowSize).clamp(0, dayEvents.length);
+          final maxStart = (dayEvents.length - _windowSize).clamp(
+            0,
+            dayEvents.length,
+          );
           final newStart = (currentEventIndex - 1).clamp(0, maxStart);
           setState(() {
             _windowStarts[_selectedDayIndex] = newStart;
@@ -351,7 +350,10 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
     _selectedEventIndices[_selectedDayIndex] = currentIndex;
 
     var start = _windowStarts[_selectedDayIndex] ?? 0;
-    final maxStart = (dayEvents.length - _windowSize).clamp(0, dayEvents.length);
+    final maxStart = (dayEvents.length - _windowSize).clamp(
+      0,
+      dayEvents.length,
+    );
     if (currentIndex < start) {
       start = currentIndex;
     } else if (currentIndex >= start + _windowSize) {
@@ -484,7 +486,8 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                   mainAxisSize: MainAxisSize.min,
                   children: List.generate(headerActions.length, (idx) {
                     final action = headerActions[idx];
-                    final isFocused = isPanelFocused &&
+                    final isFocused =
+                        isPanelFocused &&
                         _focusSection == _FocusSection.header &&
                         _headerActionIndex == idx;
 
@@ -559,14 +562,13 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                 children: List.generate(7, (dayIdx) {
                   final day = days[dayIdx];
                   final dayEvents = calendar.getEventsForDay(day);
-                  final isDayColumnSelected = isPanelFocused &&
+                  final isDayColumnSelected =
+                      isPanelFocused &&
                       _focusSection == _FocusSection.grid &&
                       _selectedDayIndex == dayIdx;
 
-                  final currentEventIndex = (_selectedEventIndices[dayIdx] ?? 0).clamp(
-                    0,
-                    dayEvents.isEmpty ? 0 : dayEvents.length - 1,
-                  );
+                  final currentEventIndex = (_selectedEventIndices[dayIdx] ?? 0)
+                      .clamp(0, dayEvents.isEmpty ? 0 : dayEvents.length - 1);
 
                   return Expanded(
                     child: Padding(
@@ -633,7 +635,16 @@ class _HeaderButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
 
-    final bgColor = isFocused ? scheme.primary : scheme.surfaceContainerHigh;
+    final baseColor = isFocused ? scheme.primary : scheme.surfaceContainerHigh;
+    final endColor = Color.alphaBlend(
+      (isFocused ? scheme.onPrimary : scheme.onSurface).withValues(
+        alpha: isFocused ? 0.12 : 0.05,
+      ),
+      baseColor,
+    );
+    final borderColor = isFocused
+        ? scheme.onPrimary.withValues(alpha: 0.55)
+        : scheme.outlineVariant.withValues(alpha: 0.35);
     final fgColor = isFocused ? scheme.onPrimary : scheme.onSurface;
 
     return Tooltip(
@@ -648,8 +659,14 @@ class _HeaderButton extends StatelessWidget {
             vertical: 8,
           ),
           decoration: BoxDecoration(
-            color: bgColor,
+            gradient: LinearGradient(
+              begin: Alignment.bottomRight,
+              end: Alignment.topLeft,
+              colors: [baseColor, baseColor, endColor],
+              stops: const [0.0, 0.60, 1.0],
+            ),
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor, width: 1.0),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -722,37 +739,53 @@ class _DayColumn extends StatelessWidget {
     final dayLabel = _dayNames[(day.weekday - 1).clamp(0, 6)];
     final isToday = _isToday;
 
-    // Colores sólidos para el encabezado del día
-    final Color headerBg;
+    // Colores para el encabezado del día con gradiente y borde sutil
+    final Color headerBase;
     final Color headerDayNameColor;
     final Color headerDayNumberColor;
 
     if (isToday) {
       if (isColumnFocused) {
-        headerBg = scheme.primary;
+        headerBase = scheme.primary;
         headerDayNameColor = scheme.onPrimary;
         headerDayNumberColor = scheme.onPrimary;
       } else {
-        headerBg = scheme.primaryContainer;
+        headerBase = scheme.primaryContainer;
         headerDayNameColor = scheme.primary;
         headerDayNumberColor = scheme.onPrimaryContainer;
       }
     } else {
       if (isColumnFocused) {
-        headerBg = scheme.secondaryContainer;
+        headerBase = scheme.secondaryContainer;
         headerDayNameColor = scheme.onSecondaryContainer;
         headerDayNumberColor = scheme.onSecondaryContainer;
       } else {
-        headerBg = scheme.surfaceContainer;
+        headerBase = scheme.surfaceContainer;
         headerDayNameColor = scheme.onSurfaceVariant;
         headerDayNumberColor = scheme.onSurface;
       }
     }
 
+    final headerEndColor = Color.alphaBlend(
+      (isColumnFocused
+              ? (isToday ? scheme.onPrimary : scheme.onSecondaryContainer)
+              : scheme.onSurface)
+          .withValues(alpha: isColumnFocused ? 0.14 : 0.05),
+      headerBase,
+    );
+
+    final headerBorderColor = isColumnFocused
+        ? (isToday
+              ? scheme.onPrimary.withValues(alpha: 0.65)
+              : scheme.secondary.withValues(alpha: 0.60))
+        : (isToday
+              ? scheme.primary.withValues(alpha: 0.45)
+              : scheme.outlineVariant.withValues(alpha: 0.35));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Header del día con color sólido y sin bordes
+        // Header del día con gradiente sutil y borde a juego
         GestureDetector(
           onTap: onSelectColumn,
           child: AnimatedContainer(
@@ -760,8 +793,14 @@ class _DayColumn extends StatelessWidget {
             curve: Curves.easeOutCubic,
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
             decoration: BoxDecoration(
-              color: headerBg,
+              gradient: LinearGradient(
+                begin: Alignment.bottomRight,
+                end: Alignment.topLeft,
+                colors: [headerBase, headerBase, headerEndColor],
+                stops: const [0.0, 0.60, 1.0],
+              ),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: headerBorderColor, width: 1.0),
             ),
             child: Stack(
               children: [
@@ -824,7 +863,10 @@ class _DayColumn extends StatelessWidget {
 
   Widget _buildWindowedList(BuildContext context) {
     const gap = 6.0;
-    final start = windowStart.clamp(0, (events.length - windowSize).clamp(0, events.length));
+    final start = windowStart.clamp(
+      0,
+      (events.length - windowSize).clamp(0, events.length),
+    );
     final count = (events.length - start).clamp(0, windowSize);
     final visibleEvents = events.sublist(start, start + count);
     final scheme = context.scheme;
@@ -838,7 +880,8 @@ class _DayColumn extends StatelessWidget {
 
         // Si no hay más eventos que el tamaño de ventana, se usa toda la altura
         if (!hasMoreEvents) {
-          final slotHeight = (totalHeight - ((windowSize - 1) * gap)) / windowSize;
+          final slotHeight =
+              (totalHeight - ((windowSize - 1) * gap)) / windowSize;
           final safeSlotHeight = slotHeight.clamp(30.0, 150.0);
 
           return Column(
@@ -846,7 +889,8 @@ class _DayColumn extends StatelessWidget {
             children: List.generate(count, (i) {
               final globalIndex = start + i;
               final event = visibleEvents[i];
-              final isItemFocused = isColumnFocused && selectedEventIndex == globalIndex;
+              final isItemFocused =
+                  isColumnFocused && selectedEventIndex == globalIndex;
 
               return Padding(
                 padding: EdgeInsets.only(bottom: i < count - 1 ? gap : 0),
@@ -864,7 +908,8 @@ class _DayColumn extends StatelessWidget {
         // Variación con más eventos: se reserva espacio exclusivo arriba y abajo para los pills
         const indicatorAreaHeight = 22.0;
         final availableHeight = totalHeight - (indicatorAreaHeight * 2);
-        final slotHeight = (availableHeight - ((windowSize - 1) * gap)) / windowSize;
+        final slotHeight =
+            (availableHeight - ((windowSize - 1) * gap)) / windowSize;
         final safeSlotHeight = slotHeight.clamp(30.0, 150.0);
 
         return Column(
@@ -877,7 +922,10 @@ class _DayColumn extends StatelessWidget {
                   ? Center(
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 2),
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 1,
+                        ),
                         decoration: BoxDecoration(
                           color: scheme.tertiaryContainer,
                           borderRadius: BorderRadius.circular(10),
@@ -895,7 +943,8 @@ class _DayColumn extends StatelessWidget {
             ...List.generate(count, (i) {
               final globalIndex = start + i;
               final event = visibleEvents[i];
-              final isItemFocused = isColumnFocused && selectedEventIndex == globalIndex;
+              final isItemFocused =
+                  isColumnFocused && selectedEventIndex == globalIndex;
 
               return Padding(
                 padding: EdgeInsets.only(bottom: i < count - 1 ? gap : 0),
@@ -914,7 +963,10 @@ class _DayColumn extends StatelessWidget {
                   ? Center(
                       child: Container(
                         margin: const EdgeInsets.only(top: 2),
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 1,
+                        ),
                         decoration: BoxDecoration(
                           color: scheme.tertiaryContainer,
                           borderRadius: BorderRadius.circular(10),
@@ -934,10 +986,22 @@ class _DayColumn extends StatelessWidget {
     );
   }
 
-
   Widget _buildEmptyState(BuildContext context) {
     final scheme = context.scheme;
     final isFocused = isColumnFocused;
+
+    final baseColor = isFocused
+        ? scheme.secondaryContainer
+        : scheme.surfaceContainerLow;
+    final endColor = Color.alphaBlend(
+      (isFocused ? scheme.onSecondaryContainer : scheme.onSurface).withValues(
+        alpha: isFocused ? 0.10 : 0.04,
+      ),
+      baseColor,
+    );
+    final borderColor = isFocused
+        ? scheme.secondary.withValues(alpha: 0.55)
+        : scheme.outlineVariant.withValues(alpha: 0.28);
 
     return GestureDetector(
       onTap: onSelectColumn,
@@ -946,8 +1010,14 @@ class _DayColumn extends StatelessWidget {
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
         decoration: BoxDecoration(
-          color: isFocused ? scheme.secondaryContainer : scheme.surfaceContainerLow,
+          gradient: LinearGradient(
+            begin: Alignment.bottomRight,
+            end: Alignment.topLeft,
+            colors: [baseColor, baseColor, endColor],
+            stops: const [0.0, 0.60, 1.0],
+          ),
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor, width: 1.0),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -998,31 +1068,57 @@ class _CalendarEventGridCard extends StatelessWidget {
     final isLive = event.status == CalendarEventStatus.live;
     final isFinished = event.status == CalendarEventStatus.finished;
     final isUpcoming = event.status == CalendarEventStatus.upcoming;
-    final sportIcon = CalendarProvider.getSubscriptionIcon(event.subscriptionId);
+    final sportIcon = CalendarProvider.getSubscriptionIcon(
+      event.subscriptionId,
+    );
 
     final finishedText = 'calendar_status_finished'.tr();
-    final finishedLabel = (finishedText == 'calendar_status_finished') ? 'FIN' : finishedText;
+    final finishedLabel = (finishedText == 'calendar_status_finished')
+        ? 'FIN'
+        : finishedText;
 
-    // Paleta de colores adaptativa según estado y foco
-    final Color bgColor;
+    // Paleta de colores adaptativa según estado y foco con gradiente y borde sutil
+    final Color baseColor;
     final Color fgColor;
     final Color subColor;
 
     if (isFinished) {
-      bgColor = isFocused
+      baseColor = isFocused
           ? scheme.surfaceContainerHighest
           : scheme.surfaceContainerLowest;
       fgColor = isFocused ? scheme.onSurface : scheme.outline;
       subColor = scheme.outline;
     } else {
-      bgColor = isFocused
+      baseColor = isFocused
           ? scheme.primary
           : (isLive
-              ? scheme.surfaceContainerHighest
-              : scheme.surfaceContainerHigh);
+                ? scheme.surfaceContainerHighest
+                : scheme.surfaceContainerHigh);
       fgColor = isFocused ? scheme.onPrimary : scheme.onSurface;
       subColor = isFocused ? scheme.onPrimary : scheme.onSurfaceVariant;
     }
+
+    final endColor = Color.alphaBlend(
+      (isFocused
+              ? (isFinished ? scheme.onSurface : scheme.onPrimary)
+              : scheme.onSurface)
+          .withValues(
+        alpha: isFocused
+            ? (isFinished ? 0.08 : 0.14)
+            : (isFinished ? 0.025 : 0.05),
+      ),
+      baseColor,
+    );
+
+    final borderColor = isFocused
+        ? (isFinished
+            ? scheme.onSurface.withValues(alpha: 0.40)
+            : scheme.onPrimary.withValues(alpha: 0.60))
+        : (isLive
+              ? scheme.primary.withValues(alpha: 0.40)
+              : scheme.outlineVariant.withValues(
+                  alpha: isFinished ? 0.18 : 0.32,
+                ));
 
     return SizedBox(
       height: height,
@@ -1033,144 +1129,148 @@ class _CalendarEventGridCard extends StatelessWidget {
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
           decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(10),
-          ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Fila superior: Ícono del deporte según la suscripción + Hora + Micro-Badge en vivo M3
-                // Protegido con FittedBox para prevenir desbordamientos en cualquier ancho o transición
-                SizedBox(
-                  width: double.infinity,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          sportIcon,
-                          size: 11.5,
-                          color: isFinished ? fgColor : subColor,
-                        ),
-                        const SizedBox(width: 3.5),
-                        Text(
-                          event.formattedTime,
-                          style: MoaiText.display(
-                            context,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
-                            color: fgColor,
-                          ),
-                        ),
-                        if (isFinished) ...[
-                          const SizedBox(width: 5),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 5,
-                              vertical: 1.5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isFocused
-                                  ? scheme.onSurface.withValues(alpha: 0.18)
-                                  : scheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              finishedLabel,
-                              style: MoaiText.body(
-                                context,
-                                fontSize: 8,
-                                fontWeight: FontWeight.w800,
-                                color: isFocused
-                                    ? scheme.onSurface
-                                    : scheme.onSurfaceVariant,
-                                letterSpacing: 0.4,
-                              ),
-                            ),
-                          ),
-                        ] else if (isLive) ...[
-                          const SizedBox(width: 5),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 5,
-                              vertical: 1.5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isFocused
-                                  ? scheme.surface
-                                  : scheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'calendar_status_live'.tr(),
-                              style: MoaiText.body(
-                                context,
-                                fontSize: 8,
-                                fontWeight: FontWeight.w800,
-                                color: isFocused
-                                    ? scheme.primary
-                                    : scheme.onPrimaryContainer,
-                                letterSpacing: 0.4,
-                              ),
-                            ),
-                          ),
-                        ] else if (isUpcoming) ...[
-                          const SizedBox(width: 5),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 5,
-                              vertical: 1.5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isFocused
-                                  ? scheme.onPrimary.withValues(alpha: 0.2)
-                                  : scheme.primary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'PROX.',
-                              style: MoaiText.body(
-                                context,
-                                fontSize: 8,
-                                fontWeight: FontWeight.w800,
-                                color: isFocused
-                                    ? scheme.onPrimary
-                                    : scheme.primary,
-                                letterSpacing: 0.4,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-
-
-
-                const SizedBox(height: 4),
-
-                // Título del evento con fuente compacta (sin competición ni emisora)
-                Expanded(
-                  child: Text(
-                    event.title,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: MoaiText.body(
-                      context,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w700,
-                      color: fgColor,
-                      height: 1.25,
-                    ),
-                  ),
-                ),
-              ],
+            gradient: LinearGradient(
+              begin: Alignment.bottomRight,
+              end: Alignment.topLeft,
+              colors: [baseColor, baseColor, endColor],
+              stops: const [0.0, 0.60, 1.0],
             ),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: borderColor, width: 1.0),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Fila superior: Ícono del deporte según la suscripción + Hora + Micro-Badge en vivo M3
+              // Protegido con FittedBox para prevenir desbordamientos en cualquier ancho o transición
+              SizedBox(
+                width: double.infinity,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        sportIcon,
+                        size: 11.5,
+                        color: isFinished ? fgColor : subColor,
+                      ),
+                      const SizedBox(width: 3.5),
+                      Text(
+                        event.formattedTime,
+                        style: MoaiText.display(
+                          context,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: fgColor,
+                        ),
+                      ),
+                      if (isFinished) ...[
+                        const SizedBox(width: 5),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1.5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isFocused
+                                ? scheme.onSurface.withValues(alpha: 0.18)
+                                : scheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            finishedLabel,
+                            style: MoaiText.body(
+                              context,
+                              fontSize: 8,
+                              fontWeight: FontWeight.w800,
+                              color: isFocused
+                                  ? scheme.onSurface
+                                  : scheme.onSurfaceVariant,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ),
+                      ] else if (isLive) ...[
+                        const SizedBox(width: 5),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1.5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isFocused
+                                ? scheme.surface
+                                : scheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'calendar_status_live'.tr(),
+                            style: MoaiText.body(
+                              context,
+                              fontSize: 8,
+                              fontWeight: FontWeight.w800,
+                              color: isFocused
+                                  ? scheme.primary
+                                  : scheme.onPrimaryContainer,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ),
+                      ] else if (isUpcoming) ...[
+                        const SizedBox(width: 5),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1.5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isFocused
+                                ? scheme.onPrimary.withValues(alpha: 0.2)
+                                : scheme.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'PROX.',
+                            style: MoaiText.body(
+                              context,
+                              fontSize: 8,
+                              fontWeight: FontWeight.w800,
+                              color: isFocused
+                                  ? scheme.onPrimary
+                                  : scheme.primary,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 4),
+
+              // Título del evento con fuente compacta (sin competición ni emisora)
+              Expanded(
+                child: Text(
+                  event.title,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: MoaiText.body(
+                    context,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                    color: fgColor,
+                    height: 1.25,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
+      ),
     );
   }
 }
@@ -1270,16 +1370,16 @@ class _CalendarEventDialogContentState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Columna 1: Datos del evento
-              Expanded(
-                flex: 10,
-                child: detailsColumn,
-              ),
+              Expanded(flex: 10, child: detailsColumn),
               const SizedBox(width: 20),
               // Columna 2: Panel contenedor con borde redondeado y lista oficial de canales
               Expanded(
                 flex: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: scheme.surfaceContainerLow,
                     borderRadius: BorderRadius.circular(18),
@@ -1290,24 +1390,33 @@ class _CalendarEventDialogContentState
                     windowSize: 4,
                     itemExtent: TvLayoutConstants.channelItemHeight,
                     showScrollDots: true,
-                    itemBuilder: (context, ch, focusNode, local, global, onKeyUp, onKeyDown) {
-                      return NewChannelCard(
-                        key: ValueKey(ch.id),
-                        channel: ch,
-                        isSelected: false,
-                        focusNode: focusNode,
-                        onKeyLeft: () => _closeFocusNode.requestFocus(),
-                        onKeyUp: onKeyUp,
-                        onKeyDown: () {
-                          if (global >= _matchingChannels.length - 1) {
-                            _closeFocusNode.requestFocus();
-                          } else {
-                            onKeyDown();
-                          }
+                    itemBuilder:
+                        (
+                          context,
+                          ch,
+                          focusNode,
+                          local,
+                          global,
+                          onKeyUp,
+                          onKeyDown,
+                        ) {
+                          return NewChannelCard(
+                            key: ValueKey(ch.id),
+                            channel: ch,
+                            isSelected: false,
+                            focusNode: focusNode,
+                            onKeyLeft: () => _closeFocusNode.requestFocus(),
+                            onKeyUp: onKeyUp,
+                            onKeyDown: () {
+                              if (global >= _matchingChannels.length - 1) {
+                                _closeFocusNode.requestFocus();
+                              } else {
+                                onKeyDown();
+                              }
+                            },
+                            onTap: () => _tuneChannel(ch),
+                          );
                         },
-                        onTap: () => _tuneChannel(ch),
-                      );
-                    },
                   ),
                 ),
               ),
@@ -1339,42 +1448,49 @@ class _CalendarEventDialogContentState
               ),
             )
           : (widget.event.status == CalendarEventStatus.finished
-              ? Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                  decoration: BoxDecoration(
-                    color: scheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    'calendar_status_finished'.tr() == 'calendar_status_finished'
-                        ? 'FIN'
-                        : 'calendar_status_finished'.tr(),
-                    style: MoaiText.body(
-                      context,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w800,
-                      color: scheme.onSurfaceVariant,
-                      letterSpacing: 0.4,
+                ? Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2.5,
                     ),
-                  ),
-                )
-              : Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                  decoration: BoxDecoration(
-                    color: scheme.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    'PROX.',
-                    style: MoaiText.body(
-                      context,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w800,
-                      color: scheme.primary,
-                      letterSpacing: 0.4,
+                    decoration: BoxDecoration(
+                      color: scheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(4),
                     ),
-                  ),
-                )),
+                    child: Text(
+                      'calendar_status_finished'.tr() ==
+                              'calendar_status_finished'
+                          ? 'FIN'
+                          : 'calendar_status_finished'.tr(),
+                      style: MoaiText.body(
+                        context,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                        color: scheme.onSurfaceVariant,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  )
+                : Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2.5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: scheme.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'PROX.',
+                      style: MoaiText.body(
+                        context,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                        color: scheme.primary,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  )),
       content: contentWidget,
       actions: [
         Focus(
@@ -1399,7 +1515,6 @@ class _CalendarEventDialogContentState
       ],
     );
   }
-
 }
 
 Future<void> showCalendarEventDetails(
@@ -1419,5 +1534,3 @@ Future<void> showCalendarEventDetails(
     },
   );
 }
-
-

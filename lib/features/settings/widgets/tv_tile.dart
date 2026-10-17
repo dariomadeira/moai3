@@ -3,30 +3,36 @@ import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
 
-/// Misma ficha que [TvTile] en reposo: solo lectura, sin foco ni teclado.
+/// Misma ficha que [TvTile]: diseño idéntico, puede usarse para tiles de solo lectura
+/// o tiles compuestos que gestionan sus propios focos internos (ej. botones de acción).
 class TvInfoTile extends StatelessWidget {
   final String label;
   final String? description;
   final IconData? icon;
+  final Widget? trailing;
   final EdgeInsetsGeometry? padding;
   final double? minHeight;
+  final bool isFocused;
 
   const TvInfoTile({
     super.key,
     required this.label,
     this.description,
     this.icon,
+    this.trailing,
     this.padding,
     this.minHeight,
+    this.isFocused = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return _TvTileChrome(
-      isFocused: false,
+      isFocused: isFocused,
       label: label,
       description: description,
       icon: icon,
+      trailing: trailing,
       padding: padding,
       minHeight: minHeight,
     );

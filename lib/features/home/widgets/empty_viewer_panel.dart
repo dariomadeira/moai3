@@ -46,7 +46,7 @@ class EmptyViewerPanel extends StatelessWidget {
         child: Builder(
           builder: (context) {
             final isFocused = Focus.of(context).hasFocus;
-            final baseColor = scheme.surface;
+            final baseColor = scheme.surface.withValues(alpha: 0.8);
             final endColor = Color.alphaBlend(
               scheme.onSurface.withValues(alpha: 0.05),
               baseColor,
@@ -56,7 +56,6 @@ class EmptyViewerPanel extends StatelessWidget {
                 : scheme.outlineVariant.withValues(alpha: 0.48);
             return AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(left: 8),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.bottomRight,
@@ -82,12 +81,13 @@ class EmptyViewerPanel extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: isFocused
                               ? scheme.primary.withValues(alpha: 0.15)
-                              : scheme.surfaceContainerHighest
-                                  .withValues(alpha: 0.5),
+                              : scheme.surfaceContainerHighest.withValues(
+                                  alpha: 0.5,
+                                ),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          MoaiIcons.liveTvOutlined,
+                          MoaiIcons.tvEmptyViewer,
                           size: 40,
                           color: isFocused
                               ? scheme.primary
