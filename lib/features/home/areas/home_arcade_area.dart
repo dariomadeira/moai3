@@ -103,7 +103,8 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
 
     final identity = context.read<DeviceIdentityService>();
     final myDeviceId = identity.getOrCreateDeviceId();
-    final myNickname = context.read<WatchPartyProvider?>()?.myNickname ?? 'Jugador 1';
+    final myNickname = context.read<WatchPartyProvider?>()?.myNickname ??
+        'arcade_player_default'.tr();
 
     TvArcadeSelectFriendDialog.show(
       context,

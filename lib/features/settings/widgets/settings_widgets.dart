@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:moai3/features/settings/widgets/tv_tile.dart';
+import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
 

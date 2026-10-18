@@ -5,8 +5,6 @@ class PlayerConfig {
   static String appVersion = '1.0.0';
   static int totalRamMb = 0;
 
-  static const String modeLabel = 'Motor Kotlin (ExoPlayer nativo)';
-
   static Future<void> initialize() async {
     totalRamMb = await DeviceMemoryService.getTotalRamMb();
     try {

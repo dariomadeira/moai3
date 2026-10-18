@@ -331,10 +331,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
         '${ChannelPlaybackHelpers.playbackSourceLabel(channel, _reconnect.fallbackIndex)}',
       );
       await newController.play();
-      _watchParty?.reportCurrentChannel(
-        channelId: channel.isAdult ? null : channel.id,
-        channelName: channel.isAdult ? null : channel.name,
-      );
+      _watchParty?.reportPlayingChannel(channel);
     } catch (e) {
       if (newController != null) {
         newController.removeListener(_onEngineEvent);
@@ -407,6 +404,13 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
             ((watchParty?.enabled ?? false) &&
                 (watchParty?.hasFriendsInSameChannel ?? false)));
 
+    final baseColor = scheme.surface.withValues(alpha: 0.8);
+    final endColor = Color.alphaBlend(
+      scheme.onSurface.withValues(alpha: 0.05),
+      baseColor,
+    );
+    final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
+
     Widget playerWidget = GestureDetector(
       onTap: () {
         if (widget.onFullScreenChanged != null) {
@@ -428,15 +432,22 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
           : AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               decoration: BoxDecoration(
-                color: scheme.surface,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: _isFocused ? scheme.primary : Colors.transparent,
+                  color: _isFocused ? scheme.primary : borderColor,
                   width: 4,
+                ),
+                gradient: LinearGradient(
+                  begin: Alignment.bottomRight,
+                  end: Alignment.topLeft,
+                  // Degradé corto: casi todo el panel en base,
+                  // el tono más claro queda arriba a la izquierda.
+                  colors: [baseColor, baseColor, endColor],
+                  stops: const [0.0, 0.62, 1.0],
                 ),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(4),
                 child: content,
               ),
             ),

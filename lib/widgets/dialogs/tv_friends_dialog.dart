@@ -48,7 +48,7 @@ class TvFriendsDialog extends StatefulWidget {
 
 class _TvFriendsDialogState extends State<TvFriendsDialog> {
   static const int _windowSize = 3;
-  static const double _itemExtent = 52.0;
+  static const double _itemExtent = 58.0;
 
   final TextEditingController _codeController = TextEditingController();
   final FocusNode _codeFocus = FocusNode(debugLabel: 'friends_modal_code_input');
@@ -431,7 +431,8 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
           focusNode: _addFocus,
           label: 'friends_add_button'.tr(),
           icon: MoaiIcons.personAdd,
-          height: 52,
+          height: 60,
+          radius: 30,
           variant: TvButtonVariant.tonal,
           loading: _isSubmitting,
           onPressed: _isSubmitting
@@ -471,12 +472,27 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
     int requestsCount,
   ) {
     const listHeight = _windowSize * _itemExtent + 14.0;
+    final baseColor = scheme.surface.withValues(alpha: 0.8);
+    final endColor = Color.alphaBlend(
+      scheme.onSurface.withValues(alpha: 0.05),
+      baseColor,
+    );
+    final borderColor = scheme.outlineVariant.withValues(alpha: 0.2);
 
     return Container(
       height: listHeight,
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
+        gradient: LinearGradient(
+          begin: Alignment.bottomRight,
+          end: Alignment.topLeft,
+          colors: [baseColor, baseColor, endColor],
+          stops: const [0.0, 0.62, 1.0],
+        ),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: borderColor,
+          width: 1.0,
+        ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       child: friends.isEmpty
@@ -552,12 +568,27 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
     int friendsCount,
   ) {
     const listHeight = _windowSize * _itemExtent + 14.0;
+    final baseColor = scheme.surface.withValues(alpha: 0.8);
+    final endColor = Color.alphaBlend(
+      scheme.onSurface.withValues(alpha: 0.05),
+      baseColor,
+    );
+    final borderColor = scheme.outlineVariant.withValues(alpha: 0.2);
 
     return Container(
       height: listHeight,
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
+        gradient: LinearGradient(
+          begin: Alignment.bottomRight,
+          end: Alignment.topLeft,
+          colors: [baseColor, baseColor, endColor],
+          stops: const [0.0, 0.62, 1.0],
+        ),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: borderColor,
+          width: 1.0,
+        ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       child: requests.isEmpty
@@ -682,9 +713,7 @@ class _FriendTileState extends State<_FriendTile> {
     final scheme = Theme.of(context).colorScheme;
     final isFocused = widget.focusNode.hasFocus;
 
-    final bg = isFocused
-        ? scheme.primary
-        : scheme.surfaceContainerHighest.withValues(alpha: 0.45);
+    final bg = isFocused ? scheme.primary : scheme.surfaceContainerLow;
     final titleColor = isFocused ? scheme.onPrimary : scheme.onSurface;
     final descColor = isFocused
         ? scheme.onPrimary.withValues(alpha: 0.85)
@@ -694,13 +723,17 @@ class _FriendTileState extends State<_FriendTile> {
         : scheme.primaryContainer;
     final iconColor = isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
 
+    final borderColor = isFocused
+        ? scheme.primary
+        : scheme.outlineVariant.withValues(alpha: 0.12);
+
     final hasNickname = widget.friend.nickname != null &&
         widget.friend.nickname!.trim().isNotEmpty;
     final displayName =
         hasNickname ? widget.friend.nickname! : widget.friend.userCode;
 
     return Container(
-      height: 52,
+      height: 58,
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Focus(
         focusNode: widget.focusNode,
@@ -733,29 +766,33 @@ class _FriendTileState extends State<_FriendTile> {
         child: GestureDetector(
           onTap: widget.onDelete,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 100),
+            duration: const Duration(milliseconds: 120),
             decoration: BoxDecoration(
               color: bg,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: borderColor,
+                width: 1.0,
+              ),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             child: Row(
               children: [
                 Material(
                   color: iconBg,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(5),
+                    padding: const EdgeInsets.all(7),
                     child: Icon(
                       MoaiIcons.personRounded,
-                      size: 16,
+                      size: 18,
                       color: iconColor,
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -768,10 +805,11 @@ class _FriendTileState extends State<_FriendTile> {
                         style: MoaiText.body(
                           context,
                           color: titleColor,
-                          fontSize: 12.5,
+                          fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
+                      const SizedBox(height: 2),
                       Row(
                         children: [
                           Text(
@@ -779,7 +817,7 @@ class _FriendTileState extends State<_FriendTile> {
                             style: MoaiText.body(
                               context,
                               color: descColor,
-                              fontSize: 10,
+                              fontSize: 10.5,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -879,7 +917,7 @@ class _FriendTileState extends State<_FriendTile> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 6),
                 // Botón de eliminar con estilo idéntico al Administrador de Extensiones
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -964,9 +1002,7 @@ class _RequestTileState extends State<_RequestTile> {
     final scheme = Theme.of(context).colorScheme;
     final isFocused = widget.focusNode.hasFocus;
 
-    final bg = isFocused
-        ? scheme.primary
-        : scheme.surfaceContainerHighest.withValues(alpha: 0.45);
+    final bg = isFocused ? scheme.primary : scheme.surfaceContainerLow;
     final titleColor = isFocused ? scheme.onPrimary : scheme.onSurface;
     final descColor = isFocused
         ? scheme.onPrimary.withValues(alpha: 0.85)
@@ -978,13 +1014,17 @@ class _RequestTileState extends State<_RequestTile> {
         ? scheme.onPrimary
         : scheme.onTertiaryContainer;
 
+    final borderColor = isFocused
+        ? scheme.primary
+        : scheme.outlineVariant.withValues(alpha: 0.12);
+
     final hasNickname = widget.request.nickname != null &&
         widget.request.nickname!.trim().isNotEmpty;
     final displayName =
         hasNickname ? widget.request.nickname! : widget.request.userCode;
 
     return Container(
-      height: 52,
+      height: 58,
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Focus(
         focusNode: widget.focusNode,
@@ -1019,29 +1059,33 @@ class _RequestTileState extends State<_RequestTile> {
         child: GestureDetector(
           onTap: widget.isLoading ? null : widget.onAccept,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 100),
+            duration: const Duration(milliseconds: 120),
             decoration: BoxDecoration(
               color: bg,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: borderColor,
+                width: 1.0,
+              ),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             child: Row(
               children: [
                 Material(
                   color: iconBg,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(5),
+                    padding: const EdgeInsets.all(7),
                     child: Icon(
                       MoaiIcons.personAddRounded,
-                      size: 16,
+                      size: 18,
                       color: iconColor,
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1054,23 +1098,24 @@ class _RequestTileState extends State<_RequestTile> {
                         style: MoaiText.body(
                           context,
                           color: titleColor,
-                          fontSize: 12.5,
+                          fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
+                      const SizedBox(height: 2),
                       Text(
                         widget.request.userCode,
                         style: MoaiText.body(
                           context,
                           color: descColor,
-                          fontSize: 10,
+                          fontSize: 10.5,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 6),
                 // Botón de Aceptar compacto con estilo de Administrador de Extensiones
                 Container(
                   padding: const EdgeInsets.symmetric(

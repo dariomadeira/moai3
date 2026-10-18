@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:moai3/features/games/models/arcade_rom_item.dart';
 import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
-import 'package:moai3/features/settings/widgets/tv_tile.dart';
+import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -283,7 +283,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                                             const SizedBox(width: 10),
                                             Expanded(
                                               child: Text(
-                                                widget.romManager.errorMessage!,
+                                                widget.romManager.errorMessage!.tr(),
                                                 style: MoaiText.body(
                                                   context,
                                                   color: scheme.onErrorContainer,
@@ -498,7 +498,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                     : catalog.isEmpty
                         ? Center(
                             child: Text(
-                              widget.romManager.errorMessage ??
+                              widget.romManager.errorMessage?.tr() ??
                                   'arcade_catalog_empty'.tr(),
                               style:
                                   MoaiText.body(context, color: scheme.error),

@@ -34,8 +34,13 @@ class HomeSearchController extends ChangeNotifier with SafeChangeNotifier {
     List<Channel> Function() getAllChannels, {
     bool Function()? isAdultUnlocked,
   }) {
+    var lastHasQuery = hasQuery;
     queryController.addListener(() {
-      safeNotifyListeners();
+      final nowHasQuery = hasQuery;
+      if (nowHasQuery != lastHasQuery) {
+        lastHasQuery = nowHasQuery;
+        safeNotifyListeners();
+      }
       _debounce?.cancel();
       _debounce = Timer(const Duration(milliseconds: 300), () {
         final unlocked = isAdultUnlocked?.call() ?? false;

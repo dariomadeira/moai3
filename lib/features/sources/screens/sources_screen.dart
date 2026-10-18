@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:moai3/widgets/buttons/tv_back_pill.dart';
 import 'package:moai3/widgets/buttons/tv_install_pill.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
-import 'package:moai3/features/settings/widgets/tv_tile.dart';
+import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/services/plugin_host_service.dart';
 import 'package:moai3/services/plugin_update_service.dart';
@@ -133,10 +133,17 @@ class _SourcesScreenState extends State<SourcesScreen> {
   }
 
   void _resyncFocus(int sourceCount) {
-    while (_tileFocuses.length < sourceCount * 2) {
+    final needed = sourceCount * 2;
+    while (_tileFocuses.length < needed) {
       _tileFocuses.add(
         FocusNode(debugLabel: 'sources_tile_${_tileFocuses.length}'),
       );
+    }
+    if (_tileFocuses.length > needed) {
+      for (final node in _tileFocuses.sublist(needed)) {
+        node.dispose();
+      }
+      _tileFocuses.removeRange(needed, _tileFocuses.length);
     }
   }
 
@@ -321,7 +328,10 @@ class _SourcesScreenState extends State<SourcesScreen> {
                                             const SizedBox(width: 10),
                                             Expanded(
                                               child: Text(
-                                                controller.error!,
+                                                controller.error!.tr(
+                                                  namedArgs:
+                                                      controller.errorNamedArgs,
+                                                ),
                                                 style: MoaiText.body(
                                                   context,
                                                   color:

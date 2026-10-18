@@ -19,6 +19,7 @@ class TvWatchPartyHeaderBar extends StatefulWidget {
   static bool debugSimulateIncomingAudio = false;
   static bool debugSimulateRecording = false;
 
+  final String? channelName;
   final FocusNode? micFocusNode;
   final VoidCallback? onLongPressMic;
   final VoidCallback? onKeyLeft;
@@ -27,6 +28,7 @@ class TvWatchPartyHeaderBar extends StatefulWidget {
 
   const TvWatchPartyHeaderBar({
     super.key,
+    this.channelName,
     this.micFocusNode,
     this.onLongPressMic,
     this.onKeyLeft,
@@ -100,20 +102,36 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
 
     final showYellowMic = hasFriendsInChannel;
 
-    if (!showYellowMic && !isPlaying) {
+    final channelName = widget.channelName;
+    final hasChannelName = channelName != null && channelName.trim().isNotEmpty;
+
+    if (!showYellowMic && !isPlaying && !hasChannelName) {
       return const SizedBox.shrink();
     }
 
     final scheme = Theme.of(context).colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 12, bottom: 12, right: 4),
-      child: SizedBox(
-        height: 40,
+    return SizedBox(
+      height: 40,
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            if (hasChannelName) ...[
+              Expanded(
+                child: Text(
+                  channelName.trim(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: MoaiText.display(
+                    context,
+                    color: scheme.onSurface,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
             // 1. Audio Entrante ("Carlos TV hablando...")
             if (isPlaying) ...[
               ExcludeFocus(
@@ -125,18 +143,6 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
                     decoration: BoxDecoration(
                       color: scheme.primary,
                       borderRadius: BorderRadius.circular(18),
-                      // boxShadow: [
-                      //   BoxShadow(
-                      //     color: Colors.black.withValues(alpha: 0.08),
-                      //     blurRadius: 20,
-                      //     offset: const Offset(0, 6),
-                      //   ),
-                      //   BoxShadow(
-                      //     color: Colors.black.withValues(alpha: 0.12),
-                      //     blurRadius: 6,
-                      //     offset: const Offset(0, 2),
-                      //   ),
-                      // ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -153,7 +159,7 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
                             child: Text(
                               speakerName != null
                                   ? 'watch_party_friend_speaking'.tr(namedArgs: {'name': speakerName})
-                                  : 'Escuchando audio...',
+                                  : 'watch_party_listening_audio'.tr(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: MoaiText.body(
@@ -183,8 +189,7 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
               ),
           ],
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildMicPill(
@@ -290,15 +295,6 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(20),
-            border: null,
-            // boxShadow: [
-            //   if (_isMicFocused)
-            //     BoxShadow(
-            //       color: scheme.primary.withValues(alpha: 0.35),
-            //       blurRadius: 10,
-            //       spreadRadius: 1,
-            //     ),
-            // ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

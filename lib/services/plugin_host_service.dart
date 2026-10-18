@@ -146,7 +146,7 @@ class PluginHostService {
     if (map == null) {
       throw PlatformException(
         code: 'PLUGIN_INSTALL_NULL',
-        message: 'El host nativo no devolvió datos al instalar el plugin',
+        message: 'plugins_install_empty',
       );
     }
     return PluginSource.fromMap(map);
@@ -160,7 +160,7 @@ class PluginHostService {
     if (map == null) {
       throw PlatformException(
         code: 'PLUGIN_UPDATE_NULL',
-        message: 'El host nativo no devolvió datos al actualizar el plugin',
+        message: 'plugins_update_empty',
       );
     }
     return PluginSource.fromMap(map);
@@ -181,7 +181,7 @@ class PluginHostService {
     if (map == null) {
       throw PlatformException(
         code: 'PLUGIN_RESOLVE_NULL',
-        message: 'El host nativo no devolvió URL al resolver el canal',
+        message: 'plugins_resolve_empty',
       );
     }
     return PluginResolveResult.fromMap(map);
@@ -194,6 +194,7 @@ class PluginHostController extends ChangeNotifier {
   List<PluginSource> _sources = [];
   bool _loading = false;
   String? _error;
+  Map<String, String> _errorNamedArgs = const {};
   bool _disposed = false;
 
   PluginHostController([PluginHostService? service])
@@ -202,6 +203,7 @@ class PluginHostController extends ChangeNotifier {
   List<PluginSource> get sources => List.unmodifiable(_sources);
   bool get loading => _loading;
   String? get error => _error;
+  Map<String, String> get errorNamedArgs => _errorNamedArgs;
 
   /// Servicio subyacente (para resolución directa en playback).
   PluginHostService service() => _service;
@@ -210,63 +212,52 @@ class PluginHostController extends ChangeNotifier {
   List<Channel> get channels =>
       PluginChannelCatalog.channelsFrom(_sources);
 
-  Future<void> refresh() async {
+  Future<void> refresh() => _runOp(() async {
+        _sources = await _service.list();
+      });
+
+  Future<void> install(String url) => _runOp(() async {
+        await _service.install(url);
+        _sources = await _service.list();
+      });
+
+  Future<void> updateSource(String url) => _runOp(() async {
+        await _service.updateSource(url);
+        _sources = await _service.list();
+      });
+
+  Future<void> removePlugin(String id) => _runOp(() async {
+        await _service.remove(id);
+        _sources = await _service.list();
+      });
+
+  Future<void> _runOp(Future<void> Function() op) async {
+    if (_loading) return;
     _loading = true;
     _error = null;
+    _errorNamedArgs = const {};
     _notify();
     try {
-      _sources = await _service.list();
+      await op();
     } catch (e) {
-      _error = '$e';
+      _setError(e);
     } finally {
       _loading = false;
       _notify();
     }
   }
 
-  Future<void> install(String url) async {
-    _loading = true;
-    _error = null;
-    _notify();
-    try {
-      await _service.install(url);
-      _sources = await _service.list();
-    } catch (e) {
-      _error = '$e';
-    } finally {
-      _loading = false;
-      _notify();
+  void _setError(Object error) {
+    if (error is PlatformException) {
+      final message = error.message;
+      if (message != null && message.startsWith('plugins_')) {
+        _error = message;
+        _errorNamedArgs = const {};
+        return;
+      }
     }
-  }
-
-  Future<void> updateSource(String url) async {
-    _loading = true;
-    _error = null;
-    _notify();
-    try {
-      await _service.updateSource(url);
-      _sources = await _service.list();
-    } catch (e) {
-      _error = '$e';
-    } finally {
-      _loading = false;
-      _notify();
-    }
-  }
-
-  Future<void> removePlugin(String id) async {
-    _loading = true;
-    _error = null;
-    _notify();
-    try {
-      await _service.remove(id);
-      _sources = await _service.list();
-    } catch (e) {
-      _error = '$e';
-    } finally {
-      _loading = false;
-      _notify();
-    }
+    _error = 'plugins_host_error';
+    _errorNamedArgs = {'error': '$error'};
   }
 
   void _notify() {

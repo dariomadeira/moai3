@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moai3/features/channel_browser/country_flag_assets.dart';
 import 'package:moai3/widgets/cards/tv_icon_list_card.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
@@ -32,6 +33,7 @@ class CountryCard extends StatelessWidget {
     return TvIconListCard(
       label: country,
       icon: MoaiIcons.tvDisplays,
+      leading: CountryFlagAssets.leadingFor(country),
       isSelected: isSelected,
       onTap: onTap,
       focusNode: focusNode,

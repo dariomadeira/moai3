@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:moai3/models/channel.dart';
 import 'package:moai3/models/friend_info.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/device_identity_service.dart';
@@ -307,6 +308,15 @@ class WatchPartyProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Publica el canal en reproducción. Adultos y null no se informan a amigos.
+  void reportPlayingChannel(Channel? channel) {
+    if (channel == null || channel.isAdult) {
+      reportCurrentChannel(channelId: null);
+      return;
+    }
+    reportCurrentChannel(channelId: channel.id, channelName: channel.name);
   }
 
   /// Reporta el canal sintonizado de forma inmediata (actualiza estado local y Supabase).

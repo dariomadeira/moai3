@@ -2,7 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/features/settings/widgets/tv_option_selector.dart';
-import 'package:moai3/features/settings/widgets/tv_tile.dart';
+import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 

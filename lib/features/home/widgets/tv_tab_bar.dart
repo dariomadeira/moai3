@@ -51,7 +51,7 @@ class TvTabBar extends StatelessWidget {
 
     return Padding(
       // Alineación vertical superior para sincronizar con NavigationRail M3.
-      padding: const EdgeInsets.only(top: 12, bottom: 12, right: 8),
+      padding: const EdgeInsets.only(top: 3, bottom: 12, right: 8),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,

@@ -1,6 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:moai3/features/settings/screens/agenda_utc_offset_screen.dart';
+import 'package:moai3/widgets/dialogs/tv_agenda_time_zone_dialog.dart';
 import 'package:moai3/features/settings/widgets/settings_agenda_notify_row.dart';
 import 'package:moai3/features/settings/widgets/settings_agenda_snack_duration_row.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
@@ -117,12 +117,7 @@ class SettingsAgendaPanelState extends State<SettingsAgendaPanel> {
                                       },
                                     ),
                                     onPressed: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const AgendaUtcOffsetScreen(),
-                                        ),
-                                      );
+                                      TvAgendaTimeZoneDialog.show(context);
                                     },
                                     onKeyLeft: widget.onKeyLeft,
                                     onKeyRight: widget.onKeyRight,

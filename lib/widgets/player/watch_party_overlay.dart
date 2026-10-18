@@ -74,12 +74,12 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
     if (WatchPartyOverlay.debugForceVisible) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _activeNotificationMessage == null) {
-          _enqueueNotification('Carlos TV está viendo');
+          _enqueueNotification('watch_party_debug_name'.tr());
           _devSimulationTimer?.cancel();
           _devSimulationTimer = Timer(const Duration(milliseconds: 3800), () {
             if (mounted) {
               setState(() {
-                _simulatedAudioSpeaker = 'Carlos TV';
+                _simulatedAudioSpeaker = 'watch_party_debug_name'.tr();
               });
               _devAudioTimer?.cancel();
               _devAudioTimer = Timer(const Duration(milliseconds: 3500), () {
@@ -214,7 +214,7 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
         (coordinator?.isPlaying ?? false);
     final speakerName = _simulatedAudioSpeaker ??
         coordinator?.currentSpeakerName ??
-        'Carlos TV';
+        'watch_party_debug_name'.tr();
 
     final scheme = Theme.of(context).colorScheme;
 

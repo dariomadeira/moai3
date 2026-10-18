@@ -117,12 +117,20 @@ class ChannelPlaybackHelpers {
       if (service == null) {
         throw StateError('Canal-plugin sin PluginHostService');
       }
+      final pluginId = channel.pluginId;
+      final pluginChannelId = channel.pluginChannelId;
+      if (pluginId == null ||
+          pluginId.isEmpty ||
+          pluginChannelId == null ||
+          pluginChannelId.isEmpty) {
+        throw Exception('player_plugin_missing_ids');
+      }
       final resolved = await service.resolve(
-        channel.pluginId!,
-        channel.pluginChannelId!,
+        pluginId,
+        pluginChannelId,
       );
       if (resolved.url.isEmpty) {
-        throw Exception('El plugin no devolvió URL para ${channel.name}');
+        throw Exception('plugins_resolve_empty');
       }
       return ResolvedPlayback(
         url: resolved.url,

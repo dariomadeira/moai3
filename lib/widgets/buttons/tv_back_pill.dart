@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:reicons/reicons.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Píldora de navegación para retroceder / Volver.
 ///
@@ -33,7 +33,7 @@ class TvBackPill extends StatefulWidget {
     this.iconSize = 18.0,
     this.borderRadius,
     this.tooltip = 'Volver',
-    this.icon = ReiconIcons.arrowLeft,
+    this.icon = MoaiIcons.arrowBackRounded,
   });
 
   @override

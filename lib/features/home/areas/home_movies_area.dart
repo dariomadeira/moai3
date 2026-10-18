@@ -98,7 +98,9 @@ class HomeMoviesAreaState extends State<HomeMoviesArea> {
                 Icon(MoaiIcons.errorOutline, size: 48, color: scheme.error),
                 const SizedBox(height: 12),
                 Text(
-                  provider.errorMessage!,
+                  provider.errorMessage!.tr(namedArgs: {
+                    'error': provider.errorDetail ?? '',
+                  }),
                   style: TextStyle(color: scheme.error),
                 ),
                 const SizedBox(height: 12),

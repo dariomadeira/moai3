@@ -37,17 +37,39 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
     final accent = widget.accentColor ?? scheme.primary;
     final focused = widget.isFocused;
 
-    // Sobre fila enfocada (fondo primary) usamos onPrimary; en reposo, surface.
-    final trackBg = focused
-        ? scheme.onPrimary.withValues(alpha: 0.16)
-        : scheme.surface;
+    // Sobre fila enfocada (fondo primary) usamos onPrimary con opacidad.
+    // En reposo, aplicamos el mismo degradado sutil y borde de TvTabBar / TvAccordionRowPreview.
+    final BoxDecoration trackDecoration;
+    if (focused) {
+      trackDecoration = BoxDecoration(
+        color: scheme.onPrimary.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(999),
+      );
+    } else {
+      final baseColor = scheme.surface;
+      final endColor = Color.alphaBlend(
+        scheme.onSurface.withValues(alpha: 0.05),
+        baseColor,
+      );
+      final borderColor = scheme.outlineVariant.withValues(alpha: 0.30);
+      trackDecoration = BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [baseColor, baseColor, endColor],
+          stops: const [0.0, 0.62, 1.0],
+        ),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: borderColor,
+          width: 1.0,
+        ),
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: trackBg,
-        borderRadius: BorderRadius.circular(999),
-      ),
+      decoration: trackDecoration,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: widget.options.map((option) {

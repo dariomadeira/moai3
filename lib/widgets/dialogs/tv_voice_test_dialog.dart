@@ -330,11 +330,27 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
   }
 
   Widget _buildMainCard(ColorScheme scheme) {
+    final baseColor = scheme.surface.withValues(alpha: 0.8);
+    final endColor = Color.alphaBlend(
+      scheme.onSurface.withValues(alpha: 0.05),
+      baseColor,
+    );
+    final borderColor = scheme.outlineVariant.withValues(alpha: 0.2);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
+        gradient: LinearGradient(
+          begin: Alignment.bottomRight,
+          end: Alignment.topLeft,
+          colors: [baseColor, baseColor, endColor],
+          stops: const [0.0, 0.62, 1.0],
+        ),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: borderColor,
+          width: 1.0,
+        ),
       ),
       child: Column(
         children: [

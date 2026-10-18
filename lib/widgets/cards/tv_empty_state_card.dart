@@ -9,6 +9,9 @@ class TvEmptyStateCard extends StatelessWidget {
   final FocusNode focusNode;
   final IconData icon;
   final String message;
+  final String? subtitle;
+  final EdgeInsetsGeometry? margin;
+  final EdgeInsetsGeometry? padding;
   final VoidCallback? onFocusUp;
   final VoidCallback? onFocusDown;
   final VoidCallback? onFocusLeft;
@@ -20,6 +23,9 @@ class TvEmptyStateCard extends StatelessWidget {
     required this.focusNode,
     required this.icon,
     required this.message,
+    this.subtitle,
+    this.margin,
+    this.padding,
     this.onFocusUp,
     this.onFocusDown,
     this.onFocusLeft,
@@ -61,11 +67,12 @@ class TvEmptyStateCard extends StatelessWidget {
             final isFocused = Focus.of(context).hasFocus;
             return AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 24,
-              ),
-              padding: const EdgeInsets.all(20),
+              margin: margin ??
+                  const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 24,
+                  ),
+              padding: padding ?? const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: isFocused
                     ? scheme.primary.withValues(alpha: 0.08)
@@ -102,6 +109,21 @@ class TvEmptyStateCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 6),
+                    Center(
+                      child: Text(
+                        subtitle!,
+                        textAlign: TextAlign.center,
+                        style: MoaiText.body(
+                          context,
+                          color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             );

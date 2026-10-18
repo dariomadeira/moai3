@@ -126,6 +126,8 @@ class _TvMovieCardState extends State<TvMovieCard> {
                         CachedNetworkImage(
                           imageUrl: poster,
                           fit: BoxFit.cover,
+                          memCacheWidth: 160,
+                          memCacheHeight: 240,
                           placeholder: (context, url) => Container(
                             color: scheme.surfaceContainerLowest,
                             child: const Center(
@@ -171,7 +173,7 @@ class _TvMovieCardState extends State<TvMovieCard> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 const Icon(
-                                  Icons.star_rounded,
+                                  MoaiIcons.starRounded,
                                   size: 13,
                                   color: Colors.amber,
                                 ),

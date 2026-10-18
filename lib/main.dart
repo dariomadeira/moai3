@@ -129,15 +129,7 @@ void main() async {
   }
 
   void syncChannelWithWatchParty() {
-    final ch = channelProvider.selectedChannel;
-    if (ch != null) {
-      watchPartyProvider.reportCurrentChannel(
-        channelId: ch.id,
-        channelName: ch.name,
-      );
-    } else {
-      watchPartyProvider.reportCurrentChannel(channelId: null);
-    }
+    watchPartyProvider.reportPlayingChannel(channelProvider.selectedChannel);
   }
 
   channelProvider.addListener(syncChannelWithWatchParty);

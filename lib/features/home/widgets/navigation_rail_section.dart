@@ -184,7 +184,7 @@ class _NavigationRailSectionState extends State<NavigationRailSection> {
                 const TvVerticalClockPill(),
                 const SizedBox(height: 12),
                 _buildRailDestination(_sectionSettings, scheme, todayEvents),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
               ],
             ),
           ),

@@ -57,10 +57,9 @@ class Channel {
   factory Channel.fromJson(Map<String, dynamic> json) {
     final urls = <String>[];
 
-    if (json['fallbackUrls'] != null) {
-      urls.addAll(
-        (json['fallbackUrls'] as List).map((e) => e.toString()),
-      );
+    final fallbackUrls = json['fallbackUrls'];
+    if (fallbackUrls is List) {
+      urls.addAll(fallbackUrls.map((e) => e.toString()));
     }
 
     final streamUrl = json['streamUrl'] as String?;

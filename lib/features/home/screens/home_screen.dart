@@ -20,6 +20,7 @@ import 'package:moai3/focus/tv_shortcuts.dart';
 import 'package:moai3/helpers/notification_helper.dart';
 import 'package:moai3/layout/settings_panel_layout.dart';
 import 'package:moai3/models/calendar_event.dart';
+import 'package:moai3/services/arcade_plugin_service.dart';
 import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/modal_route_tracker.dart';
 import 'package:moai3/services/plugin_host_service.dart';
@@ -117,12 +118,21 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _romManager.initialize();
     ModalRouteTracker.instance.addListener(_onModalTrackerChanged);
+    ArcadePluginService.instance.addListener(_onArcadePluginChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAutoUpdate();
       _listenToLiveEvents();
       _updatePresenceForSection(_selectedIndex);
       _listenToArcadeInvites();
     });
+  }
+
+  void _onArcadePluginChanged() {
+    if (!mounted) return;
+    if (_selectedIndex == _sectionArcade &&
+        !ArcadePluginService.instance.isInstalled) {
+      _switchSection(_sectionTv);
+    }
   }
 
   void _listenToArcadeInvites() {
@@ -191,13 +201,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (index == _sectionTv || index == _sectionArcade) {
       presence.updateOnlineStatus(deviceId: deviceId, online: true);
       if (index == _sectionTv) {
-        final ch = context.read<ChannelProvider>().selectedChannel;
-        if (ch != null) {
-          watchParty.reportCurrentChannel(
-            channelId: ch.id,
-            channelName: ch.name,
-          );
-        }
+        watchParty.reportPlayingChannel(
+          context.read<ChannelProvider>().selectedChannel,
+        );
       } else {
         watchParty.reportCurrentChannel(channelId: null);
       }
@@ -398,6 +404,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _arcadeGamepadFocus.dispose();
     _arcadeStartFocus.dispose();
     _arcadePlayTogetherFocus.dispose();
+    ArcadePluginService.instance.removeListener(_onArcadePluginChanged);
     _arcadeInviteSubscription?.cancel();
     _romManager.dispose();
     super.dispose();
@@ -576,9 +583,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Expanded(
                             child: RepaintBoundary(
                               child: Padding(
-                                padding: _selectedIndex == _sectionTv
-                                    ? const EdgeInsets.fromLTRB(4, 0, 8, 8)
-                                    : const EdgeInsets.fromLTRB(4, 8, 8, 8),
+                                padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
                                 child: _selectedIndex == _sectionSettings
                                     ? HomeSettingsArea(
                                         activePanelIndex:

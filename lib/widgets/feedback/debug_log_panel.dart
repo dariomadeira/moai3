@@ -1,9 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:moai3/config/player_config.dart';
-import 'package:moai3/features/home/widgets/debug_log_formatters.dart';
-import 'package:moai3/features/home/widgets/debug_log_widgets.dart';
+import 'package:moai3/widgets/feedback/debug_log_formatters.dart';
+import 'package:moai3/widgets/feedback/debug_log_widgets.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/services/debug_log_controller.dart';
@@ -58,28 +57,37 @@ class _DebugLogPanelState extends State<DebugLogPanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const DebugSectionTitle('CONFIGURACIÓN'),
-        DebugKvRow(label: 'Depuración', value: DebugLogFormatters.debugStatusLabel()),
-        const DebugKvRow(label: 'Reproductor', value: PlayerConfig.modeLabel),
-        DebugKvRow(label: 'Memoria', value: DebugLogFormatters.memoryLabel()),
+        DebugSectionTitle('debug_section_config'.tr()),
+        DebugKvRow(
+          label: 'debug_label_debug'.tr(),
+          value: DebugLogFormatters.debugStatusLabel(),
+        ),
+        DebugKvRow(
+          label: 'debug_label_player'.tr(),
+          value: 'debug_player_engine'.tr(),
+        ),
+        DebugKvRow(
+          label: 'debug_label_memory'.tr(),
+          value: DebugLogFormatters.memoryLabel(),
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Container(height: 1, color: dividerColor),
         ),
-        const DebugSectionTitle('REPRODUCCIÓN'),
+        DebugSectionTitle('debug_section_playback'.tr()),
         DebugStatusRow(
           status: stats.status,
           color: statusColor,
           label: DebugLogFormatters.healthLabel(stats.status),
         ),
         DebugKvRow(
-          label: 'Backend',
+          label: 'debug_label_backend'.tr(),
           value: DebugLogFormatters.backendLabel(stats.backend),
         ),
         if (channel != null) ...[
-          DebugKvRow(label: 'Canal', value: channel.name),
+          DebugKvRow(label: 'debug_label_channel'.tr(), value: channel.name),
           DebugKvRow(
-            label: 'Tipo',
+            label: 'debug_label_type'.tr(),
             value: DebugLogFormatters.channelTypeLabel(channel),
           ),
         ],

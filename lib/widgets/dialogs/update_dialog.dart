@@ -168,26 +168,46 @@ class _UpdateDialogState extends State<UpdateDialog> {
               color: scheme.onSurface,
             ),
           ),
-          const SizedBox(height: 6),
-          Container(
-            constraints: const BoxConstraints(maxHeight: 120),
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: SingleChildScrollView(
-              child: Text(
-                widget.updateInfo.changelog,
-                style: MoaiText.body(
-                  context,
-                  fontSize: 12,
-                  height: 1.3,
-                  color: scheme.onSurfaceVariant,
+          const SizedBox(height: 10),
+          Builder(
+            builder: (context) {
+              final baseColor = scheme.surface.withValues(alpha: 0.8);
+              final endColor = Color.alphaBlend(
+                scheme.onSurface.withValues(alpha: 0.05),
+                baseColor,
+              );
+              final borderColor = scheme.outlineVariant.withValues(alpha: 0.2);
+
+              return Container(
+                constraints: const BoxConstraints(maxHeight: 120),
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomRight,
+                    end: Alignment.topLeft,
+                    colors: [baseColor, baseColor, endColor],
+                    stops: const [0.0, 0.62, 1.0],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: borderColor,
+                    width: 1.0,
+                  ),
                 ),
-              ),
-            ),
+                child: SingleChildScrollView(
+                  child: Text(
+                    widget.updateInfo.changelog,
+                    style: MoaiText.body(
+                      context,
+                      fontSize: 12,
+                      height: 1.3,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ],
       );

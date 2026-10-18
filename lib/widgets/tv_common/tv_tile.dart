@@ -78,6 +78,8 @@ class TvTile extends StatefulWidget {
 
 class _TvTileState extends State<TvTile> {
   bool _isFocused = false;
+  bool _isPressed = false;
+  bool _isKeyDown = false;
 
   @override
   void initState() {
@@ -93,6 +95,16 @@ class _TvTileState extends State<TvTile> {
     }
   }
 
+  void _setPressed(bool pressed) {
+    if (!mounted || _isPressed == pressed) return;
+    setState(() => _isPressed = pressed);
+  }
+
+  void _runPressed() {
+    widget.focusNode.requestFocus();
+    widget.onPressed?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isFocused = _isFocused || widget.focusNode.hasFocus;
@@ -106,13 +118,26 @@ class _TvTileState extends State<TvTile> {
           if (result != KeyEventResult.ignored) return result;
         }
 
-        if (event is! KeyDownEvent) return KeyEventResult.ignored;
         final key = event.logicalKey;
 
         if (TvKeyHandler.isActionKey(key)) {
-          widget.onPressed?.call();
-          return KeyEventResult.handled;
+          if (event is KeyDownEvent) {
+            if (!_isKeyDown) {
+              _isKeyDown = true;
+              _setPressed(true);
+            }
+            return KeyEventResult.handled;
+          }
+          if (event is KeyRepeatEvent) return KeyEventResult.handled;
+          if (event is KeyUpEvent && _isKeyDown) {
+            _isKeyDown = false;
+            _setPressed(false);
+            _runPressed();
+            return KeyEventResult.handled;
+          }
         }
+
+        if (event is! KeyDownEvent) return KeyEventResult.ignored;
 
         return TvKeyHandler.handleDirectional(
           key: key,
@@ -122,19 +147,26 @@ class _TvTileState extends State<TvTile> {
           onDown: widget.onKeyDown,
         );
       },
-      child: GestureDetector(
-        onTap: () {
-          widget.focusNode.requestFocus();
-          widget.onPressed?.call();
-        },
-        child: _TvTileChrome(
-          isFocused: isFocused,
-          label: widget.label,
-          description: widget.description,
-          icon: widget.icon,
-          padding: widget.padding,
-          minHeight: widget.minHeight,
-          trailing: widget.trailingBuilder?.call(context, isFocused),
+      child: Listener(
+        onPointerDown: (_) => _setPressed(true),
+        onPointerUp: (_) => _setPressed(false),
+        onPointerCancel: (_) => _setPressed(false),
+        child: GestureDetector(
+          onTap: _runPressed,
+          child: AnimatedScale(
+            scale: _isPressed ? 0.96 : 1.0,
+            duration: const Duration(milliseconds: 90),
+            curve: Curves.easeOutCubic,
+            child: _TvTileChrome(
+              isFocused: isFocused,
+              label: widget.label,
+              description: widget.description,
+              icon: widget.icon,
+              padding: widget.padding,
+              minHeight: widget.minHeight,
+              trailing: widget.trailingBuilder?.call(context, isFocused),
+            ),
+          ),
         ),
       ),
     );

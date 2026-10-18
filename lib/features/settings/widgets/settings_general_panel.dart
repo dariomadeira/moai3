@@ -19,7 +19,6 @@ enum _SettingsGeneralItemType {
   weatherLocation,
   darkMode,
   accentColor,
-  autoAccent,
   muteUiSounds,
 }
 
@@ -53,15 +52,13 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
-    final isAutoAccent = theme.autoAccent;
 
-    final items = <_SettingsGeneralItemType>[
+    final items = const <_SettingsGeneralItemType>[
       _SettingsGeneralItemType.plugins,
       _SettingsGeneralItemType.overscan,
       _SettingsGeneralItemType.weatherLocation,
       _SettingsGeneralItemType.darkMode,
-      if (!isAutoAccent) _SettingsGeneralItemType.accentColor,
-      _SettingsGeneralItemType.autoAccent,
+      _SettingsGeneralItemType.accentColor,
       _SettingsGeneralItemType.muteUiSounds,
     ];
 
@@ -126,7 +123,6 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
                                     context: context,
                                     item: item,
                                     theme: theme,
-                                    isAutoAccent: isAutoAccent,
                                     focusNode: focusNode,
                                     onKeyUp: onKeyUp,
                                     onKeyDown: onKeyDown,
@@ -150,7 +146,6 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
     required BuildContext context,
     required _SettingsGeneralItemType item,
     required ThemeProvider theme,
-    required bool isAutoAccent,
     required FocusNode focusNode,
     required VoidCallback onKeyUp,
     required VoidCallback onKeyDown,
@@ -228,20 +223,6 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
           focusNode: focusNode,
           icon: MoaiIcons.paletteOutlined,
           selectedIndex: theme.accentColorIndex,
-          onChanged: (index) => theme.setAccentColorIndex(index),
-          onKeyUp: onKeyUp,
-          onKeyDown: onKeyDown,
-        );
-      case _SettingsGeneralItemType.autoAccent:
-        return TvSettingsSwitchRow(
-          focusNode: focusNode,
-          icon: MoaiIcons.autoAwesomeOutlined,
-          label: 'settings_general_auto_accent'.tr(),
-          description: 'settings_general_auto_accent_desc'.tr(),
-          value: isAutoAccent,
-          onChanged: (auto) {
-            theme.setAutoAccent(auto);
-          },
           onKeyLeft: widget.onKeyLeft,
           onKeyRight: widget.onKeyRight,
           onKeyUp: onKeyUp,

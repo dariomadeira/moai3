@@ -8,6 +8,7 @@ import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/playback_stats_controller.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/widgets/buttons/favorite_button.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -32,7 +33,7 @@ Widget _wrap(Widget child, {TvSettingsProvider? tvSettings, FavoritesProvider? f
     ],
     child: MaterialApp(
       home: Scaffold(
-        body: SizedBox(width: 400, height: 160, child: child),
+        body: SizedBox(width: 400, height: 180, child: child),
       ),
     ),
   );
@@ -174,7 +175,7 @@ void main() {
     final createBox = createContainer.decoration as BoxDecoration;
     expect(createBox.borderRadius, BorderRadius.circular(999));
     expect(createBox.border, isNull);
-    expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.tvFavoritesAdd), findsOneWidget);
 
     final clearContainer = tester.widget<AnimatedContainer>(
       find.descendant(
@@ -185,7 +186,7 @@ void main() {
     final clearBox = clearContainer.decoration as BoxDecoration;
     expect(clearBox.borderRadius, BorderRadius.circular(999));
     expect(clearBox.border, isNull);
-    expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.tvFavoritesClear), findsOneWidget);
   });
 
   testWidgets('ViewerFavoritesBar incluye headerAction con FavoriteButton en forma de pill', (tester) async {

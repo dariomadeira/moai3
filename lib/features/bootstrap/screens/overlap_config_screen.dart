@@ -8,8 +8,6 @@ import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
 import 'package:moai3/theme/moai_icons.dart';
-import 'package:reicons/reicons.dart';
-
 class OverlapConfigScreen extends StatefulWidget {
   /// Primera vez (bootstrap) → al guardar va a home.
   /// Desde Ajustes (`false`) → pop al guardar / Back.
@@ -399,13 +397,13 @@ class _PaddingAdjusterState extends State<_PaddingAdjuster> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    ReiconIcons.arrowLeft,
+                    MoaiIcons.arrowBackRounded,
                     size: 16,
                     color: labelColor,
                   ),
                   const SizedBox(width: 4),
                   Icon(
-                    ReiconIcons.arrowRight,
+                    MoaiIcons.arrowForwardRounded,
                     size: 16,
                     color: labelColor,
                   ),

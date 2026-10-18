@@ -1,10 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
 
 /// Panel mostrado en el área derecha cuando no hay canal activo / seleccionado.
+/// Utiliza el panel común con su degradado y borde, conteniendo el estado vacío reutilizable [TvEmptyStateCard].
 class EmptyViewerPanel extends StatelessWidget {
   final FocusNode focusNode;
   final bool hasChannels;
@@ -21,111 +21,45 @@ class EmptyViewerPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
+    final scheme = Theme.of(context).colorScheme;
 
-    return Focus(
-      focusNode: focusNode,
-      onKeyEvent: (node, event) {
-        if (event is! KeyDownEvent) return KeyEventResult.ignored;
-        if (event.logicalKey == LogicalKeyboardKey.arrowLeft ||
-            event.logicalKey == LogicalKeyboardKey.arrowRight ||
-            event.logicalKey == LogicalKeyboardKey.select ||
-            event.logicalKey == LogicalKeyboardKey.enter ||
-            event.logicalKey == LogicalKeyboardKey.space) {
-          onReturnToPanel();
-          return KeyEventResult.handled;
-        }
-        if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-          onKeyUp();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      child: GestureDetector(
-        onTap: onReturnToPanel,
-        child: Builder(
-          builder: (context) {
-            final isFocused = Focus.of(context).hasFocus;
-            final baseColor = scheme.surface.withValues(alpha: 0.8);
-            final endColor = Color.alphaBlend(
-              scheme.onSurface.withValues(alpha: 0.05),
-              baseColor,
-            );
-            final borderColor = isFocused
-                ? scheme.primary
-                : scheme.outlineVariant.withValues(alpha: 0.48);
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomRight,
-                  end: Alignment.topLeft,
-                  colors: [baseColor, baseColor, endColor],
-                  stops: const [0.0, 0.62, 1.0],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: borderColor,
-                  width: isFocused ? 1.0 : 0.6,
-                ),
-              ),
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: isFocused
-                              ? scheme.primary.withValues(alpha: 0.15)
-                              : scheme.surfaceContainerHighest.withValues(
-                                  alpha: 0.5,
-                                ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          MoaiIcons.tvEmptyViewer,
-                          size: 40,
-                          color: isFocused
-                              ? scheme.primary
-                              : scheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        hasChannels
-                            ? 'home_tv_viewer_empty'.tr()
-                            : 'home_tv_viewer_no_channels'.tr(),
-                        textAlign: TextAlign.center,
-                        style: MoaiText.display(
-                          context,
-                          color: scheme.onSurface,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        hasChannels
-                            ? 'home_tv_viewer_empty_desc'.tr()
-                            : 'home_tv_viewer_no_channels_desc'.tr(),
-                        textAlign: TextAlign.center,
-                        style: MoaiText.body(
-                          context,
-                          color: scheme.onSurfaceVariant,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
+    final baseColor = scheme.surface.withValues(alpha: 0.8);
+    final endColor = Color.alphaBlend(
+      scheme.onSurface.withValues(alpha: 0.05),
+      baseColor,
+    );
+    final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.bottomRight,
+          end: Alignment.topLeft,
+          colors: [baseColor, baseColor, endColor],
+          stops: const [0.0, 0.62, 1.0],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: borderColor,
+          width: 1.0,
+        ),
+      ),
+      child: Center(
+        child: TvEmptyStateCard(
+          focusNode: focusNode,
+          icon: MoaiIcons.tvEmptyViewer,
+          message: hasChannels
+              ? 'home_tv_viewer_empty'.tr()
+              : 'home_tv_viewer_no_channels'.tr(),
+          subtitle: hasChannels
+              ? 'home_tv_viewer_empty_desc'.tr()
+              : 'home_tv_viewer_no_channels_desc'.tr(),
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          onFocusUp: onKeyUp,
+          onFocusLeft: onReturnToPanel,
+          onFocusRight: onReturnToPanel,
+          onTap: onReturnToPanel,
         ),
       ),
     );

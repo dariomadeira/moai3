@@ -11,7 +11,7 @@ import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
-import 'package:moai3/features/settings/widgets/tv_tile.dart';
+import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/widgets/cards/new_channel_card.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
@@ -21,8 +21,7 @@ enum _FocusSection { header, grid }
 
 enum _HeaderAction { refresh, prev, current, next }
 
-/// Panel 0 del acordeón de Calendario: Grilla semanal de 7 días (Lunes a Domingo)
-/// con colores sólidos, sin bordes, sin sombras, optimizado para Android TV.
+/// Panel 0 del acordeón de Calendario: grilla semanal de 7 días (lunes a domingo).
 class CalendarEventsPanel extends StatefulWidget {
   final FocusNode focusNode;
   final VoidCallback onKeyLeft;
@@ -60,6 +59,9 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
   late int _selectedDayIndex;
 
   static const int _windowSize = 4;
+
+  /// OK/Enter del D-pad sobre una tarjeta (para el scale de pulso).
+  bool _gridActionPressed = false;
 
   /// Índice del evento seleccionado por cada día de la semana (índice global)
   final Map<int, int> _selectedEventIndices = {
@@ -150,6 +152,9 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
         _focusSection = _FocusSection.grid;
       });
     }
+    if (!widget.focusNode.hasFocus && _gridActionPressed) {
+      _gridActionPressed = false;
+    }
     _hadFocus = widget.focusNode.hasFocus;
   }
 
@@ -171,8 +176,42 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
     CalendarProvider calendar,
     List<DateTime> days,
   ) {
-    if (event is! KeyDownEvent) return KeyEventResult.ignored;
     final key = event.logicalKey;
+    final isAction =
+        key == LogicalKeyboardKey.select ||
+        key == LogicalKeyboardKey.enter ||
+        key == LogicalKeyboardKey.numpadEnter ||
+        key == LogicalKeyboardKey.space ||
+        key == LogicalKeyboardKey.gameButtonA;
+
+    if (_focusSection == _FocusSection.grid && isAction) {
+      if (event is KeyDownEvent) {
+        if (!_gridActionPressed) {
+          setState(() => _gridActionPressed = true);
+        }
+        return KeyEventResult.handled;
+      }
+      if (event is KeyRepeatEvent) return KeyEventResult.handled;
+      if (event is KeyUpEvent && _gridActionPressed) {
+        setState(() => _gridActionPressed = false);
+        final currentDay = days[_selectedDayIndex];
+        final dayEvents = calendar.getEventsForDay(currentDay);
+        final currentEventIndex =
+            (_selectedEventIndices[_selectedDayIndex] ?? 0).clamp(
+              0,
+              dayEvents.isEmpty ? 0 : dayEvents.length - 1,
+            );
+        if (dayEvents.isNotEmpty && currentEventIndex < dayEvents.length) {
+          _showEventDetails(context, dayEvents[currentEventIndex]);
+        }
+        return KeyEventResult.handled;
+      }
+    }
+
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (_gridActionPressed) {
+      setState(() => _gridActionPressed = false);
+    }
 
     if (_focusSection == _FocusSection.header) {
       final actions = _getAvailableHeaderActions();
@@ -321,16 +360,6 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
         }
       }
       return KeyEventResult.handled;
-    }
-
-    if (key == LogicalKeyboardKey.select ||
-        key == LogicalKeyboardKey.enter ||
-        key == LogicalKeyboardKey.space) {
-      if (dayEvents.isNotEmpty && currentEventIndex < dayEvents.length) {
-        final ev = dayEvents[currentEventIndex];
-        _showEventDetails(context, ev);
-        return KeyEventResult.handled;
-      }
     }
 
     return KeyEventResult.ignored;
@@ -581,6 +610,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                         selectedEventIndex: currentEventIndex,
                         windowStart: _windowStarts[dayIdx] ?? 0,
                         windowSize: _windowSize,
+                        actionPressed: _gridActionPressed && isDayColumnSelected,
                         onSelectEvent: (eventIdx) {
                           setState(() {
                             _focusSection = _FocusSection.grid;
@@ -702,7 +732,51 @@ class _HeaderButton extends StatelessWidget {
   }
 }
 
-/// Columna de un día de la semana con colores sólidos y sin bordes
+/// Escala al pulsar (click o D-pad). Mismo criterio que [TvTile].
+class _PressScale extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+  final bool pressed;
+
+  const _PressScale({
+    required this.child,
+    required this.onTap,
+    this.pressed = false,
+  });
+
+  @override
+  State<_PressScale> createState() => _PressScaleState();
+}
+
+class _PressScaleState extends State<_PressScale> {
+  bool _pointerPressed = false;
+
+  void _setPointer(bool pressed) {
+    if (!mounted || _pointerPressed == pressed) return;
+    setState(() => _pointerPressed = pressed);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pressed = _pointerPressed || widget.pressed;
+    return Listener(
+      onPointerDown: (_) => _setPointer(true),
+      onPointerUp: (_) => _setPointer(false),
+      onPointerCancel: (_) => _setPointer(false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          scale: pressed ? 0.96 : 1.0,
+          duration: const Duration(milliseconds: 90),
+          curve: Curves.easeOutCubic,
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
+/// Columna de un día de la semana.
 class _DayColumn extends StatelessWidget {
   final DateTime day;
   final int dayIndex;
@@ -711,6 +785,7 @@ class _DayColumn extends StatelessWidget {
   final int selectedEventIndex;
   final int windowStart;
   final int windowSize;
+  final bool actionPressed;
   final ValueChanged<int> onSelectEvent;
   final VoidCallback onSelectColumn;
 
@@ -722,6 +797,7 @@ class _DayColumn extends StatelessWidget {
     required this.selectedEventIndex,
     required this.windowStart,
     required this.windowSize,
+    required this.actionPressed,
     required this.onSelectEvent,
     required this.onSelectColumn,
   });
@@ -777,16 +853,16 @@ class _DayColumn extends StatelessWidget {
     final headerBorderColor = isColumnFocused
         ? (isToday
               ? scheme.onPrimary.withValues(alpha: 0.65)
-              : scheme.secondary.withValues(alpha: 0.60))
+              : scheme.secondary.withValues(alpha: 0.55))
         : (isToday
-              ? scheme.primary.withValues(alpha: 0.45)
-              : scheme.outlineVariant.withValues(alpha: 0.35));
+              ? scheme.primary.withValues(alpha: 0.40)
+              : scheme.outlineVariant.withValues(alpha: 0.20));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Header del día con gradiente sutil y borde a juego
-        GestureDetector(
+        _PressScale(
           onTap: onSelectColumn,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 120),
@@ -897,6 +973,7 @@ class _DayColumn extends StatelessWidget {
                 child: _CalendarEventGridCard(
                   event: event,
                   isFocused: isItemFocused,
+                  actionPressed: isItemFocused && actionPressed,
                   height: safeSlotHeight,
                   onTap: () => onSelectEvent(globalIndex),
                 ),
@@ -951,6 +1028,7 @@ class _DayColumn extends StatelessWidget {
                 child: _CalendarEventGridCard(
                   event: event,
                   isFocused: isItemFocused,
+                  actionPressed: isItemFocused && actionPressed,
                   height: safeSlotHeight,
                   onTap: () => onSelectEvent(globalIndex),
                 ),
@@ -1001,9 +1079,9 @@ class _DayColumn extends StatelessWidget {
     );
     final borderColor = isFocused
         ? scheme.secondary.withValues(alpha: 0.55)
-        : scheme.outlineVariant.withValues(alpha: 0.28);
+        : scheme.outlineVariant.withValues(alpha: 0.18);
 
-    return GestureDetector(
+    return _PressScale(
       onTap: onSelectColumn,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
@@ -1047,17 +1125,18 @@ class _DayColumn extends StatelessWidget {
   }
 }
 
-/// Tarjeta individual de evento con colores 100% sólidos, sin bordes y sin sombras.
-/// Solo muestra: Ícono + Hora + Título del evento (sin info de canales ni competiciones).
+/// Tarjeta de evento: ícono + hora + título. Paleta por estado (vencido / vivo / hoy / futuro).
 class _CalendarEventGridCard extends StatelessWidget {
   final CalendarEvent event;
   final bool isFocused;
+  final bool actionPressed;
   final double height;
   final VoidCallback onTap;
 
   const _CalendarEventGridCard({
     required this.event,
     required this.isFocused,
+    required this.actionPressed,
     required this.height,
     required this.onTap,
   });
@@ -1067,7 +1146,7 @@ class _CalendarEventGridCard extends StatelessWidget {
     final scheme = context.scheme;
     final isLive = event.status == CalendarEventStatus.live;
     final isFinished = event.status == CalendarEventStatus.finished;
-    final isUpcoming = event.status == CalendarEventStatus.upcoming;
+    final isSoon = event.status == CalendarEventStatus.upcoming && event.isToday;
     final sportIcon = CalendarProvider.getSubscriptionIcon(
       event.subscriptionId,
     );
@@ -1088,14 +1167,22 @@ class _CalendarEventGridCard extends StatelessWidget {
           : scheme.surfaceContainerLowest;
       fgColor = isFocused ? scheme.onSurface : scheme.outline;
       subColor = scheme.outline;
+    } else if (isFocused) {
+      baseColor = scheme.primary;
+      fgColor = scheme.onPrimary;
+      subColor = scheme.onPrimary;
+    } else if (isLive) {
+      baseColor = scheme.surfaceContainerHighest;
+      fgColor = scheme.onSurface;
+      subColor = scheme.onSurfaceVariant;
+    } else if (isSoon) {
+      baseColor = scheme.surfaceContainerHigh;
+      fgColor = scheme.onSurface;
+      subColor = scheme.onSurfaceVariant;
     } else {
-      baseColor = isFocused
-          ? scheme.primary
-          : (isLive
-                ? scheme.surfaceContainerHighest
-                : scheme.surfaceContainerHigh);
-      fgColor = isFocused ? scheme.onPrimary : scheme.onSurface;
-      subColor = isFocused ? scheme.onPrimary : scheme.onSurfaceVariant;
+      baseColor = scheme.surfaceContainer;
+      fgColor = scheme.onSurface;
+      subColor = scheme.onSurfaceVariant;
     }
 
     final endColor = Color.alphaBlend(
@@ -1105,24 +1192,30 @@ class _CalendarEventGridCard extends StatelessWidget {
           .withValues(
         alpha: isFocused
             ? (isFinished ? 0.08 : 0.14)
-            : (isFinished ? 0.025 : 0.05),
+            : (isFinished ? 0.025 : 0.04),
       ),
       baseColor,
     );
 
-    final borderColor = isFocused
-        ? (isFinished
-            ? scheme.onSurface.withValues(alpha: 0.40)
-            : scheme.onPrimary.withValues(alpha: 0.60))
-        : (isLive
-              ? scheme.primary.withValues(alpha: 0.40)
-              : scheme.outlineVariant.withValues(
-                  alpha: isFinished ? 0.18 : 0.32,
-                ));
+    final Color borderColor;
+    if (isFocused) {
+      borderColor = isFinished
+          ? scheme.onSurface.withValues(alpha: 0.40)
+          : scheme.onPrimary.withValues(alpha: 0.60);
+    } else if (isLive) {
+      borderColor = scheme.primary.withValues(alpha: 0.40);
+    } else if (isFinished) {
+      borderColor = scheme.outlineVariant.withValues(alpha: 0.16);
+    } else if (isSoon) {
+      borderColor = scheme.outlineVariant.withValues(alpha: 0.20);
+    } else {
+      borderColor = scheme.outlineVariant.withValues(alpha: 0.14);
+    }
 
     return SizedBox(
       height: height,
-      child: GestureDetector(
+      child: _PressScale(
+        pressed: actionPressed,
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
@@ -1218,7 +1311,7 @@ class _CalendarEventGridCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                      ] else if (isUpcoming) ...[
+                      ] else if (isSoon) ...[
                         const SizedBox(width: 5),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -1338,26 +1431,32 @@ class _CalendarEventDialogContentState
     final event = widget.event;
     final scheme = context.scheme;
     final hasChannels = _matchingChannels.isNotEmpty;
+    final panelBase = scheme.surface.withValues(alpha: 0.8);
+    final panelEnd = Color.alphaBlend(
+      scheme.onSurface.withValues(alpha: 0.05),
+      panelBase,
+    );
+    final panelBorder = scheme.outlineVariant.withValues(alpha: 0.48);
 
     final detailsColumn = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TvInfoTile(
-          icon: MoaiIcons.scheduleOutlined,
+          icon: MoaiIcons.calendarDialogTime,
           label: 'calendar_event_time'.tr(),
           description: '${event.formattedDate} • ${event.formattedTime} hs',
         ),
         const SizedBox(height: 8),
         TvInfoTile(
-          icon: MoaiIcons.sportsOutlined,
+          icon: MoaiIcons.calendarDialogSport,
           label: 'calendar_event_sport'.tr(),
           description: event.sessionType ?? event.competition,
         ),
         if (event.broadcaster != null && event.broadcaster!.isNotEmpty) ...[
           const SizedBox(height: 8),
           TvInfoTile(
-            icon: MoaiIcons.tvOutlined,
+            icon: MoaiIcons.calendarDialogBroadcast,
             label: 'calendar_event_broadcaster'.tr(),
             description: event.broadcaster!,
           ),
@@ -1380,9 +1479,19 @@ class _CalendarEventDialogContentState
                     horizontal: 12,
                     vertical: 8,
                   ),
+                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
-                    color: scheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(18),
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomRight,
+                      end: Alignment.topLeft,
+                      colors: [panelBase, panelBase, panelEnd],
+                      stops: const [0.0, 0.62, 1.0],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: panelBorder,
+                      width: 1.0,
+                    ),
                   ),
                   child: TvWindowedList<Channel>(
                     key: _listKey,
@@ -1426,7 +1535,7 @@ class _CalendarEventDialogContentState
 
     return TvDialog(
       width: hasChannels ? 800 : 480,
-      icon: MoaiIcons.eventNoteOutlined,
+      icon: MoaiIcons.calendarDialogTitle,
       title: event.title,
       subtitle: event.competition,
       trailingHeader: widget.isLive

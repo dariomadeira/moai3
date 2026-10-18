@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
-import 'package:moai3/features/settings/widgets/tv_tile.dart';
+import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/services/arcade_plugin_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';

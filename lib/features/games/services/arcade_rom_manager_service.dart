@@ -187,6 +187,8 @@ class ArcadeRomManagerService extends ChangeNotifier {
 
       final contentLength = response.contentLength;
       int receivedBytes = 0;
+      var lastNotifiedProgress = -1.0;
+      var lastNotifyAt = DateTime.fromMillisecondsSinceEpoch(0);
 
       final sink = tempFile.openWrite();
       await response.forEach((chunk) {
@@ -196,11 +198,23 @@ class ArcadeRomManagerService extends ChangeNotifier {
           final progress = (receivedBytes / contentLength).clamp(0.0, 1.0);
           _downloadProgress[filename] = progress;
           onProgress?.call(progress);
-          notifyListeners();
+          final now = DateTime.now();
+          final jumped = progress - lastNotifiedProgress >= 0.05;
+          final waited =
+              now.difference(lastNotifyAt) >= const Duration(milliseconds: 120);
+          if (progress >= 1.0 || jumped || waited) {
+            lastNotifiedProgress = progress;
+            lastNotifyAt = now;
+            notifyListeners();
+          }
         }
       });
       await sink.flush();
       await sink.close();
+      if (contentLength > 0) {
+        _downloadProgress[filename] = 1.0;
+        notifyListeners();
+      }
 
       if (await targetFile.exists()) {
         await targetFile.delete();
@@ -230,7 +244,10 @@ class ArcadeRomManagerService extends ChangeNotifier {
         debugPrint('[ArcadeRomManagerService] Error descargando $filename: $e');
       }
       _downloadProgress.remove(filename);
-      _errorMessage = 'Error al descargar $filename: $e';
+      _errorMessage = 'arcade_download_error'.tr(namedArgs: {
+        'filename': filename,
+        'error': '$e',
+      });
       notifyListeners();
       return false;
     }

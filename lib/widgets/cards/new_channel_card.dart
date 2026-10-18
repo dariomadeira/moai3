@@ -39,9 +39,15 @@ class NewChannelCard extends StatefulWidget {
 
 class _NewChannelCardState extends State<NewChannelCard> {
   bool _isFocused = false;
+  bool _isPressed = false;
   Timer? _longPressTimer;
   bool _longPressTriggered = false;
   bool _isKeyDown = false;
+
+  void _setPressed(bool pressed) {
+    if (!mounted || _isPressed == pressed) return;
+    setState(() => _isPressed = pressed);
+  }
 
   @override
   void initState() {
@@ -118,6 +124,7 @@ class _NewChannelCardState extends State<NewChannelCard> {
               if (event is KeyDownEvent && !_isKeyDown) {
                 _isKeyDown = true;
                 _longPressTriggered = false;
+                _setPressed(true);
                 _longPressTimer = Timer(const Duration(milliseconds: 800), () {
                   _longPressTriggered = true;
                   widget.onLongPress?.call();
@@ -131,6 +138,7 @@ class _NewChannelCardState extends State<NewChannelCard> {
                 _isKeyDown = false;
                 _longPressTimer?.cancel();
                 _longPressTimer = null;
+                _setPressed(false);
                 if (!_longPressTriggered) {
                   widget.onTap();
                 }
@@ -140,24 +148,32 @@ class _NewChannelCardState extends State<NewChannelCard> {
           }
           return KeyEventResult.ignored;
         },
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () {
-            widget.focusNode?.requestFocus();
-            widget.onTap();
-          },
-          onLongPress: widget.onLongPress,
-          child: SizedBox(
-            width: double.infinity,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 120),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-              decoration: BoxDecoration(
-                color: itemStyle.backgroundColor,
-                borderRadius: BorderRadius.circular(12),
-                border: itemStyle.border,
-              ),
-              child: LayoutBuilder(
+        child: Listener(
+          onPointerDown: (_) => _setPressed(true),
+          onPointerUp: (_) => _setPressed(false),
+          onPointerCancel: (_) => _setPressed(false),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              widget.focusNode?.requestFocus();
+              widget.onTap();
+            },
+            onLongPress: widget.onLongPress,
+            child: AnimatedScale(
+              scale: _isPressed ? 0.96 : 1.0,
+              duration: const Duration(milliseconds: 90),
+              curve: Curves.easeOutCubic,
+              child: SizedBox(
+                width: double.infinity,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 120),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: itemStyle.backgroundColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: itemStyle.border,
+                  ),
+                  child: LayoutBuilder(
                 builder: (context, constraints) {
                   final metrics =
                       TvListCardMetrics.forWidth(constraints.maxWidth);
@@ -228,6 +244,8 @@ class _NewChannelCardState extends State<NewChannelCard> {
               ),
             ),
           ),
+          ),
+        ),
         ),
       ),
     );

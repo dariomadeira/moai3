@@ -7,7 +7,6 @@ import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/theme/moai_icons.dart';
-
 /// Curva sinusoidal para sacudida suave (shake) ante errores de validación de PIN.
 class _PinShakeCurve extends Curve {
   const _PinShakeCurve();
@@ -192,6 +191,7 @@ class _TvPinDialogState extends State<TvPinDialog>
 
   // Matriz de FocusNodes 4 filas x 3 columnas para navegación D-Pad 100% determinística
   late final List<List<FocusNode>> _focusGrid;
+  final FocusNode _cancelBtnFocus = FocusNode(debugLabel: 'pin_dialog_cancel');
 
   @override
   void initState() {
@@ -228,6 +228,7 @@ class _TvPinDialogState extends State<TvPinDialog>
   @override
   void dispose() {
     _shakeController.dispose();
+    _cancelBtnFocus.dispose();
     for (final row in _focusGrid) {
       for (final node in row) {
         node.dispose();
@@ -582,6 +583,16 @@ class _TvPinDialogState extends State<TvPinDialog>
             _buildKeypad(scheme),
           ],
         ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TvDialogButton(
+            focusNode: _cancelBtnFocus,
+            label: 'common_cancel'.tr(),
+            variant: TvDialogButtonVariant.neutral,
+            onKeyUp: () => _focusGrid[3][1].requestFocus(),
+            onPressed: () => Navigator.of(context).pop(null),
+          ),
+        ],
       ),
     );
   }
@@ -688,7 +699,7 @@ class _TvPinDialogState extends State<TvPinDialog>
             _buildKey(
               3,
               0,
-              icon: MoaiIcons.backspaceOutlined,
+              icon: MoaiIcons.pinBackspace,
               isAction: true,
               scheme: scheme,
               onTap: _onBackspace,
@@ -697,7 +708,7 @@ class _TvPinDialogState extends State<TvPinDialog>
             _buildKey(
               3,
               2,
-              icon: MoaiIcons.closeOutlined,
+              icon: MoaiIcons.pinClose,
               isAction: true,
               scheme: scheme,
               onTap: () => Navigator.of(context).pop(null),
@@ -741,7 +752,11 @@ class _TvPinDialogState extends State<TvPinDialog>
             return KeyEventResult.handled;
           }
           if (key == LogicalKeyboardKey.arrowDown) {
-            _moveFocus(r, c, 1, 0);
+            if (r == 3) {
+              _cancelBtnFocus.requestFocus();
+            } else {
+              _moveFocus(r, c, 1, 0);
+            }
             return KeyEventResult.handled;
           }
 

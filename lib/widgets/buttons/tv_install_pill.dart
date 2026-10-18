@@ -1,13 +1,13 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:reicons/reicons.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 
 /// Píldora de estado y acción para instalación de extensiones/plugins.
 ///
 /// Iconografía:
-/// - [ReiconIcons.squareArrowDown] para descarga / instalación pendiente.
-/// - [ReiconIcons.checkCircle] para estado descargado / instalado.
+/// - [MoaiIcons.installPending] para descarga / instalación pendiente.
+/// - [MoaiIcons.checkCircleOutlineRounded] para estado descargado / instalado.
 class TvInstallPill extends StatelessWidget {
   final bool isInstalled;
   final bool isFocused;
@@ -55,8 +55,8 @@ class TvInstallPill extends StatelessWidget {
     final isDownloading = downloadProgress != null;
 
     final iconData = isInstalled
-        ? ReiconIcons.checkCircle
-        : ReiconIcons.squareArrowDown;
+        ? MoaiIcons.checkCircleOutlineRounded
+        : MoaiIcons.installPending;
 
     final label = isInstalled
         ? (installedLabel ?? 'sources_status_installed'.tr())

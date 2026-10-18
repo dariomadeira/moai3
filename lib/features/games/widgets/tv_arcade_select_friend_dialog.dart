@@ -1,6 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:moai3/features/settings/widgets/tv_tile.dart';
+import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/models/friend_info.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';

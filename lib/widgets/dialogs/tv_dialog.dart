@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -100,7 +101,7 @@ class TvDialog extends StatelessWidget {
                   child: Opacity(
                     opacity: 0.18,
                     child: Image.asset(
-                      'assets/images/fondo.png',
+                      'assets/images/dialog.png',
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -363,13 +364,13 @@ Future<T?> showTvGeneralDialog<T>({
   required BuildContext context,
   required Widget Function(BuildContext) builder,
   bool barrierDismissible = true,
-  String barrierLabel = 'Cerrar',
+  String? barrierLabel,
   Color? barrierColor,
 }) {
   return showGeneralDialog<T>(
     context: context,
     barrierDismissible: barrierDismissible,
-    barrierLabel: barrierLabel,
+    barrierLabel: barrierLabel ?? 'common_close'.tr(),
     barrierColor: barrierColor ?? Colors.black.withValues(alpha: 0.7),
     transitionDuration: const Duration(milliseconds: 200),
     pageBuilder: (ctx, anim, secAnim) => builder(ctx),

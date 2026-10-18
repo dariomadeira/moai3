@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:moai3/features/settings/widgets/tv_tile.dart';
+import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/services/weather_service.dart';
 import 'package:moai3/state/weather_provider.dart';
 import 'package:moai3/theme/moai_text.dart';

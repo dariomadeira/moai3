@@ -508,10 +508,10 @@ class CalendarProvider extends ChangeNotifier {
     fixtures.add(CalendarEvent(
       id: 'mock_lpf_mon_${cleanMonday.millisecondsSinceEpoch}',
       subscriptionId: 'lpf_ar',
-      title: 'Estudiantes vs Gimnasia LP',
-      competition: 'Liga Profesional',
+      title: 'calendar_mock_lpf_estudiantes'.tr(),
+      competition: 'calendar_comp_lpf'.tr(),
       startDateTime: kickoff(cleanMonday, 8, 0),
-      sessionType: 'Fecha Regular',
+      sessionType: 'calendar_session_regular'.tr(),
       broadcaster: 'TNT Sports',
     ));
 
@@ -520,19 +520,19 @@ class CalendarProvider extends ChangeNotifier {
     fixtures.add(CalendarEvent(
       id: 'mock_ucl_tue_1_${tue.millisecondsSinceEpoch}',
       subscriptionId: 'champions',
-      title: 'Real Madrid vs Bayern Múnich',
-      competition: 'UEFA Champions League',
+      title: 'calendar_mock_ucl_madrid'.tr(),
+      competition: 'calendar_comp_ucl'.tr(),
       startDateTime: kickoff(tue, 16, 0),
-      sessionType: 'Fase de Grupos',
+      sessionType: 'calendar_session_groups'.tr(),
       broadcaster: 'ESPN / Disney+',
     ));
     fixtures.add(CalendarEvent(
       id: 'mock_ucl_tue_2_${tue.millisecondsSinceEpoch}',
       subscriptionId: 'champions',
-      title: 'PSG vs Juventus',
-      competition: 'UEFA Champions League',
+      title: 'calendar_mock_ucl_psg'.tr(),
+      competition: 'calendar_comp_ucl'.tr(),
       startDateTime: kickoff(tue, 16, 0),
-      sessionType: 'Fase de Grupos',
+      sessionType: 'calendar_session_groups'.tr(),
       broadcaster: 'Fox Sports',
     ));
 
@@ -541,19 +541,19 @@ class CalendarProvider extends ChangeNotifier {
     fixtures.add(CalendarEvent(
       id: 'mock_ucl_wed_1_${wed.millisecondsSinceEpoch}',
       subscriptionId: 'champions',
-      title: 'Barcelona vs Inter de Milán',
-      competition: 'UEFA Champions League',
+      title: 'calendar_mock_ucl_barca'.tr(),
+      competition: 'calendar_comp_ucl'.tr(),
       startDateTime: kickoff(wed, 16, 0),
-      sessionType: 'Fase de Grupos',
+      sessionType: 'calendar_session_groups'.tr(),
       broadcaster: 'ESPN / Disney+',
     ));
     fixtures.add(CalendarEvent(
       id: 'mock_nba_wed_${wed.millisecondsSinceEpoch}',
       subscriptionId: 'nba',
-      title: 'Golden State Warriors vs Miami Heat',
-      competition: 'NBA',
+      title: 'calendar_mock_nba_warriors'.tr(),
+      competition: 'calendar_comp_nba'.tr(),
       startDateTime: kickoff(wed, 21, 30),
-      sessionType: 'Temporada Regular',
+      sessionType: 'calendar_session_regular_season'.tr(),
       broadcaster: 'ESPN 2',
     ));
 
@@ -562,10 +562,10 @@ class CalendarProvider extends ChangeNotifier {
     fixtures.add(CalendarEvent(
       id: 'mock_nfl_thu_${thu.millisecondsSinceEpoch}',
       subscriptionId: 'nfl',
-      title: 'Kansas City Chiefs vs Baltimore Ravens',
-      competition: 'NFL · Thursday Night',
+      title: 'calendar_mock_nfl_chiefs'.tr(),
+      competition: 'calendar_comp_nfl_tnf'.tr(),
       startDateTime: kickoff(thu, 21, 15),
-      sessionType: 'Temporada Regular',
+      sessionType: 'calendar_session_regular_season'.tr(),
       broadcaster: 'ESPN',
     ));
 
@@ -574,19 +574,19 @@ class CalendarProvider extends ChangeNotifier {
     fixtures.add(CalendarEvent(
       id: 'mock_lpf_fri_1_${fri.millisecondsSinceEpoch}',
       subscriptionId: 'lpf_ar',
-      title: 'Racing Club vs Lanús',
-      competition: 'Liga Profesional',
+      title: 'calendar_mock_lpf_racing'.tr(),
+      competition: 'calendar_comp_lpf'.tr(),
       startDateTime: kickoff(fri, 19, 0),
-      sessionType: 'Fecha Regular',
+      sessionType: 'calendar_session_regular'.tr(),
       broadcaster: 'ESPN Premium',
     ));
     fixtures.add(CalendarEvent(
       id: 'mock_lpf_fri_2_${fri.millisecondsSinceEpoch}',
       subscriptionId: 'lpf_ar',
-      title: 'Newell\'s vs Rosario Central',
-      competition: 'Liga Profesional',
+      title: 'calendar_mock_lpf_newells'.tr(),
+      competition: 'calendar_comp_lpf'.tr(),
       startDateTime: kickoff(fri, 21, 15),
-      sessionType: 'Clásico',
+      sessionType: 'calendar_session_clasico'.tr(),
       broadcaster: 'TNT Sports',
     ));
 
@@ -595,37 +595,37 @@ class CalendarProvider extends ChangeNotifier {
     fixtures.add(CalendarEvent(
       id: 'mock_pl_sat_1_${sat.millisecondsSinceEpoch}',
       subscriptionId: 'premier',
-      title: 'Liverpool vs Chelsea',
-      competition: 'Premier League',
+      title: 'calendar_mock_pl_liverpool'.tr(),
+      competition: 'calendar_comp_premier'.tr(),
       startDateTime: kickoff(sat, 8, 30),
-      sessionType: 'Matchday',
+      sessionType: 'calendar_session_matchday'.tr(),
       broadcaster: 'ESPN',
     ));
     fixtures.add(CalendarEvent(
       id: 'mock_pl_sat_2_${sat.millisecondsSinceEpoch}',
       subscriptionId: 'premier',
-      title: 'Manchester City vs Arsenal',
-      competition: 'Premier League',
+      title: 'calendar_mock_pl_city'.tr(),
+      competition: 'calendar_comp_premier'.tr(),
       startDateTime: kickoff(sat, 13, 30),
-      sessionType: 'Matchday',
+      sessionType: 'calendar_session_matchday'.tr(),
       broadcaster: 'ESPN / Disney+',
     ));
     fixtures.add(CalendarEvent(
       id: 'mock_lpf_sat_1_${sat.millisecondsSinceEpoch}',
       subscriptionId: 'lpf_ar',
-      title: 'San Lorenzo vs Huracán',
-      competition: 'Liga Profesional',
+      title: 'calendar_mock_lpf_sanlorenzo'.tr(),
+      competition: 'calendar_comp_lpf'.tr(),
       startDateTime: kickoff(sat, 17, 0),
-      sessionType: 'Clásico',
+      sessionType: 'calendar_session_clasico'.tr(),
       broadcaster: 'TNT Sports',
     ));
     fixtures.add(CalendarEvent(
       id: 'mock_lpf_sat_2_${sat.millisecondsSinceEpoch}',
       subscriptionId: 'lpf_ar',
-      title: 'Boca Juniors vs Vélez Sarsfield',
-      competition: 'Liga Profesional',
+      title: 'calendar_mock_lpf_boca'.tr(),
+      competition: 'calendar_comp_lpf'.tr(),
       startDateTime: kickoff(sat, 19, 30),
-      sessionType: 'Fecha Regular',
+      sessionType: 'calendar_session_regular'.tr(),
       broadcaster: 'ESPN Premium',
     ));
 
@@ -634,46 +634,46 @@ class CalendarProvider extends ChangeNotifier {
     fixtures.add(CalendarEvent(
       id: 'mock_pl_sun_1_${sun.millisecondsSinceEpoch}',
       subscriptionId: 'premier',
-      title: 'Tottenham vs Manchester United',
-      competition: 'Premier League',
+      title: 'calendar_mock_pl_tottenham'.tr(),
+      competition: 'calendar_comp_premier'.tr(),
       startDateTime: kickoff(sun, 11, 30),
-      sessionType: 'Super Sunday',
+      sessionType: 'calendar_session_super_sunday'.tr(),
       broadcaster: 'ESPN',
     ));
     fixtures.add(CalendarEvent(
       id: 'mock_lpf_sun_super_${sun.millisecondsSinceEpoch}',
       subscriptionId: 'lpf_ar',
-      title: 'River Plate vs Independiente',
-      competition: 'Liga Profesional',
+      title: 'calendar_mock_lpf_river'.tr(),
+      competition: 'calendar_comp_lpf'.tr(),
       startDateTime: kickoff(sun, 17, 30),
-      sessionType: 'Clásico',
+      sessionType: 'calendar_session_clasico'.tr(),
       broadcaster: 'ESPN Premium / TNT Sports',
     ));
     fixtures.add(CalendarEvent(
       id: 'mock_nba_sun_${sun.millisecondsSinceEpoch}',
       subscriptionId: 'nba',
-      title: 'Los Angeles Lakers vs Boston Celtics',
-      competition: 'NBA · Sunday Game',
+      title: 'calendar_mock_nba_lakers'.tr(),
+      competition: 'calendar_comp_nba_sunday'.tr(),
       startDateTime: kickoff(sun, 20, 0),
-      sessionType: 'Temporada Regular',
+      sessionType: 'calendar_session_regular_season'.tr(),
       broadcaster: 'ESPN',
     ));
     fixtures.add(CalendarEvent(
       id: 'mock_nfl_sun_snf_${sun.millisecondsSinceEpoch}',
       subscriptionId: 'nfl',
-      title: 'San Francisco 49ers vs Dallas Cowboys',
-      competition: 'NFL · Sunday Night Football',
+      title: 'calendar_mock_nfl_49ers'.tr(),
+      competition: 'calendar_comp_nfl_snf'.tr(),
       startDateTime: kickoff(sun, 21, 20),
-      sessionType: 'SNF',
+      sessionType: 'calendar_session_snf'.tr(),
       broadcaster: 'ESPN / Disney+',
     ));
     fixtures.add(CalendarEvent(
       id: 'mock_nfl_sun_afternoon_${sun.millisecondsSinceEpoch}',
       subscriptionId: 'nfl',
-      title: 'Green Bay Packers vs Chicago Bears',
-      competition: 'NFL · Sunday Afternoon',
+      title: 'calendar_mock_nfl_packers'.tr(),
+      competition: 'calendar_comp_nfl_afternoon'.tr(),
       startDateTime: kickoff(sun, 14, 0),
-      sessionType: 'Fecha Regular',
+      sessionType: 'calendar_session_regular'.tr(),
       broadcaster: 'Fox Sports',
     ));
 

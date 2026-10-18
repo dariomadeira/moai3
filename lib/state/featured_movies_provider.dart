@@ -7,11 +7,13 @@ class FeaturedMoviesProvider extends ChangeNotifier {
   List<MovieItem> _items = [];
   bool _isLoading = false;
   String? _errorMessage;
+  String? _errorDetail;
   bool _loadedOnce = false;
 
   List<MovieItem> get items => _items;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  String? get errorDetail => _errorDetail;
   bool get loadedOnce => _loadedOnce;
 
   /// Carga `masnew_featured` desde persistido/bundled (sin asumir [cachedCatalog]).
@@ -21,6 +23,7 @@ class FeaturedMoviesProvider extends ChangeNotifier {
 
     _isLoading = true;
     _errorMessage = null;
+    _errorDetail = null;
     notifyListeners();
 
     try {
@@ -42,7 +45,8 @@ class FeaturedMoviesProvider extends ChangeNotifier {
       _items = flat;
       _loadedOnce = true;
     } catch (e) {
-      _errorMessage = 'Error al cargar destacados: $e';
+      _errorMessage = 'movies_load_error';
+      _errorDetail = '$e';
       _items = [];
       _loadedOnce = true;
     } finally {

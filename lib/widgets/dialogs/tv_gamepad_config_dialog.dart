@@ -179,8 +179,29 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
           final isConnected = _gamepadService.hasGamepadConnected;
           final connectedList = _gamepadService.connectedGamepads;
 
+          final baseColor = scheme.surface.withValues(alpha: 0.8);
+          final endColor = Color.alphaBlend(
+            scheme.onSurface.withValues(alpha: 0.05),
+            baseColor,
+          );
+          final borderColor = scheme.outlineVariant.withValues(alpha: 0.2);
+
+          final panelDecoration = BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.bottomRight,
+              end: Alignment.topLeft,
+              colors: [baseColor, baseColor, endColor],
+              stops: const [0.0, 0.62, 1.0],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: borderColor,
+              width: 1.0,
+            ),
+          );
+
           return TvDialog(
-            width: 820,
+            width: 860,
             icon: MoaiIcons.symbolSportsEsports,
             title: 'gamepad_dialog_title'.tr(),
             subtitle: 'gamepad_dialog_subtitle'.tr(),
@@ -257,21 +278,15 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                       ),
                       if (!isConnected)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-                          decoration: BoxDecoration(
-                            color: scheme.surfaceContainerLow,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: scheme.outlineVariant.withValues(alpha: 0.25),
-                            ),
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 20),
+                          decoration: panelDecoration,
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: scheme.surfaceContainerHighest,
+                                  color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Icon(
@@ -312,6 +327,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                               _GamepadDeviceCard(
                                 index: i + 1,
                                 device: connectedList[i],
+                                decoration: panelDecoration,
                               ),
                           ],
                         ),
@@ -320,8 +336,11 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                          color: scheme.surfaceContainerHighest.withValues(alpha: 0.35),
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: borderColor.withValues(alpha: 0.15),
+                          ),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -347,7 +366,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                 const SizedBox(width: 20),
                 // Columna 2: Tablero visual de botones en tiempo real (Squircles M3)
                 Expanded(
-                  flex: 12,
+                  flex: 13,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -362,7 +381,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                                 Icon(MoaiIcons.joystick, size: 14, color: scheme.primary),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'PRUEBA DE BOTONES',
+                                  'gamepad_test_section'.tr().toUpperCase(),
                                   style: MoaiText.body(
                                     context,
                                     color: scheme.onSurfaceVariant,
@@ -373,13 +392,16 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                               ],
                             ),
                             if (_lastPressedLabel != null)
-                              Text(
-                                _lastPressedLabel!,
-                                style: MoaiText.body(
-                                  context,
-                                  color: scheme.primary,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
+                              Flexible(
+                                child: Text(
+                                  _lastPressedLabel!,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: MoaiText.body(
+                                    context,
+                                    color: scheme.primary,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                           ],
@@ -387,13 +409,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: scheme.surfaceContainerLow,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: scheme.outlineVariant.withValues(alpha: 0.25),
-                          ),
-                        ),
+                        decoration: panelDecoration,
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -404,8 +420,8 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                               children: [
                                 // D-Pad en cruz compacto con squircles
                                 SizedBox(
-                                  width: 106,
-                                  height: 106,
+                                  width: 108,
+                                  height: 108,
                                   child: Stack(
                                     alignment: Alignment.center,
                                     children: [
@@ -462,19 +478,20 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         _SquircleButton(
-                                          label: 'gamepad_btn_coin'.tr(),
+                                          label: 'COIN',
+                                          subtitle: '5/9',
                                           isPressed: (_activeTestMask & ArcadeButtons.coin) != 0,
-                                          width: 58,
                                           height: 34,
                                           activeColor: const Color(0xFFFFB300),
                                         ),
                                         const SizedBox(width: 8),
                                         _SquircleButton(
-                                          label: 'gamepad_btn_start'.tr(),
+                                          label: 'START',
+                                          subtitle: '1',
                                           isPressed: (_activeTestMask & ArcadeButtons.start) != 0,
-                                          width: 58,
                                           height: 34,
                                           activeColor: const Color(0xFF43A047),
                                         ),
@@ -499,7 +516,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                               child: Divider(
                                 height: 1,
                                 thickness: 1,
-                                color: scheme.outlineVariant.withValues(alpha: 0.15),
+                                color: borderColor.withValues(alpha: 0.4),
                               ),
                             ),
                             // Botonera de Acción Arcade (CPS / Lucha: 6 botones)
@@ -528,62 +545,70 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                             const SizedBox(height: 6),
                             // Fila 1: Golpes (LP, MP, HP)
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
-                                _SquircleButton(
-                                  label: 'gamepad_btn_lp'.tr(),
-                                  subtitle: 'X',
-                                  isPressed: (_activeTestMask & ArcadeButtons.punchLight) != 0,
-                                  width: 64,
-                                  height: 38,
-                                  activeColor: const Color(0xFFE53935),
+                                Expanded(
+                                  child: _SquircleButton(
+                                    label: 'LP',
+                                    subtitle: 'X',
+                                    isPressed: (_activeTestMask & ArcadeButtons.punchLight) != 0,
+                                    height: 38,
+                                    activeColor: const Color(0xFFE53935),
+                                  ),
                                 ),
-                                _SquircleButton(
-                                  label: 'gamepad_btn_mp'.tr(),
-                                  subtitle: 'Y',
-                                  isPressed: (_activeTestMask & ArcadeButtons.punchMedium) != 0,
-                                  width: 64,
-                                  height: 38,
-                                  activeColor: const Color(0xFFFB8C00),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: _SquircleButton(
+                                    label: 'MP',
+                                    subtitle: 'Y',
+                                    isPressed: (_activeTestMask & ArcadeButtons.punchMedium) != 0,
+                                    height: 38,
+                                    activeColor: const Color(0xFFFB8C00),
+                                  ),
                                 ),
-                                _SquircleButton(
-                                  label: 'gamepad_btn_hp'.tr(),
-                                  subtitle: 'R1',
-                                  isPressed: (_activeTestMask & ArcadeButtons.punchHeavy) != 0,
-                                  width: 64,
-                                  height: 38,
-                                  activeColor: const Color(0xFF1E88E5),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: _SquircleButton(
+                                    label: 'HP',
+                                    subtitle: 'R1',
+                                    isPressed: (_activeTestMask & ArcadeButtons.punchHeavy) != 0,
+                                    height: 38,
+                                    activeColor: const Color(0xFF1E88E5),
+                                  ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 6),
                             // Fila 2: Patadas (LK, MK, HK)
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
-                                _SquircleButton(
-                                  label: 'gamepad_btn_lk'.tr(),
-                                  subtitle: 'A',
-                                  isPressed: (_activeTestMask & ArcadeButtons.kickLight) != 0,
-                                  width: 64,
-                                  height: 38,
-                                  activeColor: const Color(0xFFD81B60),
+                                Expanded(
+                                  child: _SquircleButton(
+                                    label: 'LK',
+                                    subtitle: 'A',
+                                    isPressed: (_activeTestMask & ArcadeButtons.kickLight) != 0,
+                                    height: 38,
+                                    activeColor: const Color(0xFFD81B60),
+                                  ),
                                 ),
-                                _SquircleButton(
-                                  label: 'gamepad_btn_mk'.tr(),
-                                  subtitle: 'B',
-                                  isPressed: (_activeTestMask & ArcadeButtons.kickMedium) != 0,
-                                  width: 64,
-                                  height: 38,
-                                  activeColor: const Color(0xFF8E24AA),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: _SquircleButton(
+                                    label: 'MK',
+                                    subtitle: 'B',
+                                    isPressed: (_activeTestMask & ArcadeButtons.kickMedium) != 0,
+                                    height: 38,
+                                    activeColor: const Color(0xFF8E24AA),
+                                  ),
                                 ),
-                                _SquircleButton(
-                                  label: 'gamepad_btn_hk'.tr(),
-                                  subtitle: 'R2',
-                                  isPressed: (_activeTestMask & ArcadeButtons.kickHeavy) != 0,
-                                  width: 64,
-                                  height: 38,
-                                  activeColor: const Color(0xFF3949AB),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: _SquircleButton(
+                                    label: 'HK',
+                                    subtitle: 'R2',
+                                    isPressed: (_activeTestMask & ArcadeButtons.kickHeavy) != 0,
+                                    height: 38,
+                                    activeColor: const Color(0xFF3949AB),
+                                  ),
                                 ),
                               ],
                             ),
@@ -624,7 +649,6 @@ class _SquircleButton extends StatelessWidget {
   final String? subtitle;
   final IconData? icon;
   final bool isPressed;
-  final double? width;
   final double? height;
   final double? size;
   final Color? activeColor;
@@ -634,7 +658,6 @@ class _SquircleButton extends StatelessWidget {
     this.subtitle,
     this.icon,
     required this.isPressed,
-    this.width,
     this.height,
     this.size,
     this.activeColor,
@@ -643,7 +666,6 @@ class _SquircleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final w = size ?? width ?? 40.0;
     final h = size ?? height ?? 40.0;
 
     final effectiveActiveColor = activeColor ?? scheme.primary;
@@ -662,8 +684,9 @@ class _SquircleButton extends StatelessWidget {
       curve: Curves.easeOutQuad,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 90),
-        width: w,
+        width: size,
         height: h,
+        padding: size != null ? null : const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(10),
@@ -728,26 +751,44 @@ class _SquircleButton extends StatelessWidget {
 class _GamepadDeviceCard extends StatelessWidget {
   final int index;
   final GamepadDeviceInfo device;
+  final Decoration? decoration;
 
   const _GamepadDeviceCard({
     required this.index,
     required this.device,
+    this.decoration,
   });
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
 
+    final baseColor = scheme.surface.withValues(alpha: 0.8);
+    final endColor = Color.alphaBlend(
+      scheme.onSurface.withValues(alpha: 0.05),
+      baseColor,
+    );
+    final borderColor = scheme.outlineVariant.withValues(alpha: 0.2);
+
+    final effectiveDecoration = decoration ??
+        BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.bottomRight,
+            end: Alignment.topLeft,
+            colors: [baseColor, baseColor, endColor],
+            stops: const [0.0, 0.62, 1.0],
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: borderColor,
+            width: 1.0,
+          ),
+        );
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.3),
-        ),
-      ),
+      decoration: effectiveDecoration,
       child: Row(
         children: [
           Container(

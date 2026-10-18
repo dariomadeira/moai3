@@ -30,7 +30,14 @@ class ViewerFavoriteTile extends StatefulWidget {
 
 class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
   bool _isFocused = false;
+  bool _isPressed = false;
+  bool _isKeyDown = false;
   late bool _logoOk;
+
+  void _setPressed(bool pressed) {
+    if (!mounted || _isPressed == pressed) return;
+    setState(() => _isPressed = pressed);
+  }
 
   @override
   void initState() {
@@ -90,19 +97,41 @@ class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
         focusNode: widget.focusNode,
         onFocusChange: (focus) => setState(() => _isFocused = focus),
         onKeyEvent: (node, event) {
-          if (event is! KeyDownEvent) return KeyEventResult.ignored;
           final key = event.logicalKey;
-          if (key == LogicalKeyboardKey.enter ||
+          final isActionButton = key == LogicalKeyboardKey.enter ||
+              key == LogicalKeyboardKey.numpadEnter ||
               key == LogicalKeyboardKey.select ||
-              key == LogicalKeyboardKey.space) {
+              key == LogicalKeyboardKey.gameButtonA ||
+              key == LogicalKeyboardKey.space;
+
+          if (!isActionButton) return KeyEventResult.ignored;
+          if (event is KeyDownEvent) {
+            if (!_isKeyDown) {
+              _isKeyDown = true;
+              _setPressed(true);
+            }
+            return KeyEventResult.handled;
+          }
+          if (event is KeyRepeatEvent) return KeyEventResult.handled;
+          if (event is KeyUpEvent && _isKeyDown) {
+            _isKeyDown = false;
+            _setPressed(false);
             widget.onTap();
             return KeyEventResult.handled;
           }
           return KeyEventResult.ignored;
         },
-        child: GestureDetector(
+        child: Listener(
+          onPointerDown: (_) => _setPressed(true),
+          onPointerUp: (_) => _setPressed(false),
+          onPointerCancel: (_) => _setPressed(false),
+          child: GestureDetector(
           onTap: widget.onTap,
-          child: AnimatedContainer(
+          child: AnimatedScale(
+            scale: _isPressed ? 0.96 : 1.0,
+            duration: const Duration(milliseconds: 90),
+            curve: Curves.easeOutCubic,
+            child: AnimatedContainer(
             duration: const Duration(milliseconds: 120),
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             decoration: BoxDecoration(
@@ -138,7 +167,7 @@ class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
                   ),
                 ),
                 if (showLabel) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Text(
                     widget.channel.name,
                     maxLines: 1,
@@ -147,7 +176,7 @@ class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
                     style: MoaiText.body(
                       context,
                       color: itemStyle.foregroundColor,
-                      fontSize: 9.5,
+                      fontSize: 10.5,
                       fontWeight: itemStyle.fontWeight,
                     ),
                   ),
@@ -186,6 +215,8 @@ class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
               ],
             ),
           ),
+        ),
+        ),
         ),
       ),
     );

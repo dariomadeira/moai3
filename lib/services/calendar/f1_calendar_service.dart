@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/services/calendar/argentina_time.dart';
@@ -49,10 +50,12 @@ class F1CalendarService {
 
     for (final r in races) {
       if (r is! Map<String, dynamic>) continue;
-      final raceName = r['raceName'] as String? ?? 'Gran Premio';
+      final raceName = r['raceName'] as String? ?? 'f1_session_gp'.tr();
       final circuit = (r['Circuit'] as Map<String, dynamic>?)?['circuitName'] as String? ?? '';
       final round = r['round'] as String? ?? '';
-      final compName = circuit.isNotEmpty ? 'F1 · $circuit' : 'Fórmula 1';
+      final compName = circuit.isNotEmpty
+          ? 'f1_comp_circuit'.tr(namedArgs: {'circuit': circuit})
+          : 'f1_comp_formula'.tr();
 
       // Corrección de desfase de 1 día: En el borrador de la API Jolpica/Ergast,
       // las fechas de Azerbaiyán (round 15) vienen cargadas un día antes (Jue-Sáb en vez de Vie-Dom).
@@ -66,9 +69,9 @@ class F1CalendarService {
         events: events,
         sessionMap: r['FirstPractice'] as Map<String, dynamic>?,
         id: 'f1_r_${round}_fp1',
-        title: '$raceName — Práctica Libre 1',
+        title: '$raceName — ${'f1_session_fp1'.tr()}',
         competition: compName,
-        sessionType: 'Práctica 1',
+        sessionType: 'f1_type_p1'.tr(),
         duration: const Duration(hours: 1),
         offset: sessionOffset,
       );
@@ -79,10 +82,12 @@ class F1CalendarService {
         sessionMap: (r['SprintQualifying'] ?? r['SecondPractice']) as Map<String, dynamic>?,
         id: 'f1_r_${round}_fp2',
         title: r['SprintQualifying'] != null
-            ? '$raceName — Clasificación Sprint'
-            : '$raceName — Práctica Libre 2',
+            ? '$raceName — ${'f1_session_sprint_qualy'.tr()}'
+            : '$raceName — ${'f1_session_fp2'.tr()}',
         competition: compName,
-        sessionType: r['SprintQualifying'] != null ? 'Sprint Shootout' : 'Práctica 2',
+        sessionType: r['SprintQualifying'] != null
+            ? 'f1_type_sprint_shootout'.tr()
+            : 'f1_type_p2'.tr(),
         duration: const Duration(minutes: 45),
         offset: sessionOffset,
       );
@@ -92,9 +97,9 @@ class F1CalendarService {
         events: events,
         sessionMap: r['ThirdPractice'] as Map<String, dynamic>?,
         id: 'f1_r_${round}_fp3',
-        title: '$raceName — Práctica Libre 3',
+        title: '$raceName — ${'f1_session_fp3'.tr()}',
         competition: compName,
-        sessionType: 'Práctica 3',
+        sessionType: 'f1_type_p3'.tr(),
         duration: const Duration(hours: 1),
         offset: sessionOffset,
       );
@@ -104,9 +109,9 @@ class F1CalendarService {
         events: events,
         sessionMap: r['Sprint'] as Map<String, dynamic>?,
         id: 'f1_r_${round}_sprint',
-        title: '$raceName — Carrera Sprint',
+        title: '$raceName — ${'f1_session_sprint'.tr()}',
         competition: compName,
-        sessionType: 'Sprint',
+        sessionType: 'f1_type_sprint'.tr(),
         duration: const Duration(minutes: 45),
         offset: sessionOffset,
       );
@@ -116,9 +121,9 @@ class F1CalendarService {
         events: events,
         sessionMap: r['Qualifying'] as Map<String, dynamic>?,
         id: 'f1_r_${round}_qualy',
-        title: '$raceName — Clasificación',
+        title: '$raceName — ${'f1_session_qualy'.tr()}',
         competition: compName,
-        sessionType: 'Qualy',
+        sessionType: 'f1_type_qualy'.tr(),
         duration: const Duration(hours: 1),
         offset: sessionOffset,
       );
@@ -135,10 +140,10 @@ class F1CalendarService {
           events.add(CalendarEvent(
             id: 'f1_r_${round}_race',
             subscriptionId: 'f1',
-            title: '$raceName — Gran Premio',
+            title: '$raceName — ${'f1_session_gp'.tr()}',
             competition: compName,
             startDateTime: dt,
-            sessionType: 'Carrera',
+            sessionType: 'f1_type_race'.tr(),
             broadcaster: 'Fox Sports / Disney+',
             status: _calculateStatus(dt, const Duration(hours: 2)),
           ));
@@ -226,30 +231,30 @@ class F1CalendarService {
       events.add(CalendarEvent(
         id: 'f1_r_${round}_fp1',
         subscriptionId: 'f1',
-        title: '$raceName — Prácticas Libres',
-        competition: 'F1 · $circuit',
+        title: '$raceName — ${'f1_session_practices'.tr()}',
+        competition: 'f1_comp_circuit'.tr(namedArgs: {'circuit': circuit}),
         startDateTime: fpDate,
-        sessionType: 'Prácticas',
+        sessionType: 'f1_type_practices'.tr(),
         broadcaster: 'Fox Sports / Disney+',
         status: _calculateStatus(fpDate, const Duration(hours: 2)),
       ));
       events.add(CalendarEvent(
         id: 'f1_r_${round}_qualy',
         subscriptionId: 'f1',
-        title: '$raceName — Clasificación',
-        competition: 'F1 · $circuit',
+        title: '$raceName — ${'f1_session_qualy'.tr()}',
+        competition: 'f1_comp_circuit'.tr(namedArgs: {'circuit': circuit}),
         startDateTime: qualyDate,
-        sessionType: 'Qualy',
+        sessionType: 'f1_type_qualy'.tr(),
         broadcaster: 'Fox Sports / Disney+',
         status: _calculateStatus(qualyDate, const Duration(hours: 1)),
       ));
       events.add(CalendarEvent(
         id: 'f1_r_${round}_race',
         subscriptionId: 'f1',
-        title: '$raceName — Gran Premio',
-        competition: 'F1 · $circuit',
+        title: '$raceName — ${'f1_session_gp'.tr()}',
+        competition: 'f1_comp_circuit'.tr(namedArgs: {'circuit': circuit}),
         startDateTime: raceDate,
-        sessionType: 'Carrera',
+        sessionType: 'f1_type_race'.tr(),
         broadcaster: 'Fox Sports / Disney+',
         status: _calculateStatus(raceDate, const Duration(hours: 2)),
       ));
