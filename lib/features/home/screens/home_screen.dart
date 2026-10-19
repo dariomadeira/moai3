@@ -549,12 +549,9 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Positioned.fill(
                   child: IgnorePointer(
-                    child: Opacity(
-                      opacity: 0.3,
-                      child: Image.asset(
-                        'assets/images/fondo.png',
-                        fit: BoxFit.cover,
-                      ),
+                    child: Image.asset(
+                      'assets/images/fondo.png',
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
