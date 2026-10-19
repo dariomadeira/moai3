@@ -172,11 +172,16 @@ class PluginHostService {
 
   Future<PluginResolveResult> resolve(
     String pluginId,
-    String channelId,
-  ) async {
+    String channelId, {
+    int fallbackIndex = 0,
+  }) async {
     final map = await _channel.invokeMapMethod<dynamic, dynamic>(
       'resolve',
-      {'pluginId': pluginId, 'channelId': channelId},
+      {
+        'pluginId': pluginId,
+        'channelId': channelId,
+        'fallbackIndex': fallbackIndex,
+      },
     );
     if (map == null) {
       throw PlatformException(

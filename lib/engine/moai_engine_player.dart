@@ -241,18 +241,27 @@ class MoaiEngineController extends ChangeNotifier {
     await _control.invokeMethod<void>('setVolume', {'handle': _handle, 'volume': volume});
   }
 
-  @override
-  void dispose() {
+  /// Libera el reproductor esperando que el canal nativo cierre ExoPlayer y libere sockets/texturas.
+  Future<void> releaseAsync() async {
     _stopWatchdog();
     final handle = _handle;
     _handle = null;
     _textureId = null;
-    debugPrint('[MoaiEngine] dispose handle=$handle');
-    unawaited(_eventsSub?.cancel());
+    debugPrint('[MoaiEngine] releaseAsync handle=$handle');
+    await _eventsSub?.cancel();
     _eventsSub = null;
     if (handle != null) {
-      unawaited(_control.invokeMethod<void>('dispose', {'handle': handle}));
+      try {
+        await _control.invokeMethod<void>('dispose', {'handle': handle});
+      } catch (e) {
+        debugPrint('[MoaiEngine] error en dispose nativo: $e');
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    unawaited(releaseAsync());
     super.dispose();
   }
 }

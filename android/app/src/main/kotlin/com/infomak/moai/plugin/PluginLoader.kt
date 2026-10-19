@@ -111,6 +111,7 @@ class PluginLoader(private val context: Context) {
             "resolve" -> {
                 val pluginId = call.argument<String>("pluginId")
                 val channelId = call.argument<String>("channelId")
+                val fallbackIndex = (call.argument<Number>("fallbackIndex"))?.toInt() ?: 0
                 if (pluginId == null || channelId == null) {
                     result.error(
                         "plugin_error",
@@ -121,7 +122,7 @@ class PluginLoader(private val context: Context) {
                 }
                 resolveExecutor.execute {
                     try {
-                        val res = resolveMap(resolve(pluginId, channelId))
+                        val res = resolveMap(resolve(pluginId, channelId, fallbackIndex))
                         mainHandler.post { result.success(res) }
                     } catch (e: Exception) {
                         mainHandler.post { result.error("plugin_error", e.message ?: e.toString(), null) }
@@ -335,14 +336,14 @@ class PluginLoader(private val context: Context) {
 
     // -------------------------------------------------------------- ejecución
 
-    fun resolve(pluginId: String, channelId: String): ResolveResult {
+    fun resolve(pluginId: String, channelId: String, fallbackIndex: Int = 0): ResolveResult {
         val plugin = installed[pluginId]
             ?: throw IllegalArgumentException("Plugin no instalado: $pluginId")
         val instance = loadPlugin(plugin)
 
         val future: Future<ResolveResult> = resolveExecutor.submit(
             Callable {
-                instance.resolve(ResolveRequest(channelId = channelId))
+                instance.resolve(ResolveRequest(channelId = channelId, fallbackIndex = fallbackIndex))
             }
         )
         return try {

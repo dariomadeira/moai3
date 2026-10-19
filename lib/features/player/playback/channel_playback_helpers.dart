@@ -128,6 +128,7 @@ class ChannelPlaybackHelpers {
       final resolved = await service.resolve(
         pluginId,
         pluginChannelId,
+        fallbackIndex: fallbackIndex,
       );
       if (resolved.url.isEmpty) {
         throw Exception('plugins_resolve_empty');

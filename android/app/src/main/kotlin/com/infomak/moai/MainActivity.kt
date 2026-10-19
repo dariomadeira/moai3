@@ -566,8 +566,9 @@ class PlayerEntry(
     }
 
     fun buildAndPlay(args: Map<*, *>) {
-        // Stop, clear surface and release previous player properly
+        // Stop, clear surface, media items and release previous player properly
         try {
+            player?.clearMediaItems()
             player?.stop()
             player?.clearVideoSurface()
             player?.release()
@@ -771,6 +772,7 @@ class PlayerEntry(
     fun dispose() {
         setKeepScreenOn(false)
         try {
+            player?.clearMediaItems()
             player?.stop()
             player?.clearVideoSurface()
             player?.release()

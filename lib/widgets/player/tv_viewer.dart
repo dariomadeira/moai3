@@ -255,6 +255,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
     _engine = null;
     if (engine != null) {
       engine.removeListener(_onEngineEvent);
+      await engine.releaseAsync();
       engine.dispose();
     }
   }
