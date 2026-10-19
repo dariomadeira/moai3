@@ -153,6 +153,7 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
           cacheManager: MoaiImageCacheManager.instance,
           fit: BoxFit.contain,
           alignment: Alignment.center,
+          memCacheWidth: 120,
           memCacheHeight: 120,
           fadeInDuration: const Duration(milliseconds: 220),
           fadeOutDuration: const Duration(milliseconds: 180),

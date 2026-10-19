@@ -135,6 +135,7 @@ class _TvVerticalClockPillState extends State<TvVerticalClockPill> {
                     child: Lottie.network(
                       lottieUrl,
                       fit: BoxFit.contain,
+                      frameRate: const FrameRate(30),
                       errorBuilder: (context, error, stackTrace) => Icon(
                         MoaiIcons.wbSunnyOutlined,
                         size: 20,

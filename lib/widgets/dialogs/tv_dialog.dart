@@ -78,9 +78,9 @@ class TvDialog extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.45),
-                blurRadius: 36,
-                offset: const Offset(0, 10),
+                color: Colors.black.withValues(alpha: 0.5),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
