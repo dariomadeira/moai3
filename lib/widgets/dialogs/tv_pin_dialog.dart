@@ -598,63 +598,83 @@ class _TvPinDialogState extends State<TvPinDialog>
   }
 
   Widget _buildPinBoxes(ColorScheme scheme) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(4, (index) {
-        final isFilled = index < _digits.length;
-        final isCurrent = index == _digits.length;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.25),
+          width: 1.0,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(4, (index) {
+          final isFilled = index < _digits.length;
+          final isCurrent = index == _digits.length;
 
-        final Color bg;
-        if (isFilled) {
-          bg = scheme.primaryContainer;
-        } else if (isCurrent) {
-          bg = scheme.surfaceContainerHighest;
-        } else {
-          bg = scheme.surfaceContainerHigh;
-        }
+          final Color boxBg;
+          if (isFilled) {
+            boxBg = scheme.primaryContainer;
+          } else if (isCurrent) {
+            boxBg = scheme.surface;
+          } else {
+            boxBg = scheme.surface.withValues(alpha: 0.5);
+          }
 
-        return Container(
-          width: 46,
-          height: 50,
-          margin: const EdgeInsets.symmetric(horizontal: 5),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          alignment: Alignment.center,
-          child: AnimatedScale(
-            scale: isFilled ? 1.0 : (isCurrent ? 1.0 : 0.6),
-            duration: const Duration(milliseconds: 150),
-            curve: Curves.easeOutBack,
-            child: isFilled
-                ? Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: scheme.primary,
-                      shape: BoxShape.circle,
-                    ),
-                  )
-                : (isCurrent
-                    ? Container(
-                        width: 3.5,
-                        height: 18,
-                        decoration: BoxDecoration(
-                          color: scheme.primary,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      )
-                    : Container(
-                        width: 5,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: scheme.outlineVariant,
-                          shape: BoxShape.circle,
-                        ),
-                      )),
-          ),
-        );
-      }),
+          final boxBorderColor = isCurrent
+              ? scheme.primary.withValues(alpha: 0.7)
+              : scheme.outlineVariant.withValues(alpha: isFilled ? 0.45 : 0.25);
+
+          return Container(
+            width: 44,
+            height: 48,
+            margin: const EdgeInsets.symmetric(horizontal: 5),
+            decoration: BoxDecoration(
+              color: boxBg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: boxBorderColor,
+                width: 1.0,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: AnimatedScale(
+              scale: isFilled ? 1.0 : (isCurrent ? 1.0 : 0.7),
+              duration: const Duration(milliseconds: 150),
+              curve: Curves.easeOutBack,
+              child: isFilled
+                  ? Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: scheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    )
+                  : (isCurrent
+                      ? Container(
+                          width: 3.0,
+                          height: 18,
+                          decoration: BoxDecoration(
+                            color: scheme.primary,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        )
+                      : Container(
+                          width: 5,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: scheme.outlineVariant.withValues(alpha: 0.6),
+                            shape: BoxShape.circle,
+                          ),
+                        )),
+            ),
+          );
+        }),
+      ),
     );
   }
 
@@ -781,12 +801,16 @@ class _TvPinDialogState extends State<TvPinDialog>
               bg = scheme.primary;
               fg = scheme.onPrimary;
             } else if (isAction) {
-              bg = scheme.surfaceContainerHigh;
-              fg = scheme.onSurfaceVariant;
+              bg = scheme.primaryContainer;
+              fg = scheme.onPrimaryContainer;
             } else {
-              bg = scheme.surfaceContainerHighest;
+              bg = scheme.surface;
               fg = scheme.onSurface;
             }
+
+            final borderColor = isFocused
+                ? scheme.onPrimary.withValues(alpha: 0.6)
+                : scheme.outlineVariant.withValues(alpha: 0.35);
 
             return Material(
               color: Colors.transparent,
@@ -800,22 +824,26 @@ class _TvPinDialogState extends State<TvPinDialog>
                   decoration: BoxDecoration(
                     color: bg,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: borderColor,
+                      width: 1.0,
+                    ),
                   ),
                   alignment: Alignment.center,
                   child: label != null
                       ? Text(
                           label,
-                          style: MoaiText.display(
+                          style: MoaiText.body(
                             context,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
                             color: fg,
                           ),
                         )
                       : Icon(
                           icon,
                           color: fg,
-                          size: 19,
+                          size: 18,
                         ),
                 ),
               ),

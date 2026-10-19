@@ -48,22 +48,12 @@ class ViewerFavoritesBar extends StatelessWidget {
     final scheme = context.scheme;
 
     final baseColor = scheme.surface.withValues(alpha: 0.8);
-    final endColor = Color.alphaBlend(
-      scheme.onSurface.withValues(alpha: 0.05),
-      baseColor,
-    );
     final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
 
     return RepaintBoundary(
       child: Container(
-        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomRight,
-            end: Alignment.topLeft,
-            colors: [baseColor, baseColor, endColor],
-            stops: const [0.0, 0.62, 1.0],
-          ),
+          color: baseColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: borderColor,
@@ -95,11 +85,7 @@ class ViewerFavoritesBar extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(16),
-                  ),
-                  child: favoriteChannels.isEmpty
+                child: favoriteChannels.isEmpty
                       ? Padding(
                           padding: const EdgeInsets.fromLTRB(
                             TvLayoutConstants.viewerFavoritesBarPaddingStart,
@@ -178,7 +164,6 @@ class ViewerFavoritesBar extends StatelessWidget {
                         },
                       ),
               ),
-            ),
           ],
         ),
       ),

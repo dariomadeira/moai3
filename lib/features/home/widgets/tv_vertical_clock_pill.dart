@@ -49,24 +49,14 @@ class _TvVerticalClockPillState extends State<TvVerticalClockPill> {
     final hourStr = DateFormat('HH').format(_now);
     final minuteStr = DateFormat('mm').format(_now);
 
-    // Mismo fondo/borde que TvAccordionRowPreview (panel expandido).
     final baseColor = scheme.surface.withValues(alpha: 0.8);
-    final endColor = Color.alphaBlend(
-      scheme.onSurface.withValues(alpha: 0.05),
-      baseColor,
-    );
     final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
 
     return Container(
       width: 56,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [baseColor, baseColor, endColor],
-          stops: const [0.0, 0.62, 1.0],
-        ),
+        color: baseColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: borderColor, width: 1.0),
       ),

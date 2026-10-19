@@ -47,18 +47,9 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
       );
     } else {
       final baseColor = scheme.surface;
-      final endColor = Color.alphaBlend(
-        scheme.onSurface.withValues(alpha: 0.05),
-        baseColor,
-      );
       final borderColor = scheme.outlineVariant.withValues(alpha: 0.30);
       trackDecoration = BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [baseColor, baseColor, endColor],
-          stops: const [0.0, 0.62, 1.0],
-        ),
+        color: baseColor,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
           color: borderColor,

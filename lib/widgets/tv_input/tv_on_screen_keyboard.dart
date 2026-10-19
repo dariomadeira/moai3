@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_layouts.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
+import 'package:reicons/reicons.dart';
 
 typedef TvKeyPressed = void Function(TvKeyDef key);
 
@@ -209,6 +210,7 @@ class _TvOnScreenKeyboardState extends State<TvOnScreenKeyboard> {
                           ),
                           focusNode: _nodes[r][c],
                           label: _rows[r][c].label ?? '',
+                          action: _rows[r][c].action,
                           emphasized: _rows[r][c].action !=
                                   TvKeyAction.character &&
                               _rows[r][c].action != TvKeyAction.space,
@@ -269,6 +271,7 @@ class _TvOnScreenKeyboardState extends State<TvOnScreenKeyboard> {
 class _TvKeyButton extends StatefulWidget {
   final FocusNode focusNode;
   final String label;
+  final TvKeyAction action;
   final bool emphasized;
   final VoidCallback onPressed;
   final void Function(int dRow, int dCol) onArrow;
@@ -277,6 +280,7 @@ class _TvKeyButton extends StatefulWidget {
     super.key,
     required this.focusNode,
     required this.label,
+    required this.action,
     required this.emphasized,
     required this.onPressed,
     required this.onArrow,
@@ -331,7 +335,39 @@ class _TvKeyButtonState extends State<_TvKeyButton> {
       fg = scheme.onSurface;
     }
 
+    // Borde muy sutil para delimitar cada tecla en reposo, más visible al enfocar.
+    final borderColor = focused
+        ? scheme.onPrimary.withValues(alpha: 0.6)
+        : scheme.outlineVariant.withValues(alpha: 0.35);
+
     const radius = 12.0;
+
+    Widget childContent;
+    if (widget.action == TvKeyAction.shift) {
+      childContent = Icon(
+        ReiconIcons.arrowUp,
+        size: 16,
+        color: fg,
+      );
+    } else if (widget.action == TvKeyAction.backspace) {
+      childContent = Icon(
+        ReiconIcons.tagCross2,
+        size: 16,
+        color: fg,
+      );
+    } else {
+      childContent = Text(
+        widget.label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: MoaiText.body(
+          context,
+          color: fg,
+          fontSize: widget.label.length > 2 ? 10 : 14,
+          fontWeight: FontWeight.w600,
+        ),
+      );
+    }
 
     return Focus(
       focusNode: widget.focusNode,
@@ -373,8 +409,11 @@ class _TvKeyButtonState extends State<_TvKeyButton> {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radius),
+          side: BorderSide(
+            color: borderColor,
+            width: 1.0,
+          ),
         ),
-        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: widget.onPressed,
           splashColor: fg.withValues(alpha: 0.12),
@@ -382,17 +421,7 @@ class _TvKeyButtonState extends State<_TvKeyButton> {
           child: SizedBox(
             height: 34,
             child: Center(
-              child: Text(
-                widget.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: MoaiText.body(
-                  context,
-                  color: fg,
-                  fontSize: widget.label.length > 2 ? 10 : 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: childContent,
             ),
           ),
         ),
@@ -469,6 +498,10 @@ class _TvActionButtonState extends State<_TvActionButton> {
       fg = scheme.onPrimaryContainer;
     }
 
+    final borderColor = focused
+        ? scheme.onPrimary.withValues(alpha: 0.6)
+        : scheme.outlineVariant.withValues(alpha: 0.35);
+
     return Focus(
       focusNode: widget.focusNode,
       onKeyEvent: (node, event) {
@@ -504,8 +537,11 @@ class _TvActionButtonState extends State<_TvActionButton> {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
+          side: BorderSide(
+            color: borderColor,
+            width: 1.0,
+          ),
         ),
-        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: widget.onPressed,
           splashColor: fg.withValues(alpha: 0.12),

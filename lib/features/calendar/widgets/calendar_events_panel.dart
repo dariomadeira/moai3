@@ -666,12 +666,6 @@ class _HeaderButton extends StatelessWidget {
     final scheme = context.scheme;
 
     final baseColor = isFocused ? scheme.primary : scheme.surfaceContainerHigh;
-    final endColor = Color.alphaBlend(
-      (isFocused ? scheme.onPrimary : scheme.onSurface).withValues(
-        alpha: isFocused ? 0.12 : 0.05,
-      ),
-      baseColor,
-    );
     final borderColor = isFocused
         ? scheme.onPrimary.withValues(alpha: 0.55)
         : scheme.outlineVariant.withValues(alpha: 0.35);
@@ -689,12 +683,7 @@ class _HeaderButton extends StatelessWidget {
             vertical: 8,
           ),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.bottomRight,
-              end: Alignment.topLeft,
-              colors: [baseColor, baseColor, endColor],
-              stops: const [0.0, 0.60, 1.0],
-            ),
+            color: baseColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: borderColor, width: 1.0),
           ),
@@ -842,14 +831,6 @@ class _DayColumn extends StatelessWidget {
       }
     }
 
-    final headerEndColor = Color.alphaBlend(
-      (isColumnFocused
-              ? (isToday ? scheme.onPrimary : scheme.onSecondaryContainer)
-              : scheme.onSurface)
-          .withValues(alpha: isColumnFocused ? 0.14 : 0.05),
-      headerBase,
-    );
-
     final headerBorderColor = isColumnFocused
         ? (isToday
               ? scheme.onPrimary.withValues(alpha: 0.65)
@@ -861,7 +842,7 @@ class _DayColumn extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Header del día con gradiente sutil y borde a juego
+        // Header del día con borde a juego
         _PressScale(
           onTap: onSelectColumn,
           child: AnimatedContainer(
@@ -869,12 +850,7 @@ class _DayColumn extends StatelessWidget {
             curve: Curves.easeOutCubic,
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomRight,
-                end: Alignment.topLeft,
-                colors: [headerBase, headerBase, headerEndColor],
-                stops: const [0.0, 0.60, 1.0],
-              ),
+              color: headerBase,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: headerBorderColor, width: 1.0),
             ),
@@ -1071,12 +1047,6 @@ class _DayColumn extends StatelessWidget {
     final baseColor = isFocused
         ? scheme.secondaryContainer
         : scheme.surfaceContainerLow;
-    final endColor = Color.alphaBlend(
-      (isFocused ? scheme.onSecondaryContainer : scheme.onSurface).withValues(
-        alpha: isFocused ? 0.10 : 0.04,
-      ),
-      baseColor,
-    );
     final borderColor = isFocused
         ? scheme.secondary.withValues(alpha: 0.55)
         : scheme.outlineVariant.withValues(alpha: 0.18);
@@ -1088,12 +1058,7 @@ class _DayColumn extends StatelessWidget {
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomRight,
-            end: Alignment.topLeft,
-            colors: [baseColor, baseColor, endColor],
-            stops: const [0.0, 0.60, 1.0],
-          ),
+          color: baseColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: borderColor, width: 1.0),
         ),
@@ -1185,18 +1150,6 @@ class _CalendarEventGridCard extends StatelessWidget {
       subColor = scheme.onSurfaceVariant;
     }
 
-    final endColor = Color.alphaBlend(
-      (isFocused
-              ? (isFinished ? scheme.onSurface : scheme.onPrimary)
-              : scheme.onSurface)
-          .withValues(
-        alpha: isFocused
-            ? (isFinished ? 0.08 : 0.14)
-            : (isFinished ? 0.025 : 0.04),
-      ),
-      baseColor,
-    );
-
     final Color borderColor;
     if (isFocused) {
       borderColor = isFinished
@@ -1222,12 +1175,7 @@ class _CalendarEventGridCard extends StatelessWidget {
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.bottomRight,
-              end: Alignment.topLeft,
-              colors: [baseColor, baseColor, endColor],
-              stops: const [0.0, 0.60, 1.0],
-            ),
+            color: baseColor,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: borderColor, width: 1.0),
           ),
@@ -1432,10 +1380,6 @@ class _CalendarEventDialogContentState
     final scheme = context.scheme;
     final hasChannels = _matchingChannels.isNotEmpty;
     final panelBase = scheme.surface.withValues(alpha: 0.8);
-    final panelEnd = Color.alphaBlend(
-      scheme.onSurface.withValues(alpha: 0.05),
-      panelBase,
-    );
     final panelBorder = scheme.outlineVariant.withValues(alpha: 0.48);
 
     final detailsColumn = Column(
@@ -1479,14 +1423,8 @@ class _CalendarEventDialogContentState
                     horizontal: 12,
                     vertical: 8,
                   ),
-                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomRight,
-                      end: Alignment.topLeft,
-                      colors: [panelBase, panelBase, panelEnd],
-                      stops: const [0.0, 0.62, 1.0],
-                    ),
+                    color: panelBase,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: panelBorder,

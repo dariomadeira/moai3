@@ -405,10 +405,6 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
                 (watchParty?.hasFriendsInSameChannel ?? false)));
 
     final baseColor = scheme.surface.withValues(alpha: 0.8);
-    final endColor = Color.alphaBlend(
-      scheme.onSurface.withValues(alpha: 0.05),
-      baseColor,
-    );
     final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
 
     Widget playerWidget = GestureDetector(
@@ -437,14 +433,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
                   color: _isFocused ? scheme.primary : borderColor,
                   width: 4,
                 ),
-                gradient: LinearGradient(
-                  begin: Alignment.bottomRight,
-                  end: Alignment.topLeft,
-                  // Degradé corto: casi todo el panel en base,
-                  // el tono más claro queda arriba a la izquierda.
-                  colors: [baseColor, baseColor, endColor],
-                  stops: const [0.0, 0.62, 1.0],
-                ),
+                color: baseColor,
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(4),

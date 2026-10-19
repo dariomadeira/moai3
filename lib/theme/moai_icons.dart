@@ -885,11 +885,11 @@ abstract final class MoaiIcons {
   /// Origen: `Icons.event_note_outlined`
   static const eventNoteOutlined = Icons.event_note_outlined;
 
-  /// Origen: `Icons.exit_to_app_outlined`
+  /// Origen: `ReiconIcons.logout`
   ///
   /// Usos:
   /// - Inicio: `home_exit_double_back` (`features/home/widgets/double_back_exit_scope.dart`)
-  static const exitToAppOutlined = Icons.exit_to_app_outlined;
+  static const exitToAppOutlined = ReiconIcons.logout;
 
   /// Origen: `Icons.explicit_outlined`
   ///

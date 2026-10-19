@@ -193,6 +193,9 @@ class _TvTextInputSheetState extends State<_TvTextInputSheet> {
     final afterCursor = isHint ? '' : text.substring(cursor);
     final width = _isCompact ? 268.0 : 520.0;
 
+    final baseColor = scheme.surface;
+    final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
+
     // IMPORTANTE (Android TV + GoRouter):
     // Back llega como pop de sistema. Solo PopScope debe cerrar el dialog.
     // NO bindar goBack → Navigator.pop: eso + el pop de sistema saca Home/app.
@@ -205,32 +208,58 @@ class _TvTextInputSheetState extends State<_TvTextInputSheet> {
       child: SafeArea(
         child: Center(
           child: Material(
-            color: scheme.surfaceContainerLow,
-            elevation: 0,
-            shadowColor: Colors.transparent,
-            surfaceTintColor: Colors.transparent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: SizedBox(
+            color: Colors.transparent,
+            child: Container(
               width: width,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Material(
-                      color: scheme.surface,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+              margin: const EdgeInsets.symmetric(horizontal: 24),
+              decoration: BoxDecoration(
+                color: baseColor,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: borderColor,
+                  width: 1.0,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    blurRadius: 36,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: Opacity(
+                        opacity: 0.18,
+                        child: Image.asset(
+                          'assets/images/dialog.png',
+                          fit: BoxFit.cover,
+                        ),
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: scheme.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: scheme.outlineVariant.withValues(alpha: 0.25),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
                             Text(
                               widget.title,
                               textAlign: TextAlign.center,
@@ -314,11 +343,13 @@ class _TvTextInputSheetState extends State<_TvTextInputSheet> {
                   ],
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }
 

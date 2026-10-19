@@ -61,10 +61,6 @@ class TvDialog extends StatelessWidget {
     // Usamos scheme.surface igual que los paneles de TvAccordionRowPreview
     // para lograr el fondo oscuro característico y contraste perfecto con los TvTile
     final baseColor = scheme.surface;
-    final endColor = Color.alphaBlend(
-      scheme.onSurface.withValues(alpha: 0.05),
-      baseColor,
-    );
     final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
 
     return Center(
@@ -73,14 +69,8 @@ class TvDialog extends StatelessWidget {
         child: Container(
           width: width,
           margin: const EdgeInsets.symmetric(horizontal: 24),
-          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.bottomRight,
-              end: Alignment.topLeft,
-              colors: [baseColor, baseColor, endColor],
-              stops: const [0.0, 0.62, 1.0],
-            ),
+            color: baseColor,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: borderColor,

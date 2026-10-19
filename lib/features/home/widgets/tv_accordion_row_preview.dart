@@ -40,50 +40,36 @@ class TvAccordionRowPreview extends StatelessWidget {
             totalWidth - (collapsedWidth * (panelCount - 1)) - totalGaps;
 
         final scheme = Theme.of(context).colorScheme;
+        final borderExpanded = scheme.outlineVariant.withValues(alpha: 0.48);
+        final borderCollapsed = scheme.outlineVariant.withValues(alpha: 0.38);
 
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const NeverScrollableScrollPhysics(),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: List.generate(panelCount, (index) {
-              final isExpanded = activeIndex == index;
-              final width = isExpanded ? expandedWidth : collapsedWidth;
-              final title = titles[index];
-              final icon = icons[index];
-              final showAlphabet = alphabetModePanelIndex == index &&
-                  alphabetPanelBuilder != null;
-              final isLast = index == panelCount - 1;
+        return RepaintBoundary(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const NeverScrollableScrollPhysics(),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: List.generate(panelCount, (index) {
+                final isExpanded = activeIndex == index;
+                final width = isExpanded ? expandedWidth : collapsedWidth;
+                final title = titles[index];
+                final icon = icons[index];
+                final showAlphabet = alphabetModePanelIndex == index &&
+                    alphabetPanelBuilder != null;
+                final isLast = index == panelCount - 1;
 
-              final baseColor = colors[index];
-              final endColor = Color.alphaBlend(
-                scheme.onSurface.withValues(alpha: isExpanded ? 0.05 : 0.04),
-                baseColor,
-              );
+                final baseColor = colors[index];
 
-              final borderColor = scheme.outlineVariant.withValues(
-                alpha: isExpanded ? 0.48 : 0.38,
-              );
-
-              return RepaintBoundary(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
                   curve: Curves.easeOutCubic,
                   width: width,
                   margin: EdgeInsets.only(right: isLast ? 0 : gap),
-                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomRight,
-                      end: Alignment.topLeft,
-                      // Degradé corto: casi todo el panel en base,
-                      // el tono más claro queda arriba a la izquierda.
-                      colors: [baseColor, baseColor, endColor],
-                      stops: const [0.0, 0.62, 1.0],
-                    ),
+                    color: baseColor,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: borderColor,
+                      color: isExpanded ? borderExpanded : borderCollapsed,
                       width: 1.0,
                     ),
                   ),
@@ -132,12 +118,12 @@ class TvAccordionRowPreview extends StatelessWidget {
                         ),
                     ],
                   ),
-                ),
-              );
-            }),
+                );
+              }),
           ),
-        );
-      },
+        ),
+      );
+    },
     );
   }
 }
