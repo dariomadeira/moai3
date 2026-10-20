@@ -59,4 +59,58 @@ void main() {
       expect(provider.isAdultUnlocked, isFalse);
     });
   });
+
+  group('TvSettingsProvider - Catalog Update Frequency', () {
+    test('defaults to weekly update frequency on clean install', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await AppPreferences.init();
+      final provider = TvSettingsProvider(prefs);
+
+      expect(provider.catalogUpdateFrequency, CatalogUpdateFrequency.weekly);
+    });
+
+    test('shouldAttemptCatalogUpdate behaves correctly with weekly frequency', () {
+      final now = DateTime(2026, 10, 20, 12, 0);
+
+      // Primera vez (sin catálogo guardado) -> debe actualizar
+      expect(
+        TvSettingsProvider.shouldAttemptCatalogUpdate(
+          savedAt: null,
+          frequency: CatalogUpdateFrequency.weekly,
+          now: now,
+        ),
+        isTrue,
+      );
+
+      // Guardado hace 1 hora (reinicio / apagado reciente) -> NO debe actualizar
+      expect(
+        TvSettingsProvider.shouldAttemptCatalogUpdate(
+          savedAt: now.subtract(const Duration(hours: 1)),
+          frequency: CatalogUpdateFrequency.weekly,
+          now: now,
+        ),
+        isFalse,
+      );
+
+      // Guardado hace 3 días -> NO debe actualizar
+      expect(
+        TvSettingsProvider.shouldAttemptCatalogUpdate(
+          savedAt: now.subtract(const Duration(days: 3)),
+          frequency: CatalogUpdateFrequency.weekly,
+          now: now,
+        ),
+        isFalse,
+      );
+
+      // Guardado hace 8 días -> SÍ debe actualizar
+      expect(
+        TvSettingsProvider.shouldAttemptCatalogUpdate(
+          savedAt: now.subtract(const Duration(days: 8)),
+          frequency: CatalogUpdateFrequency.weekly,
+          now: now,
+        ),
+        isTrue,
+      );
+    });
+  });
 }

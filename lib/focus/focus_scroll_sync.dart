@@ -1,11 +1,18 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 /// Sincroniza [FocusNode]s con listas y scroll automático.
 abstract final class FocusScrollSync {
+  static void disposeNode(FocusNode node) {
+    if (node.hasFocus) {
+      node.unfocus();
+    }
+    node.dispose();
+  }
+
   static void syncFocusNodes(int targetCount, List<FocusNode> nodesList) {
     while (nodesList.length > targetCount) {
-      nodesList.removeLast().dispose();
+      disposeNode(nodesList.removeLast());
     }
     while (nodesList.length < targetCount) {
       nodesList.add(FocusNode());

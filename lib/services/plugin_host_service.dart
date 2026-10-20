@@ -10,12 +10,15 @@ class PluginChannelInfo {
   final String categoria;
   final String pais;
 
+  final String flag;
+
   const PluginChannelInfo({
     required this.id,
     required this.nombre,
     this.logo = '',
     this.categoria = 'General',
     this.pais = 'General',
+    this.flag = '',
   });
 
   factory PluginChannelInfo.fromMap(Map<dynamic, dynamic> map) {
@@ -25,6 +28,7 @@ class PluginChannelInfo {
       logo: map['logo'] as String? ?? '',
       categoria: map['categoria'] as String? ?? 'General',
       pais: map['pais'] as String? ?? 'General',
+      flag: (map['flag'] as String? ?? '').trim(),
     );
   }
 }
@@ -295,6 +299,7 @@ class PluginChannelCatalog {
             logoUrl: info.logo,
             country: info.pais.trim().isEmpty ? 'General' : info.pais.trim(),
             category: info.categoria.trim().isEmpty ? 'General' : info.categoria.trim(),
+            countryFlagUrl: info.flag.isNotEmpty ? info.flag : null,
             fallbackUrls: const [],
             pluginId: source.id,
             pluginChannelId: info.id,

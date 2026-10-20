@@ -238,13 +238,13 @@ class GroupsBrowserController extends ChangeNotifier with SafeChangeNotifier {
     groupScrollController.dispose();
     channelScrollController.dispose();
     for (final node in groupFocusNodes) {
-      node.dispose();
+      FocusScrollSync.disposeNode(node);
     }
     for (final node in channelFocusNodes) {
-      node.dispose();
+      FocusScrollSync.disposeNode(node);
     }
     for (final node in alphabetFocusNodes) {
-      node.dispose();
+      FocusScrollSync.disposeNode(node);
     }
     super.dispose();
   }

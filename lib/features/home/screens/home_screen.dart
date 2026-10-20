@@ -10,11 +10,12 @@ import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
 import 'package:moai3/features/games/widgets/tv_arcade_prep_dialog.dart';
 import 'package:moai3/features/home/areas/home_arcade_area.dart';
 import 'package:moai3/features/home/areas/home_calendar_area.dart';
+import 'package:moai3/features/home/areas/home_dashboard_area.dart';
 import 'package:moai3/features/home/areas/home_movies_area.dart';
 import 'package:moai3/features/home/areas/home_settings_area.dart';
 import 'package:moai3/features/home/areas/home_tv_area.dart';
 import 'package:moai3/features/home/widgets/double_back_exit_scope.dart';
-import 'package:moai3/features/home/widgets/navigation_rail_section.dart';
+import 'package:moai3/features/home/widgets/tv_vertical_nav_rail.dart';
 import 'package:moai3/focus/tv_intents.dart';
 import 'package:moai3/focus/tv_shortcuts.dart';
 import 'package:moai3/helpers/notification_helper.dart';
@@ -29,6 +30,7 @@ import 'package:moai3/services/supabase_presence_service.dart';
 import 'package:moai3/services/update_service.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/channel_provider.dart';
+import 'package:moai3/state/featured_movies_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -47,11 +49,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const int _sectionTv = 0;
-  static const int _sectionMovies = 1;
-  static const int _sectionCalendar = 2;
-  static const int _sectionArcade = 3;
-  static const int _sectionSettings = 4;
+  static const int _sectionHome = 0;
+  static const int _sectionTv = 1;
+  static const int _sectionFeatured = 2;
+  static const int _sectionMovies = 3;
+  static const int _sectionSeries = 4;
+  static const int _sectionCalendar = 5;
+  static const int _sectionArcade = 6;
+  static const int _sectionSettings = 7;
 
   final FocusNode _arcadeSelectGameFocus = FocusNode(
     debugLabel: 'arcade_select_game',
@@ -72,8 +77,14 @@ class _HomeScreenState extends State<HomeScreen> {
     debugLabel: 'rail_scope',
   );
   final FocusNode _railFocusNode = FocusNode(debugLabel: 'home_rail');
+  final GlobalKey<HomeDashboardAreaState> _homeAreaKey =
+      GlobalKey<HomeDashboardAreaState>();
   final GlobalKey<HomeTvAreaState> _tvAreaKey = GlobalKey<HomeTvAreaState>();
+  final GlobalKey<HomeMoviesAreaState> _featuredAreaKey =
+      GlobalKey<HomeMoviesAreaState>();
   final GlobalKey<HomeMoviesAreaState> _moviesAreaKey =
+      GlobalKey<HomeMoviesAreaState>();
+  final GlobalKey<HomeMoviesAreaState> _seriesAreaKey =
       GlobalKey<HomeMoviesAreaState>();
   final GlobalKey<DoubleBackExitScopeState> _doubleBackKey =
       GlobalKey<DoubleBackExitScopeState>();
@@ -458,6 +469,10 @@ class _HomeScreenState extends State<HomeScreen> {
   /// → del rail — idéntico a Smart `_returnFocusToSettingsPanel`.
   void _onRailFocusRight() {
     _railFocusNode.unfocus();
+    if (_selectedIndex == _sectionHome) {
+      _homeAreaKey.currentState?.requestEntryFocus();
+      return;
+    }
     if (_selectedIndex == _sectionSettings) {
       _focusSettingsPanelByIndex(_activeSettingsPanelIndex);
       return;
@@ -470,8 +485,16 @@ class _HomeScreenState extends State<HomeScreen> {
       _requestFocusWithRetry(_arcadeSelectGameFocus);
       return;
     }
+    if (_selectedIndex == _sectionFeatured) {
+      _featuredAreaKey.currentState?.requestEntryFocus();
+      return;
+    }
     if (_selectedIndex == _sectionMovies) {
       _moviesAreaKey.currentState?.requestEntryFocus();
+      return;
+    }
+    if (_selectedIndex == _sectionSeries) {
+      _seriesAreaKey.currentState?.requestEntryFocus();
       return;
     }
     _tvAreaKey.currentState?.requestEntryFocus();
@@ -486,7 +509,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_selectedIndex == _sectionTv) {
       return _tvAreaKey.currentState?.handleBack() ?? false;
     }
-    if (_selectedIndex == _sectionMovies ||
+    if (_selectedIndex == _sectionHome ||
+        _selectedIndex == _sectionFeatured ||
+        _selectedIndex == _sectionMovies ||
+        _selectedIndex == _sectionSeries ||
         _selectedIndex == _sectionCalendar ||
         _selectedIndex == _sectionArcade ||
         _selectedIndex == _sectionSettings) {
@@ -567,7 +593,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           RepaintBoundary(
-                            child: NavigationRailSection(
+                            child: TvVerticalNavRail(
                               selectedIndex: _selectedIndex,
                               railScopeNode: _railScopeNode,
                               railFocusNode: _railFocusNode,
@@ -581,7 +607,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: RepaintBoundary(
                               child: Padding(
                                 padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
-                                child: _selectedIndex == _sectionSettings
+                                child: _selectedIndex == _sectionHome
+                                    ? HomeDashboardArea(
+                                        key: _homeAreaKey,
+                                        onExitLeft: _focusRail,
+                                      )
+                                    : _selectedIndex == _sectionSettings
                                     ? HomeSettingsArea(
                                         activePanelIndex:
                                             _activeSettingsPanelIndex,
@@ -652,9 +683,43 @@ class _HomeScreenState extends State<HomeScreen> {
                                               });
                                         },
                                       )
+                                    : _selectedIndex == _sectionFeatured
+                                    ? HomeMoviesArea(
+                                        key: _featuredAreaKey,
+                                        section: FeaturedMoviesProvider
+                                            .sectionFeatured,
+                                        panelTitle:
+                                            'movies_panel_featured_title'.tr(),
+                                        accordionIcon:
+                                            MoaiIcons.tvAccordionFeatured,
+                                        emptyMessage:
+                                            'movies_empty_featured'.tr(),
+                                        onExitLeft: _focusRail,
+                                      )
                                     : _selectedIndex == _sectionMovies
                                     ? HomeMoviesArea(
                                         key: _moviesAreaKey,
+                                        section: FeaturedMoviesProvider
+                                            .sectionMovies,
+                                        panelTitle:
+                                            'movies_panel_movies_title'.tr(),
+                                        accordionIcon:
+                                            MoaiIcons.tvAccordionMovies,
+                                        emptyMessage:
+                                            'movies_empty_movies'.tr(),
+                                        onExitLeft: _focusRail,
+                                      )
+                                    : _selectedIndex == _sectionSeries
+                                    ? HomeMoviesArea(
+                                        key: _seriesAreaKey,
+                                        section: FeaturedMoviesProvider
+                                            .sectionSeries,
+                                        panelTitle:
+                                            'movies_panel_series_title'.tr(),
+                                        accordionIcon:
+                                            MoaiIcons.tvAccordionSeries,
+                                        emptyMessage:
+                                            'movies_empty_series'.tr(),
                                         onExitLeft: _focusRail,
                                       )
                                     : HomeTvArea(

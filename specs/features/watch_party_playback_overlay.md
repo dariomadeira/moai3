@@ -228,7 +228,7 @@ graph TD
 En el modo de interfaz TV (no pantalla completa), las interacciones visuales de "Miremos Juntos" se dividen en dos capas complementarias:
 
 ### 9.1. Cabecera TV (`TvWatchPartyHeaderBar`)
-Ubicada en la barra superior derecha de la interfaz TV, junto a `TvClockPill` (separación de 16dp):
+Ubicada en la cabecera del visor TV (`TvWatchPartyHeaderBar`):
 * **Píldora de Audio Entrante ("Carlos TV hablando..."):**
   * Estilo idéntico al overlay: Fondo `colorScheme.primary`, texto e icono `colorScheme.onPrimary`, bordes redondeados (`18dp`) y sombra suave.
   * Solo se muestra activamente mientras se reproduce un audio en directo (`coordinator.isPlaying == true`).

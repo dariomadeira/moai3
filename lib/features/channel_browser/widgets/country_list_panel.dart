@@ -13,6 +13,7 @@ import 'package:moai3/theme/moai_icons.dart';
 class CountryListPanel extends StatefulWidget {
   final String title;
   final List<String> countries;
+  final Map<String, String> countryFlags;
   final String selectedCountry;
   final ValueChanged<String> onSelect;
   final VoidCallback onLongPress;
@@ -22,6 +23,7 @@ class CountryListPanel extends StatefulWidget {
     super.key,
     required this.title,
     required this.countries,
+    this.countryFlags = const {},
     required this.selectedCountry,
     required this.onSelect,
     required this.onLongPress,
@@ -117,6 +119,7 @@ class CountryListPanelState extends State<CountryListPanel> {
                       initialGlobalIndex: _selectedIndex,
                       itemExtent: itemExtent,
                       showScrollDots: true,
+                      focusOnMount: false,
                       onFocusUpFromFirst: widget.onFocusUp,
                       itemBuilder: (
                         context,
@@ -130,6 +133,7 @@ class CountryListPanelState extends State<CountryListPanel> {
                         return CountryCard(
                           key: ValueKey('country-$country'),
                           country: country,
+                          flagUrl: widget.countryFlags[country],
                           isSelected: widget.selectedCountry == country,
                           focusNode: focusNode,
                           onLongPress: widget.onLongPress,

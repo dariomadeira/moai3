@@ -115,6 +115,45 @@ void main() {
 
       browser.dispose();
     });
+
+    test('deriva countryFlags desde countryFlagUrl de canales', () {
+      final browser = ChannelBrowserController();
+      final channels = [
+        Channel(
+          id: '1',
+          name: 'Telefe',
+          logoUrl: '',
+          fallbackUrls: ['http://telefe.m3u8'],
+          country: 'Argentina',
+          category: 'Aire',
+          countryFlagUrl: 'https://example.com/flags/ar.png',
+        ),
+        Channel(
+          id: '2',
+          name: 'Globo',
+          logoUrl: '',
+          fallbackUrls: ['http://globo.m3u8'],
+          country: 'Brasil',
+          category: 'Aire',
+          countryFlagUrl: 'https://example.com/flags/br.png',
+        ),
+        Channel(
+          id: '3',
+          name: 'CNN Int',
+          logoUrl: '',
+          fallbackUrls: ['http://cnn.m3u8'],
+          country: 'Internacional',
+          category: 'Noticias',
+        ),
+      ];
+
+      browser.initializeFromChannels(channels);
+      expect(browser.countryFlags['Argentina'], 'https://example.com/flags/ar.png');
+      expect(browser.countryFlags['Brasil'], 'https://example.com/flags/br.png');
+      expect(browser.countryFlags.containsKey('Internacional'), isFalse);
+
+      browser.dispose();
+    });
   });
 }
 

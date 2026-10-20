@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/features/settings/widgets/settings_tv_startup_tab_row.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/features/sources/screens/sources_screen.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
@@ -15,6 +16,7 @@ enum _SettingsTvItemType {
   channelLabels,
   adultContent,
   changePin,
+  startupTab,
   sources,
 }
 
@@ -55,6 +57,7 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
       _SettingsTvItemType.channelLabels,
       _SettingsTvItemType.adultContent,
       if (hasPin) _SettingsTvItemType.changePin,
+      _SettingsTvItemType.startupTab,
       _SettingsTvItemType.sources,
     ];
 
@@ -148,6 +151,16 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
     required VoidCallback onKeyDown,
   }) {
     switch (item) {
+      case _SettingsTvItemType.startupTab:
+        return SettingsTvStartupTabRow(
+          focusNode: focusNode,
+          selectedTab: tvSettings.startupTvTab,
+          onChanged: (tab) => tvSettings.setStartupTvTab(tab),
+          onKeyLeft: widget.onKeyLeft,
+          onKeyRight: widget.onKeyRight,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+        );
       case _SettingsTvItemType.debugLog:
         return TvSettingsSwitchRow(
           focusNode: focusNode,

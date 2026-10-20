@@ -30,14 +30,7 @@ class ViewerFavoriteTile extends StatefulWidget {
 
 class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
   bool _isFocused = false;
-  bool _isPressed = false;
-  bool _isKeyDown = false;
   late bool _logoOk;
-
-  void _setPressed(bool pressed) {
-    if (!mounted || _isPressed == pressed) return;
-    setState(() => _isPressed = pressed);
-  }
 
   @override
   void initState() {
@@ -106,32 +99,15 @@ class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
 
           if (!isActionButton) return KeyEventResult.ignored;
           if (event is KeyDownEvent) {
-            if (!_isKeyDown) {
-              _isKeyDown = true;
-              _setPressed(true);
-            }
-            return KeyEventResult.handled;
-          }
-          if (event is KeyRepeatEvent) return KeyEventResult.handled;
-          if (event is KeyUpEvent && _isKeyDown) {
-            _isKeyDown = false;
-            _setPressed(false);
             widget.onTap();
             return KeyEventResult.handled;
           }
+          if (event is KeyRepeatEvent) return KeyEventResult.handled;
           return KeyEventResult.ignored;
         },
-        child: Listener(
-          onPointerDown: (_) => _setPressed(true),
-          onPointerUp: (_) => _setPressed(false),
-          onPointerCancel: (_) => _setPressed(false),
-          child: GestureDetector(
+        child: GestureDetector(
           onTap: widget.onTap,
-          child: AnimatedScale(
-            scale: _isPressed ? 0.96 : 1.0,
-            duration: const Duration(milliseconds: 90),
-            curve: Curves.easeOutCubic,
-            child: AnimatedContainer(
+          child: AnimatedContainer(
             duration: const Duration(milliseconds: 120),
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             decoration: BoxDecoration(
@@ -215,8 +191,6 @@ class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
               ],
             ),
           ),
-        ),
-        ),
         ),
       ),
     );

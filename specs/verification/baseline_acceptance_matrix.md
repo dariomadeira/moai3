@@ -155,12 +155,12 @@
 ### CASO-BG-01: Cobertura con Degradé Diagonal y Transparencia del Rail
 - **Given**: La pantalla principal de la aplicación (`HomeScreen`).
 - **When**: Se construye la vista principal.
-- **Then**: El fondo global debe ser un `LinearGradient` diagonal de dos colores (`topLeft` a `bottomRight`), y `NavigationRailSection` debe emplear fondo transparente (`railBg = Colors.transparent`) para evitar bloqueos rectangulares de color opaco en el borde izquierdo.
+- **Then**: El fondo global debe ser un `LinearGradient` diagonal de dos colores (`topLeft` a `bottomRight`), y `TvVerticalNavRail` no debe tapar ese degradé con un bloque opaco a pantalla completa en el borde izquierdo.
 
-### CASO-CLK-01: Reloj Superior con Cifras Tabulares y Sin Captura de Foco
-- **Given**: La barra superior a la derecha en `HomeTvArea`.
-- **When**: Se renderiza `TvClockPill`.
-- **Then**: Debe mostrar la hora en formato `HH:mm` sin contenedor ni iconos, cifras tabulares con fuente a 28 pt, dos puntos parpadeantes cada 1 segundo y estar envuelto en `ExcludeFocus` para que el D-Pad lo ignore en su recorrido.
+### CASO-CLK-01: Reloj y clima en la cabecera del rail
+- **Given**: El rail lateral de `HomeScreen`.
+- **When**: Se renderiza `TvBottomWeatherPill`.
+- **Then**: Debe mostrar hora y clima en la parte superior del rail (`top: 8`), fuera del recorrido de destinos del D-Pad.
 
 ---
 

@@ -90,15 +90,21 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
     final watchPartyProvider = context.watch<WatchPartyProvider?>();
     final coordinator = context.watch<WatchPartyVoiceCoordinator?>();
 
-    final enabled = isDevMode || (watchPartyProvider?.enabled ?? false);
-    if (!enabled) {
-      return const SizedBox.shrink();
-    }
+    final watchPartyEnabled =
+        isDevMode || (watchPartyProvider?.enabled ?? false);
 
-    final hasFriendsInChannel = isDevMode || (watchPartyProvider?.hasFriendsInSameChannel ?? false);
-    final isRecording = TvWatchPartyHeaderBar.debugSimulateRecording || (coordinator?.isRecording ?? false);
-    final isPlaying = TvWatchPartyHeaderBar.debugSimulateIncomingAudio || (coordinator?.isPlaying ?? false);
-    final speakerName = (TvWatchPartyHeaderBar.debugSimulateIncomingAudio ? 'Carlos TV' : null) ?? coordinator?.currentSpeakerName;
+    final hasFriendsInChannel = watchPartyEnabled &&
+        (isDevMode || (watchPartyProvider?.hasFriendsInSameChannel ?? false));
+    final isRecording = watchPartyEnabled &&
+        (TvWatchPartyHeaderBar.debugSimulateRecording ||
+            (coordinator?.isRecording ?? false));
+    final isPlaying = watchPartyEnabled &&
+        (TvWatchPartyHeaderBar.debugSimulateIncomingAudio ||
+            (coordinator?.isPlaying ?? false));
+    final speakerName = (TvWatchPartyHeaderBar.debugSimulateIncomingAudio
+            ? 'Carlos TV'
+            : null) ??
+        coordinator?.currentSpeakerName;
 
     final showYellowMic = hasFriendsInChannel;
 

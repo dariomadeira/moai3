@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:moai3/services/moai_image_cache_manager.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/cards/safe_network_svg.dart';
 
 /// Leading rectangular para logos de canal con la misma estética que [TvListCardLeadingIcon].
 /// Usa `scheme.primaryContainer` (o `onPrimary` con opacidad al tener foco), manteniendo
@@ -133,8 +133,8 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
       final cleanPath = cleanUrl.toLowerCase().split('?').first.split('#').first;
       final isSvg = cleanPath.endsWith('.svg');
       if (isSvg) {
-        logoContent = SvgPicture.network(
-          cleanUrl,
+        logoContent = SafeNetworkSvg(
+          url: cleanUrl,
           fit: BoxFit.contain,
           alignment: Alignment.center,
           headers: const {

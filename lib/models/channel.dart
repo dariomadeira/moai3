@@ -12,6 +12,7 @@ class Channel {
   final String? pluginChannelId;
   final String? pluginName;
   final String? pluginTag;
+  final String? countryFlagUrl;
 
   Channel({
     required this.id,
@@ -21,6 +22,7 @@ class Channel {
     this.country = 'General',
     this.category = 'General',
     this.customHeaders,
+    this.countryFlagUrl,
     this.pluginId,
     this.pluginChannelId,
     this.pluginName,
@@ -87,6 +89,7 @@ class Channel {
       pluginChannelId: json['pluginChannelId'] as String?,
       pluginName: json['pluginName'] as String?,
       pluginTag: json['pluginTag'] as String?,
+      countryFlagUrl: json['countryFlagUrl'] as String?,
     );
   }
 
@@ -98,6 +101,7 @@ class Channel {
       'logoUrl': logoUrl,
       'country': country,
       'category': category,
+      if (countryFlagUrl != null) 'countryFlagUrl': countryFlagUrl,
       if (pluginId != null) 'pluginId': pluginId,
       if (pluginChannelId != null) 'pluginChannelId': pluginChannelId,
       if (pluginName != null) 'pluginName': pluginName,

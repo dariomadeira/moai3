@@ -6,6 +6,7 @@ import 'package:moai3/theme/moai_icons.dart';
 /// Ítem de país/grupo: [TvIconListCard] con ícono TV with assistant.
 class CountryCard extends StatelessWidget {
   final String country;
+  final String? flagUrl;
   final bool isSelected;
   final VoidCallback onTap;
   final FocusNode? focusNode;
@@ -18,6 +19,7 @@ class CountryCard extends StatelessWidget {
   const CountryCard({
     super.key,
     required this.country,
+    this.flagUrl,
     required this.isSelected,
     required this.onTap,
     this.focusNode,
@@ -33,7 +35,7 @@ class CountryCard extends StatelessWidget {
     return TvIconListCard(
       label: country,
       icon: MoaiIcons.tvDisplays,
-      leading: CountryFlagAssets.leadingFor(country),
+      leading: CountryFlagAssets.leadingFor(country, flagUrl: flagUrl),
       isSelected: isSelected,
       onTap: onTap,
       focusNode: focusNode,

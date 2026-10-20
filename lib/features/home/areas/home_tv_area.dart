@@ -13,10 +13,10 @@ import 'package:moai3/features/home/areas/home_area.dart';
 import 'package:moai3/features/home/controllers/player_overlay_controller.dart';
 import 'package:moai3/features/home/controllers/viewer_favorites_controller.dart';
 import 'package:moai3/features/home/widgets/alphabet_jump_panel.dart';
+import 'package:moai3/features/home/widgets/empty_viewer_panel.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/home/widgets/tv_viewer_panel.dart';
 import 'package:moai3/features/home/widgets/tv_tab_bar.dart';
-// import 'package:moai3/features/home/widgets/tv_clock_pill.dart';
 import 'package:moai3/features/home/widgets/tv_watch_party_header_bar.dart';
 import 'package:moai3/features/home/widgets/viewer_favorites_bar.dart';
 import 'package:moai3/state/watch_party_provider.dart';
@@ -133,6 +133,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     _channelProvider = context.read<ChannelProvider>();
     _tvSettingsProvider = context.read<TvSettingsProvider>();
     _favoritesProvider = context.read<FavoritesProvider>();
+    _tvTab = _tvSettingsProvider?.startupTvTab ?? 'explore';
 
     final wp = context.read<WatchPartyProvider?>();
     if (wp != null) {
@@ -758,6 +759,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
           key: _countryPanelKey,
           title: title,
           countries: _browser.countries,
+          countryFlags: _browser.countryFlags,
           selectedCountry: _browser.selectedCountry,
           onSelect: _selectCountry,
           onLongPress: () =>
@@ -1034,6 +1036,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     final scheme = context.scheme;
     final showTvLog = context.select((TvSettingsProvider s) => s.showTvLog);
     final channel = context.select((ChannelProvider s) => s.selectedChannel);
+    final allChannels = context.select((ChannelProvider s) => s.allChannels);
     final isPuppeteer = context.select(
       (ChannelProvider s) => s.isPuppeteerEngine,
     );
@@ -1116,18 +1119,74 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
             Expanded(
               flex: 5,
               child: RepaintBoundary(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TvViewerPanel(
-                      channel: channel,
-                      header: TvWatchPartyHeaderBar(
-                        channelName: channel?.name,
-                        micFocusNode: _watchPartyMicFocusNode,
-                        onLongPressMic: () => TvFriendsDialog.show(context),
-                      ),
-                      child: channel != null
-                          ? Padding(
+                child: channel == null
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              top: 3,
+                              bottom: 12,
+                              right: 8,
+                            ),
+                            child: SizedBox(
+                              height: 40,
+                              child: Align(
+                                alignment: Alignment.centerRight,
+                                child: TvWatchPartyHeaderBar(
+                                  micFocusNode: _watchPartyMicFocusNode,
+                                  onLongPressMic: () =>
+                                      TvFriendsDialog.show(context),
+                                  onKeyLeft: () {
+                                    if (_groupsTabFocus.canRequestFocus) {
+                                      _groupsTabFocus.requestFocus();
+                                    } else if (_searchTabFocus
+                                        .canRequestFocus) {
+                                      _searchTabFocus.requestFocus();
+                                    } else {
+                                      _exploreTabFocus.requestFocus();
+                                    }
+                                  },
+                                  onKeyUp: () {
+                                    if (_groupsTabFocus.canRequestFocus) {
+                                      _groupsTabFocus.requestFocus();
+                                    } else {
+                                      _exploreTabFocus.requestFocus();
+                                    }
+                                  },
+                                  onKeyDown: () => _viewerFocus.requestFocus(),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: EmptyViewerPanel(
+                              focusNode: _viewerFocus,
+                              hasChannels: allChannels.isNotEmpty,
+                              onReturnToPanel: _focusActiveContent,
+                              onKeyUp: () {
+                                if (_watchPartyMicFocusNode.canRequestFocus) {
+                                  _watchPartyMicFocusNode.requestFocus();
+                                } else {
+                                  _focusCurrentTab();
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          TvViewerPanel(
+                            channel: channel,
+                            header: TvWatchPartyHeaderBar(
+                              channelName: channel.name,
+                              micFocusNode: _watchPartyMicFocusNode,
+                              onLongPressMic: () =>
+                                  TvFriendsDialog.show(context),
+                            ),
+                            child: Padding(
                               padding: const EdgeInsets.only(
                                 left: 16,
                                 right: 16,
@@ -1136,13 +1195,11 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                               child: TvPlayerLayoutAnchor(
                                 overlayController: _playerOverlay,
                               ),
-                            )
-                          : null,
-                    ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: channel != null
-                          ? ViewerFavoritesBar(
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Expanded(
+                            child: ViewerFavoritesBar(
                               favoriteChannels: favChannels,
                               selectedChannel: channel,
                               scrollController:
@@ -1253,11 +1310,10 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                                 }
                               },
                               onKeyDown: () => _viewerFocus.requestFocus(),
-                            )
-                          : const SizedBox.shrink(),
-                    ),
-                  ],
-                ),
+                            ),
+                          ),
+                        ],
+                      ),
               ),
             ),
 

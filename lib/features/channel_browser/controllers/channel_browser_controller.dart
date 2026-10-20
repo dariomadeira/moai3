@@ -11,6 +11,7 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
   Channel? selectedChannel;
 
   List<String> countries = [];
+  Map<String, String> countryFlags = {};
   List<String> categories = [];
   List<Channel> channels = [];
 
@@ -35,15 +36,28 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
     return allChannels.where((c) => !isAdult(c)).toList();
   }
 
-  void syncFromChannels(List<Channel> allChannels, {bool? isAdultUnlocked}) {
-    if (isAdultUnlocked != null) this.isAdultUnlocked = isAdultUnlocked;
-    final filtered = filterChannels(allChannels);
+  void _updateCountriesAndFlags(List<Channel> filtered) {
     countries = filtered
         .map((c) => c.country.trim().isEmpty ? 'General' : c.country.trim())
         .toSet()
         .toList()
       ..sort();
+    final flags = <String, String>{};
+    for (final c in filtered) {
+      final name = c.country.trim().isEmpty ? 'General' : c.country.trim();
+      final flag = c.countryFlagUrl;
+      if (!flags.containsKey(name) && flag != null && flag.isNotEmpty) {
+        flags[name] = flag;
+      }
+    }
+    countryFlags = flags;
     FocusScrollSync.syncFocusNodes(countries.length, countryFocusNodes);
+  }
+
+  void syncFromChannels(List<Channel> allChannels, {bool? isAdultUnlocked}) {
+    if (isAdultUnlocked != null) this.isAdultUnlocked = isAdultUnlocked;
+    final filtered = filterChannels(allChannels);
+    _updateCountriesAndFlags(filtered);
 
     if (countries.isEmpty) {
       selectedCountry = '';
@@ -89,12 +103,7 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
       return;
     }
     final filtered = filterChannels(allChannels);
-    countries = filtered
-        .map((c) => c.country.trim().isEmpty ? 'General' : c.country.trim())
-        .toSet()
-        .toList()
-      ..sort();
-    FocusScrollSync.syncFocusNodes(countries.length, countryFocusNodes);
+    _updateCountriesAndFlags(filtered);
     selectedChannel = channel;
     selectedCountry =
         channel.country.trim().isEmpty ? 'General' : channel.country.trim();
@@ -120,12 +129,7 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
       if (countries.isNotEmpty) return;
     }
     final filtered = filterChannels(allChannels);
-    countries = filtered
-        .map((c) => c.country.trim().isEmpty ? 'General' : c.country.trim())
-        .toSet()
-        .toList()
-      ..sort();
-    FocusScrollSync.syncFocusNodes(countries.length, countryFocusNodes);
+    _updateCountriesAndFlags(filtered);
     if (countries.isNotEmpty) {
       selectedCountry = countries.first;
     }
@@ -330,16 +334,16 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
     categoryScrollController.dispose();
     channelScrollController.dispose();
     for (final node in countryFocusNodes) {
-      node.dispose();
+      FocusScrollSync.disposeNode(node);
     }
     for (final node in categoryFocusNodes) {
-      node.dispose();
+      FocusScrollSync.disposeNode(node);
     }
     for (final node in channelFocusNodes) {
-      node.dispose();
+      FocusScrollSync.disposeNode(node);
     }
     for (final node in alphabetFocusNodes) {
-      node.dispose();
+      FocusScrollSync.disposeNode(node);
     }
     super.dispose();
   }

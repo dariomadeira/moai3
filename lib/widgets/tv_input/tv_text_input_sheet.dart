@@ -231,12 +231,9 @@ class _TvTextInputSheetState extends State<_TvTextInputSheet> {
                 children: [
                   Positioned.fill(
                     child: IgnorePointer(
-                      child: Opacity(
-                        opacity: 0.18,
-                        child: Image.asset(
-                          'assets/images/dialog.png',
-                          fit: BoxFit.cover,
-                        ),
+                      child: Image.asset(
+                        'assets/images/dialog.png',
+                        fit: BoxFit.cover,
                       ),
                     ),
                   ),

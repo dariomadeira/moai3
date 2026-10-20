@@ -283,6 +283,7 @@ class PluginLoader(private val context: Context) {
                         logo = c.optString("logo", ""),
                         categoria = c.optString("categoria", "General"),
                         pais = c.optString("pais", "General"),
+                        flag = c.optString("flag", "").trim(),
                     )
                 )
             }
@@ -457,6 +458,7 @@ class PluginLoader(private val context: Context) {
                 "logo" to c.logo,
                 "categoria" to c.categoria,
                 "pais" to c.pais,
+                "flag" to c.flag,
             )
         },
     )

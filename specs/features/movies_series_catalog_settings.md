@@ -69,8 +69,8 @@ Las filas de actualización/frecuencia de catálogo **no** viven en Generales; s
 ### `CatalogUpdateFrequency`
 | Valor | Comportamiento al arrancar (si update ON) |
 | :--- | :--- |
-| `always` | Intentar sync en cada arranque. **Default.** |
-| `weekly` | Sync solo si `lastSavedCatalogAt` es `null` o tiene ≥ 7 días. |
+| `always` | Intentar sync en cada arranque. |
+| `weekly` | Sync solo si `lastSavedCatalogAt` es `null` o tiene ≥ 7 días. **Default.** |
 | `monthly` | Sync solo si `lastSavedCatalogAt` es `null` o tiene ≥ 30 días. |
 
 **Caso inicial:** sin archivo guardado (`savedAt == null`) → `shouldAttemptCatalogUpdate` es `true` aunque la frecuencia sea weekly/monthly (primera sincronización).

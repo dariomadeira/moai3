@@ -19,12 +19,13 @@ interface IPlugin {
 }
 
 /** Un canal que el plugin aporta al catálogo (aparece en la UI). */
-data class PluginChannel(
+data class PluginChannel @JvmOverloads constructor(
     val id: String,
     val nombre: String,
     val logo: String = "",
     val categoria: String = "General",
     val pais: String = "General",
+    val flag: String = "",
 )
 
 /** Metadata declarada por el plugin (vive también en su manifest.json). */

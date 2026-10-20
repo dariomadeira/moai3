@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:moai3/focus/focus_scroll_sync.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/models/channel.dart';
@@ -64,7 +64,7 @@ class ViewerFavoritesController {
   void dispose() {
     scrollController.dispose();
     for (final node in focusNodes) {
-      node.dispose();
+      FocusScrollSync.disposeNode(node);
     }
     focusNodes.clear();
   }

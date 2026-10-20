@@ -2,33 +2,94 @@ import 'package:flutter/foundation.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
 
-/// Catálogo plano de destacados (`masnew_featured`) para el rail Películas.
+class _CatalogSectionState {
+  List<MovieItem> items = [];
+  List<CategoryColumn> categories = [];
+  bool isLoading = false;
+  String? errorMessage;
+  String? errorDetail;
+  bool loadedOnce = false;
+}
+
+/// Proveedor de catálogos para el rail (Destacados, Películas, Series).
 class FeaturedMoviesProvider extends ChangeNotifier {
-  List<MovieItem> _items = [];
-  bool _isLoading = false;
-  String? _errorMessage;
-  String? _errorDetail;
-  bool _loadedOnce = false;
+  static const String sectionFeatured = 'masnew_featured';
+  static const String sectionMovies = 'masnew_movies';
+  static const String sectionSeries = 'masnew_series';
 
-  List<MovieItem> get items => _items;
-  bool get isLoading => _isLoading;
-  String? get errorMessage => _errorMessage;
-  String? get errorDetail => _errorDetail;
-  bool get loadedOnce => _loadedOnce;
+  final Map<String, _CatalogSectionState> _sections = {};
 
-  /// Carga `masnew_featured` desde persistido/bundled (sin asumir [cachedCatalog]).
-  Future<void> loadFeatured({bool force = false}) async {
-    if (_isLoading) return;
-    if (!force && _loadedOnce && _items.isNotEmpty) return;
+  _CatalogSectionState _stateFor(String section) =>
+      _sections.putIfAbsent(section, () => _CatalogSectionState());
 
-    _isLoading = true;
-    _errorMessage = null;
-    _errorDetail = null;
+  List<MovieItem> itemsFor(String section) {
+    if (section == sectionFeatured && !_sections.containsKey(section)) {
+      return items;
+    }
+    return _stateFor(section).items;
+  }
+
+  List<CategoryColumn> categoriesFor(String section) {
+    if (section == sectionFeatured && !_sections.containsKey(section)) {
+      return categories;
+    }
+    return _stateFor(section).categories;
+  }
+
+  bool isLoadingFor(String section) {
+    if (section == sectionFeatured && !_sections.containsKey(section)) {
+      return isLoading;
+    }
+    return _stateFor(section).isLoading;
+  }
+
+  String? errorMessageFor(String section) {
+    if (section == sectionFeatured && !_sections.containsKey(section)) {
+      return errorMessage;
+    }
+    return _stateFor(section).errorMessage;
+  }
+
+  String? errorDetailFor(String section) {
+    if (section == sectionFeatured && !_sections.containsKey(section)) {
+      return errorDetail;
+    }
+    return _stateFor(section).errorDetail;
+  }
+
+  bool loadedOnceFor(String section) {
+    if (section == sectionFeatured && !_sections.containsKey(section)) {
+      return loadedOnce;
+    }
+    return _stateFor(section).loadedOnce;
+  }
+
+  // Retrocompatibilidad con getters existentes apuntando a sectionFeatured:
+  List<MovieItem> get items => _stateFor(sectionFeatured).items;
+  List<CategoryColumn> get categories => _stateFor(sectionFeatured).categories;
+  bool get isLoading => _stateFor(sectionFeatured).isLoading;
+  String? get errorMessage => _stateFor(sectionFeatured).errorMessage;
+  String? get errorDetail => _stateFor(sectionFeatured).errorDetail;
+  bool get loadedOnce => _stateFor(sectionFeatured).loadedOnce;
+
+  /// Carga `masnew_featured` desde persistido/bundled.
+  Future<void> loadFeatured({bool force = false}) =>
+      loadSection(sectionFeatured, force: force);
+
+  /// Carga cualquier sección del catálogo (`masnew_featured`, `masnew_movies`, `masnew_series`).
+  Future<void> loadSection(String section, {bool force = false}) async {
+    final state = _stateFor(section);
+    if (state.isLoading) return;
+    if (!force && state.loadedOnce && state.items.isNotEmpty) return;
+
+    state.isLoading = true;
+    state.errorMessage = null;
+    state.errorDetail = null;
     notifyListeners();
 
     try {
       final result = await MoiamovApiService.instance.loadSavedOrBundled(
-        section: 'masnew_featured',
+        section: section,
       );
       final flat = <MovieItem>[];
       final seen = <String>{};
@@ -42,15 +103,18 @@ class FeaturedMoviesProvider extends ChangeNotifier {
           }
         }
       }
-      _items = flat;
-      _loadedOnce = true;
+      state.items = flat;
+      state.categories =
+          result.categories.where((c) => c.movies.isNotEmpty).toList();
+      state.loadedOnce = true;
     } catch (e) {
-      _errorMessage = 'movies_load_error';
-      _errorDetail = '$e';
-      _items = [];
-      _loadedOnce = true;
+      state.errorMessage = 'movies_load_error';
+      state.errorDetail = '$e';
+      state.items = [];
+      state.categories = [];
+      state.loadedOnce = true;
     } finally {
-      _isLoading = false;
+      state.isLoading = false;
       notifyListeners();
     }
   }

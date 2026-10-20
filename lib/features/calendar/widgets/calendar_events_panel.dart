@@ -722,7 +722,7 @@ class _HeaderButton extends StatelessWidget {
 }
 
 /// Escala al pulsar (click o D-pad). Mismo criterio que [TvTile].
-class _PressScale extends StatefulWidget {
+class _PressScale extends StatelessWidget {
   final Widget child;
   final VoidCallback onTap;
   final bool pressed;
@@ -734,33 +734,10 @@ class _PressScale extends StatefulWidget {
   });
 
   @override
-  State<_PressScale> createState() => _PressScaleState();
-}
-
-class _PressScaleState extends State<_PressScale> {
-  bool _pointerPressed = false;
-
-  void _setPointer(bool pressed) {
-    if (!mounted || _pointerPressed == pressed) return;
-    setState(() => _pointerPressed = pressed);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final pressed = _pointerPressed || widget.pressed;
-    return Listener(
-      onPointerDown: (_) => _setPointer(true),
-      onPointerUp: (_) => _setPointer(false),
-      onPointerCancel: (_) => _setPointer(false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedScale(
-          scale: pressed ? 0.96 : 1.0,
-          duration: const Duration(milliseconds: 90),
-          curve: Curves.easeOutCubic,
-          child: widget.child,
-        ),
-      ),
+    return GestureDetector(
+      onTap: onTap,
+      child: child,
     );
   }
 }

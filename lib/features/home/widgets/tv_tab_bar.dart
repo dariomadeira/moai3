@@ -41,7 +41,7 @@ class TvTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
 
-    final baseColor = scheme.surface;
+    final baseColor = scheme.surface.withValues(alpha: 0.8);
     final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
 
     return Padding(

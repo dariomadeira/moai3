@@ -3,7 +3,7 @@
 > **Estado**: Vigente (MoAI 3)  
 > **Área**: Experiencia de Usuario / Interfaz Android TV (M3 Expressive)  
 > **Archivos de Referencia**:  
-> - `lib/features/home/widgets/navigation_rail_section.dart`  
+> - `lib/features/home/widgets/tv_vertical_nav_rail.dart`  
 > - `lib/features/home/widgets/tv_tab_bar.dart`  
 > - `lib/features/search/widgets/search_panel.dart`  
 > - `lib/widgets/lists/tv_windowed_list.dart`  
@@ -25,21 +25,24 @@
 
 ---
 
-## 2. Barra Lateral de Navegación (`NavigationRailSection`)
+## 2. Barra Lateral de Navegación (`TvVerticalNavRail`)
+
+El rail actual es `TvVerticalNavRail` (`lib/features/home/widgets/tv_vertical_nav_rail.dart`).
 
 ### 2.1. Estructura y Distribución Vertical
-- La barra lateral se ubica a la izquierda de la pantalla en un ancho constante de 72 dp.
-- Contiene tres destinos principales:
-  1. **TV (Índice 0)**: `Icons.tv_outlined` (inactivo) / `Icons.tv` (seleccionado).
-  2. **Calendario (Índice 1)**: `Icons.calendar_month_outlined` (inactivo) / `Icons.calendar_month` (seleccionado). Incluye badge de eventos en vivo o de hoy (`tertiaryContainer`).
-  3. **Ajustes (Índice 2)**: `Icons.settings_outlined` (inactivo) / `Icons.settings` (seleccionado).
-- **Anclaje Inferior de Ajustes**:
-  - Los destinos 0 y 1 se agrupan en la parte superior.
-  - Se intercala un widget `Spacer()` flexible que empuja el destino 2 ("Ajustes") hacia la parte inferior de la pantalla.
-  - Para evitar que el D-Pad de Android TV pierda el foco al intentar saltar el `Spacer()`, la navegación vertical se intercepta en `onKeyEvent`:
-    - `ArrowDown`: `0 -> 1 -> 2` (salto directo a Ajustes).
-    - `ArrowUp`: `2 -> 1 -> 0` (salto directo a Calendario).
-  - Al pulsar `ArrowRight` desde el rail, el foco se transfiere directamente al contenido activo del área seleccionada.
+- Cápsula flotante de **52 dp** de ancho, centrada en vertical a la izquierda (`padding` 8/4). Fondo `scheme.surface` y borde `outlineVariant`; no ocupa toda la altura de la pantalla.
+- Destinos (índices fijos de sección; Arcade se omite si el plugin no está instalado):
+  1. **TV (0)**: `MoaiIcons.railTv` / `railTvSelected`.
+  2. **Películas (1)**: `MoaiIcons.railMovies` / `railMoviesSelected`.
+  3. **Agenda (2)**: `MoaiIcons.railCalendar` / `railCalendarSelected`. Badge de eventos de hoy (`tertiaryContainer`).
+  4. **Arcade (3)**: `MoaiIcons.railArcade` / `railArcadeSelected` (solo si el motor está instalado).
+  5. **Ajustes (4)**: `MoaiIcons.railSettings` / `railSettingsSelected`.
+- Idle: solo icono. Seleccionado: label vertical (`RotatedBox`) + icono filled.
+- D-Pad sobre la lista de destinos disponibles (sin `Spacer`):
+  - Sin Arcade: `0 → 1 → 2 → 4`.
+  - Con Arcade: `0 → 1 → 2 → 3 → 4`.
+  - `ArrowRight`: si el foco no es el destino activo, primero cambia de sección; luego pasa el foco al contenido.
+- Cabecera del rail (fuera de los destinos): `TvBottomWeatherPill` (hora + clima) anclada arriba (`top: 8`).
 
 ---
 
@@ -200,28 +203,26 @@ Las acciones de gestión se agrupan en la fila superior del panel, a la derecha 
   - **Extremo Superior Izquierdo (Más claro)**: `scheme.surfaceContainerHigh` con infusión sutil del color de acento del tema (`primary` al 8% en modo oscuro) para aportar profundidad lumínica y temperatura visual.
   - **Extremo Inferior Derecho (Más oscuro)**: `scheme.surfaceContainerLow` (modo oscuro), logrando un desvanecimiento elegante sin fatiga visual.
 - **Continuidad Espacial con el Navigation Rail**:
-  - `NavigationRailSection` emplea fondo transparente (`railBg = Colors.transparent`), permitiendo que el degradé diagonal cubra la pantalla de extremo a extremo sin cortes rectangulares.
+  - `TvVerticalNavRail` no pinta un bloque opaco a pantalla completa a la izquierda: la cápsula del rail deja ver el degradé ambiental alrededor.
   - Los paneles del acordeón y el visor de favoritos conservan su fondo `scheme.surface` con bordes redondeados, destacándose limpiamente sobre el degradé ambiental.
 
 ---
 
-## 10. Reloj Digital de TV Material Expressive (`TvClockPill`)
+## 10. Reloj y clima del rail (`TvBottomWeatherPill`)
 
-### 10.1. Ubicación y Simetría Superior
-- El reloj de la pantalla principal se ubica en la esquina superior derecha (`y = 0` a `64 dp`), alineado horizontalmente con el visor y en perfecta simetría de altura con la barra de pestañas `TvTabBar`.
+### 10.1. Ubicación
+- Cabecera de `TvVerticalNavRail`, anclada arriba (`top: 8`) en la misma columna de 52 dp. No forma parte de la cadena D-Pad de destinos.
 
-### 10.2. Tipografía y Separador Dinámico
-- Diseño puramente tipográfico, sin contenedor ni iconos accesorios.
-- Emplea `MoaiText.display` con tamaño **28 pt**, peso `FontWeight.w700` y cifras tabulares (`FontFeature.tabularFigures()`) para evitar saltos de ancho al cambiar los dígitos.
-- El separador de dos puntos (`:`) oscila con una animación suave de opacidad (`AnimatedOpacity`, 1 segundo de intervalo) simulando un reloj de transmisión en vivo.
-- Envuelto en `ExcludeFocus` para no capturar el foco del control remoto.
+### 10.2. Contenido
+- Hora `HH:mm` compacta (12 pt) en una píldora `primaryContainer`.
+- Debajo, temperatura e icono Lottie (`TvWeatherAnimatedIcon`). Fallback de icono: `MoaiIcons.wbSunnyOutlined`.
 
 ---
 
 ## 11. Alineación Geométrica y Distribución Vertical
 
 1. **Centrado del Reproductor de Video**:
-   - El ancla del reproductor (`TvPlayerLayoutAnchor`) se encuentra centrado verticalmente (`Center` dentro de `Expanded` en `home_tv_area.dart`), equilibrando las distancias entre las pestañas/reloj superiores y la barra de favoritos inferior.
+   - El ancla del reproductor (`TvPlayerLayoutAnchor`) se encuentra centrado verticalmente (`Center` dentro de `Expanded` en `home_tv_area.dart`), equilibrando las distancias entre las pestañas superiores y la barra de favoritos inferior.
 2. **Alineación de Cabecera del Visor**:
    - La línea superior del título del canal activo ("FX", "HBO Plus", etc.) coincide exactamente con el borde superior del panel de acordeón izquierdo a **y = 64 dp**.
    - `TvPanelHeaderMetrics.viewerTopInset` se fijó en 0 dp al coexistir con la barra de estado superior de 64 dp.

@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/models/movie_models.dart';
-import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:reicons/reicons.dart';
 
 /// Tarjeta de película Moiamov para Smart TV con soporte D-Pad.
 class TvMovieCard extends StatefulWidget {
@@ -34,10 +34,21 @@ class TvMovieCard extends StatefulWidget {
 class _TvMovieCardState extends State<TvMovieCard> {
   bool _isFocused = false;
 
-  double? get _scoreValue {
-    final raw = widget.movie.score;
-    if (raw == null || raw.isEmpty) return null;
-    return double.tryParse(raw.replaceAll(',', '.'));
+  IconData get _cardIcon {
+    final pt = (widget.movie.programType ?? '').toLowerCase().trim();
+    if (pt == 'trailer' || widget.movie.name.toLowerCase().contains('trailer')) {
+      return ReiconIcons.reel;
+    }
+    if (pt == 'teleplay' ||
+        pt == 'series' ||
+        pt == '0' ||
+        RegExp(r'\b(t\d+|s\d+|temporada)\b', caseSensitive: false)
+            .hasMatch(widget.movie.name) ||
+        RegExp(r'\b(s\d+|season)\b', caseSensitive: false)
+            .hasMatch(widget.movie.alias ?? '')) {
+      return ReiconIcons.clapperboardText;
+    }
+    return ReiconIcons.videoFrame2;
   }
 
   @override
@@ -58,8 +69,8 @@ class _TvMovieCardState extends State<TvMovieCard> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isFocused = _isFocused || (widget.focusNode?.hasFocus ?? false);
-    final score = _scoreValue;
     final poster = widget.movie.poster;
+    final cardIcon = _cardIcon;
 
     return Focus(
       focusNode: widget.focusNode,
@@ -106,15 +117,17 @@ class _TvMovieCardState extends State<TvMovieCard> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 140),
           decoration: BoxDecoration(
-            color: scheme.surfaceContainerHigh,
+            color: scheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isFocused ? scheme.primary : Colors.transparent,
-              width: 2.5,
+              color: isFocused
+                  ? scheme.primary
+                  : scheme.outlineVariant.withValues(alpha: 0.48),
+              width: isFocused ? 2.5 : 1.0,
             ),
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(9),
+            borderRadius: BorderRadius.circular(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -126,22 +139,22 @@ class _TvMovieCardState extends State<TvMovieCard> {
                         CachedNetworkImage(
                           imageUrl: poster,
                           fit: BoxFit.cover,
-                          memCacheWidth: 160,
-                          memCacheHeight: 240,
+                          alignment: Alignment.center,
+                          memCacheWidth: 400,
+                          fadeInDuration: const Duration(milliseconds: 180),
+                          fadeOutDuration: const Duration(milliseconds: 180),
                           placeholder: (context, url) => Container(
                             color: scheme.surfaceContainerLowest,
-                            child: const Center(
-                              child: SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              ),
+                            child: Icon(
+                              cardIcon,
+                              size: 40,
+                              color: scheme.outline,
                             ),
                           ),
                           errorWidget: (context, url, error) => Container(
                             color: scheme.surfaceContainerLowest,
                             child: Icon(
-                              MoaiIcons.movie,
+                              cardIcon,
                               size: 40,
                               color: scheme.outline,
                             ),
@@ -151,43 +164,9 @@ class _TvMovieCardState extends State<TvMovieCard> {
                         Container(
                           color: scheme.surfaceContainerLowest,
                           child: Icon(
-                            MoaiIcons.movie,
+                            cardIcon,
                             size: 40,
                             color: scheme.outline,
-                          ),
-                        ),
-                      if (score != null && score > 0)
-                        Positioned(
-                          top: 6,
-                          right: 6,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 5,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.8),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  MoaiIcons.starRounded,
-                                  size: 13,
-                                  color: Colors.amber,
-                                ),
-                                const SizedBox(width: 2),
-                                Text(
-                                  score.toStringAsFixed(1),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
                           ),
                         ),
                     ],
@@ -195,33 +174,17 @@ class _TvMovieCardState extends State<TvMovieCard> {
                 ),
                 Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.movie.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: MoaiText.body(
-                          context,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: isFocused ? scheme.primary : scheme.onSurface,
-                        ),
-                      ),
-                      if (widget.movie.year != null &&
-                          widget.movie.year!.isNotEmpty)
-                        Text(
-                          widget.movie.year!,
-                          maxLines: 1,
-                          style: MoaiText.body(
-                            context,
-                            fontSize: 9,
-                            color: scheme.onSurfaceVariant,
-                          ),
-                        ),
-                    ],
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: Text(
+                    widget.movie.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: MoaiText.body(
+                      context,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: isFocused ? scheme.primary : scheme.onSurface,
+                    ),
                   ),
                 ),
               ],

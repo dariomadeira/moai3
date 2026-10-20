@@ -22,8 +22,8 @@ class CategoryColumn {
       columnId: json['columnId'] is int
           ? json['columnId']
           : int.tryParse(json['columnId']?.toString() ?? '0') ?? 0,
-      columnName: json['alias']?.toString() ??
-          json['name']?.toString() ??
+      columnName: json['name']?.toString() ??
+          json['alias']?.toString() ??
           json['columnName']?.toString() ??
           'Categoría',
       code: json['code']?.toString(),
@@ -51,6 +51,7 @@ class MovieItem {
   final String? actorDisplay;
   final String? duration;
   final String? tags;
+  final String? programType;
 
   MovieItem({
     required this.contentId,
@@ -64,24 +65,41 @@ class MovieItem {
     this.actorDisplay,
     this.duration,
     this.tags,
+    this.programType,
   });
 
   factory MovieItem.fromJson(Map<String, dynamic> json) {
     String? foundPoster;
     var rawPosterList = json['posterList'] as List? ?? [];
     if (rawPosterList.isNotEmpty) {
+      String? bestHighResIcon;
+      String? bestStandardIcon;
+      String? fallbackLandscape;
+
       for (var p in rawPosterList) {
         if (p is Map) {
-          final type = p['fileType']?.toString().toLowerCase();
+          final type = p['fileType']?.toString().toLowerCase().trim() ?? '';
+          final size = p['size']?.toString().toLowerCase().trim() ?? '';
           final url = p['fileUrl']?.toString() ?? p['url']?.toString();
-          if (url != null && url.isNotEmpty) {
-            if (type == 'icon' || type == 'poster') {
-              foundPoster = url;
-              break;
+          if (url == null || url.trim().isEmpty) continue;
+
+          if (type == 'icon') {
+            final isPlaceholderSize =
+                size.contains('100*100') || size.contains('100x100');
+            if (!isPlaceholderSize && size.isNotEmpty) {
+              bestHighResIcon ??= url;
+            } else {
+              bestStandardIcon ??= url;
             }
+          } else if (type == 'poster') {
+            fallbackLandscape ??= url;
+          } else if (type == 'stage') {
+            fallbackLandscape ??= url;
           }
         }
       }
+
+      foundPoster = bestHighResIcon ?? bestStandardIcon ?? fallbackLandscape;
       if (foundPoster == null && rawPosterList.first is Map) {
         foundPoster = (rawPosterList.first as Map)['fileUrl']?.toString() ??
             (rawPosterList.first as Map)['url']?.toString();
@@ -106,6 +124,7 @@ class MovieItem {
       actorDisplay: json['actorDisplay']?.toString() ?? json['actors']?.toString(),
       duration: json['duration']?.toString(),
       tags: json['tags']?.toString(),
+      programType: json['programType']?.toString() ?? json['type']?.toString(),
     );
   }
 
@@ -121,6 +140,7 @@ class MovieItem {
     'actorDisplay': actorDisplay,
     'duration': duration,
     'tags': tags,
+    'programType': programType,
   };
 }
 

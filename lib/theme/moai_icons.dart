@@ -18,17 +18,35 @@ abstract final class MoaiIcons {
   // Buscador: https://reicon.dev/icons
   // ---------------------------------------------------------------------------
 
+  /// Rail Inicio (idle). Origen: `ReiconIcons.home6`
+  static const railHome = ReiconIcons.home6;
+
+  /// Rail Inicio (selected). Origen: `ReiconFilledIcons.home6`
+  static const railHomeSelected = ReiconFilledIcons.home6;
+
   /// Rail TV (idle). Origen: `ReiconIcons.tv`
   static const railTv = ReiconIcons.tv;
 
   /// Rail TV (selected). Origen: `ReiconFilledIcons.tv`
   static const railTvSelected = ReiconFilledIcons.tv;
 
-  /// Rail Películas (idle). Origen: `ReiconIcons.clapperboard`
-  static const railMovies = ReiconIcons.videoFrame2;
+  /// Rail Destacados (idle). Origen: `ReiconIcons.videoPlayH`
+  static const railFeatured = ReiconIcons.videoPlayH;
 
-  /// Rail Películas (selected). Origen: `ReiconFilledIcons.clapperboard`
-  static const railMoviesSelected = ReiconFilledIcons.videoFrame2;
+  /// Rail Destacados (selected). Origen: `ReiconFilledIcons.videoPlayH`
+  static const railFeaturedSelected = ReiconFilledIcons.videoPlayH;
+
+  /// Rail Películas (idle). Origen: `ReiconIcons.clapperboardOpen`
+  static const railMovies = ReiconIcons.clapperboardOpen;
+
+  /// Rail Películas (selected). Origen: `ReiconFilledIcons.clapperboardOpen`
+  static const railMoviesSelected = ReiconFilledIcons.clapperboardOpen;
+
+  /// Rail Series (idle). Origen: `ReiconIcons.videoFrame2`
+  static const railSeries = ReiconIcons.videoFrame2;
+
+  /// Rail Series (selected). Origen: `ReiconFilledIcons.videoFrame2`
+  static const railSeriesSelected = ReiconFilledIcons.videoFrame2;
 
   /// Rail Agenda (idle). Origen: `ReiconIcons.calendar`
   static const railCalendar = ReiconIcons.calendar;
@@ -67,6 +85,33 @@ abstract final class MoaiIcons {
   /// Acordeón «Canales» (`home_panel_channels`).
   /// Origen actual: `Icons.live_tv_outlined` (pantalla con antena + play).
   static const tvAccordionCanales = ReiconIcons.remote;
+
+  /// Acordeón «Inicio» (`home_panel_home_title`).
+  /// Origen: `ReiconIcons.home6`
+  static const tvAccordionHome = ReiconIcons.home6;
+
+  /// Acordeón «Destacados» (`movies_panel_featured_title`).
+  /// Origen: `ReiconIcons.videoPlayH`
+  static const tvAccordionFeatured = ReiconIcons.videoPlayH;
+
+  /// Retrocompatibilidad: alias de [tvAccordionFeatured]
+  static const tvAccordionMoviesFeatured = tvAccordionFeatured;
+
+  /// Acordeón «Películas» (`movies_panel_movies_title`).
+  /// Origen: `ReiconIcons.clapperboardOpen`
+  static const tvAccordionMovies = ReiconIcons.clapperboardOpen;
+
+  /// Acordeón «Series» (`movies_panel_series_title`).
+  /// Origen: `ReiconIcons.videoFrame2`
+  static const tvAccordionSeries = ReiconIcons.videoFrame2;
+
+  /// Estado vacío del catálogo de películas (`movies_empty_featured`).
+  /// Origen: `ReiconIcons.cloudDownload`
+  static const tvMoviesEmpty = ReiconIcons.cloudDownload;
+
+  /// Opción «Pestaña de arranque» en configuración de TV (`settings_tv_startup_tab`).
+  /// Origen: `ReiconIcons.flag2`
+  static const settingsTvStartupTab = ReiconIcons.flag2;
 
   // ---------------------------------------------------------------------------
   // Pestañas flotantes TV (Explorar / Buscar / Marcadores)
@@ -882,9 +927,6 @@ abstract final class MoaiIcons {
   /// - Agenda (`features/calendar/widgets/calendar_events_panel.dart`)
   static const eventBusyOutlined = Icons.event_busy_outlined;
 
-  /// Origen: `Icons.event_note_outlined`
-  static const eventNoteOutlined = Icons.event_note_outlined;
-
   /// Origen: `ReiconIcons.logout`
   ///
   /// Usos:
@@ -1191,7 +1233,7 @@ abstract final class MoaiIcons {
   ///
   /// Usos:
   /// - Categorías de canales (mapa por nombre) (`widgets/cards/category_card.dart`)
-  /// - Inicio / menú lateral: `home_rail_movies_title` (`features/home/widgets/navigation_rail_section.dart`)
+  /// - Inicio / menú lateral: `home_rail_movies_title` (`features/home/widgets/tv_vertical_nav_rail.dart`)
   /// - Tarjeta de película (`features/home/widgets/tv_movie_card.dart`)
   static const movie = Symbols.movie;
 
@@ -1199,7 +1241,7 @@ abstract final class MoaiIcons {
   ///
   /// Usos:
   /// - Grupos (mapa por clave) (`widgets/cards/group_card.dart`)
-  /// - Inicio / menú lateral: `home_rail_movies_title` (`features/home/widgets/navigation_rail_section.dart`)
+  /// - Inicio / menú lateral: `home_rail_movies_title` (`features/home/widgets/tv_vertical_nav_rail.dart`)
   /// - Área películas (`features/home/areas/home_movies_area.dart`)
   static const movieOutlined = ReiconIcons.clapperboardOpen;
 
@@ -1383,9 +1425,6 @@ abstract final class MoaiIcons {
   /// - Categorías de canales (mapa por nombre) (`widgets/cards/category_card.dart`)
   static const restaurantMenuOutlined = Icons.restaurant_menu_outlined;
 
-  /// Origen: `Icons.schedule_outlined`
-  static const scheduleOutlined = Icons.schedule_outlined;
-
   /// Origen: `Symbols.school`
   ///
   /// Usos:
@@ -1459,12 +1498,6 @@ abstract final class MoaiIcons {
   /// Usos:
   /// - Alias agrupado: [calendarSubF1]
   static const sportsMotorsportsOutlined = Icons.sports_motorsports_outlined;
-
-  /// Origen: `Icons.sports_outlined`
-  ///
-  /// Usos:
-  /// - Alias agrupado: [calendarSubFallback]
-  static const sportsOutlined = Icons.sports_outlined;
 
   /// Origen: `Icons.sports_soccer_outlined`
   ///
@@ -1692,7 +1725,7 @@ abstract final class MoaiIcons {
   /// Origen: `Icons.wb_sunny_outlined`
   ///
   /// Usos:
-  /// - Inicio (`features/home/widgets/tv_vertical_clock_pill.dart`)
+  /// - Inicio (`features/home/widgets/tv_weather_animated_icon.dart`)
   static const wbSunnyOutlined = Icons.wb_sunny_outlined;
 
   /// Origen: `Icons.wifi_off_rounded`
