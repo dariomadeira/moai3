@@ -48,7 +48,7 @@ class _TvBottomWeatherPillState extends State<TvBottomWeatherPill> {
 
     return RepaintBoundary(
       child: Container(
-        width: 52,
+        width: 48,
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: baseColor,
@@ -61,7 +61,7 @@ class _TvBottomWeatherPillState extends State<TvBottomWeatherPill> {
           children: [
             // Cápsula interna para la hora (dos puntos fijos sin AnimatedOpacity)
             Container(
-              width: 44,
+              width: 40,
               height: 32,
               decoration: BoxDecoration(
                 color: scheme.primaryContainer.withValues(alpha: 0.4),

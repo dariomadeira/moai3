@@ -174,7 +174,7 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
         child: Padding(
           padding: const EdgeInsets.only(left: 8, right: 4),
           child: SizedBox(
-            width: 52,
+            width: 48,
             child: Stack(
               clipBehavior: Clip.none,
               children: [
@@ -183,10 +183,10 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Container(
-                      width: 52,
+                      width: 48,
                       decoration: BoxDecoration(
                         color: baseColor,
-                        borderRadius: BorderRadius.circular(26),
+                        borderRadius: BorderRadius.circular(24),
                         border: Border.all(
                           color: borderColor,
                           width: 1.0,
@@ -198,7 +198,7 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           for (int i = 0; i < availableSections.length; i++) ...[
-                            if (i > 0) const SizedBox(height: 6),
+                            if (i > 0) const SizedBox(height: 5),
                             _buildRailDestination(
                               availableSections[i],
                               scheme,
@@ -286,7 +286,7 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
 
     Widget iconWidget = Icon(
       iconData,
-      size: 22,
+      size: 20,
       color: iconColor,
     );
 
@@ -299,7 +299,7 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
           fontWeight: FontWeight.w800,
           fontSize: 9,
         ),
-        offset: const Offset(4, -4),
+        offset: const Offset(3, -3),
         label: Text('$todayEvents'),
         child: iconWidget,
       );
@@ -311,10 +311,10 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
         widget.onIndexChanged(section);
         widget.railFocusNode.requestFocus();
       },
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        width: 44,
-        height: 44,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
           color: pillColor,
           shape: BoxShape.circle,
