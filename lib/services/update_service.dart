@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:ffi';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -44,20 +43,14 @@ class UpdateService {
       'https://api.github.com/repos/dariomadeira/moai3/releases/latest';
 
   static String _getPreferredAbiTag() {
+    if (kIsWeb) return '';
     try {
-      final abi = Abi.current();
-      switch (abi) {
-        case Abi.androidArm64:
-          return 'arm64-v8a';
-        case Abi.androidArm:
-          return 'armeabi-v7a';
-        case Abi.androidX64:
-          return 'x86_64';
-        case Abi.androidIA32:
-          return 'x86';
-        default:
-          return '';
-      }
+      final v = Platform.version.toLowerCase();
+      if (v.contains('arm64')) return 'arm64-v8a';
+      if (v.contains('arm')) return 'armeabi-v7a';
+      if (v.contains('x64') || v.contains('x86_64')) return 'x86_64';
+      if (v.contains('ia32') || v.contains('x86')) return 'x86';
+      return '';
     } catch (_) {
       return '';
     }

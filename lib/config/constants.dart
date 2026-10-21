@@ -52,3 +52,6 @@ String get kTurnPassword => _env('TURN_PASS', '');
 String get kMoiamovDocPackage =>
     _env('MOIAMOV_DOC_PACKAGE', '');
 
+// TMDb API Key (v4 read token o v3 key)
+String get kTmdbApiKey => _env('TMDB_API_KEY', '');
+

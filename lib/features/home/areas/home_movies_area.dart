@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/home/widgets/tv_movie_card.dart';
+import 'package:moai3/features/movies/screens/movie_detail_screen.dart';
 import 'package:moai3/focus/focus_retry.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/state/featured_movies_provider.dart';
@@ -159,7 +160,14 @@ class HomeMoviesAreaState extends State<HomeMoviesArea> {
   }
 
   void _onMovieTap(MovieItem movie) {
-    // TODO: abrir detalle / reproducción.
+    if (!movie.isMovie) {
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => MovieDetailScreen(movie: movie),
+      ),
+    );
   }
 
   @override

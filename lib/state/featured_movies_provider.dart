@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
+import 'package:moai3/services/tmdb_trending_service.dart';
 
 class _CatalogSectionState {
   List<MovieItem> items = [];
@@ -104,8 +105,24 @@ class FeaturedMoviesProvider extends ChangeNotifier {
         }
       }
       state.items = flat;
-      state.categories =
+      var categories =
           result.categories.where((c) => c.movies.isNotEmpty).toList();
+
+      if (section == sectionMovies) {
+        try {
+          final trendingRow = await TmdbTrendingService.instance.buildTrendingRow(
+            allCatalogMovies: flat,
+            existingCategories: categories,
+          );
+          if (trendingRow.movies.isNotEmpty) {
+            categories = [trendingRow, ...categories];
+          }
+        } catch (e) {
+          debugPrint('⚠️ [TMDB] Error al armar fila de estrenos: $e');
+        }
+      }
+
+      state.categories = categories;
       state.loadedOnce = true;
     } catch (e) {
       state.errorMessage = 'movies_load_error';

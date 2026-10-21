@@ -35,19 +35,8 @@ class _TvMovieCardState extends State<TvMovieCard> {
   bool _isFocused = false;
 
   IconData get _cardIcon {
-    final pt = (widget.movie.programType ?? '').toLowerCase().trim();
-    if (pt == 'trailer' || widget.movie.name.toLowerCase().contains('trailer')) {
-      return ReiconIcons.reel;
-    }
-    if (pt == 'teleplay' ||
-        pt == 'series' ||
-        pt == '0' ||
-        RegExp(r'\b(t\d+|s\d+|temporada)\b', caseSensitive: false)
-            .hasMatch(widget.movie.name) ||
-        RegExp(r'\b(s\d+|season)\b', caseSensitive: false)
-            .hasMatch(widget.movie.alias ?? '')) {
-      return ReiconIcons.clapperboardText;
-    }
+    if (widget.movie.isTrailer) return ReiconIcons.reel;
+    if (widget.movie.isSeries) return ReiconIcons.clapperboardText;
     return ReiconIcons.videoFrame2;
   }
 
