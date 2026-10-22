@@ -237,6 +237,29 @@ class MoaiEngineController extends ChangeNotifier {
         'seekTo', {'handle': _handle, 'positionMs': position.inMilliseconds});
   }
 
+  Future<Duration> getPosition() async {
+    if (_handle == null) return Duration.zero;
+    try {
+      final pos =
+          await _control.invokeMethod<num>('getPosition', {'handle': _handle});
+      return Duration(milliseconds: pos?.toInt() ?? 0);
+    } catch (_) {
+      return Duration.zero;
+    }
+  }
+
+  Future<Duration> getDuration() async {
+    if (_handle == null) return Duration.zero;
+    try {
+      final dur =
+          await _control.invokeMethod<num>('getDuration', {'handle': _handle});
+      final ms = dur?.toInt() ?? 0;
+      return ms > 0 ? Duration(milliseconds: ms) : Duration.zero;
+    } catch (_) {
+      return Duration.zero;
+    }
+  }
+
   Future<void> setVolume(double volume) async {
     await _control.invokeMethod<void>('setVolume', {'handle': _handle, 'volume': volume});
   }

@@ -9,6 +9,7 @@ import 'package:pointycastle/digests/md5.dart';
 import 'package:pointycastle/padded_block_cipher/padded_block_cipher_impl.dart';
 import 'package:pointycastle/paddings/pkcs7.dart';
 import 'package:pointycastle/pointycastle.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/constants.dart';
 import '../models/movie_models.dart';
 
@@ -18,6 +19,9 @@ class MoiamovApiService {
   static final MoiamovApiService instance = MoiamovApiService._internal();
 
   MoiamovApiService._internal();
+
+  /// Último error descriptivo al intentar resolver un stream de reproducción.
+  String? lastResolutionError;
 
   /// Registra una línea de diagnóstico en la consola de depuración.
   static void logLine(String message) {
@@ -47,6 +51,10 @@ class MoiamovApiService {
   String _currentUserId = defaultUserId;
   String _currentUserToken = defaultUserToken;
   String _currentPortalCode = defaultPortalCode;
+  String _currentUserIdentity = '';
+  String _currentSnField = '';
+  String _currentB29 = '';
+  static String _activeSnField = '';
 
   CatalogResult? _cachedCatalog;
   CatalogResult? get cachedCatalog => _cachedCatalog;
@@ -168,7 +176,7 @@ class MoiamovApiService {
   static String encryptPayload(Map<String, dynamic> rawMap) {
     final mergedMap = Map<String, dynamic>.from(rawMap);
     // Inyectar metadatos de dispositivo oficiales requeridos por zb.b
-    mergedMap.putIfAbsent('loginType', () => '1');
+    mergedMap.putIfAbsent('loginType', () => '2');
     mergedMap.putIfAbsent('appLanguage', () => 'es');
     mergedMap.putIfAbsent('apkVersion', () => apkVer);
     mergedMap.putIfAbsent('sysVersion', () => spkgVer);
@@ -178,7 +186,11 @@ class MoiamovApiService {
     mergedMap.putIfAbsent('product', () => 'sdk_google');
     mergedMap.putIfAbsent('abi', () => 'x86_64');
     mergedMap.putIfAbsent('deviceToken', () => '1fb16e34b8dd3831');
-    mergedMap.putIfAbsent('sn', () => '');
+    if (_activeSnField.isNotEmpty) {
+      mergedMap.putIfAbsent('sn', () => _activeSnField);
+    } else {
+      mergedMap.putIfAbsent('sn', () => '');
+    }
     mergedMap.putIfAbsent('drmId', () => '');
     mergedMap.putIfAbsent('sdkVer', () => 34);
 
@@ -226,6 +238,12 @@ class MoiamovApiService {
     req.headers.set('PORTAL_KEY', portalKey);
     req.headers.set('ProcessResult', 'false');
     req.headers.set('User-Agent', 'Mozilla/5.0 (Linux; Android 10; TV) Mobile Safari/537.36');
+    if (_currentUserId.isNotEmpty) {
+      req.headers.set('userId', _currentUserId);
+    }
+    if (_currentUserIdentity.isNotEmpty) {
+      req.headers.set('userIdentity', _currentUserIdentity);
+    }
   }
 
   /// POST cifrado reutilizable (inyecta headers oficiales y cifra el body).
@@ -406,14 +424,68 @@ class MoiamovApiService {
     if (data is! Map<String, dynamic>) return false;
     if (data['userId'] != null) _currentUserId = data['userId'].toString();
     if (data['userToken'] != null) _currentUserToken = data['userToken'].toString();
+    if (data['userIdentity'] != null) {
+      _currentUserIdentity = data['userIdentity'].toString();
+    } else if (data['identity'] != null) {
+      _currentUserIdentity = data['identity'].toString();
+    }
     final pcl = data['portalCodeList'];
     if (pcl is List && pcl.isNotEmpty && pcl[0] is Map && pcl[0]['portalCode'] != null) {
       _currentPortalCode = pcl[0]['portalCode'].toString();
     } else if (data['portalCode'] != null) {
       _currentPortalCode = data['portalCode'].toString();
     }
-    logLine('✅ Sesión activada: userId=$_currentUserId portal=$_currentPortalCode');
+    logLine('✅ Sesión activada: userId=$_currentUserId portal=$_currentPortalCode identity=$_currentUserIdentity mac=$_deviceMac');
+    try {
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setString('moiamov_user_id', _currentUserId);
+        prefs.setString('moiamov_user_token', _currentUserToken);
+        prefs.setString('moiamov_portal_code', _currentPortalCode);
+        prefs.setString('moiamov_user_identity', _currentUserIdentity);
+        prefs.setString('moiamov_device_mac', _deviceMac);
+        prefs.setString('moiamov_sn_field', _currentSnField);
+        prefs.setString('moiamov_b29', _currentB29);
+      });
+    } catch (_) {}
     return true;
+  }
+
+  /// Restaura los tokens de sesión guardados en almacenamiento local si existen.
+  Future<void> restoreSessionFromStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('moiamov_user_token');
+      if (token != null && token.isNotEmpty) {
+        _currentUserToken = token;
+        _currentUserId = prefs.getString('moiamov_user_id') ?? _currentUserId;
+        _currentPortalCode = prefs.getString('moiamov_portal_code') ?? _currentPortalCode;
+        _currentUserIdentity = prefs.getString('moiamov_user_identity') ?? '';
+        final savedMac = prefs.getString('moiamov_device_mac');
+        if (savedMac != null && savedMac.isNotEmpty) {
+          _deviceMac = savedMac;
+        }
+        final savedSn = prefs.getString('moiamov_sn_field');
+        if (savedSn != null && savedSn.isNotEmpty) {
+          _currentSnField = savedSn;
+          _activeSnField = savedSn;
+        }
+        _currentB29 = prefs.getString('moiamov_b29') ?? '';
+        logLine('🔑 Sesión activa restaurada: userId=$_currentUserId portal=$_currentPortalCode mac=$_deviceMac sn=${_currentSnField.isNotEmpty ? "OK" : "vacío"}');
+      }
+
+      // Si la MAC sigue siendo la default, consultar fingerprint nativo de inmediato
+      if (_deviceMac == deviceMac) {
+        final fp = await _deviceFingerprint();
+        final realMac = (fp['wifiMac'] ?? '').isEmpty || fp['wifiMac'] == '02:00:00:00:00:00'
+            ? (fp['etheMac'] ?? deviceMac)
+            : (fp['wifiMac'] ?? deviceMac);
+        if (realMac.isNotEmpty && realMac != '02:00:00:00:00:00') {
+          _deviceMac = realMac;
+        }
+      }
+    } catch (e) {
+      logLine('⚠️ Error al restaurar sesión: $e');
+    }
   }
 
   /// Autenticación oficial anónima por dispositivo.
@@ -453,6 +525,8 @@ class MoiamovApiService {
         // Campo `sn` requerido por el envelope (C1446c0.m6748t = KEY_SP_SN):
         // MD5(snToken + salt) en minúscula, calculado por C0132a1 tras v3/snToken.
         final snField = _md5Hex('$snToken$kMoiamovSnSalt');
+        _currentSnField = snField;
+        _activeSnField = snField;
         final localMac = _deviceMac.replaceAll(':', '');
         final reserve1 = _encryptWithKey(
             localMac.isEmpty ? '000000000000' : localMac,
@@ -460,6 +534,7 @@ class MoiamovApiService {
         final b29 = _encryptWithKey(
             (fp['serialNumber'] ?? '').isEmpty ? '000000000000' : fp['serialNumber']!,
             kMoiamovDeviceCipherKey);
+        _currentB29 = b29;
 
         logLine('Sesión: v8/active → $baseUrl');
         final actBody = await _postEncrypted(
@@ -492,6 +567,7 @@ class MoiamovApiService {
         final em = actDecoded['errorMessage']?.toString() ?? '';
         if (rc == 'portal100024' || em.contains('黑名单') || em.contains('区域')) {
           logLine('🚫 La salida de red fue rechazada. Reintentá con otro nodo.');
+          lastResolutionError = 'Región no permitida por el servidor. Conecta el túnel seguro.';
           return false;
         }
         if (_applyActiveResult(actDecoded)) {
@@ -908,6 +984,315 @@ class MoiamovApiService {
       isFromNetwork: false,
       source: CatalogSource.assetBundle,
       statusMessage: 'No se pudo cargar el catálogo de $sectionLabel.',
+    );
+  }
+
+  /// Consulta las calidades, audios y subtítulos disponibles de una película (v10).
+  Future<VodPlayInfo?> startPlayVOD({
+    required String contentId,
+    String type = '1',
+    int columnId = -1,
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    final candidateHosts = <String>{
+      defaultBaseUrl,
+      'https://ftmrmy.jdfey0cd.com',
+      'https://fuxok.nguvmqhpk.com',
+    }.toList();
+
+    for (final host in candidateHosts) {
+      final baseUrl = _cleanUrl(host);
+      final ioClient = HttpClient()
+        ..badCertificateCallback = ((cert, h, p) => true)
+        ..connectionTimeout = timeout;
+      _trackClient(ioClient);
+
+      try {
+        final payload = <String, dynamic>{
+          'userToken': _currentUserToken,
+          'userId': _currentUserId,
+          'portalCode': _currentPortalCode,
+          'columnId': columnId,
+          'contentId': contentId,
+          'seriesContentId': '',
+          'type': type,
+          'startTime': 0,
+          'authType': null,
+          'episodeNumberList': null,
+        };
+
+        logLine('startPlayVOD ($contentId) → $baseUrl');
+        final body = await _postEncrypted(
+          ioClient,
+          '$baseUrl/api/portalCore/v10/startPlayVOD',
+          payload,
+          timeout,
+        );
+
+        if (body == null) continue;
+        final decoded = jsonDecode(body);
+        if (decoded is! Map<String, dynamic>) continue;
+
+        final returnCode = decoded['returnCode']?.toString();
+        if (returnCode == '0' || returnCode == '0000' || returnCode == '200') {
+          final data = _decodeData(decoded['data']);
+          if (data is Map<String, dynamic>) {
+            logLine('📦 startPlayVOD data completa: ${jsonEncode(data)}');
+            final info = VodPlayInfo.fromJson(data);
+            logLine('✅ startPlayVOD éxito: "${info.name}" (${info.qualities.length} calidades, ${info.subtitles.length} subs)');
+            return info;
+          }
+        } else {
+          logLine('⚠️ startPlayVOD returnCode=$returnCode (${decoded['errorMessage']})');
+          if (returnCode == 'aaa100028') {
+            lastResolutionError = 'Sesión expirada o no autenticada.';
+          } else if (decoded['errorMessage'] != null && decoded['errorMessage'].toString().isNotEmpty) {
+            lastResolutionError = decoded['errorMessage'].toString();
+          }
+        }
+      } catch (e) {
+        logLine('⚠️ Error en startPlayVOD ($host): $e');
+      } finally {
+        _releaseClient(ioClient);
+      }
+    }
+    return null;
+  }
+
+  /// Obtiene la URL de streaming HLS firmada para una pista de video específica (v14/v15).
+  Future<String?> getSlbInfo({
+    required String mediaContentId,
+    String? license,
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    final localMac = _deviceMac.replaceAll(':', '');
+    final reserve1 = _encryptWithKey(
+      localMac.isEmpty ? '000000000000' : localMac,
+      kMoiamovDeviceCipherKey,
+    );
+
+    final candidateHosts = <String>{
+      defaultBaseUrl,
+      'https://ftmrmy.jdfey0cd.com',
+      'https://fuxok.nguvmqhpk.com',
+    }.toList();
+
+    for (final host in candidateHosts) {
+      final baseUrl = _cleanUrl(host);
+      final ioClient = HttpClient()
+        ..badCertificateCallback = ((cert, h, p) => true)
+        ..connectionTimeout = timeout;
+      _trackClient(ioClient);
+
+      try {
+        logLine('getSlbInfo ($mediaContentId) → $baseUrl (mac: $_deviceMac, sn: ${_currentSnField.isNotEmpty ? "OK" : "vacío"})');
+        final candidateLiveCodes = <String>[
+          '15406_live',
+          'default_live',
+          '${_currentPortalCode}_live',
+          mediaContentId,
+        ];
+
+        for (final liveCode in candidateLiveCodes) {
+          for (final typeVal in ['vod', 'merge']) {
+            final payload = <String, dynamic>{
+              'userToken': _currentUserToken,
+              'userId': _currentUserId,
+              'hasPay': '0',
+              'userIdentity': _currentUserIdentity,
+              'portalCode': _currentPortalCode,
+              'type': typeVal,
+              'appVer': apkVer,
+              'lang': 'es',
+              'encMediaSupported': 1,
+              'liveCodeList': [liveCode],
+              'appParams': '',
+              'reserve1': reserve1,
+              'pipFlag': '0',
+            };
+            if (_currentSnField.isNotEmpty) {
+              payload['sn'] = _currentSnField;
+            }
+
+            for (final version in ['v14', 'v15']) {
+              final body = await _postEncrypted(
+                ioClient,
+                '$baseUrl/api/portalCore/$version/getSlbInfo',
+                payload,
+                timeout,
+              );
+
+              if (body == null) continue;
+              final decoded = jsonDecode(body);
+              if (decoded is! Map<String, dynamic>) continue;
+
+              final returnCode = decoded['returnCode']?.toString();
+              if (returnCode == '0' || returnCode == '0000' || returnCode == '200') {
+                final data = _decodeData(decoded['data']);
+                logLine('📦 getSlbInfo data completa ($version, $typeVal, $liveCode): ${jsonEncode(data)}');
+                if (data is Map<String, dynamic> && data['cdn_list'] is List) {
+                  final cdnList = (data['cdn_list'] as List).whereType<Map>().toList();
+                  // Priorizar CDNs con tag="vod"
+                  cdnList.sort((a, b) {
+                    final aVod = a['tag']?.toString().toLowerCase() == 'vod' ? 0 : 1;
+                    final bVod = b['tag']?.toString().toLowerCase() == 'vod' ? 0 : 1;
+                    return aVod.compareTo(bVod);
+                  });
+
+                  for (final cdn in cdnList) {
+                    if (cdn['url_list'] is List) {
+                      var host = (cdn['main_addr'] ?? cdn['spared_addr'])?.toString().trim() ?? '';
+                      if (host.startsWith('http://') || host.startsWith('https://')) {
+                        host = host.replaceFirst(RegExp(r'^https?://'), '');
+                      }
+                      for (final u in cdn['url_list'] as List) {
+                        if (u is Map && u['url'] != null) {
+                          final urlStr = u['url'].toString().trim();
+                          if (urlStr.startsWith('http://') || urlStr.startsWith('https://')) {
+                            logLine('✅ getSlbInfo stream URL resuelta ($version, $typeVal): ${_short(urlStr, 80)}');
+                            return urlStr;
+                          } else if (host.isNotEmpty) {
+                            final fullAuth = (license != null && license.isNotEmpty && !urlStr.contains('media_code'))
+                                ? '$urlStr&$license'
+                                : urlStr;
+                            final streamUrl = 'http://$host/$mediaContentId.m3u8?$fullAuth';
+                            logLine('✅ getSlbInfo stream URL armada ($version, $typeVal, tag=${cdn['tag']}): ${_short(streamUrl, 80)}');
+                            return streamUrl;
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              } else {
+                logLine('⚠️ getSlbInfo $version ($typeVal, $liveCode) returnCode=$returnCode (${decoded['errorMessage']})');
+              }
+            }
+          }
+        }
+      } catch (e) {
+        logLine('⚠️ Error en getSlbInfo ($host): $e');
+      } finally {
+        _releaseClient(ioClient);
+      }
+    }
+    return null;
+  }
+
+  /// Resuelve la URL y metadatos de reproducción listos para el reproductor nativo.
+  /// Implementa las reglas del PLAN DE IMPLEMENTACIÓN:
+  /// - Jerarquía estricta de subtítulos en español (Latino > Neutro > España)
+  /// - Audio en español prioritario
+  /// - Calidad según preferencia (1080p / 720p)
+  Future<ResolvedPlayStream?> resolveMovieStream({
+    required MovieItem movie,
+    String preferredQuality = 'max',
+    Duration timeout = const Duration(seconds: 14),
+  }) async {
+    lastResolutionError = null;
+    logLine('🎬 Iniciando resolución de stream para: "${movie.name}" (ID: ${movie.contentId})');
+
+    // Restaurar tokens de sesión activos si existen en almacenamiento
+    await restoreSessionFromStorage();
+
+    // Si no teníamos snField guardado de una sesión previa, vincularlo sin VPN
+    if (_currentSnField.isEmpty) {
+      logLine('↻ Obteniendo snToken para asociar dispositivo...');
+      final fp = await _deviceFingerprint();
+      final ioClient = HttpClient()..badCertificateCallback = ((c, h, p) => true);
+      _trackClient(ioClient);
+      try {
+        final sn = await _fetchSnToken(ioClient, defaultBaseUrl, fp, const Duration(seconds: 4));
+        if (sn != null && sn['_token'] != null) {
+          final snToken = sn['_token'].toString();
+          _currentSnField = _md5Hex('$snToken$kMoiamovSnSalt');
+          _activeSnField = _currentSnField;
+          final prefs = await SharedPreferences.getInstance();
+          prefs.setString('moiamov_sn_field', _currentSnField);
+          prefs.setString('moiamov_device_mac', _deviceMac);
+          logLine('✅ snField vinculado con MAC ($_deviceMac): ${_short(_currentSnField, 16)}');
+        }
+      } catch (e) {
+        logLine('⚠️ Error obteniendo snToken: $e');
+      } finally {
+        _releaseClient(ioClient);
+      }
+    }
+
+    // 1. startPlayVOD
+    var playInfo = await startPlayVOD(contentId: movie.contentId, timeout: timeout);
+
+    // Si falló por sesión no inicializada o expirada, intentamos reactivar una sola vez
+    if (playInfo == null || playInfo.qualities.isEmpty) {
+      logLine('↻ Intentando reactivación de sesión para VOD...');
+      final activated = await activateDeviceSession(timeout: const Duration(seconds: 6));
+      if (activated) {
+        playInfo = await startPlayVOD(contentId: movie.contentId, timeout: timeout);
+      }
+    }
+
+    if (playInfo == null || playInfo.qualities.isEmpty) {
+      logLine('❌ No se encontraron calidades de reproducción para "${movie.name}"');
+      lastResolutionError ??= 'No se encontraron opciones de reproducción para este título.';
+      return null;
+    }
+
+    // 2. Selección de Calidad (PLAN §3.Paso 2.C)
+    VodQualityOption selectedQuality;
+    if (preferredQuality == '720p') {
+      selectedQuality = playInfo.qualities.firstWhere(
+        (q) => q.quality.toUpperCase().contains('720'),
+        orElse: () => playInfo!.qualities.first,
+      );
+    } else {
+      selectedQuality = playInfo.qualities.firstWhere(
+        (q) => q.quality.toUpperCase().contains('1080') || q.quality.toUpperCase().contains('4K'),
+        orElse: () => playInfo!.qualities.first,
+      );
+    }
+
+    // 3. Selección de Audio (PLAN §3.Paso 2.B)
+    final selectedSource = selectedQuality.bestAudioSource;
+    if (selectedSource == null) {
+      logLine('❌ La calidad ${selectedQuality.quality} no tiene pistas de audio válidas');
+      lastResolutionError ??= 'No hay pistas de audio disponibles para esta película.';
+      return null;
+    }
+
+    // 4. Selección de Subtítulos (PLAN §3.Paso 2.A)
+    final bestSub = playInfo.bestSpanishSubtitle;
+    logLine('🔊 Pista elegida: ${selectedQuality.quality} - ${selectedSource.audioInfo} (Media ID: ${selectedSource.mediaContentId})');
+    if (bestSub != null) {
+      logLine('💬 Subtítulo en español elegido: "${bestSub.name}" (${bestSub.language}) [URL: ${bestSub.url}]');
+    }
+
+    // 5. URL directa de startPlayVOD o getSlbInfo (PLAN §3.Paso 3)
+    String? streamUrl = selectedSource.directUrl;
+    if (streamUrl != null && streamUrl.isNotEmpty) {
+      logLine('✅ URL directa encontrada en startPlayVOD: ${_short(streamUrl, 80)}');
+    } else {
+      streamUrl = await getSlbInfo(
+        mediaContentId: selectedSource.mediaContentId,
+        license: selectedSource.license,
+        timeout: timeout,
+      );
+    }
+
+    if (streamUrl == null) {
+      logLine('❌ No se pudo obtener la URL de streaming');
+      lastResolutionError ??= 'El servidor de streaming no devolvió un enlace válido.';
+      return null;
+    }
+
+    return ResolvedPlayStream(
+      streamUrl: streamUrl,
+      quality: selectedQuality.quality,
+      audioInfo: selectedSource.audioInfo,
+      subtitleUrl: bestSub?.url,
+      subtitleName: bestSub?.name,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 10; TV) Mobile Safari/537.36',
+      },
     );
   }
 }

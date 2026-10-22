@@ -8,8 +8,12 @@ import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/buttons/tv_back_pill.dart';
+import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
 import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
+import 'package:moai3/features/movies/screens/movie_player_screen.dart';
+import 'package:moai3/services/moiamov_api_service.dart';
+import 'package:moai3/services/movie_progress_service.dart';
 import 'package:reicons/reicons.dart';
 
 /// Pantalla de detalle de película para Smart TV con diseño Split Cinemático 60/40.
@@ -28,15 +32,25 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   final FocusNode _heroFocusNode = FocusNode(debugLabel: 'movie_detail_hero');
 
   bool _isFavorite = false;
+  bool _isLoadingStream = false;
+  MovieWatchProgress? _watchProgress;
 
   @override
   void initState() {
     super.initState();
+    _loadProgress();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _heroFocusNode.requestFocus();
       }
     });
+  }
+
+  Future<void> _loadProgress() async {
+    final progress = await MovieProgressService.getProgress(widget.movie.contentId);
+    if (mounted) {
+      setState(() => _watchProgress = progress);
+    }
   }
 
   @override
@@ -47,8 +61,60 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     super.dispose();
   }
 
-  void _onPlayPressed() {
-    // TODO: Conectar con reproductor cuando esté listo.
+  Future<void> _onPlayPressed() async {
+    if (_isLoadingStream) return;
+    setState(() => _isLoadingStream = true);
+
+    try {
+      final stream = await MoiamovApiService.instance.resolveMovieStream(
+        movie: widget.movie,
+      );
+
+      if (!mounted) return;
+
+      if (stream == null || stream.directHlsUrl.isEmpty) {
+        final errorMsg = MoiamovApiService.instance.lastResolutionError ??
+            'No se pudo conectar con el servidor de streaming.';
+        MoaiSnackBar.showError(
+          context,
+          message: errorMsg,
+          duration: const Duration(seconds: 4),
+        );
+        return;
+      }
+
+      final savedProgress = await MovieProgressService.getProgress(widget.movie.contentId);
+      if (!mounted) return;
+
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => MoviePlayerScreen(
+            movie: widget.movie,
+            stream: stream,
+            initialPositionSeconds: savedProgress?.positionSeconds,
+          ),
+        ),
+      );
+
+      if (mounted) {
+        await _loadProgress();
+        if (mounted) {
+          _heroFocusNode.requestFocus();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        MoaiSnackBar.showError(
+          context,
+          message: 'Error al iniciar reproducción: $e',
+          duration: const Duration(seconds: 4),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingStream = false);
+      }
+    }
   }
 
   void _toggleFavorite() {
@@ -238,6 +304,10 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                                       : movie.effectiveBackdrop,
                                                   imageUrls: movie.stageImages,
                                                   movieTitle: movie.name,
+                                                  isLoading: _isLoadingStream,
+                                                  playLabel: (_watchProgress?.canResume == true)
+                                                      ? 'Reanudar'
+                                                      : 'Reproducir',
                                                   onPressed: _onPlayPressed,
                                                   onArrowLeft: () =>
                                                       _backFocusNode
@@ -412,6 +482,21 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
               icon: ReiconIcons.hd,
               label: '1080P HD',
             ),
+            if (_watchProgress != null)
+              if (_watchProgress!.isCompleted)
+                TvMetaPill(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.22),
+                  foreground: const Color(0xFF34D399),
+                  icon: ReiconFilledIcons.checkCircle,
+                  label: 'Vista',
+                )
+              else if (_watchProgress!.canResume)
+                TvMetaPill(
+                  color: scheme.primary.withValues(alpha: 0.2),
+                  foreground: scheme.primary,
+                  icon: ReiconIcons.history,
+                  label: '${(_watchProgress!.progressPercentage * 100).toInt()}% visto',
+                ),
           ],
         ),
         const SizedBox(height: 10),

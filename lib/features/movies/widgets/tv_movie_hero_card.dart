@@ -12,6 +12,8 @@ class TvMovieHeroCard extends StatefulWidget {
   final String movieTitle;
   final FocusNode? focusNode;
   final VoidCallback? onPressed;
+  final String? playLabel;
+  final bool isLoading;
   final VoidCallback? onArrowLeft;
   final VoidCallback? onArrowUp;
   final VoidCallback? onArrowDown;
@@ -22,6 +24,8 @@ class TvMovieHeroCard extends StatefulWidget {
     this.imageUrl,
     this.imageUrls = const [],
     required this.movieTitle,
+    this.playLabel,
+    this.isLoading = false,
     this.focusNode,
     this.onPressed,
     this.onArrowLeft,
@@ -198,21 +202,44 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Icon(
-                            ReiconFilledIcons.play,
-                            size: 15,
-                            color: _isFocused ? scheme.onPrimary : Colors.white,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Reproducir',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: _isFocused ? scheme.onPrimary : Colors.white,
-                              letterSpacing: 0.2,
+                          if (widget.isLoading) ...[
+                            SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  _isFocused ? scheme.onPrimary : Colors.white,
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Cargando...',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: _isFocused ? scheme.onPrimary : Colors.white,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ] else ...[
+                            Icon(
+                              ReiconFilledIcons.play,
+                              size: 15,
+                              color: _isFocused ? scheme.onPrimary : Colors.white,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              widget.playLabel ?? 'Reproducir',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: _isFocused ? scheme.onPrimary : Colors.white,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),

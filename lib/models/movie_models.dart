@@ -365,3 +365,228 @@ class CatalogResult {
   int get totalMovies =>
       categories.fold(0, (sum, cat) => sum + cat.movies.length);
 }
+
+/// Pista individual de video/audio de una calidad específica (viene de movieList[])
+class VodMediaSource {
+  final String mediaContentId;
+  final String audioInfo;
+  final String? audioType;
+  final String? videoType;
+  final String? encodeFormat;
+  final String? directUrl;
+  final String? license;
+
+  const VodMediaSource({
+    required this.mediaContentId,
+    required this.audioInfo,
+    this.audioType,
+    this.videoType,
+    this.encodeFormat,
+    this.directUrl,
+    this.license,
+  });
+
+  factory VodMediaSource.fromJson(Map<String, dynamic> json) {
+    String? foundLicense;
+    if (json['licenseList'] is List && (json['licenseList'] as List).isNotEmpty) {
+      final l0 = (json['licenseList'] as List).first;
+      if (l0 is Map) {
+        foundLicense = l0['license']?.toString();
+      }
+    }
+    return VodMediaSource(
+      mediaContentId: json['contentId']?.toString() ?? '',
+      audioInfo: json['audioInfo']?.toString() ?? 'Español',
+      audioType: json['audioType']?.toString(),
+      videoType: json['videoType']?.toString(),
+      encodeFormat: json['encodeFormat']?.toString(),
+      directUrl: json['url']?.toString() ??
+          json['playUrl']?.toString() ??
+          json['streamUrl']?.toString() ??
+          json['main_addr']?.toString() ??
+          json['hlsUrl']?.toString(),
+      license: foundLicense,
+    );
+  }
+
+  bool get isLatino {
+    final a = audioInfo.toLowerCase();
+    return a.contains('latino') || a.contains('lat');
+  }
+
+  bool get isSpanish {
+    final a = audioInfo.toLowerCase();
+    return isLatino ||
+        a.contains('español') ||
+        a.contains('spanish') ||
+        a.contains('castellano');
+  }
+}
+
+/// Opción de calidad disponible para una película (1080P, 720P, etc.)
+class VodQualityOption {
+  final String quality;
+  final List<VodMediaSource> sources;
+
+  const VodQualityOption({
+    required this.quality,
+    required this.sources,
+  });
+
+  factory VodQualityOption.fromJson(Map<String, dynamic> json) {
+    final list = (json['movieList'] as List? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map((e) => VodMediaSource.fromJson(e))
+        .where((s) => s.mediaContentId.isNotEmpty)
+        .toList();
+    return VodQualityOption(
+      quality: json['quality']?.toString() ?? 'Auto',
+      sources: list,
+    );
+  }
+
+  /// Selecciona la mejor pista de audio: primero Latino, luego Español, luego la primera
+  VodMediaSource? get bestAudioSource {
+    if (sources.isEmpty) return null;
+    return sources.firstWhere(
+      (s) => s.isLatino,
+      orElse: () => sources.firstWhere(
+        (s) => s.isSpanish,
+        orElse: () => sources.first,
+      ),
+    );
+  }
+}
+
+/// Subtítulo disponible para una película
+class VodSubtitleOption {
+  final String name;
+  final String language;
+  final String url;
+
+  const VodSubtitleOption({
+    required this.name,
+    required this.language,
+    required this.url,
+  });
+
+  factory VodSubtitleOption.fromJson(Map<String, dynamic> json) {
+    String url = json['url']?.toString() ?? json['subTitleUrl']?.toString() ?? '';
+    if (url.isEmpty && json['file'] is List && (json['file'] as List).isNotEmpty) {
+      final f0 = (json['file'] as List).first;
+      if (f0 is Map) {
+        url = f0['url']?.toString() ?? '';
+      }
+    }
+    return VodSubtitleOption(
+      name: json['name']?.toString() ??
+          json['subTitleName']?.toString() ??
+          (json['language']?.toString() ?? 'Subtítulo'),
+      language: json['language']?.toString() ?? '',
+      url: url,
+    );
+  }
+
+  /// Prioridad 1: Latinoamericano
+  bool get isLatino {
+    final n = '$name $language'.toLowerCase();
+    return n.contains('latino') ||
+        n.contains('es-419') ||
+        n.contains('es-la') ||
+        n.contains('latin');
+  }
+
+  /// Prioridad 2: Español neutro
+  bool get isSpanishNeutral {
+    final n = '$name $language'.toLowerCase();
+    return !isLatino &&
+        (n.contains('español') || n.contains('spanish') || n == 'es');
+  }
+
+  /// Prioridad 3: Castellano / España
+  bool get isCastellano {
+    final n = '$name $language'.toLowerCase();
+    return n.contains('castellano') ||
+        n.contains('es-es') ||
+        n.contains('spain') ||
+        n.contains('españa');
+  }
+
+  bool get isAnySpanish => isLatino || isSpanishNeutral || isCastellano;
+}
+
+/// Información completa de reproducción devuelta por `startPlayVOD` (v10)
+class VodPlayInfo {
+  final String name;
+  final List<VodQualityOption> qualities;
+  final List<VodSubtitleOption> subtitles;
+
+  const VodPlayInfo({
+    required this.name,
+    required this.qualities,
+    required this.subtitles,
+  });
+
+  factory VodPlayInfo.fromJson(Map<String, dynamic> json) {
+    final epList = json['episodeList'] as List? ?? [];
+    final ep0 = epList.isNotEmpty && epList.first is Map<String, dynamic>
+        ? epList.first as Map<String, dynamic>
+        : <String, dynamic>{};
+
+    final rawQualities = (ep0['totalMovieList'] as List? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map((e) => VodQualityOption.fromJson(e))
+        .where((q) => q.sources.isNotEmpty)
+        .toList();
+
+    final rawSubtitles = (ep0['subtitleList'] as List? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map((e) => VodSubtitleOption.fromJson(e))
+        .where((s) => s.url.isNotEmpty)
+        .toList();
+
+    return VodPlayInfo(
+      name: json['name']?.toString() ?? '',
+      qualities: rawQualities,
+      subtitles: rawSubtitles,
+    );
+  }
+
+  /// Selecciona el mejor subtítulo en castellano según la jerarquía estricta del PLAN:
+  /// Latino (P1) > Español neutro (P2) > Castellano España (P3)
+  VodSubtitleOption? get bestSpanishSubtitle {
+    if (subtitles.isEmpty) return null;
+    for (final s in subtitles) {
+      if (s.isLatino) return s;
+    }
+    for (final s in subtitles) {
+      if (s.isSpanishNeutral) return s;
+    }
+    for (final s in subtitles) {
+      if (s.isCastellano) return s;
+    }
+    return null;
+  }
+}
+
+/// Datos finales de reproducción listos para inicializar el motor de video
+class ResolvedPlayStream {
+  final String streamUrl;
+  final String quality;
+  final String audioInfo;
+  final String? subtitleUrl;
+  final String? subtitleName;
+  final Map<String, String> headers;
+
+  const ResolvedPlayStream({
+    required this.streamUrl,
+    required this.quality,
+    required this.audioInfo,
+    this.subtitleUrl,
+    this.subtitleName,
+    this.headers = const {},
+  });
+
+  /// Alias de conveniencia para la URL directa del stream
+  String get directHlsUrl => streamUrl;
+}

@@ -6,11 +6,13 @@ import 'package:moai3/theme/moai_text.dart';
 class EnginePlayerView extends StatelessWidget {
   final MoaiEngineController controller;
   final bool showBuffering;
+  final BoxFit fit;
 
   const EnginePlayerView({
     super.key,
     required this.controller,
     this.showBuffering = false,
+    this.fit = BoxFit.cover,
   });
 
   @override
@@ -33,7 +35,7 @@ class EnginePlayerView extends StatelessWidget {
         children: [
           if (width > 0 && height > 0)
             FittedBox(
-              fit: BoxFit.cover,
+              fit: fit,
               child: SizedBox(
                 width: width.toDouble(),
                 height: height.toDouble(),
