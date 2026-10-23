@@ -10,8 +10,8 @@ extension _TvAreaNavigation on HomeTvAreaState {
 
   void _requestFocusWithRetry(FocusNode node) => _focus.node(node);
 
-  void _activatePanel(int index) {
-    _update(() => _activePanelIndex = index);
+  void _activatePanel(TvExplorePanel panel) {
+    _update(() => _activePanel = panel);
   }
 
   VoidCallback get _focusCurrentTab => () {
@@ -108,17 +108,15 @@ extension _TvAreaNavigation on HomeTvAreaState {
 
   void _selectCountry(String country) {
     final channels = context.read<ChannelProvider>().allChannels;
-    final showTvLog = context.read<TvSettingsProvider>().showTvLog;
     _browser.selectCountry(country, channels);
-    _activatePanel(_browser.categoryPanelIndexAfterCountrySelect(showTvLog));
+    _activatePanel(TvExplorePanel.category);
     _focusSelectedCategory();
   }
 
   void _selectCategory(String category) {
     final channels = context.read<ChannelProvider>().allChannels;
-    final showTvLog = context.read<TvSettingsProvider>().showTvLog;
     _browser.selectCategory(category, channels);
-    _activatePanel(_browser.channelPanelIndexAfterCategorySelect(showTvLog));
+    _activatePanel(TvExplorePanel.channel);
     _focusSelectedChannel();
   }
 
@@ -137,10 +135,9 @@ extension _TvAreaNavigation on HomeTvAreaState {
     _focusGroupsChannel();
   }
 
-  void _activateAlphabet(int panelIndex) {
-    final showTvLog = context.read<TvSettingsProvider>().showTvLog;
+  void _activateAlphabet(TvExplorePanel panel) {
     _search.clearAlphabetMode();
-    if (_browser.activateAlphabetMode(panelIndex, showTvLog)) {
+    if (_browser.activateAlphabetMode(panel)) {
       _update(() {});
       // Tras rebuild del acordeón, el ListView de letras necesita reintento.
       FocusScrollSync.requestFocusAtIndex(_browser.alphabetFocusNodes, 0);
@@ -163,23 +160,25 @@ extension _TvAreaNavigation on HomeTvAreaState {
   }
 
   bool get _exploreAlphabetActive =>
-      _browser.alphabetModePanelIndex != null || _search.isAlphabetMode;
+      _browser.alphabetPanel != null || _search.isAlphabetMode;
 
   bool get _groupsAlphabetActive => _groups.isAlphabetMode;
 
   void _focusSearchResults() => _focus.selected(_searchPanelKey);
 
   void _onAlphabetLetter(String letter) {
-    final showTvLog = context.read<TvSettingsProvider>().showTvLog;
-    final panel = _browser.jumpToLetter(letter, showTvLog);
+    final panel = _browser.jumpToLetter(letter);
     if (panel == null) return;
-    _update(() => _activePanelIndex = panel);
-    if (TvPanelLayout.isCountryPanel(panel, showTvLog)) {
-      _focusSelectedCountry();
-    } else if (TvPanelLayout.isCategoryPanel(panel, showTvLog)) {
-      _focusSelectedCategory();
-    } else if (TvPanelLayout.isChannelPanel(panel, showTvLog)) {
-      _focusSelectedChannel();
+    _activatePanel(panel);
+    switch (panel) {
+      case TvExplorePanel.country:
+        _focusSelectedCountry();
+      case TvExplorePanel.category:
+        _focusSelectedCategory();
+      case TvExplorePanel.channel:
+        _focusSelectedChannel();
+      case TvExplorePanel.log:
+        break;
     }
   }
 }

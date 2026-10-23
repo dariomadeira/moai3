@@ -4,6 +4,7 @@ import 'package:moai3/features/groups/controllers/groups_browser_controller.dart
 import 'package:moai3/features/home/controllers/viewer_favorites_controller.dart';
 import 'package:moai3/features/home/tv_tab.dart';
 import 'package:moai3/features/search/controllers/home_search_controller.dart';
+import 'package:moai3/focus/tv_panel_layout.dart';
 
 /// Estado de navegación de la sección TV que sobrevive al cambio de sección
 /// (SPEC-50 §3.1): al volver de Ajustes o la Agenda, TV conserva país,
@@ -21,10 +22,8 @@ class TvBrowserSession {
   /// `null` hasta la primera visita: se usa la pestaña de arranque.
   TvTab? tab;
 
-  /// Panel abierto del acordeón Explorar y el valor de `showTvLog` con el
-  /// que se calculó (el índice cambia si se muestra el panel de log).
-  int? activePanelIndex;
-  bool? activePanelShowTvLog;
+  /// Panel abierto del acordeón Explorar.
+  TvExplorePanel? activePanel;
   int groupsPanelIndex = 0;
 
   /// `true` después de la primera visita a TV.

@@ -76,9 +76,12 @@ extension _TvAreaLayout on HomeTvAreaState {
         channel != null &&
         ChannelPlaybackHelpers.playableUrls(channel).length > 1;
 
-    final panelCount = TvPanelLayout.panelCount(showTvLog);
-    final active = _activePanelIndex.clamp(0, panelCount - 1);
-    final exploreAlphabetPanelIndex = _browser.alphabetModePanelIndex;
+    final panelCount = TvPanelLayout.panels(showTvLog).length;
+    final active = TvPanelLayout.indexOf(_activePanel, showTvLog);
+    final alphabetPanel = _browser.alphabetPanel;
+    final exploreAlphabetPanelIndex = alphabetPanel == null
+        ? null
+        : TvPanelLayout.indexOf(alphabetPanel, showTvLog);
 
     return Stack(
       clipBehavior: Clip.none,
@@ -130,11 +133,17 @@ extension _TvAreaLayout on HomeTvAreaState {
                               ),
                               onPanelTap: (i) {
                                 if (_exploreAlphabetActive) return;
-                                _activatePanel(i);
+                                _activatePanel(
+                                  TvPanelLayout.panelAt(i, showTvLog),
+                                );
                                 _focusExplorePanel();
                               },
                               buildExpandedContent: (i, t) =>
-                                  _buildExploreExpanded(i, t, showTvLog),
+                                  _buildExploreExpanded(
+                                    TvPanelLayout.panelAt(i, showTvLog),
+                                    t,
+                                    showTvLog,
+                                  ),
                             )
                           : _tvTab == TvTab.search
                           ? _buildSearchArea(scheme)
@@ -231,8 +240,7 @@ extension _TvAreaLayout on HomeTvAreaState {
                             child: ViewerFavoritesBar(
                               favoriteChannels: favChannels,
                               selectedChannel: channel,
-                              scrollController:
-                                  _favoritesBar.scrollController,
+                              scrollController: _favoritesBar.scrollController,
                               focusNodes: _favoritesBar.focusNodes,
                               headerAction: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -241,13 +249,13 @@ extension _TvAreaLayout on HomeTvAreaState {
                                     CreateGroupButton(
                                       focusNode: _createGroupFocus,
                                       onKeyLeft: _focusActiveContent,
-                                      onKeyRight: _clearFavoritesFocus.requestFocus,
+                                      onKeyRight:
+                                          _clearFavoritesFocus.requestFocus,
                                       onKeyUp: _viewerFocus.requestFocus,
-                                      onKeyDown: () =>
-                                          _focusViewerFavoritesBar(
-                                            favChannels,
-                                            channel,
-                                          ),
+                                      onKeyDown: () => _focusViewerFavoritesBar(
+                                        favChannels,
+                                        channel,
+                                      ),
                                     ),
                                     const SizedBox(width: 6),
                                     ClearFavoritesButton(
@@ -257,11 +265,10 @@ extension _TvAreaLayout on HomeTvAreaState {
                                           ? _favoriteBtnFocus.requestFocus
                                           : null,
                                       onKeyUp: _viewerFocus.requestFocus,
-                                      onKeyDown: () =>
-                                          _focusViewerFavoritesBar(
-                                            favChannels,
-                                            channel,
-                                          ),
+                                      onKeyDown: () => _focusViewerFavoritesBar(
+                                        favChannels,
+                                        channel,
+                                      ),
                                     ),
                                     if (!channel.isAdult)
                                       const SizedBox(width: 6),
@@ -271,11 +278,10 @@ extension _TvAreaLayout on HomeTvAreaState {
                                       channel: channel,
                                       focusNode: _favoriteBtnFocus,
                                       onKeyUp: _viewerFocus.requestFocus,
-                                      onKeyDown: () =>
-                                          _focusViewerFavoritesBar(
-                                            favChannels,
-                                            channel,
-                                          ),
+                                      onKeyDown: () => _focusViewerFavoritesBar(
+                                        favChannels,
+                                        channel,
+                                      ),
                                       onKeyLeft: favChannels.isNotEmpty
                                           ? _clearFavoritesFocus.requestFocus
                                           : _focusActiveContent,
@@ -290,16 +296,16 @@ extension _TvAreaLayout on HomeTvAreaState {
                                     ServerSkipButton(
                                       focusNode: _serverSkipFocus,
                                       onKeyUp: _viewerFocus.requestFocus,
-                                      onKeyDown: () =>
-                                          _focusViewerFavoritesBar(
-                                            favChannels,
-                                            channel,
-                                          ),
+                                      onKeyDown: () => _focusViewerFavoritesBar(
+                                        favChannels,
+                                        channel,
+                                      ),
                                       onKeyLeft: !channel.isAdult
                                           ? _favoriteBtnFocus.requestFocus
                                           : (favChannels.isNotEmpty
-                                              ? _clearFavoritesFocus.requestFocus
-                                              : _focusActiveContent),
+                                                ? _clearFavoritesFocus
+                                                      .requestFocus
+                                                : _focusActiveContent),
                                     ),
                                   ],
                                 ],
@@ -333,7 +339,6 @@ extension _TvAreaLayout on HomeTvAreaState {
                       ),
               ),
             ),
-
           ],
         ),
         if (channel != null)

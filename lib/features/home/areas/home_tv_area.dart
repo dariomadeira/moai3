@@ -30,7 +30,6 @@ import 'package:moai3/features/search/controllers/home_search_controller.dart';
 import 'package:moai3/features/search/widgets/search_panel.dart';
 import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/focus/focus_scroll_sync.dart';
-import 'package:moai3/focus/tv_focus_controller.dart';
 import 'package:moai3/focus/tv_intents.dart';
 import 'package:moai3/focus/tv_panel_layout.dart';
 import 'package:moai3/models/channel.dart';
@@ -83,7 +82,6 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
   FavoritesListController get _favorites => _session.favorites;
   ViewerFavoritesController get _favoritesBar => _session.favoritesBar;
   final _playerOverlay = PlayerOverlayController();
-  final _tvFocus = TvFocusController();
 
   final _exploreTabFocus = FocusNode(
     debugLabel: 'tv_tab_explore',
@@ -104,6 +102,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
   final _serverSkipFocus = FocusNode(debugLabel: 'tv_server_skip');
   final _logFocus = FocusNode(debugLabel: 'tv_log');
   final _watchPartyMicFocusNode = FocusNode(debugLabel: 'tv_header_mic');
+
   /// Un solo dueño de los pedidos de foco del área: el más nuevo gana.
   late final _focus = FocusRequester(isMounted: () => mounted);
 
@@ -115,7 +114,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
   final _searchPanelKey = GlobalKey<SearchPanelState>();
 
   TvTab _tvTab = TvTab.explore;
-  int _activePanelIndex = 0;
+  TvExplorePanel _activePanel = TvExplorePanel.channel;
   int _groupsPanelIndex = 0;
   bool _initialized = false;
   bool _lastShowTvLog = false;
@@ -187,14 +186,10 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     );
 
     _lastShowTvLog = _tvSettingsProvider!.showTvLog;
-    final savedPanel = _session.activePanelIndex;
-    _activePanelIndex = savedPanel == null
-        ? TvPanelLayout.channelPanelIndex(_lastShowTvLog)
-        : TvPanelLayout.remapPanelIndex(
-            savedPanel,
-            _session.activePanelShowTvLog ?? _lastShowTvLog,
-            _lastShowTvLog,
-          );
+    _activePanel = TvPanelLayout.visible(
+      _session.activePanel ?? TvExplorePanel.channel,
+      _lastShowTvLog,
+    );
     _groupsPanelIndex = _session.groupsPanelIndex;
     _lastChannelIds = _channelProvider!.allChannels.map((c) => c.id).toList();
     _lastFavoriteIds = List.from(_favoritesProvider!.favoriteChannelIds);
@@ -276,8 +271,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     _playerOverlay.removeListener(_onPlayerOverlayChanged);
     _session
       ..tab = _tvTab
-      ..activePanelIndex = _activePanelIndex
-      ..activePanelShowTvLog = _lastShowTvLog
+      ..activePanel = _activePanel
       ..groupsPanelIndex = _groupsPanelIndex;
     _playerOverlay.dispose();
     _exploreTabFocus.dispose();
@@ -307,14 +301,16 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
       return;
     }
     final showTvLog = context.read<TvSettingsProvider>().showTvLog;
-    _tvFocus.restoreAfterRailRight(
-      activePanelIndex: _activePanelIndex,
-      showTvLog: showTvLog,
-      focusDebug: () => _requestFocusWithRetry(_logFocus),
-      focusCountry: _focusSelectedCountry,
-      focusCategory: _focusSelectedCategory,
-      focusChannel: _focusSelectedChannel,
-    );
+    switch (TvPanelLayout.visible(_activePanel, showTvLog)) {
+      case TvExplorePanel.log:
+        _requestFocusWithRetry(_logFocus);
+      case TvExplorePanel.country:
+        _focusSelectedCountry();
+      case TvExplorePanel.category:
+        _focusSelectedCategory();
+      case TvExplorePanel.channel:
+        _focusSelectedChannel();
+    }
   }
 
   /// Back del D-pad / sistema. `true` si se consumió (no salir de la app).
@@ -340,7 +336,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
       _focusSearchResults();
       return true;
     }
-    if (_browser.alphabetModePanelIndex != null) {
+    if (_browser.alphabetPanel != null) {
       _browser.clearAlphabetMode();
       setState(() {});
       _focusExplorePanel();
@@ -364,5 +360,4 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
       _viewerFocus.requestFocus();
     }
   }
-
 }

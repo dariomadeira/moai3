@@ -14,7 +14,8 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
   List<String> categories = [];
   List<Channel> channels = [];
 
-  int? alphabetModePanelIndex;
+  /// Panel con el salto alfabético abierto, o `null`.
+  TvExplorePanel? alphabetPanel;
   List<String> alphabetLetters = [];
   final List<FocusNode> alphabetFocusNodes = [];
 
@@ -28,11 +29,12 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
   }
 
   void _updateCountriesAndFlags(List<Channel> filtered) {
-    countries = filtered
-        .map((c) => c.country.trim().isEmpty ? 'General' : c.country.trim())
-        .toSet()
-        .toList()
-      ..sort();
+    countries =
+        filtered
+            .map((c) => c.country.trim().isEmpty ? 'General' : c.country.trim())
+            .toSet()
+            .toList()
+          ..sort();
     final flags = <String, String>{};
     for (final c in filtered) {
       final name = c.country.trim().isEmpty ? 'General' : c.country.trim();
@@ -93,11 +95,13 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
     final filtered = filterChannels(allChannels);
     _updateCountriesAndFlags(filtered);
     selectedChannel = channel;
-    selectedCountry =
-        channel.country.trim().isEmpty ? 'General' : channel.country.trim();
+    selectedCountry = channel.country.trim().isEmpty
+        ? 'General'
+        : channel.country.trim();
     _refreshCategories(filtered);
-    selectedCategory =
-        channel.category.trim().isEmpty ? 'General' : channel.category.trim();
+    selectedCategory = channel.category.trim().isEmpty
+        ? 'General'
+        : channel.category.trim();
     _refreshChannels(filtered);
     safeNotifyListeners();
   }
@@ -123,14 +127,19 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
     }
     _refreshCategories(filtered);
 
-    final localCategories = filtered
-        .where((c) =>
-            (c.country.trim().isEmpty ? 'General' : c.country.trim()) ==
-            selectedCountry)
-        .map((c) => c.category.trim().isEmpty ? 'General' : c.category.trim())
-        .toSet()
-        .toList()
-      ..sort();
+    final localCategories =
+        filtered
+            .where(
+              (c) =>
+                  (c.country.trim().isEmpty ? 'General' : c.country.trim()) ==
+                  selectedCountry,
+            )
+            .map(
+              (c) => c.category.trim().isEmpty ? 'General' : c.category.trim(),
+            )
+            .toSet()
+            .toList()
+          ..sort();
     selectedCategory = localCategories.isNotEmpty ? localCategories.first : '';
 
     _refreshChannels(filtered);
@@ -145,13 +154,19 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
     selectedCountry = country;
     _refreshCategories(filtered);
 
-    final localCategories = filtered
-        .where((c) =>
-            (c.country.trim().isEmpty ? 'General' : c.country.trim()) == country)
-        .map((c) => c.category.trim().isEmpty ? 'General' : c.category.trim())
-        .toSet()
-        .toList()
-      ..sort();
+    final localCategories =
+        filtered
+            .where(
+              (c) =>
+                  (c.country.trim().isEmpty ? 'General' : c.country.trim()) ==
+                  country,
+            )
+            .map(
+              (c) => c.category.trim().isEmpty ? 'General' : c.category.trim(),
+            )
+            .toSet()
+            .toList()
+          ..sort();
     selectedCategory = localCategories.isNotEmpty ? localCategories.first : '';
 
     _refreshChannels(filtered);
@@ -172,104 +187,99 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
     safeNotifyListeners();
   }
 
-  int categoryPanelIndexAfterCountrySelect(bool showTvLog) =>
-      TvPanelLayout.categoryPanelIndex(showTvLog);
-
-  int channelPanelIndexAfterCategorySelect(bool showTvLog) =>
-      TvPanelLayout.channelPanelIndex(showTvLog);
-
   void _refreshCategories(List<Channel> allChannels) {
-    categories = allChannels
-        .where((c) =>
-            (c.country.trim().isEmpty ? 'General' : c.country.trim()) ==
-            selectedCountry)
-        .map((c) => c.category.trim().isEmpty ? 'General' : c.category.trim())
-        .toSet()
-        .toList()
-      ..sort();
+    categories =
+        allChannels
+            .where(
+              (c) =>
+                  (c.country.trim().isEmpty ? 'General' : c.country.trim()) ==
+                  selectedCountry,
+            )
+            .map(
+              (c) => c.category.trim().isEmpty ? 'General' : c.category.trim(),
+            )
+            .toSet()
+            .toList()
+          ..sort();
   }
 
   void _refreshChannels(List<Channel> allChannels) {
-    channels = allChannels
-        .where(
-          (c) =>
-              (c.country.trim().isEmpty ? 'General' : c.country.trim()) ==
-                  selectedCountry &&
-              (c.category.trim().isEmpty ? 'General' : c.category.trim()) ==
-                  selectedCategory,
-        )
-        .toList()
-      ..sort(
-        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-      );
+    channels =
+        allChannels
+            .where(
+              (c) =>
+                  (c.country.trim().isEmpty ? 'General' : c.country.trim()) ==
+                      selectedCountry &&
+                  (c.category.trim().isEmpty ? 'General' : c.category.trim()) ==
+                      selectedCategory,
+            )
+            .toList()
+          ..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
   }
 
-  bool activateAlphabetMode(int panelIndex, bool showTvLog) {
-    List<String> items;
-    if (TvPanelLayout.isCountryPanel(panelIndex, showTvLog)) {
-      items = countries;
-    } else if (TvPanelLayout.isCategoryPanel(panelIndex, showTvLog)) {
-      items = categories;
-    } else if (TvPanelLayout.isChannelPanel(panelIndex, showTvLog)) {
-      items = channels.map((c) => c.name).toList();
-    } else {
-      return false;
-    }
+  /// Nombres del panel que admite salto alfabético, o `null` (log).
+  List<String>? _alphabetItems(TvExplorePanel panel) => switch (panel) {
+    TvExplorePanel.country => countries,
+    TvExplorePanel.category => categories,
+    TvExplorePanel.channel => channels.map((c) => c.name).toList(),
+    TvExplorePanel.log => null,
+  };
 
-    alphabetLetters = items
-        .map((c) => c.isNotEmpty ? c[0].toUpperCase() : '')
-        .where((l) => l.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort();
+  bool activateAlphabetMode(TvExplorePanel panel) {
+    final items = _alphabetItems(panel);
+    if (items == null) return false;
+
+    alphabetLetters =
+        items
+            .map((c) => c.isNotEmpty ? c[0].toUpperCase() : '')
+            .where((l) => l.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort();
 
     if (alphabetLetters.length <= 1) return false;
 
     FocusScrollSync.syncFocusNodes(alphabetLetters.length, alphabetFocusNodes);
-    alphabetModePanelIndex = panelIndex;
+    alphabetPanel = panel;
     safeNotifyListeners();
     FocusScrollSync.requestFocusAtIndex(alphabetFocusNodes, 0);
     return true;
   }
 
   void clearAlphabetMode() {
-    alphabetModePanelIndex = null;
+    alphabetPanel = null;
     safeNotifyListeners();
   }
 
-  int? jumpToLetter(String letter, bool showTvLog) {
-    final panelIndex = alphabetModePanelIndex ?? 0;
-    alphabetModePanelIndex = null;
+  /// Selecciona el primer elemento con [letter] y devuelve el panel saltado.
+  TvExplorePanel? jumpToLetter(String letter) {
+    final panel = alphabetPanel;
+    alphabetPanel = null;
     safeNotifyListeners();
 
-    final List<String> items;
-    if (TvPanelLayout.isCountryPanel(panelIndex, showTvLog)) {
-      items = countries;
-    } else if (TvPanelLayout.isCategoryPanel(panelIndex, showTvLog)) {
-      items = categories;
-    } else if (TvPanelLayout.isChannelPanel(panelIndex, showTvLog)) {
-      items = channels.map((c) => c.name).toList();
-    } else {
-      return null;
-    }
+    final items = panel == null ? null : _alphabetItems(panel);
+    if (items == null) return null;
 
     final targetIdx = items.indexWhere(
       (c) => c.isNotEmpty && c.toUpperCase().startsWith(letter.toUpperCase()),
     );
 
     if (targetIdx != -1) {
-      if (TvPanelLayout.isCountryPanel(panelIndex, showTvLog)) {
-        selectedCountry = items[targetIdx];
-        safeNotifyListeners();
-      } else if (TvPanelLayout.isCategoryPanel(panelIndex, showTvLog)) {
-        selectedCategory = items[targetIdx];
-        safeNotifyListeners();
-      } else if (TvPanelLayout.isChannelPanel(panelIndex, showTvLog)) {
-        selectedChannel = channels[targetIdx];
-        safeNotifyListeners();
+      switch (panel!) {
+        case TvExplorePanel.country:
+          selectedCountry = items[targetIdx];
+        case TvExplorePanel.category:
+          selectedCategory = items[targetIdx];
+        case TvExplorePanel.channel:
+          selectedChannel = channels[targetIdx];
+        case TvExplorePanel.log:
+          break;
       }
+      safeNotifyListeners();
     }
-    return panelIndex;
+    return panel;
   }
 
   @override
@@ -280,4 +290,3 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
     super.dispose();
   }
 }
-

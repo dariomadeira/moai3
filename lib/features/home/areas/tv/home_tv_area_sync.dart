@@ -29,11 +29,11 @@ extension _TvAreaSync on HomeTvAreaState {
   }
 
   void _requestInitialPlayerFocus() => _focus.request(() {
-        if (!_playerOverlay.hasValidRect) return false;
-        _viewerFocus.requestFocus();
-        _playerOverlay.markInitialFocusDone();
-        return true;
-      }, maxFrames: 30);
+    if (!_playerOverlay.hasValidRect) return false;
+    _viewerFocus.requestFocus();
+    _playerOverlay.markInitialFocusDone();
+    return true;
+  }, maxFrames: 30);
 
   void _syncWithProviders() {
     if (!mounted) return;
@@ -44,14 +44,9 @@ extension _TvAreaSync on HomeTvAreaState {
 
     final showTvLog = tvSettings.showTvLog;
     if (showTvLog != _lastShowTvLog) {
-      final remapped = TvPanelLayout.remapPanelIndex(
-        _activePanelIndex,
-        _lastShowTvLog,
-        showTvLog,
-      );
       _update(() {
         _lastShowTvLog = showTvLog;
-        _activePanelIndex = remapped;
+        _activePanel = TvPanelLayout.visible(_activePanel, showTvLog);
       });
     }
 

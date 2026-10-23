@@ -24,26 +24,30 @@ extension _TvAreaExplore on HomeTvAreaState {
         : base;
   }
 
-  Widget _buildExploreExpanded(int index, String title, bool showTvLog) {
-    if (TvPanelLayout.isLogPanel(index, showTvLog)) {
+  Widget _buildExploreExpanded(
+    TvExplorePanel panel,
+    String title,
+    bool showTvLog,
+  ) {
+    if (panel == TvExplorePanel.log) {
       return DebugLogPanel(
         focusNode: _logFocus,
         onKeyLeft: widget.onExitLeft,
         onKeyRight: () {
-          _activatePanel(TvPanelLayout.countryPanelIndex(showTvLog));
+          _activatePanel(TvExplorePanel.country);
           _focusSelectedCountry();
         },
       );
     }
 
-    if (TvPanelLayout.isCountryPanel(index, showTvLog)) {
+    if (panel == TvExplorePanel.country) {
       return Actions(
         actions: {
           DpadLeftIntent: CallbackAction<DpadLeftIntent>(
             onInvoke: (_) {
               if (_exploreAlphabetActive) return null;
               if (TvPanelLayout.hasLogPanel(showTvLog)) {
-                _activatePanel(TvPanelLayout.logPanelIndex(showTvLog));
+                _activatePanel(TvExplorePanel.log);
                 _requestFocusWithRetry(_logFocus);
               } else {
                 widget.onExitLeft();
@@ -54,7 +58,7 @@ extension _TvAreaExplore on HomeTvAreaState {
           DpadRightIntent: CallbackAction<DpadRightIntent>(
             onInvoke: (_) {
               if (_exploreAlphabetActive) return null;
-              _activatePanel(TvPanelLayout.categoryPanelIndex(showTvLog));
+              _activatePanel(TvExplorePanel.category);
               _focusSelectedCategory();
               return null;
             },
@@ -67,21 +71,20 @@ extension _TvAreaExplore on HomeTvAreaState {
           countryFlags: _browser.countryFlags,
           selectedCountry: _browser.selectedCountry,
           onSelect: _selectCountry,
-          onLongPress: () =>
-              _activateAlphabet(TvPanelLayout.countryPanelIndex(showTvLog)),
+          onLongPress: () => _activateAlphabet(TvExplorePanel.country),
           onFocusUp: _focusCurrentTab,
           emptyMessage: _channelLoadErrorMessage(),
         ),
       );
     }
 
-    if (TvPanelLayout.isCategoryPanel(index, showTvLog)) {
+    if (panel == TvExplorePanel.category) {
       return Actions(
         actions: {
           DpadLeftIntent: CallbackAction<DpadLeftIntent>(
             onInvoke: (_) {
               if (_exploreAlphabetActive) return null;
-              _activatePanel(TvPanelLayout.countryPanelIndex(showTvLog));
+              _activatePanel(TvExplorePanel.country);
               _focusSelectedCountry();
               return null;
             },
@@ -89,7 +92,7 @@ extension _TvAreaExplore on HomeTvAreaState {
           DpadRightIntent: CallbackAction<DpadRightIntent>(
             onInvoke: (_) {
               if (_exploreAlphabetActive) return null;
-              _activatePanel(TvPanelLayout.channelPanelIndex(showTvLog));
+              _activatePanel(TvExplorePanel.channel);
               _focusSelectedChannel();
               return null;
             },
@@ -102,8 +105,7 @@ extension _TvAreaExplore on HomeTvAreaState {
           categories: _browser.categories,
           selectedCategory: _browser.selectedCategory,
           onSelect: _selectCategory,
-          onLongPress: () =>
-              _activateAlphabet(TvPanelLayout.categoryPanelIndex(showTvLog)),
+          onLongPress: () => _activateAlphabet(TvExplorePanel.category),
           onFocusUp: _focusCurrentTab,
         ),
       );
@@ -114,7 +116,7 @@ extension _TvAreaExplore on HomeTvAreaState {
         DpadLeftIntent: CallbackAction<DpadLeftIntent>(
           onInvoke: (_) {
             if (_exploreAlphabetActive) return null;
-            _activatePanel(TvPanelLayout.categoryPanelIndex(showTvLog));
+            _activatePanel(TvExplorePanel.category);
             _focusSelectedCategory();
             return null;
           },
@@ -134,8 +136,7 @@ extension _TvAreaExplore on HomeTvAreaState {
         channels: _browser.channels,
         selectedChannel: _browser.selectedChannel,
         onSelect: _selectChannel,
-        onLongPress: () =>
-            _activateAlphabet(TvPanelLayout.channelPanelIndex(showTvLog)),
+        onLongPress: () => _activateAlphabet(TvExplorePanel.channel),
         onFocusUp: _focusCurrentTab,
       ),
     );
