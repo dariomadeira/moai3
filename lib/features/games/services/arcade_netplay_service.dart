@@ -9,6 +9,10 @@ import 'package:moai3/features/games/models/arcade_rom_item.dart';
 import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
 import 'package:moai3/features/games/services/arcade_webrtc_transport.dart';
 
+part 'netplay/netplay_session_channel.dart';
+part 'netplay/netplay_broadcasts.dart';
+part 'netplay/netplay_webrtc.dart';
+
 /// Señalización (Supabase) + transporte de inputs (WebRTC DataChannel).
 class ArcadeNetplayService extends ChangeNotifier {
   static final ArcadeNetplayService instance = ArcadeNetplayService._internal();
@@ -275,142 +279,6 @@ class ArcadeNetplayService extends ChangeNotifier {
     }
   }
 
-  Future<void> _sendInviteResponse(
-    ArcadeNetplayInvite invite, {
-    required String myDeviceId,
-    required bool accepted,
-    bool busy = false,
-  }) async {
-    await _globalChannel?.sendBroadcastMessage(
-      event: 'invite_response',
-      payload: {
-        'sessionId': invite.sessionId,
-        'hostDeviceId': invite.hostDeviceId,
-        'guestDeviceId': myDeviceId,
-        'accepted': accepted,
-        if (busy) 'busy': true,
-      },
-    );
-  }
-
-  Future<void> _connectSessionChannel() async {
-    final session = _currentSession;
-    if (session == null || _client == null) return;
-
-    try {
-      await _sessionChannel?.unsubscribe();
-      final channelName = 'arcade_session_${session.sessionId}';
-      _sessionChannel = _client!.channel(channelName);
-      _sessionSubscribed = Completer<void>();
-
-      _sessionChannel!.onBroadcast(
-        event: 'rom_prep',
-        callback: (payload) {
-          final sender = payload['senderDeviceId'] as String?;
-          if (sender == session.peerDeviceId) {
-            session.peerProgress =
-                (payload['progress'] as num?)?.toDouble() ?? 0.0;
-            session.peerStatusText = payload['statusText'] as String? ?? '';
-            unawaited(_checkIfBothReady());
-            notifyListeners();
-          }
-        },
-      );
-
-      _sessionChannel!.onBroadcast(
-        event: 'ready_to_play',
-        callback: (payload) {
-          final sender = payload['senderDeviceId'] as String?;
-          if (sender == session.peerDeviceId) {
-            session.peerProgress = 1.0;
-            session.peerStatusText = LocaleKeys.arcade_game_ready.tr();
-            unawaited(_checkIfBothReady());
-            notifyListeners();
-          }
-        },
-      );
-
-      _sessionChannel!.onBroadcast(
-        event: 'webrtc_offer',
-        callback: (payload) {
-          if (payload['senderDeviceId'] == session.peerDeviceId) {
-            unawaited(_webrtc?.handleRemoteSignal({
-              'type': 'webrtc_offer',
-              'sdp': payload['sdp'],
-              'sdpType': payload['sdpType'],
-            }));
-          }
-        },
-      );
-
-      _sessionChannel!.onBroadcast(
-        event: 'webrtc_answer',
-        callback: (payload) {
-          if (payload['senderDeviceId'] == session.peerDeviceId) {
-            unawaited(_webrtc?.handleRemoteSignal({
-              'type': 'webrtc_answer',
-              'sdp': payload['sdp'],
-              'sdpType': payload['sdpType'],
-            }));
-          }
-        },
-      );
-
-      _sessionChannel!.onBroadcast(
-        event: 'webrtc_ice',
-        callback: (payload) {
-          if (payload['senderDeviceId'] == session.peerDeviceId) {
-            unawaited(_webrtc?.handleRemoteSignal({
-              'type': 'webrtc_ice',
-              'candidate': payload['candidate'],
-              'sdpMid': payload['sdpMid'],
-              'sdpMLineIndex': payload['sdpMLineIndex'],
-            }));
-          }
-        },
-      );
-
-      _sessionChannel!.onBroadcast(
-        event: 'cancel',
-        callback: (payload) {
-          final sender = payload['senderDeviceId'] as String?;
-          if (sender == session.peerDeviceId) {
-            final reason =
-                payload['reason'] as String? ?? LocaleKeys.arcade_peer_canceled.tr();
-            session.status = ArcadeNetplayStatus.terminated;
-            session.exitReason = reason;
-            notifyListeners();
-            unawaited(_cleanupSession());
-          }
-        },
-      );
-
-      _sessionChannel!.subscribe((status, [error]) {
-        if (status == RealtimeSubscribeStatus.subscribed) {
-          if (!(_sessionSubscribed?.isCompleted ?? true)) {
-            _sessionSubscribed!.complete();
-          }
-        } else if (status == RealtimeSubscribeStatus.channelError ||
-            status == RealtimeSubscribeStatus.timedOut) {
-          if (!(_sessionSubscribed?.isCompleted ?? true)) {
-            _sessionSubscribed!.completeError(
-              error ?? Exception('session subscribe failed'),
-            );
-          }
-        }
-      });
-
-      await _sessionSubscribed!.future.timeout(
-        const Duration(seconds: 8),
-        onTimeout: () {},
-      );
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('[ArcadeNetplayService] Error canal sesión: $e');
-      }
-    }
-  }
-
   Future<void> startRomPreparation(ArcadeRomManagerService romManager) async {
     final session = _currentSession;
     if (session == null) return;
@@ -492,70 +360,6 @@ class ArcadeNetplayService extends ChangeNotifier {
     }
   }
 
-  Future<void> _broadcastPrepStatus(double progress, String statusText) async {
-    final session = _currentSession;
-    if (session == null || _sessionChannel == null) return;
-    try {
-      await _sessionChannel!.sendBroadcastMessage(
-        event: 'rom_prep',
-        payload: {
-          'senderDeviceId': session.myDeviceId,
-          'progress': progress,
-          'statusText': statusText,
-        },
-      );
-    } catch (e) {
-      debugPrint('[ArcadeNetplayService] $e');
-    }
-  }
-
-  Future<void> _broadcastReady() async {
-    final session = _currentSession;
-    if (session == null || _sessionChannel == null) return;
-    try {
-      await _sessionChannel!.sendBroadcastMessage(
-        event: 'ready_to_play',
-        payload: {'senderDeviceId': session.myDeviceId},
-      );
-    } catch (e) {
-      debugPrint('[ArcadeNetplayService] $e');
-    }
-  }
-
-  Future<void> _broadcastCancel(String reason) async {
-    final session = _currentSession;
-    if (session == null || _sessionChannel == null) return;
-    try {
-      await _sessionChannel!.sendBroadcastMessage(
-        event: 'cancel',
-        payload: {
-          'senderDeviceId': session.myDeviceId,
-          'reason': reason,
-        },
-      );
-    } catch (e) {
-      debugPrint('[ArcadeNetplayService] $e');
-    }
-  }
-
-  Future<void> _broadcastWebrtcSignal(Map<String, dynamic> signal) async {
-    final session = _currentSession;
-    if (session == null || _sessionChannel == null) return;
-    final type = signal['type'] as String?;
-    if (type == null) return;
-    try {
-      await _sessionChannel!.sendBroadcastMessage(
-        event: type,
-        payload: {
-          'senderDeviceId': session.myDeviceId,
-          ...signal,
-        },
-      );
-    } catch (e) {
-      debugPrint('[ArcadeNetplayService] $e');
-    }
-  }
-
   Future<void> _checkIfBothReady() async {
     final session = _currentSession;
     if (session == null) return;
@@ -571,95 +375,6 @@ class ArcadeNetplayService extends ChangeNotifier {
     notifyListeners();
 
     await _startWebRtcHandshake();
-  }
-
-  Future<void> _startWebRtcHandshake() async {
-    final session = _currentSession;
-    if (session == null) return;
-
-    await _disposeWebRtc();
-    final transport = ArcadeWebRtcTransport();
-    _webrtc = transport;
-
-    _webrtcSignalSub = transport.onSignalOut.listen((signal) {
-      unawaited(_broadcastWebrtcSignal(signal));
-    });
-
-    _webrtcInputSub = transport.onInput.listen((packet) {
-      if (!_remoteInputController.isClosed) {
-        _remoteInputController.add(packet);
-      }
-    });
-
-    _webrtcStateSub = transport.onState.listen((state) {
-      if (state == 'connected') {
-        _iceTimer?.cancel();
-        _iceTimer = null;
-        session.status = ArcadeNetplayStatus.inGame;
-        session.myStatusText = LocaleKeys.arcade_netplay_ready_both.tr();
-        notifyListeners();
-        _startHeartbeat();
-        if (session.isHost) {
-          transport.sendNetplayStart();
-        }
-      } else if (state == 'ice_failed') {
-        _failIce(LocaleKeys.arcade_netplay_ice_failed.tr());
-      } else if (state.startsWith('error:')) {
-        _failIce(LocaleKeys.arcade_netplay_webrtc_error
-            .tr(namedArgs: {'error': state.substring(6)}));
-      }
-    });
-
-    _iceTimer?.cancel();
-    _iceTimer = Timer(_iceTimeout, () {
-      if (_currentSession?.status == ArcadeNetplayStatus.ready &&
-          !(_webrtc?.isConnected ?? false)) {
-        _failIce(LocaleKeys.arcade_netplay_ice_timeout.tr());
-      }
-    });
-
-    try {
-      if (session.isHost) {
-        await transport.startAsHost();
-      } else {
-        await transport.startAsGuest();
-      }
-    } catch (e) {
-      _failIce(
-        LocaleKeys.arcade_netplay_webrtc_error.tr(namedArgs: {'error': '$e'}),
-      );
-    }
-  }
-
-  void _failIce(String reason) {
-    final session = _currentSession;
-    if (session == null) return;
-    session.status = ArcadeNetplayStatus.terminated;
-    session.exitReason = reason;
-    notifyListeners();
-    unawaited(_broadcastCancel(reason));
-    unawaited(_cleanupSession());
-  }
-
-  void _startHeartbeat() {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      final session = _currentSession;
-      final transport = _webrtc;
-      if (session == null || transport == null || !transport.isConnected) {
-        if (session != null &&
-            session.status == ArcadeNetplayStatus.inGame) {
-          session.status = ArcadeNetplayStatus.reconnecting;
-          notifyListeners();
-        }
-        return;
-      }
-      if (session.status == ArcadeNetplayStatus.reconnecting) {
-        session.status = ArcadeNetplayStatus.inGame;
-        notifyListeners();
-      }
-      // Keepalive: máscara 0 en frame -1 no aplica; el propio DC basta.
-    });
   }
 
   /// Envía input local con número de frame por WebRTC.
@@ -720,6 +435,9 @@ class ArcadeNetplayService extends ChangeNotifier {
     _romManager = null;
     notifyListeners();
   }
+
+  /// `notifyListeners` para los `part` (es `@protected`).
+  void _notifyChanged() => notifyListeners();
 
   @override
   void dispose() {
