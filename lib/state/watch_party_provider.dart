@@ -597,11 +597,13 @@ class WatchPartyProvider extends ChangeNotifier {
         _currentChannelId,
         _currentChannelName,
       );
-      if (!wasWatching && isNowWatching) {
-        final name = updated.nickname ?? updated.userCode;
-        notifyFriendJoinedChannel(name);
-      } else {
-        notifyListeners();
+      // La lista cambió siempre; el aviso, solo si entró al canal y no se avisó ya.
+      notifyListeners();
+      if (!isNowWatching) {
+        _notifiedFriendDeviceIdsInCurrentChannel.remove(updated.deviceId);
+      } else if (!wasWatching &&
+          _notifiedFriendDeviceIdsInCurrentChannel.add(updated.deviceId)) {
+        notifyFriendJoinedChannel(updated.nickname ?? updated.userCode);
       }
     }
   }
