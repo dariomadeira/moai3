@@ -25,8 +25,6 @@ class _DayColumn extends StatelessWidget {
     required this.onSelectColumn,
   });
 
-  static const _dayNames = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
-
   bool get _isToday {
     final now = ArgentinaTime.now();
     return now.year == day.year && now.month == day.month && now.day == day.day;
@@ -35,7 +33,7 @@ class _DayColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final dayLabel = _dayNames[(day.weekday - 1).clamp(0, 6)];
+    final dayLabel = MoaiFormats.weekdayShort(day.weekday);
     final isToday = _isToday;
 
     // Colores para el encabezado del día con gradiente y borde sutil

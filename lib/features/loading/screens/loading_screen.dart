@@ -15,6 +15,7 @@ import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/utils/moai_formats.dart';
 
 /// Pantalla inicial de verificación de presencia y carga con estética Material 3 Expressive (SPEC-22 §4.1).
 class LoadingScreen extends StatefulWidget {
@@ -100,10 +101,7 @@ class _LoadingScreenState extends State<LoadingScreen>
   String _cancelCatalogLabel() {
     final savedAt = _storedCatalogAt;
     if (savedAt == null) return LocaleKeys.loading_catalog_cancel_no_date.tr();
-    final local = savedAt.toLocal();
-    final day = local.day.toString().padLeft(2, '0');
-    final month = local.month.toString().padLeft(2, '0');
-    final date = '$day/$month/${local.year}';
+    final date = MoaiFormats.date(savedAt.toLocal());
     return LocaleKeys.loading_catalog_cancel.tr(namedArgs: {'date': date});
   }
 

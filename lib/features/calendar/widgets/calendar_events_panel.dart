@@ -13,6 +13,7 @@ import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/features/calendar/widgets/calendar_event_details_dialog.dart';
+import 'package:moai3/utils/moai_formats.dart';
 
 part 'calendar_events/calendar_events_keys.dart';
 part 'calendar_events/calendar_header_button.dart';
@@ -184,7 +185,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          _formatWeekRange(monday, sunday),
+                          MoaiFormats.weekRange(monday, sunday),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: MoaiText.display(

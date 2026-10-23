@@ -1,5 +1,6 @@
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/services/calendar/argentina_time.dart';
+import 'package:moai3/utils/moai_formats.dart';
 
 enum CalendarEventStatus {
   upcoming,
@@ -116,20 +117,12 @@ class CalendarEvent {
   }
 
   /// Retorna la fecha formateada dd/MM/yyyy en hora de Argentina.
-  String get formattedDate {
-    final civil = ArgentinaTime.toCivil(startDateTime);
-    final day = civil.day.toString().padLeft(2, '0');
-    final month = civil.month.toString().padLeft(2, '0');
-    return '$day/$month/${civil.year}';
-  }
+  String get formattedDate =>
+      MoaiFormats.date(ArgentinaTime.toCivil(startDateTime));
 
   /// Retorna la hora formateada HH:mm en hora de Argentina.
-  String get formattedTime {
-    final civil = ArgentinaTime.toCivil(startDateTime);
-    final hour = civil.hour.toString().padLeft(2, '0');
-    final minute = civil.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
-  }
+  String get formattedTime =>
+      MoaiFormats.time(ArgentinaTime.toCivil(startDateTime));
 
   /// Prioridad numérica de ordenamiento para interfaz de TV:
   /// 0 = live (máxima prioridad, arriba de todo)

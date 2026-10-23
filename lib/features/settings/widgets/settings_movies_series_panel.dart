@@ -9,6 +9,7 @@ import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/utils/moai_formats.dart';
 
 enum _SettingsMoviesSeriesItemType {
   skipCatalog,
@@ -57,10 +58,7 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
     final title = LocaleKeys.settings_general_skip_catalog.tr();
     final savedAt = _catalogSavedAt;
     if (savedAt == null) return title;
-    final local = savedAt.toLocal();
-    final day = local.day.toString().padLeft(2, '0');
-    final month = local.month.toString().padLeft(2, '0');
-    return '$title · $day/$month/${local.year}';
+    return '$title · ${MoaiFormats.date(savedAt.toLocal())}';
   }
 
   void focusSelected() {

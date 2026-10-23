@@ -267,31 +267,6 @@ extension _CalendarEventsKeys on CalendarEventsPanelState {
     });
   }
 
-  String _formatWeekRange(DateTime monday, DateTime sunday) {
-    const months = [
-      '',
-      'Ene',
-      'Feb',
-      'Mar',
-      'Abr',
-      'May',
-      'Jun',
-      'Jul',
-      'Ago',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dic',
-    ];
-    if (monday.month == sunday.month) {
-      return '${monday.day} - ${sunday.day} ${months[monday.month]} ${sunday.year}';
-    } else if (monday.year == sunday.year) {
-      return '${monday.day} ${months[monday.month]} - ${sunday.day} ${months[sunday.month]} ${sunday.year}';
-    } else {
-      return '${monday.day} ${months[monday.month]} ${monday.year} - ${sunday.day} ${months[sunday.month]} ${sunday.year}';
-    }
-  }
-
   void _showEventDetails(BuildContext context, CalendarEvent event) {
     showCalendarEventDetails(
       context,
