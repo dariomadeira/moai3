@@ -6,7 +6,7 @@
 > - `lib/features/settings/widgets/settings_movies_series_panel.dart`  
 > - `lib/features/settings/widgets/settings_catalog_frequency_row.dart`  
 > - `lib/features/settings/widgets/tv_option_selector.dart`  
-> - `lib/layout/settings_panel_layout.dart`  
+> - `lib/focus/settings_panel_layout.dart`  
 > - `lib/state/tv_settings_provider.dart`  
 > - `lib/features/loading/screens/loading_screen.dart`  
 > - `lib/services/moiamov_api_service.dart`  

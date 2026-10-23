@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:moai3/services/playback_stats_controller.dart';
+import 'package:moai3/state/playback_stats_controller.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -30,7 +30,7 @@ import 'package:moai3/focus/focus_retry.dart';
 import 'package:moai3/focus/focus_scroll_sync.dart';
 import 'package:moai3/focus/tv_focus_controller.dart';
 import 'package:moai3/focus/tv_intents.dart';
-import 'package:moai3/layout/tv_panel_layout.dart';
+import 'package:moai3/focus/tv_panel_layout.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/models/channel_group.dart';
 import 'package:moai3/services/modal_route_tracker.dart';

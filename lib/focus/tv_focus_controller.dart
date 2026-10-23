@@ -1,4 +1,4 @@
-import 'package:moai3/layout/tv_panel_layout.dart';
+import 'package:moai3/focus/tv_panel_layout.dart';
 
 /// Grafo de foco TV: restaura foco según panel activo al salir del rail.
 class TvFocusController {

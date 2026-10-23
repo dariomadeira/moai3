@@ -1,6 +1,6 @@
 ﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/config/app_config.dart';
-import 'package:moai3/services/debug_log_controller.dart';
+import 'package:moai3/state/debug_log_controller.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

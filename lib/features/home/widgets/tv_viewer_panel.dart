@@ -3,7 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/models/channel.dart';
-import 'package:moai3/services/playback_stats_controller.dart';
+import 'package:moai3/state/playback_stats_controller.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 

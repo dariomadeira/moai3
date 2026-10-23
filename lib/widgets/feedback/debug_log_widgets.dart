@@ -1,6 +1,6 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:moai3/services/debug_log_controller.dart';
-import 'package:moai3/services/playback_stats_controller.dart';
+import 'package:moai3/state/debug_log_controller.dart';
+import 'package:moai3/state/playback_stats_controller.dart';
 import 'package:moai3/theme/moai_text.dart';
 
 class DebugKvRow extends StatelessWidget {

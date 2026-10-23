@@ -8,7 +8,7 @@ import 'package:moai3/features/settings/widgets/settings_general_panel.dart';
 import 'package:moai3/features/settings/widgets/settings_movies_series_panel.dart';
 import 'package:moai3/features/settings/widgets/settings_tv_panel.dart';
 import 'package:moai3/features/settings/widgets/settings_watch_party_panel.dart';
-import 'package:moai3/layout/settings_panel_layout.dart';
+import 'package:moai3/focus/settings_panel_layout.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
 

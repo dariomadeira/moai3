@@ -5,7 +5,7 @@ import 'package:moai3/widgets/buttons/clear_favorites_button.dart';
 import 'package:moai3/widgets/buttons/create_group_button.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/services/app_preferences_service.dart';
-import 'package:moai3/services/playback_stats_controller.dart';
+import 'package:moai3/state/playback_stats_controller.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';

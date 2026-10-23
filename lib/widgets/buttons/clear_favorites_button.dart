@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
-import 'package:moai3/helpers/notification_helper.dart';
+import 'package:moai3/widgets/feedback/notification_helper.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';

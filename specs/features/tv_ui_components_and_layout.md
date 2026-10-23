@@ -8,7 +8,7 @@
 > - `lib/features/search/widgets/search_panel.dart`  
 > - `lib/widgets/lists/tv_windowed_list.dart`  
 > - `lib/widgets/dialogs/tv_pin_dialog.dart`  
-> - `lib/layout/tv_panel_layout.dart`  
+> - `lib/focus/tv_panel_layout.dart`  
 
 ---
 

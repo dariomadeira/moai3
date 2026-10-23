@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/config/app_config.dart';
-import 'package:moai3/layout/tv_panel_layout.dart';
+import 'package:moai3/focus/tv_panel_layout.dart';
 
 void main() {
   group('TvPanelLayout', () {

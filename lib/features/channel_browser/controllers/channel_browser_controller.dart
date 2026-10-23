@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moai3/focus/focus_scroll_sync.dart';
-import 'package:moai3/layout/tv_panel_layout.dart';
+import 'package:moai3/focus/tv_panel_layout.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/utils/safe_change_notifier.dart';
 

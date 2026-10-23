@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:moai3/layout/settings_panel_layout.dart';
+import 'package:moai3/focus/settings_panel_layout.dart';
 
 void main() {
   group('SettingsPanelLayout', () {
