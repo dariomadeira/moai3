@@ -7,8 +7,10 @@ import 'package:moai3/features/games/screens/arcade_games_screen.dart';
 import 'package:moai3/features/games/services/arcade_netplay_service.dart';
 import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
 import 'package:moai3/features/games/widgets/tv_arcade_select_friend_dialog.dart';
+import 'package:moai3/features/home/areas/home_area.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
+import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/widgets/dialogs/tv_gamepad_config_dialog.dart';
@@ -19,22 +21,12 @@ import 'package:moai3/theme/moai_icons.dart';
 
 /// Área principal de Arcade en HomeScreen: 1 único panel con el mismo diseño que Ajustes.
 class HomeArcadeArea extends StatefulWidget {
-  final FocusNode selectGameFocus;
-  final FocusNode gamepadFocus;
-  final FocusNode startFocus;
-  final FocusNode playTogetherFocus;
   final VoidCallback onExitLeft;
-  final VoidCallback onStartGame;
   final ArcadeRomManagerService romManager;
 
   const HomeArcadeArea({
     super.key,
-    required this.selectGameFocus,
-    required this.gamepadFocus,
-    required this.startFocus,
-    required this.playTogetherFocus,
     required this.onExitLeft,
-    required this.onStartGame,
     required this.romManager,
   });
 
@@ -42,7 +34,13 @@ class HomeArcadeArea extends StatefulWidget {
   State<HomeArcadeArea> createState() => _HomeArcadeAreaState();
 }
 
-class _HomeArcadeAreaState extends State<HomeArcadeArea> {
+class _HomeArcadeAreaState extends HomeAreaState<HomeArcadeArea> {
+  late final _focus = FocusRequester(isMounted: () => mounted);
+  final _selectGameFocus = FocusNode(debugLabel: 'arcade_select_game');
+  final _gamepadFocus = FocusNode(debugLabel: 'arcade_config_gamepad');
+  final _startFocus = FocusNode(debugLabel: 'arcade_start_game');
+  final _playTogetherFocus = FocusNode(debugLabel: 'arcade_play_together');
+
   @override
   void initState() {
     super.initState();
@@ -52,7 +50,27 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
   @override
   void dispose() {
     widget.romManager.removeListener(_onRomManagerUpdate);
+    _selectGameFocus.dispose();
+    _gamepadFocus.dispose();
+    _startFocus.dispose();
+    _playTogetherFocus.dispose();
     super.dispose();
+  }
+
+  @override
+  void requestEntryFocus() => _focus.node(_selectGameFocus, immediate: true);
+
+  void _onStartGame() {
+    final path = widget.romManager.getActiveRomPath();
+    if (path != null) {
+      unawaited(ArcadeLauncher.play(context, romPath: path));
+    } else {
+      MoaiSnackBar.show(
+        context,
+        message: LocaleKeys.arcade_no_game_installed_snack.tr(),
+        icon: MoaiIcons.infoOutline,
+      );
+    }
   }
 
   void _onRomManagerUpdate() {
@@ -137,10 +155,10 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
   Widget build(BuildContext context) {
     final canPlayTogether =
         context.watch<WatchPartyProvider?>()?.hasOnlineFriends ?? false;
-    if (!canPlayTogether && widget.playTogetherFocus.hasFocus) {
+    if (!canPlayTogether && _playTogetherFocus.hasFocus) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && !widget.startFocus.hasFocus) {
-          widget.startFocus.requestFocus();
+        if (mounted && !_startFocus.hasFocus) {
+          _startFocus.requestFocus();
         }
       });
     }
@@ -176,27 +194,27 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
 
               // 1. Seleccionar juego
               TvSettingsActionRow(
-                focusNode: widget.selectGameFocus,
+                focusNode: _selectGameFocus,
                 label: LocaleKeys.arcade_action_select_game.tr(),
                 description: _resolveCurrentGameName(),
                 icon: MoaiIcons.arcadeActionSelectGame,
                 onPressed: _onSelectGame,
                 onKeyLeft: widget.onExitLeft,
-                onKeyDown: () => widget.gamepadFocus.requestFocus(),
+                onKeyDown: _gamepadFocus.requestFocus,
               ),
               const SizedBox(height: 10),
 
               // 2. Configurar Gamepad
               TvSettingsActionRow(
-                focusNode: widget.gamepadFocus,
+                focusNode: _gamepadFocus,
                 label: LocaleKeys.arcade_gamepad_config_title.tr(),
                 description: LocaleKeys.arcade_gamepad_config_desc.tr(),
                 icon: MoaiIcons.arcadeActionConfigGamepad,
                 onPressed: _onConfigGamepad,
                 onKeyLeft: widget.onExitLeft,
-                onKeyUp: () => widget.selectGameFocus.requestFocus(),
+                onKeyUp: _selectGameFocus.requestFocus,
                 onKeyDown: widget.romManager.installedRoms.isNotEmpty
-                    ? () => widget.startFocus.requestFocus()
+                    ? _startFocus.requestFocus
                     : null,
               ),
 
@@ -204,27 +222,27 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
               if (widget.romManager.installedRoms.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 TvSettingsActionRow(
-                  focusNode: widget.startFocus,
+                  focusNode: _startFocus,
                   label: LocaleKeys.arcade_action_start_game.tr(),
                   description: LocaleKeys.arcade_action_start_game_desc.tr(),
                   icon: MoaiIcons.arcadeActionStartGame,
-                  onPressed: widget.onStartGame,
+                  onPressed: _onStartGame,
                   onKeyLeft: widget.onExitLeft,
-                  onKeyUp: () => widget.gamepadFocus.requestFocus(),
+                  onKeyUp: _gamepadFocus.requestFocus,
                   onKeyDown: canPlayTogether
-                      ? () => widget.playTogetherFocus.requestFocus()
+                      ? _playTogetherFocus.requestFocus
                       : null,
                 ),
                 if (canPlayTogether) ...[
                   const SizedBox(height: 10),
                   TvSettingsActionRow(
-                    focusNode: widget.playTogetherFocus,
+                    focusNode: _playTogetherFocus,
                     label: LocaleKeys.arcade_action_play_together.tr(),
                     description: LocaleKeys.arcade_action_play_together_desc.tr(),
                     icon: MoaiIcons.groupOutlined,
                     onPressed: _onPlayTogether,
                     onKeyLeft: widget.onExitLeft,
-                    onKeyUp: () => widget.startFocus.requestFocus(),
+                    onKeyUp: _startFocus.requestFocus,
                   ),
                 ],
               ],

@@ -1,6 +1,7 @@
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/features/home/areas/home_area.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/settings/widgets/settings_about_panel.dart';
 import 'package:moai3/features/settings/widgets/settings_agenda_panel.dart';
@@ -8,32 +9,22 @@ import 'package:moai3/features/settings/widgets/settings_general_panel.dart';
 import 'package:moai3/features/settings/widgets/settings_movies_series_panel.dart';
 import 'package:moai3/features/settings/widgets/settings_tv_panel.dart';
 import 'package:moai3/features/settings/widgets/settings_watch_party_panel.dart';
+import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/focus/settings_panel_layout.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
-/// Acordeón de Ajustes (UI). Los [FocusNode] viven en el padre (como moaiSmart).
-class HomeSettingsArea extends StatelessWidget {
-  final int activePanelIndex;
-  final FocusNode tvPanelFocus;
-  final FocusNode moviesSeriesPanelFocus;
-  final FocusNode agendaPanelFocus;
-  final FocusNode watchPartyPanelFocus;
-  final FocusNode generalPanelFocus;
-  final FocusNode aboutPanelFocus;
-  final ValueChanged<int> onPanelIndexChanged;
+/// Acordeón de Ajustes. Es dueño de sus [FocusNode]; el padre solo recuerda
+/// el panel abierto para reabrirlo al volver a la sección.
+class HomeSettingsArea extends StatefulWidget {
+  final int initialPanelIndex;
+  final ValueChanged<int>? onPanelIndexChanged;
   final VoidCallback onExitLeft;
 
   const HomeSettingsArea({
     super.key,
-    required this.activePanelIndex,
-    required this.tvPanelFocus,
-    required this.moviesSeriesPanelFocus,
-    required this.agendaPanelFocus,
-    required this.watchPartyPanelFocus,
-    required this.generalPanelFocus,
-    required this.aboutPanelFocus,
-    required this.onPanelIndexChanged,
+    this.initialPanelIndex = SettingsPanelLayout.configTvPanelIndex,
+    this.onPanelIndexChanged,
     required this.onExitLeft,
   });
 
@@ -47,16 +38,47 @@ class HomeSettingsArea extends StatelessWidget {
   ];
 
   @override
+  State<HomeSettingsArea> createState() => _HomeSettingsAreaState();
+}
+
+class _HomeSettingsAreaState extends HomeAreaState<HomeSettingsArea> {
+  late final _focus = FocusRequester(isMounted: () => mounted);
+  late int _panel = widget.initialPanelIndex;
+
+  /// Un nodo por panel, en el orden de [SettingsPanelLayout].
+  final _panelFocus = [
+    FocusNode(debugLabel: 'settings_tv'),
+    FocusNode(debugLabel: 'settings_movies_series'),
+    FocusNode(debugLabel: 'settings_agenda'),
+    FocusNode(debugLabel: 'settings_watch_party'),
+    FocusNode(debugLabel: 'settings_general'),
+    FocusNode(debugLabel: 'settings_about'),
+  ];
+
+  @override
+  void dispose() {
+    for (final node in _panelFocus) {
+      node.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  void requestEntryFocus() => _focus.node(_panelFocus[_panel], immediate: true);
+
+  void _selectPanel(int index) {
+    setState(() => _panel = index);
+    widget.onPanelIndexChanged?.call(index);
+    requestEntryFocus();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final panelColors = [
+    final panelColors = List.filled(
+      SettingsPanelLayout.panelCount,
       scheme.surface.withValues(alpha: 0.8),
-      scheme.surface.withValues(alpha: 0.8),
-      scheme.surface.withValues(alpha: 0.8),
-      scheme.surface.withValues(alpha: 0.8),
-      scheme.surface.withValues(alpha: 0.8),
-      scheme.surface.withValues(alpha: 0.8),
-    ];
+    );
     final titles = [
       LocaleKeys.settings_tv_title.tr(),
       LocaleKeys.settings_movies_series_title.tr(),
@@ -68,17 +90,18 @@ class HomeSettingsArea extends StatelessWidget {
 
     return TvAccordionRowPreview(
       panelCount: SettingsPanelLayout.panelCount,
-      activeIndex: activePanelIndex,
+      activeIndex: _panel,
       colors: panelColors,
       titles: titles,
-      icons: icons,
-      onPanelTap: onPanelIndexChanged,
+      icons: HomeSettingsArea.icons,
+      onPanelTap: _selectPanel,
       buildExpandedContent: (index, title) {
+        final focusNode = _panelFocus[index];
         if (SettingsPanelLayout.isConfigTvPanel(index)) {
           return SettingsTvPanel(
-            focusNode: tvPanelFocus,
-            onKeyLeft: onExitLeft,
-            onKeyRight: () => onPanelIndexChanged(
+            focusNode: focusNode,
+            onKeyLeft: widget.onExitLeft,
+            onKeyRight: () => _selectPanel(
               SettingsPanelLayout.configMoviesSeriesPanelIndex,
             ),
           );
@@ -86,57 +109,49 @@ class HomeSettingsArea extends StatelessWidget {
 
         if (SettingsPanelLayout.isConfigMoviesSeriesPanel(index)) {
           return SettingsMoviesSeriesPanel(
-            focusNode: moviesSeriesPanelFocus,
-            onKeyLeft: () => onPanelIndexChanged(
-              SettingsPanelLayout.configTvPanelIndex,
-            ),
-            onKeyRight: () => onPanelIndexChanged(
-              SettingsPanelLayout.configAgendaPanelIndex,
-            ),
+            focusNode: focusNode,
+            onKeyLeft: () =>
+                _selectPanel(SettingsPanelLayout.configTvPanelIndex),
+            onKeyRight: () =>
+                _selectPanel(SettingsPanelLayout.configAgendaPanelIndex),
           );
         }
 
         if (SettingsPanelLayout.isConfigAgendaPanel(index)) {
           return SettingsAgendaPanel(
-            focusNode: agendaPanelFocus,
-            onKeyLeft: () => onPanelIndexChanged(
+            focusNode: focusNode,
+            onKeyLeft: () => _selectPanel(
               SettingsPanelLayout.configMoviesSeriesPanelIndex,
             ),
-            onKeyRight: () => onPanelIndexChanged(
-              SettingsPanelLayout.watchPartyPanelIndex,
-            ),
+            onKeyRight: () =>
+                _selectPanel(SettingsPanelLayout.watchPartyPanelIndex),
           );
         }
 
         if (SettingsPanelLayout.isWatchPartyPanel(index)) {
           return SettingsWatchPartyPanel(
-            focusNode: watchPartyPanelFocus,
-            onKeyLeft: () => onPanelIndexChanged(
-              SettingsPanelLayout.configAgendaPanelIndex,
-            ),
-            onKeyRight: () => onPanelIndexChanged(
-              SettingsPanelLayout.configGeneralPanelIndex,
-            ),
+            focusNode: focusNode,
+            onKeyLeft: () =>
+                _selectPanel(SettingsPanelLayout.configAgendaPanelIndex),
+            onKeyRight: () =>
+                _selectPanel(SettingsPanelLayout.configGeneralPanelIndex),
           );
         }
 
         if (SettingsPanelLayout.isConfigGeneralPanel(index)) {
           return SettingsGeneralPanel(
-            focusNode: generalPanelFocus,
-            onKeyLeft: () => onPanelIndexChanged(
-              SettingsPanelLayout.watchPartyPanelIndex,
-            ),
-            onKeyRight: () => onPanelIndexChanged(
-              SettingsPanelLayout.aboutPanelIndex,
-            ),
+            focusNode: focusNode,
+            onKeyLeft: () =>
+                _selectPanel(SettingsPanelLayout.watchPartyPanelIndex),
+            onKeyRight: () =>
+                _selectPanel(SettingsPanelLayout.aboutPanelIndex),
           );
         }
 
         return SettingsAboutPanel(
-          focusNode: aboutPanelFocus,
-          onKeyLeft: () => onPanelIndexChanged(
-            SettingsPanelLayout.configGeneralPanelIndex,
-          ),
+          focusNode: focusNode,
+          onKeyLeft: () =>
+              _selectPanel(SettingsPanelLayout.configGeneralPanelIndex),
         );
       },
     );

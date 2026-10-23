@@ -51,6 +51,14 @@ void main() {
       .isSelected ==
       Tristate.isTrue;
 
+  /// `true` si el foco está en el nodo [label] o en uno de sus hijos.
+  bool focusWithin(String label) {
+    final focus = FocusManager.instance.primaryFocus;
+    if (focus == null) return false;
+    return focus.debugLabel == label ||
+        focus.ancestors.any((n) => n.debugLabel == label);
+  }
+
   Future<void> pumpHome(WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({
       'device_id': 'tv-1',
@@ -151,6 +159,39 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     expect(FocusManager.instance.primaryFocus?.debugLabel, 'home_rail');
     expect(isSelected(tester, 'home_rail_calendar_title'), isTrue);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('Ajustes es dueño de su foco y recuerda el panel al volver', (
+    tester,
+  ) async {
+    await pumpHome(tester);
+    await tester.tap(find.bySemanticsLabel('home_rail_settings_title'));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // → desde el rail entra al panel abierto (TV, el primero).
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(focusWithin('settings_tv'), isTrue);
+
+    // Abrir "Acerca de" y salir a TV.
+    await tester.tap(find.text('settings_about_title').first);
+    // Varios frames: el acordeón anima y el pedido de foco reintenta por frame.
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(focusWithin('settings_about'), isTrue);
+    await tester.tap(find.bySemanticsLabel('home_rail_tv_title'));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Volver a Ajustes: → entra de nuevo a "Acerca de".
+    await tester.tap(find.bySemanticsLabel('home_rail_settings_title'));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(focusWithin('settings_about'), isTrue);
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 5));

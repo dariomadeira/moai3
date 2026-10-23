@@ -8,6 +8,7 @@ import 'package:moai3/features/games/arcade_launcher.dart';
 import 'package:moai3/features/calendar/widgets/calendar_events_panel.dart';
 import 'package:moai3/features/games/services/arcade_netplay_service.dart';
 import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
+import 'package:moai3/features/home/areas/home_area.dart';
 import 'package:moai3/features/home/areas/home_arcade_area.dart';
 import 'package:moai3/features/home/areas/home_calendar_area.dart';
 import 'package:moai3/features/home/areas/home_dashboard_area.dart';
@@ -20,7 +21,6 @@ import 'package:moai3/features/home/coordinators/startup_update_checker.dart';
 import 'package:moai3/features/home/home_section.dart';
 import 'package:moai3/features/home/widgets/double_back_exit_scope.dart';
 import 'package:moai3/features/home/widgets/tv_vertical_nav_rail.dart';
-import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/focus/tv_intents.dart';
 import 'package:moai3/focus/tv_shortcuts.dart';
 import 'package:moai3/widgets/feedback/notification_helper.dart';
@@ -49,18 +49,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final FocusNode _arcadeSelectGameFocus = FocusNode(
-    debugLabel: 'arcade_select_game',
-  );
-  final FocusNode _arcadeGamepadFocus = FocusNode(
-    debugLabel: 'arcade_config_gamepad',
-  );
-  final FocusNode _arcadeStartFocus = FocusNode(
-    debugLabel: 'arcade_start_game',
-  );
-  final FocusNode _arcadePlayTogetherFocus = FocusNode(
-    debugLabel: 'arcade_play_together',
-  );
   final ArcadeRomManagerService _romManager = ArcadeRomManagerService();
   StreamSubscription? _arcadeInviteSubscription;
 
@@ -68,43 +56,24 @@ class _HomeScreenState extends State<HomeScreen> {
     debugLabel: 'rail_scope',
   );
   final FocusNode _railFocusNode = FocusNode(debugLabel: 'home_rail');
-  final GlobalKey<HomeDashboardAreaState> _homeAreaKey =
-      GlobalKey<HomeDashboardAreaState>();
   final GlobalKey<HomeTvAreaState> _tvAreaKey = GlobalKey<HomeTvAreaState>();
-  final GlobalKey<HomeMoviesAreaState> _featuredAreaKey =
-      GlobalKey<HomeMoviesAreaState>();
-  final GlobalKey<HomeMoviesAreaState> _moviesAreaKey =
-      GlobalKey<HomeMoviesAreaState>();
-  final GlobalKey<HomeMoviesAreaState> _seriesAreaKey =
-      GlobalKey<HomeMoviesAreaState>();
+
+  /// Una clave por sección: Destacados, Películas y Series comparten widget y
+  /// necesitan claves distintas para no reutilizar el estado entre sí.
+  late final Map<HomeSection, GlobalKey<HomeAreaState>> _areaKeys = {
+    for (final section in HomeSection.values)
+      section: section == HomeSection.tv
+          ? _tvAreaKey
+          : GlobalKey<HomeAreaState>(),
+  };
   final GlobalKey<DoubleBackExitScopeState> _doubleBackKey =
       GlobalKey<DoubleBackExitScopeState>();
 
-  final FocusNode _calendarEventsFocus = FocusNode(
-    debugLabel: 'calendar_events',
-  );
-  final FocusNode _calendarSubscriptionsFocus = FocusNode(
-    debugLabel: 'calendar_subscriptions',
-  );
-  int _activeCalendarPanelIndex = 0;
-
-  final FocusNode _settingsTvFocus = FocusNode(debugLabel: 'settings_tv');
-  final FocusNode _settingsMoviesSeriesFocus = FocusNode(
-    debugLabel: 'settings_movies_series',
-  );
-  final FocusNode _settingsAgendaFocus = FocusNode(
-    debugLabel: 'settings_agenda',
-  );
-  final FocusNode _settingsWatchPartyFocus = FocusNode(
-    debugLabel: 'settings_watch_party',
-  );
-  final FocusNode _settingsGeneralFocus = FocusNode(
-    debugLabel: 'settings_general',
-  );
-  final FocusNode _settingsAboutFocus = FocusNode(debugLabel: 'settings_about');
+  /// Panel abierto de Agenda y Ajustes, para reabrirlo al volver.
+  int _calendarPanelIndex = 0;
+  int _settingsPanelIndex = SettingsPanelLayout.configTvPanelIndex;
 
   HomeSection _section = HomeSection.tv;
-  int _activeSettingsPanelIndex = SettingsPanelLayout.configTvPanelIndex;
   StreamSubscription<List<CalendarEvent>>? _liveEventsSub;
   final List<CalendarEvent> _liveSnackQueue = [];
   bool _liveSnackBusy = false;
@@ -334,105 +303,28 @@ class _HomeScreenState extends State<HomeScreen> {
     _liveEventsSub?.cancel();
     _railFocusNode.dispose();
     _railScopeNode.dispose();
-    _calendarEventsFocus.dispose();
-    _calendarSubscriptionsFocus.dispose();
-    _settingsTvFocus.dispose();
-    _settingsMoviesSeriesFocus.dispose();
-    _settingsAgendaFocus.dispose();
-    _settingsWatchPartyFocus.dispose();
-    _settingsGeneralFocus.dispose();
-    _settingsAboutFocus.dispose();
-    _arcadeSelectGameFocus.dispose();
-    _arcadeGamepadFocus.dispose();
-    _arcadeStartFocus.dispose();
-    _arcadePlayTogetherFocus.dispose();
     ArcadePluginService.instance.removeListener(_onArcadePluginChanged);
     _arcadeInviteSubscription?.cancel();
     _romManager.dispose();
     super.dispose();
   }
 
-  late final _focus = FocusRequester(isMounted: () => mounted);
-
-  void _requestFocusWithRetry(FocusNode node) =>
-      _focus.node(node, immediate: true);
-
   void _focusRail() {
     if (mounted) _railFocusNode.requestFocus();
   }
 
-  void _focusCalendarPanelByIndex(int index) {
-    if (index == 0) {
-      _requestFocusWithRetry(_calendarEventsFocus);
-    } else {
-      _requestFocusWithRetry(_calendarSubscriptionsFocus);
-    }
-  }
+  HomeAreaState? get _area => _areaKeys[_section]?.currentState;
 
-  void _onCalendarPanelIndexChanged(int index) {
-    setState(() => _activeCalendarPanelIndex = index);
-    _focusCalendarPanelByIndex(index);
-  }
-
-  void _focusSettingsPanelByIndex(int index) {
-    if (SettingsPanelLayout.isConfigTvPanel(index)) {
-      _requestFocusWithRetry(_settingsTvFocus);
-    } else if (SettingsPanelLayout.isConfigMoviesSeriesPanel(index)) {
-      _requestFocusWithRetry(_settingsMoviesSeriesFocus);
-    } else if (SettingsPanelLayout.isConfigAgendaPanel(index)) {
-      _requestFocusWithRetry(_settingsAgendaFocus);
-    } else if (SettingsPanelLayout.isWatchPartyPanel(index)) {
-      _requestFocusWithRetry(_settingsWatchPartyFocus);
-    } else if (SettingsPanelLayout.isConfigGeneralPanel(index)) {
-      _requestFocusWithRetry(_settingsGeneralFocus);
-    } else if (SettingsPanelLayout.isAboutPanel(index)) {
-      _requestFocusWithRetry(_settingsAboutFocus);
-    }
-  }
-
-  /// → del rail — idéntico a Smart `_returnFocusToSettingsPanel`.
+  /// → del rail: el área activa decide dónde entra el foco.
   void _onRailFocusRight() {
     _railFocusNode.unfocus();
-    if (_section == HomeSection.home) {
-      _homeAreaKey.currentState?.requestEntryFocus();
-      return;
-    }
-    if (_section == HomeSection.settings) {
-      _focusSettingsPanelByIndex(_activeSettingsPanelIndex);
-      return;
-    }
-    if (_section == HomeSection.calendar) {
-      _focusCalendarPanelByIndex(_activeCalendarPanelIndex);
-      return;
-    }
-    if (_section == HomeSection.arcade) {
-      _requestFocusWithRetry(_arcadeSelectGameFocus);
-      return;
-    }
-    if (_section == HomeSection.featured) {
-      _featuredAreaKey.currentState?.requestEntryFocus();
-      return;
-    }
-    if (_section == HomeSection.movies) {
-      _moviesAreaKey.currentState?.requestEntryFocus();
-      return;
-    }
-    if (_section == HomeSection.series) {
-      _seriesAreaKey.currentState?.requestEntryFocus();
-      return;
-    }
-    _tvAreaKey.currentState?.requestEntryFocus();
-  }
-
-  void _onSettingsPanelIndexChanged(int index) {
-    setState(() => _activeSettingsPanelIndex = index);
-    _focusSettingsPanelByIndex(index);
+    _area?.requestEntryFocus();
   }
 
   bool _interceptBack() {
-    if (_section == HomeSection.tv) {
-      return _tvAreaKey.currentState?.handleBack() ?? false;
-    }
+    if (_area?.handleBack() ?? false) return true;
+    // En TV el back sin consumir lo maneja el doble back para salir.
+    if (_section == HomeSection.tv) return false;
     // Fuera de TV: back desde el rail vuelve a TV; desde el contenido, al rail.
     if (_railFocusNode.hasFocus) {
       _switchSection(HomeSection.tv);
@@ -445,57 +337,24 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildArea() {
     return switch (_section) {
       HomeSection.home => HomeDashboardArea(
-          key: _homeAreaKey,
+          key: _areaKeys[HomeSection.home],
           onExitLeft: _focusRail,
         ),
       HomeSection.settings => HomeSettingsArea(
-          activePanelIndex:
-              _activeSettingsPanelIndex,
-          tvPanelFocus: _settingsTvFocus,
-          moviesSeriesPanelFocus:
-              _settingsMoviesSeriesFocus,
-          agendaPanelFocus: _settingsAgendaFocus,
-          watchPartyPanelFocus:
-              _settingsWatchPartyFocus,
-          generalPanelFocus:
-              _settingsGeneralFocus,
-          aboutPanelFocus: _settingsAboutFocus,
-          onPanelIndexChanged:
-              _onSettingsPanelIndexChanged,
+          key: _areaKeys[HomeSection.settings],
+          initialPanelIndex: _settingsPanelIndex,
+          onPanelIndexChanged: (i) => _settingsPanelIndex = i,
           onExitLeft: _focusRail,
         ),
       HomeSection.arcade => HomeArcadeArea(
-          selectGameFocus: _arcadeSelectGameFocus,
-          gamepadFocus: _arcadeGamepadFocus,
-          startFocus: _arcadeStartFocus,
-          playTogetherFocus:
-              _arcadePlayTogetherFocus,
+          key: _areaKeys[HomeSection.arcade],
           onExitLeft: _focusRail,
           romManager: _romManager,
-          onStartGame: () {
-            final path = _romManager
-                .getActiveRomPath();
-            if (path != null) {
-              unawaited(ArcadeLauncher.play(context, romPath: path));
-            } else {
-              MoaiSnackBar.show(
-                context,
-                message:
-                    LocaleKeys.arcade_no_game_installed_snack
-                        .tr(),
-                icon: MoaiIcons.infoOutline,
-              );
-            }
-          },
         ),
       HomeSection.calendar => HomeCalendarArea(
-          activePanelIndex:
-              _activeCalendarPanelIndex,
-          eventsPanelFocus: _calendarEventsFocus,
-          subscriptionsPanelFocus:
-              _calendarSubscriptionsFocus,
-          onPanelIndexChanged:
-              _onCalendarPanelIndexChanged,
+          key: _areaKeys[HomeSection.calendar],
+          initialPanelIndex: _calendarPanelIndex,
+          onPanelIndexChanged: (i) => _calendarPanelIndex = i,
           onExitLeft: _focusRail,
           onTuneChannel: (channel) {
             context
@@ -514,7 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
       HomeSection.featured => HomeMoviesArea(
-          key: _featuredAreaKey,
+          key: _areaKeys[HomeSection.featured],
           panelTitle:
               LocaleKeys.movies_panel_featured_title.tr(),
           accordionIcon:
@@ -524,7 +383,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onExitLeft: _focusRail,
         ),
       HomeSection.movies => HomeMoviesArea(
-          key: _moviesAreaKey,
+          key: _areaKeys[HomeSection.movies],
           section: FeaturedMoviesProvider
               .sectionMovies,
           panelTitle: LocaleKeys.movies_panel_movies_title
@@ -536,7 +395,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onExitLeft: _focusRail,
         ),
       HomeSection.series => HomeMoviesArea(
-          key: _seriesAreaKey,
+          key: _areaKeys[HomeSection.series],
           section: FeaturedMoviesProvider
               .sectionSeries,
           panelTitle: LocaleKeys.movies_panel_series_title

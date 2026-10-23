@@ -2,6 +2,7 @@ import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/features/home/areas/home_area.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/theme/moai_icons.dart';
@@ -22,10 +23,11 @@ class HomeDashboardArea extends StatefulWidget {
   State<HomeDashboardArea> createState() => HomeDashboardAreaState();
 }
 
-class HomeDashboardAreaState extends State<HomeDashboardArea> {
+class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea> {
   late final _focus = FocusRequester(isMounted: () => mounted);
   final FocusNode _panelFocusNode = FocusNode(debugLabel: 'home_dashboard_panel');
 
+  @override
   void requestEntryFocus() {
     if (!mounted) return;
     _focus.node(_panelFocusNode);

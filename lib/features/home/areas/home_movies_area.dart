@@ -2,6 +2,7 @@ import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/features/home/areas/home_area.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/home/widgets/tv_movie_card.dart';
 import 'package:moai3/features/movies/screens/movie_detail_screen.dart';
@@ -38,7 +39,7 @@ class HomeMoviesArea extends StatefulWidget {
   State<HomeMoviesArea> createState() => HomeMoviesAreaState();
 }
 
-class HomeMoviesAreaState extends State<HomeMoviesArea> {
+class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
   late final _focus = FocusRequester(isMounted: () => mounted);
   static const int _crossAxisCount = 5;
 
@@ -62,6 +63,7 @@ class HomeMoviesAreaState extends State<HomeMoviesArea> {
     _focusCard(_lastFocusedCat, _lastFocusedRow, _lastFocusedCol);
   }
 
+  @override
   void requestEntryFocus() => focusGrid();
 
   GlobalKey _getCategoryHeaderKey(int catIdx) {

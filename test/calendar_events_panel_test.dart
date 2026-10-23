@@ -196,8 +196,7 @@ void main() {
 
   testWidgets('HomeCalendarArea switches from subscriptions to events with Sunday (DOM) focused', (tester) async {
     final calendarProvider = CalendarProvider();
-    final eventsFocus = FocusNode();
-    final subscriptionsFocus = FocusNode();
+    final areaKey = GlobalKey<HomeCalendarAreaState>();
     int activeIndex = 1; // Start in Subscriptions
 
     await tester.pumpWidget(
@@ -206,27 +205,15 @@ void main() {
         child: MaterialApp(
           theme: ThemeData(useMaterial3: true),
           home: Scaffold(
-            body: StatefulBuilder(
-              builder: (context, setState) {
-                return SizedBox(
-                  width: 900,
-                  height: 600,
-                  child: HomeCalendarArea(
-                    activePanelIndex: activeIndex,
-                    eventsPanelFocus: eventsFocus,
-                    subscriptionsPanelFocus: subscriptionsFocus,
-                    onPanelIndexChanged: (idx) {
-                      setState(() => activeIndex = idx);
-                      if (idx == 0) {
-                        eventsFocus.requestFocus();
-                      } else {
-                        subscriptionsFocus.requestFocus();
-                      }
-                    },
-                    onExitLeft: () {},
-                  ),
-                );
-              },
+            body: SizedBox(
+              width: 900,
+              height: 600,
+              child: HomeCalendarArea(
+                key: areaKey,
+                initialPanelIndex: activeIndex,
+                onPanelIndexChanged: (idx) => activeIndex = idx,
+                onExitLeft: () {},
+              ),
             ),
           ),
         ),
@@ -234,8 +221,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Verify initially in subscriptions
-    subscriptionsFocus.requestFocus();
+    // Entrar como desde el rail: el área enfoca Suscripciones.
+    areaKey.currentState!.requestEntryFocus();
     await tester.pump();
 
     // Trigger onKeyLeft from inside subscriptions (D-pad left)
@@ -251,9 +238,6 @@ void main() {
 
     // It should have returned to Subscriptions (panel 1)
     expect(activeIndex, 1);
-
-    eventsFocus.dispose();
-    subscriptionsFocus.dispose();
   });
 
   testWidgets('renders finished events with FIN badge, solid muted colors, and non-interactive', (tester) async {

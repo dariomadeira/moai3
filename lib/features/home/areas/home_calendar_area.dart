@@ -3,26 +3,26 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/features/calendar/widgets/calendar_events_panel.dart';
 import 'package:moai3/features/calendar/widgets/calendar_subscriptions_panel.dart';
+import 'package:moai3/features/home/areas/home_area.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
+import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
 /// Área principal de Calendario Deportivo: Acordeón de 2 paneles (Eventos y Suscripciones).
+///
+/// Es dueña de sus [FocusNode]; el padre solo recuerda el panel abierto.
 class HomeCalendarArea extends StatefulWidget {
-  final int activePanelIndex;
-  final FocusNode eventsPanelFocus;
-  final FocusNode subscriptionsPanelFocus;
-  final ValueChanged<int> onPanelIndexChanged;
+  final int initialPanelIndex;
+  final ValueChanged<int>? onPanelIndexChanged;
   final VoidCallback onExitLeft;
   final ValueChanged<Channel>? onTuneChannel;
 
   const HomeCalendarArea({
     super.key,
-    required this.activePanelIndex,
-    required this.eventsPanelFocus,
-    required this.subscriptionsPanelFocus,
-    required this.onPanelIndexChanged,
+    this.initialPanelIndex = 0,
+    this.onPanelIndexChanged,
     required this.onExitLeft,
     this.onTuneChannel,
   });
@@ -33,20 +33,39 @@ class HomeCalendarArea extends StatefulWidget {
   ];
 
   @override
-  State<HomeCalendarArea> createState() => _HomeCalendarAreaState();
+  State<HomeCalendarArea> createState() => HomeCalendarAreaState();
 }
 
-class _HomeCalendarAreaState extends State<HomeCalendarArea> {
+class HomeCalendarAreaState extends HomeAreaState<HomeCalendarArea> {
+  late final _focus = FocusRequester(isMounted: () => mounted);
+  final _eventsFocus = FocusNode(debugLabel: 'calendar_events');
+  final _subscriptionsFocus = FocusNode(debugLabel: 'calendar_subscriptions');
+  late int _panel = widget.initialPanelIndex;
   int _eventsEntryDayIndex = 0;
 
+  @override
+  void dispose() {
+    _eventsFocus.dispose();
+    _subscriptionsFocus.dispose();
+    super.dispose();
+  }
+
+  @override
+  void requestEntryFocus() => _focus.node(
+    _panel == 0 ? _eventsFocus : _subscriptionsFocus,
+    immediate: true,
+  );
+
   void _onPanelIndexChanged(int newIndex) {
-    if (newIndex == 0 && widget.activePanelIndex == 1) {
+    if (newIndex == 0 && _panel == 1) {
       // Al cambiar de Suscripciones (panel 1) a Eventos (panel 0), entrar por DOMINGO (col 6)
       _eventsEntryDayIndex = 6;
-    } else if (newIndex == 0 && widget.activePanelIndex == 0) {
+    } else if (newIndex == 0 && _panel == 0) {
       _eventsEntryDayIndex = 0;
     }
-    widget.onPanelIndexChanged(newIndex);
+    setState(() => _panel = newIndex);
+    widget.onPanelIndexChanged?.call(newIndex);
+    requestEntryFocus();
   }
 
   @override
@@ -63,7 +82,7 @@ class _HomeCalendarAreaState extends State<HomeCalendarArea> {
 
     return TvAccordionRowPreview(
       panelCount: 2,
-      activeIndex: widget.activePanelIndex,
+      activeIndex: _panel,
       colors: panelColors,
       titles: titles,
       icons: HomeCalendarArea.icons,
@@ -71,7 +90,7 @@ class _HomeCalendarAreaState extends State<HomeCalendarArea> {
       buildExpandedContent: (index, title) {
         if (index == 0) {
           return CalendarEventsPanel(
-            focusNode: widget.eventsPanelFocus,
+            focusNode: _eventsFocus,
             initialDayIndex: _eventsEntryDayIndex,
             onTuneChannel: widget.onTuneChannel,
             onKeyLeft: () {
@@ -90,7 +109,7 @@ class _HomeCalendarAreaState extends State<HomeCalendarArea> {
         }
 
         return CalendarSubscriptionsPanel(
-          focusNode: widget.subscriptionsPanelFocus,
+          focusNode: _subscriptionsFocus,
           onKeyLeft: () {
             setState(() {
               _eventsEntryDayIndex = 6;

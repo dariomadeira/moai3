@@ -314,6 +314,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
   }
 
   /// Back del D-pad / sistema. `true` si se consumió (no salir de la app).
+  @override
   bool handleBack() {
     final now = DateTime.now();
     if (_playerOverlay.isFullScreen) {
