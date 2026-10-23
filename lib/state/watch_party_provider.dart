@@ -5,6 +5,7 @@ import 'package:moai3/models/friend_info.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/watch_party_service.dart';
+import 'package:moai3/state/friends_roster.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Gestor de estado para la funcionalidad "Miremos Juntos" (Watch Party) (SPEC-36 y SPEC-37).
@@ -19,7 +20,7 @@ class WatchPartyProvider extends ChangeNotifier {
   String _userCode = 'MOAI-????';
   String? _nickname;
   String _deviceId = '';
-  List<FriendInfo> _friends = [];
+  final _roster = FriendsRoster();
   List<FriendInfo> _friendRequests = [];
   bool _isLoading = false;
   String? _errorMessage;
@@ -29,7 +30,6 @@ class WatchPartyProvider extends ChangeNotifier {
   Timer? _channelReportDebounceTimer;
   RealtimeChannel? _devicesRealtimeChannel;
   RealtimeChannel? _presenceRealtimeChannel;
-  final Set<String> _notifiedFriendDeviceIdsInCurrentChannel = {};
   bool _isDisposed = false;
 
   WatchPartyProvider({
@@ -67,16 +67,17 @@ class WatchPartyProvider extends ChangeNotifier {
   String get myNickname =>
       (_nickname?.trim().isNotEmpty == true) ? _nickname!.trim() : userCode;
   String get deviceId => _deviceId;
-  List<FriendInfo> get friends => List.unmodifiable(_friends);
+  List<FriendInfo> get friends => _roster.friends;
   List<FriendInfo> get friendRequests => List.unmodifiable(_friendRequests);
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
   /// Indica si al menos un amigo está en línea en este momento.
-  bool get hasOnlineFriends => _friends.any((f) => f.isOnline);
+  bool get hasOnlineFriends => _roster.friends.any((f) => f.isOnline);
 
   /// Cantidad de amigos conectados en tiempo real.
-  int get onlineFriendsCount => _friends.where((f) => f.isOnline).length;
+  int get onlineFriendsCount =>
+      _roster.friends.where((f) => f.isOnline).length;
 
   /// ID del canal actualmente sintonizado y confirmado tras debounce (SPEC-37).
   String? get currentChannelId => _currentChannelId;
@@ -86,15 +87,8 @@ class WatchPartyProvider extends ChangeNotifier {
 
   /// Lista de amigos que están mirando el mismo canal actualmente (SPEC-37).
   List<FriendInfo> get friendsWatchingCurrentChannel {
-    if (!_enabled || _currentChannelId == null || _currentChannelId!.isEmpty) {
-      return const [];
-    }
-    return _friends
-        .where(
-          (f) =>
-              f.isWatchingSameChannel(_currentChannelId, _currentChannelName),
-        )
-        .toList();
+    if (!_enabled) return const [];
+    return _roster.watching(_currentChannelId, _currentChannelName);
   }
 
   /// Indica si hay al menos un amigo mirando el mismo canal.
@@ -237,8 +231,7 @@ class WatchPartyProvider extends ChangeNotifier {
 
     final before = _visibleState();
     try {
-      final updatedFriends = await service.getFriends(_deviceId);
-      _friends = updatedFriends;
+      _roster.replace(await service.getFriends(_deviceId));
       _errorMessage = null;
     } catch (e) {
       _errorMessage = e.toString();
@@ -261,7 +254,7 @@ class WatchPartyProvider extends ChangeNotifier {
 
   /// Lo que la UI muestra de amigos y solicitudes; `isOnline` depende de la hora.
   String _visibleState() => [
-        for (final f in _friends)
+        for (final f in _roster.friends)
           '${f.deviceId}|${f.displayName}|${f.isOnline}|'
               '${f.currentChannelId}|${f.currentChannelName}',
         '#',
@@ -283,15 +276,11 @@ class WatchPartyProvider extends ChangeNotifier {
       );
 
       // Reemplazar o insertar en la lista local
-      _friends = [
-        ..._friends.where((f) => f.deviceId != newFriend.deviceId),
-        newFriend,
-      ];
+      _roster.upsert(newFriend);
       // Remover de solicitudes si estaba en la lista de solicitudes pendientes
       _friendRequests = _friendRequests
           .where((r) => r.deviceId != newFriend.deviceId)
           .toList();
-      _sortFriends();
       _errorMessage = null;
     } catch (e) {
       _errorMessage = e.toString();
@@ -319,7 +308,7 @@ class WatchPartyProvider extends ChangeNotifier {
         friendDeviceId: friendDeviceId,
       );
 
-      _friends = _friends.where((f) => f.deviceId != friendDeviceId).toList();
+      _roster.remove(friendDeviceId);
       await loadFriends();
       _errorMessage = null;
     } catch (e) {
@@ -364,7 +353,7 @@ class WatchPartyProvider extends ChangeNotifier {
 
     _currentChannelId = normalizedId;
     _currentChannelName = normalizedName;
-    _notifiedFriendDeviceIdsInCurrentChannel.clear();
+    _roster.resetNotified();
     notifyListeners();
 
     if (normalizedId != null) {
@@ -395,25 +384,9 @@ class WatchPartyProvider extends ChangeNotifier {
   }
 
   void _checkAndNotifyWatchingFriends() {
-    if (_currentChannelId == null || _currentChannelId!.isEmpty) return;
-
-    for (final friend in _friends) {
-      final isWatching = friend.isWatchingSameChannel(
-        _currentChannelId,
-        _currentChannelName,
-      );
-      if (isWatching) {
-        if (!_notifiedFriendDeviceIdsInCurrentChannel.contains(
-          friend.deviceId,
-        )) {
-          _notifiedFriendDeviceIdsInCurrentChannel.add(friend.deviceId);
-          final name = friend.nickname ?? friend.userCode;
-          notifyFriendJoinedChannel(name);
-        }
-      } else {
-        _notifiedFriendDeviceIdsInCurrentChannel.remove(friend.deviceId);
-      }
-    }
+    _roster
+        .takeNewWatchers(_currentChannelId, _currentChannelName)
+        .forEach(notifyFriendJoinedChannel);
   }
 
   void _subscribeToPresenceRealtime() {
@@ -448,70 +421,10 @@ class WatchPartyProvider extends ChangeNotifier {
 
   void _onRealtimePresencesUpdated(List<Map<String, dynamic>> activePresences) {
     if (_isDisposed || !_enabled) return;
-
-    final Map<String, Map<String, dynamic>> presenceByDevice = {};
-    for (final p in activePresences) {
-      final devId = p['device_id'] as String?;
-      if (devId != null && devId.isNotEmpty) {
-        presenceByDevice[devId] = p;
-      }
-    }
-
-    bool changed = false;
-    for (int i = 0; i < _friends.length; i++) {
-      final friend = _friends[i];
-      final presence = presenceByDevice[friend.deviceId];
-
-      if (presence != null) {
-        final chId = presence['channel_id'] as String?;
-        final chName = presence['channel_name'] as String?;
-        final nick = presence['nickname'] as String?;
-        final code = presence['user_code'] as String?;
-
-        final updated = friend.copyWith(
-          isOnline: true,
-          nickname: nick ?? friend.nickname,
-          userCode: code ?? friend.userCode,
-          currentChannelId: chId,
-          currentChannelName: chName,
-          lastSeen: DateTime.now(),
-        );
-
-        if (_friendHasChanged(friend, updated)) {
-          _friends[i] = updated;
-          changed = true;
-        }
-      } else {
-        if (friend.isOnline || friend.currentChannelId != null) {
-          _friends[i] = friend.copyWith(isOnline: false);
-          changed = true;
-        }
-      }
-    }
-
-    if (changed) {
-      _sortFriends();
+    if (_roster.applyPresences(activePresences)) {
       _checkAndNotifyWatchingFriends();
       notifyListeners();
     }
-  }
-
-  bool _friendHasChanged(FriendInfo a, FriendInfo b) {
-    return a.isOnline != b.isOnline ||
-        a.currentChannelId != b.currentChannelId ||
-        a.currentChannelName != b.currentChannelName ||
-        a.nickname != b.nickname;
-  }
-
-  void _sortFriends() {
-    _friends.sort((a, b) {
-      if (a.isOnline != b.isOnline) {
-        return a.isOnline ? -1 : 1;
-      }
-      final nameA = a.nickname ?? a.userCode;
-      final nameB = b.nickname ?? b.userCode;
-      return nameA.toLowerCase().compareTo(nameB.toLowerCase());
-    });
   }
 
   void _startPresenceTimer() {
@@ -572,40 +485,15 @@ class WatchPartyProvider extends ChangeNotifier {
       return;
     }
 
-    final index = _friends.indexWhere((f) => f.deviceId == updatedDeviceId);
-    if (index != -1) {
-      final old = _friends[index];
-      final updated = old.copyWith(
-        nickname: record['nickname'] as String? ?? old.nickname,
-        userCode: record['user_code'] as String? ?? old.userCode,
-        isOnline: record['online'] as bool? ?? old.isOnline,
-        lastSeen: record['last_seen'] != null
-            ? DateTime.tryParse(record['last_seen'].toString())?.toLocal()
-            : old.lastSeen,
-        currentChannelId: record['current_channel_id'] as String?,
-        currentChannelName: record['current_channel_name'] as String?,
-      );
-      _friends[index] = updated;
-      _sortFriends();
-
-      // Emitir notificación si el amigo acaba de entrar al mismo canal
-      final wasWatching = old.isWatchingSameChannel(
-        _currentChannelId,
-        _currentChannelName,
-      );
-      final isNowWatching = updated.isWatchingSameChannel(
-        _currentChannelId,
-        _currentChannelName,
-      );
-      // La lista cambió siempre; el aviso, solo si entró al canal y no se avisó ya.
-      notifyListeners();
-      if (!isNowWatching) {
-        _notifiedFriendDeviceIdsInCurrentChannel.remove(updated.deviceId);
-      } else if (!wasWatching &&
-          _notifiedFriendDeviceIdsInCurrentChannel.add(updated.deviceId)) {
-        notifyFriendJoinedChannel(updated.nickname ?? updated.userCode);
-      }
-    }
+    final joinedName = _roster.applyDeviceRecord(
+      record,
+      channelId: _currentChannelId,
+      channelName: _currentChannelName,
+    );
+    if (joinedName == null) return;
+    // La lista cambió siempre; el aviso, solo si entró al canal y no se avisó ya.
+    notifyListeners();
+    if (joinedName.isNotEmpty) notifyFriendJoinedChannel(joinedName);
   }
 
   @override
