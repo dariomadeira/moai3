@@ -1,6 +1,13 @@
-part of '../sources_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:moai3/focus/tv_key_handler.dart';
+import 'package:moai3/theme/moai_text.dart';
 
-class _IconButtonAction extends StatefulWidget {
+/// Botón de ícono redondo de las filas de listas TV (actualizar, borrar…).
+///
+/// Cambia de colores según tenga el foco y según la fila padre lo tenga
+/// ([parentFocused]). Las flechas llaman a los callbacks `onKey*`.
+class TvIconActionButton extends StatefulWidget {
   final FocusNode focusNode;
   final String tooltip;
   final IconData icon;
@@ -11,7 +18,8 @@ class _IconButtonAction extends StatefulWidget {
   final VoidCallback? onKeyLeft;
   final VoidCallback? onKeyRight;
 
-  const _IconButtonAction({
+  const TvIconActionButton({
+    super.key,
     required this.focusNode,
     required this.tooltip,
     required this.icon,
@@ -24,10 +32,10 @@ class _IconButtonAction extends StatefulWidget {
   });
 
   @override
-  State<_IconButtonAction> createState() => _IconButtonActionState();
+  State<TvIconActionButton> createState() => _TvIconActionButtonState();
 }
 
-class _IconButtonActionState extends State<_IconButtonAction> {
+class _TvIconActionButtonState extends State<TvIconActionButton> {
   late bool _isFocused;
 
   @override

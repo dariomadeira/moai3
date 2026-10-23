@@ -1,9 +1,7 @@
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/widgets/buttons/tv_back_pill.dart';
 import 'package:moai3/widgets/buttons/tv_install_pill.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
@@ -18,11 +16,11 @@ import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
 import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
+import 'package:moai3/widgets/buttons/tv_icon_action_button.dart';
 import 'package:moai3/widgets/tv_input/tv_text_field.dart';
 
 part 'sources/sources_layout.dart';
 part 'sources/source_tile.dart';
-part 'sources/icon_button_action.dart';
 
 String _formatChannelsCount(int count) {
   final label = count == 1

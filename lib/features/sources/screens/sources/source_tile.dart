@@ -107,7 +107,7 @@ class _SourceTileState extends State<_SourceTile> {
             ),
             const SizedBox(width: 8),
           ],
-          _IconButtonAction(
+          TvIconActionButton(
             focusNode: widget.updateFocus,
             tooltip: LocaleKeys.common_update.tr(),
             icon: _availableVersion != null
@@ -124,7 +124,7 @@ class _SourceTileState extends State<_SourceTile> {
             onKeyDown: widget.onUpdateKeyDown,
           ),
           const SizedBox(width: 8),
-          _IconButtonAction(
+          TvIconActionButton(
             focusNode: widget.removeFocus,
             tooltip: LocaleKeys.sources_remove.tr(),
             icon: MoaiIcons.deleteOutlineRounded,
