@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:moai3/features/games/arcade_launcher.dart';
-import 'package:moai3/features/calendar/widgets/calendar_events_panel.dart';
+import 'package:moai3/features/calendar/widgets/calendar_event_details_dialog.dart';
 import 'package:moai3/features/games/services/arcade_netplay_service.dart';
 import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
 import 'package:moai3/features/home/areas/home_area.dart';
