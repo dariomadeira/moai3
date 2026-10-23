@@ -19,14 +19,21 @@ class ChannelProvider extends ChangeNotifier {
   late final ChannelRepository _channelRepository;
   late final PlaybackSignals _playbackSignals;
   late final PluginHostController _pluginHost;
+  late final bool _ownsPluginHost;
 
   Channel? _selectedChannel;
   Channel? _lastNonAdultChannel;
 
-  ChannelProvider(this._prefs, {this._isAdultUnlocked}) {
+  /// [pluginHost] lo crea `AppBootstrap`; si falta (tests), se crea uno propio.
+  ChannelProvider(
+    this._prefs, {
+    PluginHostController? pluginHost,
+    this._isAdultUnlocked,
+  }) {
     _channelRepository = ChannelRepository(_prefs);
     _playbackSignals = PlaybackSignals();
-    _pluginHost = PluginHostController();
+    _ownsPluginHost = pluginHost == null;
+    _pluginHost = pluginHost ?? PluginHostController();
 
     _channelRepository.addListener(notifyListeners);
     _playbackSignals.addListener(notifyListeners);
@@ -251,7 +258,7 @@ class ChannelProvider extends ChangeNotifier {
     _pluginHost.removeListener(_syncPluginChannels);
     _channelRepository.dispose();
     _playbackSignals.dispose();
-    _pluginHost.dispose();
+    if (_ownsPluginHost) _pluginHost.dispose();
     super.dispose();
   }
 }
