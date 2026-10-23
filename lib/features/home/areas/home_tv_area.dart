@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:moai3/features/home/tv_tab.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -98,7 +99,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
   final _groupListPanelKey = GlobalKey<GroupListPanelState>();
   final _searchPanelKey = GlobalKey<SearchPanelState>();
 
-  String _tvTab = 'explore';
+  TvTab _tvTab = TvTab.explore;
   int _activePanelIndex = 0;
   int _groupsPanelIndex = 0;
   bool _initialized = false;
@@ -140,7 +141,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     _channelProvider = context.read<ChannelProvider>();
     _tvSettingsProvider = context.read<TvSettingsProvider>();
     _favoritesProvider = context.read<FavoritesProvider>();
-    _tvTab = _tvSettingsProvider?.startupTvTab ?? 'explore';
+    _tvTab = _tvSettingsProvider?.startupTvTab ?? TvTab.explore;
 
     final wp = context.read<WatchPartyProvider?>();
     if (wp != null) {
@@ -412,9 +413,9 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
   }
 
   VoidCallback get _focusCurrentTab => () {
-    if (_tvTab == 'groups') {
+    if (_tvTab == TvTab.groups) {
       _groupsTabFocus.requestFocus();
-    } else if (_tvTab == 'search') {
+    } else if (_tvTab == TvTab.search) {
       _searchTabFocus.requestFocus();
     } else {
       _exploreTabFocus.requestFocus();
@@ -443,11 +444,11 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
   void requestEntryFocus() => returnFocusToActivePanel();
 
   void returnFocusToActivePanel() {
-    if (_tvTab == 'groups') {
+    if (_tvTab == TvTab.groups) {
       _focusGroupsPanel();
       return;
     }
-    if (_tvTab == 'search') {
+    if (_tvTab == TvTab.search) {
       _focusSearchPanelEntry();
       return;
     }
@@ -1035,7 +1036,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                       },
                     ),
                     Expanded(
-                      child: _tvTab == 'explore'
+                      child: _tvTab == TvTab.explore
                           ? TvAccordionRowPreview(
                               panelCount: panelCount,
                               activeIndex: active,
@@ -1059,7 +1060,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                               buildExpandedContent: (i, t) =>
                                   _buildExploreExpanded(i, t, showTvLog),
                             )
-                          : _tvTab == 'search'
+                          : _tvTab == TvTab.search
                           ? _buildSearchArea(scheme)
                           : _buildGroupsAccordion(context),
                     ),

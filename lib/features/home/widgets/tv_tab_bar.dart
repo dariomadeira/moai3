@@ -1,3 +1,4 @@
+import 'package:moai3/features/home/tv_tab.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -14,8 +15,8 @@ import 'package:moai3/theme/moai_icons.dart';
 ///  - Pestaña inactiva compacta sólo con icono ([ColorScheme.onSurfaceVariant]).
 ///  - Foco D-Pad de alto contraste con [ColorScheme.primary].
 class TvTabBar extends StatelessWidget {
-  final String selectedTab;
-  final ValueChanged<String> onTabChanged;
+  final TvTab selectedTab;
+  final ValueChanged<TvTab> onTabChanged;
   final FocusNode exploreFocusNode;
   final FocusNode searchFocusNode;
   final FocusNode groupsFocusNode;
@@ -67,9 +68,9 @@ class TvTabBar extends StatelessWidget {
                 title: LocaleKeys.home_tab_explore.tr(),
                 icon: MoaiIcons.tvTabExplorar,
                 selectedIcon: MoaiIcons.tvTabExplorarSelected,
-                isSelected: selectedTab == 'explore',
+                isSelected: selectedTab == TvTab.explore,
                 focusNode: exploreFocusNode,
-                onSelect: () => onTabChanged('explore'),
+                onSelect: () => onTabChanged(TvTab.explore),
                 onKeyLeft: onFocusLeft,
                 onKeyRight: searchFocusNode.requestFocus,
                 onKeyDown: onFocusDown,
@@ -79,9 +80,9 @@ class TvTabBar extends StatelessWidget {
                 title: LocaleKeys.home_tab_search.tr(),
                 icon: MoaiIcons.tvTabBuscar,
                 selectedIcon: MoaiIcons.tvTabBuscarSelected,
-                isSelected: selectedTab == 'search',
+                isSelected: selectedTab == TvTab.search,
                 focusNode: searchFocusNode,
-                onSelect: () => onTabChanged('search'),
+                onSelect: () => onTabChanged(TvTab.search),
                 onKeyLeft: exploreFocusNode.requestFocus,
                 onKeyRight: groupsFocusNode.requestFocus,
                 onKeyDown: onFocusDown,
@@ -91,9 +92,9 @@ class TvTabBar extends StatelessWidget {
                 title: LocaleKeys.home_tab_groups.tr(),
                 icon: MoaiIcons.tvTabMarcadores,
                 selectedIcon: MoaiIcons.tvTabMarcadoresSelected,
-                isSelected: selectedTab == 'groups',
+                isSelected: selectedTab == TvTab.groups,
                 focusNode: groupsFocusNode,
-                onSelect: () => onTabChanged('groups'),
+                onSelect: () => onTabChanged(TvTab.groups),
                 onKeyLeft: searchFocusNode.requestFocus,
                 onKeyRight: onFocusPlayer,
                 onKeyDown: onFocusDown,

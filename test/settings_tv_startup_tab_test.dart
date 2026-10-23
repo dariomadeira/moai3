@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:moai3/features/home/tv_tab.dart';
 import 'package:moai3/features/settings/widgets/settings_tv_panel.dart';
 import 'package:moai3/features/settings/widgets/settings_tv_startup_tab_row.dart';
 import 'package:moai3/services/app_preferences_service.dart';
@@ -22,33 +23,33 @@ void main() {
   group('TvSettingsProvider - startupTvTab', () {
     test('default value is explore', () {
       final provider = TvSettingsProvider(prefs);
-      expect(provider.startupTvTab, 'explore');
+      expect(provider.startupTvTab, TvTab.explore);
     });
 
     test('updates and persists startupTvTab', () async {
       final provider = TvSettingsProvider(prefs);
-      await provider.setStartupTvTab('search');
-      expect(provider.startupTvTab, 'search');
+      await provider.setStartupTvTab(TvTab.search);
+      expect(provider.startupTvTab, TvTab.search);
 
       // Nueva instancia leyendo del mismo storage
       final reloaded = TvSettingsProvider(prefs);
-      expect(reloaded.startupTvTab, 'search');
+      expect(reloaded.startupTvTab, TvTab.search);
 
-      await reloaded.setStartupTvTab('groups');
-      expect(reloaded.startupTvTab, 'groups');
+      await reloaded.setStartupTvTab(TvTab.groups);
+      expect(reloaded.startupTvTab, TvTab.groups);
     });
 
-    test('ignores invalid tab strings', () async {
-      final provider = TvSettingsProvider(prefs);
-      await provider.setStartupTvTab('invalid_tab');
-      expect(provider.startupTvTab, 'explore');
+    test('un valor guardado desconocido vuelve a explore', () async {
+      SharedPreferences.setMockInitialValues({'startup_tv_tab': 'invalid_tab'});
+      final provider = TvSettingsProvider(await AppPreferences.init());
+      expect(provider.startupTvTab, TvTab.explore);
     });
   });
 
   group('SettingsTvStartupTabRow Widget', () {
     testWidgets('renders row and changes option with D-pad left/right',
         (tester) async {
-      String currentTab = 'explore';
+      var currentTab = TvTab.explore;
       final focusNode = FocusNode();
 
       await tester.pumpWidget(
@@ -78,17 +79,17 @@ void main() {
       // D-Pad Right: explore -> search
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
       await tester.pump();
-      expect(currentTab, 'search');
+      expect(currentTab, TvTab.search);
 
       // D-Pad Right: search -> groups
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
       await tester.pump();
-      expect(currentTab, 'groups');
+      expect(currentTab, TvTab.groups);
 
       // D-Pad Left: groups -> search
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
       await tester.pump();
-      expect(currentTab, 'search');
+      expect(currentTab, TvTab.search);
 
       focusNode.dispose();
     });

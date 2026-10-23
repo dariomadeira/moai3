@@ -35,4 +35,4 @@ Candidatos a optimizar con esta base: el tramo de `main()` antes de `runApp` (Su
 - M4 TV → Ajustes → TV.
 - M5 rebuilds por minuto con video.
 - M6 memoria tras cargar canales.
-- M7 tamaño del APK release: profile = 101,8 MB (incluye las tres ABIs).
+- M7 tamaño del APK release (tres ABIs): **85,3 MB** antes de SPEC-50 (build del 2026-10-22) → **79,3 MB** en `f816bc8` (−6 MB). El build de profile no sirve para comparar tamaños.

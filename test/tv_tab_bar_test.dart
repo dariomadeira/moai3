@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/features/home/tv_tab.dart';
 import 'package:moai3/features/home/widgets/tv_tab_bar.dart';
 
 void main() {
   testWidgets('TvTabBar renders 3 tabs with outlined icons when unselected and full icons when selected',
       (tester) async {
-    String selectedTab = 'explore';
+    var selectedTab = TvTab.explore;
     final exploreFocusNode = FocusNode();
     final searchFocusNode = FocusNode();
     final groupsFocusNode = FocusNode();
@@ -71,7 +72,7 @@ void main() {
 
   testWidgets('TvTabBar navigates between tabs using D-Pad arrow keys',
       (tester) async {
-    String selectedTab = 'explore';
+    var selectedTab = TvTab.explore;
     final exploreFocusNode = FocusNode();
     final searchFocusNode = FocusNode();
     final groupsFocusNode = FocusNode();

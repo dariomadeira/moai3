@@ -1,3 +1,4 @@
+import 'package:moai3/features/home/tv_tab.dart';
 import 'package:moai3/platform/platform_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -45,13 +46,6 @@ class TvSettingsProvider extends ChangeNotifier {
   static const String _catalogUpdateFrequencyKey = 'catalog_update_frequency';
   static const String _startupTvTabKey = 'startup_tv_tab';
 
-  static const String defaultStartupTvTab = 'explore';
-  static const List<String> startupTvTabOptions = [
-    'explore',
-    'search',
-    'groups',
-  ];
-
   static const MethodChannel _deviceChannel =
       PlatformChannels.device;
 
@@ -65,7 +59,7 @@ class TvSettingsProvider extends ChangeNotifier {
   late bool _skipCatalogUpdate;
   late bool _uiSoundsDisabled;
   late CatalogUpdateFrequency _catalogUpdateFrequency;
-  late String _startupTvTab;
+  late TvTab _startupTvTab;
 
   String? _parentalPin;
   bool _isAdultUnlocked = false;
@@ -88,10 +82,9 @@ class TvSettingsProvider extends ChangeNotifier {
     _catalogUpdateFrequency = CatalogUpdateFrequency.fromStorage(
       _prefs.readOptionalString(_catalogUpdateFrequencyKey),
     );
-    final savedTab = _prefs.readOptionalString(_startupTvTabKey);
-    _startupTvTab = (savedTab != null && startupTvTabOptions.contains(savedTab))
-        ? savedTab
-        : defaultStartupTvTab;
+    _startupTvTab = TvTab.fromStorage(
+      _prefs.readOptionalString(_startupTvTabKey),
+    );
     _parentalPin = _prefs.readOptionalString(_parentalPinKey);
     _isAdultUnlocked = false; // Siempre bloqueado al iniciar
     _syncUiSoundsToNative();
@@ -102,7 +95,7 @@ class TvSettingsProvider extends ChangeNotifier {
   double get overlapPaddingX => _overlapPaddingX;
   double get overlapPaddingY => _overlapPaddingY;
   bool get hasOverlapConfig => _hasOverlapConfig;
-  String get startupTvTab => _startupTvTab;
+  TvTab get startupTvTab => _startupTvTab;
 
   /// Si es true, el arranque no actualiza el catálogo y usa el incluido en la app.
   bool get skipCatalogUpdate => _skipCatalogUpdate;
@@ -210,10 +203,10 @@ class TvSettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setStartupTvTab(String value) async {
-    if (!startupTvTabOptions.contains(value) || _startupTvTab == value) return;
+  Future<void> setStartupTvTab(TvTab value) async {
+    if (_startupTvTab == value) return;
     _startupTvTab = value;
-    await _prefs.saveString(_startupTvTabKey, value);
+    await _prefs.saveString(_startupTvTabKey, value.name);
     notifyListeners();
   }
 

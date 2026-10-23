@@ -3,14 +3,14 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/features/settings/widgets/tv_option_selector.dart';
-import 'package:moai3/state/tv_settings_provider.dart';
+import 'package:moai3/features/home/tv_tab.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/widgets/tv_common/tv_tile.dart';
 
 class SettingsTvStartupTabRow extends StatelessWidget {
   final FocusNode focusNode;
-  final String selectedTab;
-  final ValueChanged<String> onChanged;
+  final TvTab selectedTab;
+  final ValueChanged<TvTab> onChanged;
   final VoidCallback onKeyLeft;
   final VoidCallback? onKeyRight;
   final VoidCallback? onKeyUp;
@@ -27,22 +27,14 @@ class SettingsTvStartupTabRow extends StatelessWidget {
     this.onKeyDown,
   });
 
-  static const _labelKeys = {
-    'explore': LocaleKeys.home_tab_explore,
-    'search': LocaleKeys.home_tab_search,
-    'groups': LocaleKeys.home_tab_groups,
-  };
-
-  int get _selectedIndex {
-    final i = TvSettingsProvider.startupTvTabOptions.indexOf(selectedTab);
-    return i < 0
-        ? TvSettingsProvider.startupTvTabOptions
-            .indexOf(TvSettingsProvider.defaultStartupTvTab)
-        : i;
-  }
+  static String _label(TvTab tab) => switch (tab) {
+        TvTab.explore => LocaleKeys.home_tab_explore,
+        TvTab.search => LocaleKeys.home_tab_search,
+        TvTab.groups => LocaleKeys.home_tab_groups,
+      }.tr();
 
   void _selectIndex(int index) {
-    const options = TvSettingsProvider.startupTvTabOptions;
+    const options = TvTab.values;
     if (index < 0 || index >= options.length) return;
     final next = options[index];
     if (next != selectedTab) {
@@ -52,8 +44,8 @@ class SettingsTvStartupTabRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const options = TvSettingsProvider.startupTvTabOptions;
-    final selectedIndex = _selectedIndex;
+    const options = TvTab.values;
+    final selectedIndex = selectedTab.index;
 
     return TvTile(
       focusNode: focusNode,
@@ -98,11 +90,11 @@ class SettingsTvStartupTabRow extends StatelessWidget {
         return KeyEventResult.ignored;
       },
       trailingBuilder: (context, isFocused) {
-        return TvOptionSelector<String>(
+        return TvOptionSelector<TvTab>(
           options: options,
           selectedValue: selectedTab,
           onSelect: onChanged,
-          labelBuilder: (option) => _labelKeys[option]!.tr(),
+          labelBuilder: _label,
           isFocused: isFocused,
         );
       },
