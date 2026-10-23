@@ -4,11 +4,10 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:moai3/features/games/arcade_launcher.dart';
 import 'package:moai3/features/calendar/widgets/calendar_events_panel.dart';
-import 'package:moai3/features/games/screens/arcade_screen.dart';
 import 'package:moai3/features/games/services/arcade_netplay_service.dart';
 import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
-import 'package:moai3/features/games/widgets/tv_arcade_prep_dialog.dart';
 import 'package:moai3/features/home/areas/home_arcade_area.dart';
 import 'package:moai3/features/home/areas/home_calendar_area.dart';
 import 'package:moai3/features/home/areas/home_dashboard_area.dart';
@@ -16,6 +15,7 @@ import 'package:moai3/features/home/areas/home_movies_area.dart';
 import 'package:moai3/features/home/areas/home_settings_area.dart';
 import 'package:moai3/features/home/areas/home_tv_area.dart';
 import 'package:moai3/features/home/coordinators/presence_coordinator.dart';
+import 'package:moai3/features/home/coordinators/startup_update_checker.dart';
 import 'package:moai3/features/home/home_section.dart';
 import 'package:moai3/features/home/widgets/double_back_exit_scope.dart';
 import 'package:moai3/features/home/widgets/tv_vertical_nav_rail.dart';
@@ -27,18 +27,13 @@ import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/services/arcade_plugin_service.dart';
 import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/modal_route_tracker.dart';
-import 'package:moai3/services/plugin_host_service.dart';
-import 'package:moai3/services/plugin_update_service.dart';
 import 'package:moai3/services/supabase_presence_service.dart';
-import 'package:moai3/services/update_service.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/featured_movies_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/widgets/dialogs/plugin_update_dialog.dart';
-import 'package:moai3/widgets/dialogs/update_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
@@ -132,7 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ModalRouteTracker.instance.addListener(_onModalTrackerChanged);
     ArcadePluginService.instance.addListener(_onArcadePluginChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAutoUpdate();
+      unawaited(StartupUpdateChecker.run(context));
       _listenToLiveEvents();
       _updatePresenceForSection(_section);
       _listenToArcadeInvites();
@@ -172,20 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
               );
 
               if (mounted) {
-                unawaited(TvArcadePrepDialog.show(
-                  context,
-                  onReadyToPlay: (session) {
-                    final romPath = _romManager.getActiveRomPath();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => ArcadeScreen(
-                          initialRomPath: romPath,
-                          netplaySession: session,
-                        ),
-                      ),
-                    );
-                  },
-                ));
+                unawaited(ArcadeLauncher.prepareAndPlay(context, _romManager));
               }
             },
             onDismiss: () async {
@@ -336,37 +318,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     _openingLiveSnackDialog = false;
     _liveSnackBusy = false;
-  }
-
-  Future<void> _checkAutoUpdate() async {
-    // Esperar 4 segundos tras arrancar para permitir que la interfaz y canales carguen fluidamente
-    await Future.delayed(const Duration(seconds: 4));
-    if (!mounted) return;
-
-    // 1. PRIORIDAD 1: Actualización del APK general del sistema
-    final appUpdate = await UpdateService.checkForUpdate();
-    if (appUpdate != null && mounted) {
-      // Se muestra el diálogo del APK y se aborta cualquier búsqueda de plugins.
-      // Si el usuario actualiza, el proceso se reinicia/reinstala.
-      unawaited(UpdateDialog.show(context, appUpdate));
-      return;
-    }
-
-    // 2. PRIORIDAD 2: Solo si el APK general ya está al día, comprobar plugins
-    if (!mounted) return;
-    try {
-      final pluginHost = context.read<PluginHostController>();
-      if (pluginHost.sources.isNotEmpty) {
-        final pendingUpdates = await PluginUpdateService.checkForUpdates(
-          pluginHost.sources,
-        );
-        if (pendingUpdates.isNotEmpty && mounted) {
-          unawaited(PluginUpdateDialog.show(context, pendingUpdates));
-        }
-      }
-    } catch (e) {
-      debugPrint('[HomeScreen] Error comprobando plugins: $e');
-    }
   }
 
   @override
@@ -526,10 +477,7 @@ class _HomeScreenState extends State<HomeScreen> {
             final path = _romManager
                 .getActiveRomPath();
             if (path != null) {
-              context.push(
-                '/arcade/game',
-                extra: path,
-              );
+              unawaited(ArcadeLauncher.play(context, romPath: path));
             } else {
               MoaiSnackBar.show(
                 context,

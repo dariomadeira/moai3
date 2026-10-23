@@ -2,11 +2,10 @@ import 'dart:async';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/features/games/arcade_launcher.dart';
 import 'package:moai3/features/games/screens/arcade_games_screen.dart';
-import 'package:moai3/features/games/screens/arcade_screen.dart';
 import 'package:moai3/features/games/services/arcade_netplay_service.dart';
 import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
-import 'package:moai3/features/games/widgets/tv_arcade_prep_dialog.dart';
 import 'package:moai3/features/games/widgets/tv_arcade_select_friend_dialog.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
@@ -128,20 +127,7 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
         );
 
         if (ok && mounted) {
-          unawaited(TvArcadePrepDialog.show(
-            context,
-            onReadyToPlay: (session) {
-              final romPath = widget.romManager.getActiveRomPath();
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ArcadeScreen(
-                    initialRomPath: romPath,
-                    netplaySession: session,
-                  ),
-                ),
-              );
-            },
-          ));
+          unawaited(ArcadeLauncher.prepareAndPlay(context, widget.romManager));
         }
       },
     );

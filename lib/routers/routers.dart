@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:moai3/features/games/arcade_launcher.dart';
 import 'package:moai3/features/blocked/screens/blocked_screen.dart';
 import 'package:moai3/features/bootstrap/screens/nickname_setup_screen.dart';
 import 'package:moai3/features/bootstrap/screens/overlap_config_screen.dart';
-import 'package:moai3/features/games/models/arcade_netplay_state.dart';
 import 'package:moai3/features/games/screens/arcade_screen.dart';
 import 'package:moai3/features/home/screens/home_screen.dart';
 import 'package:moai3/features/loading/screens/loading_screen.dart';
@@ -82,23 +82,15 @@ GoRouter createRouter({
         ),
       ),
       GoRoute(
-        path: '/arcade/game',
+        path: ArcadeLauncher.route,
         name: 'arcade_game',
         pageBuilder: (context, state) {
-          String? initialRomPath;
-          ArcadeNetplaySession? netplaySession;
-          if (state.extra is String) {
-            initialRomPath = state.extra as String;
-          } else if (state.extra is Map) {
-            final map = state.extra as Map;
-            initialRomPath = map['path'] as String?;
-            netplaySession = map['session'] as ArcadeNetplaySession?;
-          }
+          final args = state.extra as ArcadeGameArgs?;
           return _fadePage(
             state: state,
             child: ArcadeScreen(
-              initialRomPath: initialRomPath,
-              netplaySession: netplaySession,
+              initialRomPath: args?.romPath,
+              netplaySession: args?.session,
             ),
           );
         },
