@@ -9,6 +9,14 @@
 # UpdateService elige el APK por arquitectura (busca "armeabi"/"arm64"/"x86_64"
 # en el nombre) y, si no reconoce el aparato, usa app-release.apk.
 # Subí los cuatro archivos al release.
+#
+# OJO: --split-per-abi suma 1000 x ABI al versionCode (armeabi-v7a 31 -> 1031).
+# Si instalás uno de estos APK en un aparato de pruebas, después `flutter run`
+# (versionCode 31) falla por "downgrade" y DESINSTALA la app, borrando sus
+# datos (extensiones, ROMs, ajustes). Para volver a desarrollar en ese
+# aparato, instalá antes con `adb install -r -d` o no uses estos APK ahí.
+# Por la misma razón, un aparato que ya tiene un APK por ABI no puede bajar al
+# universal (versionCode menor): publicá siempre los de ABI.
 
 $ErrorActionPreference = 'Stop'
 Set-Location (Join-Path $PSScriptRoot '..')
