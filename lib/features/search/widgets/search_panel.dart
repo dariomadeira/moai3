@@ -209,7 +209,6 @@ class SearchPanelState extends State<SearchPanel> {
                           return TvFixedWindowViewport(
                             slotCount: _rowCount,
                             slotExtent: dynamicRowExtent,
-                            alignment: Alignment.bottomCenter,
                             child: TvWindowedGrid<Channel>(
                               key: _listKey,
                               items: widget.searchResults,
@@ -288,7 +287,6 @@ class _SearchPanelChrome extends StatelessWidget {
       children: [
         const SizedBox(height: 4),
         Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: TvTextField(
@@ -304,7 +302,7 @@ class _SearchPanelChrome extends StatelessWidget {
                 onFocusDown: onFocusDown,
                 // Con X visible: → va al clear, no al panel Países.
                 onFocusRight: hasQuery
-                    ? () => clearFocusNode.requestFocus()
+                    ? clearFocusNode.requestFocus
                     : null,
                 onSubmitted: (_) => onFocusDown(),
               ),
@@ -314,7 +312,7 @@ class _SearchPanelChrome extends StatelessWidget {
               _SearchClearButton(
                 focusNode: clearFocusNode,
                 onClear: onClear,
-                onKeyLeft: () => searchFocusNode.requestFocus(),
+                onKeyLeft: searchFocusNode.requestFocus,
                 onKeyUp: onFocusUp,
                 onKeyDown: onFocusDown,
               ),

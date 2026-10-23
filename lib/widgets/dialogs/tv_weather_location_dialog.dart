@@ -20,7 +20,6 @@ class TvWeatherLocationDialog extends StatefulWidget {
   static Future<void> show(BuildContext context) {
     return showTvGeneralDialog(
       context: context,
-      barrierDismissible: true,
       barrierLabel: 'TvWeatherLocationDialog',
       builder: (_) => const TvWeatherLocationDialog(),
     );
@@ -151,11 +150,10 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
             focusNode: _searchBtnFocus,
             label: 'weather_location_search_hint'.tr(),
             hint: 'search_field_hint'.tr(),
-            keyboardType: TvKeyboardType.text,
             textInputAction: TvTextInputAction.search,
             dense: true,
             leadingIcon: MoaiIcons.keyboardAltOutlined,
-            onChanged: (val) => _performSearch(val),
+            onChanged: _performSearch,
             onSubmitted: (val) {
               _performSearch(val);
               if (_results.isNotEmpty) {
@@ -187,7 +185,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
               ? TvDialogButtonVariant.primary
               : TvDialogButtonVariant.neutral,
           onPressed: _resetToAuto,
-          onKeyRight: () => _closeBtnFocus.requestFocus(),
+          onKeyRight: _closeBtnFocus.requestFocus,
           onKeyUp: () {
             if (_results.isNotEmpty) {
               _resultsListKey.currentState?.ensureVisible(_results.length - 1);
@@ -199,9 +197,8 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
         TvDialogButton(
           focusNode: _closeBtnFocus,
           label: 'common_close'.tr(),
-          variant: TvDialogButtonVariant.neutral,
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
-          onKeyLeft: () => _autoBtnFocus.requestFocus(),
+          onKeyLeft: _autoBtnFocus.requestFocus,
           onKeyUp: () {
             if (_results.isNotEmpty) {
               _resultsListKey.currentState?.ensureVisible(_results.length - 1);
@@ -284,7 +281,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
     if (_results.isNotEmpty) {
       const windowSize = 3;
       const itemExtent = 72.0;
-      final targetHeight = (windowSize * itemExtent);
+      const targetHeight = (windowSize * itemExtent);
 
       return SizedBox(
         height: targetHeight,
@@ -295,8 +292,8 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
           itemExtent: itemExtent,
           showScrollDots: true,
           initialGlobalIndex: _selectedResultIndex,
-          onFocusUpFromFirst: () => _searchBtnFocus.requestFocus(),
-          onFocusDownFromLast: () => _autoBtnFocus.requestFocus(),
+          onFocusUpFromFirst: _searchBtnFocus.requestFocus,
+          onFocusDownFromLast: _autoBtnFocus.requestFocus,
           onFocusedGlobalIndex: (idx) => _selectedResultIndex = idx,
           itemBuilder:
               (

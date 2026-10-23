@@ -177,7 +177,6 @@ class _ClearConfirmDialogContentState
         TvDialogButton(
           focusNode: _cancelFocusNode,
           label: 'common_cancel'.tr(),
-          variant: TvDialogButtonVariant.neutral,
           autofocus: true,
           onPressed: () => Navigator.of(context).pop(),
           onKeyRight: () => _confirmFocusNode.requestFocus(),

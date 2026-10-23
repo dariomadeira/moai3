@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/features/home/controllers/player_overlay_controller.dart';
 
@@ -30,7 +30,7 @@ void main() {
 
     testWidgets('sin context no crashea', (tester) async {
       final controller = PlayerOverlayController();
-      expect(() => controller.updatePlaceholderRect(), returnsNormally);
+      expect(controller.updatePlaceholderRect, returnsNormally);
       expect(controller.hasValidRect, isFalse);
     });
 
@@ -49,7 +49,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(() => controller.updatePlaceholderRect(), returnsNormally);
+      expect(controller.updatePlaceholderRect, returnsNormally);
       expect(controller.hasValidRect, isFalse);
     });
 

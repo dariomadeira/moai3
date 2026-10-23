@@ -119,11 +119,11 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
           final currentSec = pos.inSeconds;
           if ((currentSec - _lastSavedSecond).abs() >= 10 && _totalDuration > Duration.zero) {
             _lastSavedSecond = currentSec;
-            MovieProgressService.saveProgress(
+            unawaited(MovieProgressService.saveProgress(
               contentId: widget.movie.contentId,
               currentPosition: _currentPosition,
               totalDuration: _totalDuration,
-            );
+            ));
           }
         }
       } catch (_) {}
@@ -166,7 +166,7 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
       _seekBadgeText = seconds > 0 ? '+$seconds s' : '$seconds s';
     });
 
-    _engine.seekTo(target);
+    unawaited(_engine.seekTo(target));
 
     _seekBadgeTimer?.cancel();
     _seekBadgeTimer = Timer(const Duration(milliseconds: 900), () {
@@ -276,7 +276,6 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
               EnginePlayerView(
                 controller: _engine,
                 fit: BoxFit.contain,
-                showBuffering: false,
               ),
 
               // 2. Indicador de Buffering / Carga inicial
@@ -289,7 +288,6 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: Colors.white.withValues(alpha: 0.15),
-                        width: 1.0,
                       ),
                     ),
                     child: Row(
@@ -310,7 +308,6 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
                             context,
                             fontSize: 13,
                             color: Colors.white,
-                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -350,7 +347,6 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
                             style: MoaiText.display(
                               context,
                               fontSize: 18,
-                              fontWeight: FontWeight.w700,
                               color: Colors.white,
                             ),
                           ),
@@ -408,7 +404,6 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
                                 style: MoaiText.display(
                                   context,
                                   fontSize: 20,
-                                  fontWeight: FontWeight.w700,
                                   color: Colors.white,
                                 ),
                               ),
@@ -498,7 +493,6 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
                                   style: MoaiText.body(
                                     context,
                                     fontSize: 13,
-                                    fontWeight: FontWeight.w600,
                                     color: Colors.white.withValues(alpha: 0.7),
                                   ),
                                 ),

@@ -88,7 +88,7 @@ void main() {
         ],
       };
 
-      final baseUtc = DateTime.utc(2026, 9, 23, 20, 00);
+      final baseUtc = DateTime.utc(2026, 9, 23, 20);
       final events = SportsScheduleService.parseCategories(mockCategories, baseUtc);
 
       expect(events.length, 1);

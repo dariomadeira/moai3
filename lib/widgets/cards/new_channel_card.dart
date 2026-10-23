@@ -168,7 +168,6 @@ class _NewChannelCardState extends State<NewChannelCard> {
                       : null;
 
                   return Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       if (metrics.logoWidth > 0) ...[
                         TvListCardLeadingLogo(

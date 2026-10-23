@@ -112,7 +112,6 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
                         child: TvWindowedList<_SettingsMoviesSeriesItemType>(
                           key: _listKey,
                           items: items,
-                          windowSize: _windowSize,
                           itemExtent: _itemExtent,
                           showScrollDots: true,
                           initialGlobalIndex: _selectedIndex,

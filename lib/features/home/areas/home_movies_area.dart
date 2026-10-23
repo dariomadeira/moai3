@@ -63,7 +63,7 @@ class HomeMoviesAreaState extends State<HomeMoviesArea> {
   void requestEntryFocus() => focusGrid();
 
   GlobalKey _getCategoryHeaderKey(int catIdx) {
-    return _categoryHeaderKeys.putIfAbsent(catIdx, () => GlobalKey());
+    return _categoryHeaderKeys.putIfAbsent(catIdx, GlobalKey.new);
   }
 
   FocusNode _getNode(int catIdx, int r, int c) {
@@ -106,7 +106,6 @@ class HomeMoviesAreaState extends State<HomeMoviesArea> {
       if (headerContext != null) {
         Scrollable.ensureVisible(
           headerContext,
-          alignment: 0.0,
           duration: const Duration(milliseconds: 240),
           curve: Curves.easeOutCubic,
         );
@@ -252,7 +251,6 @@ class HomeMoviesAreaState extends State<HomeMoviesArea> {
               child: ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.only(
-                  left: 0,
                   right: 14,
                   top: 8,
                   bottom: 8,
@@ -310,7 +308,6 @@ class HomeMoviesAreaState extends State<HomeMoviesArea> {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             width: 3.5,
@@ -326,7 +323,6 @@ class HomeMoviesAreaState extends State<HomeMoviesArea> {
             style: MoaiText.display(
               context,
               fontSize: 18,
-              fontWeight: FontWeight.w700,
               color: scheme.onSurface,
             ),
           ),

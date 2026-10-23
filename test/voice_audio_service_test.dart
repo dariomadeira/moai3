@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:moai3/services/remote_voice_test_service.dart';
+import 'package:moai3/services/voice_audio_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -43,21 +43,21 @@ void main() {
         .setMockMethodCallHandler(channel, null);
   });
 
-  test('RemoteVoiceTestService queries hardware and methods correctly', () async {
-    final hw = await RemoteVoiceTestService.checkHardware();
+  test('VoiceAudioService queries hardware and methods correctly', () async {
+    final hw = await VoiceAudioService.checkHardware();
     expect(hw['devices'], isNotEmpty);
 
-    final hasPerm = await RemoteVoiceTestService.hasPermission();
+    final hasPerm = await VoiceAudioService.hasPermission();
     expect(hasPerm, isTrue);
 
-    final start = await RemoteVoiceTestService.startRecording();
+    final start = await VoiceAudioService.startRecording();
     expect(start['success'], isTrue);
 
-    final stop = await RemoteVoiceTestService.stopRecording();
+    final stop = await VoiceAudioService.stopRecording();
     expect(stop['success'], isTrue);
     expect(stop['sizeBytes'], equals(12345));
 
-    final play = await RemoteVoiceTestService.playRecording();
+    final play = await VoiceAudioService.playRecording();
     expect(play['success'], isTrue);
   });
 }

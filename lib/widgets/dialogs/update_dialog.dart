@@ -150,7 +150,6 @@ class _UpdateDialogState extends State<UpdateDialog> {
                       style: MoaiText.body(
                         context,
                         fontSize: 12,
-                        fontWeight: FontWeight.w600,
                         color: scheme.onErrorContainer,
                       ),
                     ),
@@ -192,7 +191,6 @@ class _UpdateDialogState extends State<UpdateDialog> {
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: borderColor,
-                    width: 1.0,
                   ),
                 ),
                 child: SingleChildScrollView(
@@ -216,8 +214,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
           TvDialogButton(
             focusNode: _cancelBtnFocus,
             label: 'update_action_later'.tr(),
-            variant: TvDialogButtonVariant.neutral,
-            onKeyRight: () => _updateBtnFocus.requestFocus(),
+            onKeyRight: _updateBtnFocus.requestFocus,
             onPressed: () => Navigator.of(context).pop(),
           ),
           const SizedBox(width: 12),
@@ -226,7 +223,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
           focusNode: _updateBtnFocus,
           label: 'update_action_update_now'.tr(),
           variant: TvDialogButtonVariant.primary,
-          onKeyLeft: !isMandatory ? () => _cancelBtnFocus.requestFocus() : null,
+          onKeyLeft: !isMandatory ? _cancelBtnFocus.requestFocus : null,
           onPressed: _startDownload,
         ),
       ];
@@ -240,7 +237,6 @@ class _UpdateDialogState extends State<UpdateDialog> {
             style: MoaiText.body(
               context,
               fontSize: 13,
-              fontWeight: FontWeight.w600,
               color: scheme.onSurface,
             ),
           ),
@@ -288,7 +284,6 @@ class _UpdateDialogState extends State<UpdateDialog> {
               TvDialogButton(
                 focusNode: _cancelBtnFocus,
                 label: 'common_cancel'.tr(),
-                variant: TvDialogButtonVariant.neutral,
                 onPressed: _cancelDownload,
               ),
             ];
@@ -307,7 +302,6 @@ class _UpdateDialogState extends State<UpdateDialog> {
                 style: MoaiText.body(
                   context,
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
                   color: scheme.onSurface,
                 ),
               ),
@@ -356,8 +350,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
           TvDialogButton(
             focusNode: _cancelBtnFocus,
             label: 'common_close'.tr(),
-            variant: TvDialogButtonVariant.neutral,
-            onKeyRight: () => _retryBtnFocus.requestFocus(),
+            onKeyRight: _retryBtnFocus.requestFocus,
             onPressed: () => Navigator.of(context).pop(),
           ),
           const SizedBox(width: 12),
@@ -366,7 +359,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
           focusNode: _retryBtnFocus,
           label: 'update_action_retry'.tr(),
           variant: TvDialogButtonVariant.primary,
-          onKeyLeft: !isMandatory ? () => _cancelBtnFocus.requestFocus() : null,
+          onKeyLeft: !isMandatory ? _cancelBtnFocus.requestFocus : null,
           onPressed: _startDownload,
         ),
       ];
@@ -389,7 +382,6 @@ class _UpdateDialogState extends State<UpdateDialog> {
               style: MoaiText.body(
                 context,
                 fontSize: 13,
-                fontWeight: FontWeight.w600,
                 color: isMandatory ? scheme.error : scheme.primary,
               ),
             ),

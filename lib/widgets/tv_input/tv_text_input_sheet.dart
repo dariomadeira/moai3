@@ -17,8 +17,6 @@ Future<String?> showTvTextInput(
   // Root navigator: el dialog queda por encima de GoRouter/Home.
   return showGeneralDialog<String>(
     context: context,
-    useRootNavigator: true,
-    barrierDismissible: false,
     barrierLabel: 'keyboard_close_barrier'.tr(),
     barrierColor: Colors.black.withValues(alpha: 0.4),
     transitionDuration: const Duration(milliseconds: 180),
@@ -217,7 +215,6 @@ class _TvTextInputSheetState extends State<_TvTextInputSheet> {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: borderColor,
-                  width: 1.0,
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -249,7 +246,6 @@ class _TvTextInputSheetState extends State<_TvTextInputSheet> {
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: scheme.outlineVariant.withValues(alpha: 0.25),
-                              width: 1.0,
                             ),
                           ),
                           child: Padding(
@@ -264,7 +260,6 @@ class _TvTextInputSheetState extends State<_TvTextInputSheet> {
                                 context,
                                 color: scheme.onSurfaceVariant,
                                 fontSize: 11,
-                                fontWeight: FontWeight.w600,
                                 letterSpacing: 0.2,
                               ),
                             ),

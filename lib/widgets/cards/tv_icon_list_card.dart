@@ -164,7 +164,6 @@ class _TvIconListCardState extends State<TvIconListCard> {
                       TvListCardMetrics.forIconWidth(constraints.maxWidth);
 
                   return Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       widget.leading ??
                           TvListCardLeadingIcon(

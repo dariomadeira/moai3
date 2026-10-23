@@ -3,7 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:moai3/config/player_config.dart';
+import 'package:moai3/config/app_info.dart';
 import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/supabase_presence_service.dart';
 import 'package:moai3/services/vpn_service.dart';
@@ -108,7 +108,7 @@ class _LoadingScreenState extends State<LoadingScreen>
 
   Future<void> _loadSavedSections() async {
     await MoiamovApiService.instance.loadSavedOrBundled(section: 'masnew_movies');
-    await MoiamovApiService.instance.loadSavedOrBundled(section: 'masnew_featured');
+    await MoiamovApiService.instance.loadSavedOrBundled();
     await MoiamovApiService.instance.loadSavedOrBundled(section: 'masnew_series');
   }
 
@@ -146,12 +146,10 @@ class _LoadingScreenState extends State<LoadingScreen>
 
       if (!mounted) return;
 
-      try {
-        final watchParty = context.read<WatchPartyProvider>();
-        if (record.userCode != null) {
-          watchParty.updateUserCode(record.userCode!);
-        }
-      } catch (_) {}
+      final userCode = record.userCode;
+      if (userCode != null) {
+        context.read<WatchPartyProvider?>()?.updateUserCode(userCode);
+      }
 
       // Si el dispositivo está bloqueado (RB-04 / CASO-UC-02)
       if (!record.isActive) {
@@ -187,7 +185,7 @@ class _LoadingScreenState extends State<LoadingScreen>
             section: 'masnew_movies',
           );
           await MoiamovApiService.instance.loadFallbackCatalog(
-            section: 'masnew_featured',
+            
           );
           await MoiamovApiService.instance.loadFallbackCatalog(
             section: 'masnew_series',
@@ -202,7 +200,7 @@ class _LoadingScreenState extends State<LoadingScreen>
             section: 'masnew_movies',
           );
           await MoiamovApiService.instance.loadSavedOrBundled(
-            section: 'masnew_featured',
+            
           );
           await MoiamovApiService.instance.loadSavedOrBundled(
             section: 'masnew_series',
@@ -253,8 +251,6 @@ class _LoadingScreenState extends State<LoadingScreen>
 
         vpnConnected = await VpnService.instance.connectMexico(
           nodeIndex: node,
-          timeout: const Duration(seconds: 14),
-          permissionWait: const Duration(seconds: 120),
           onStatusUpdate: onVpnStatus,
         );
 
@@ -302,7 +298,6 @@ class _LoadingScreenState extends State<LoadingScreen>
           });
 
           final catResult = await MoiamovApiService.instance.syncCatalog(
-            section: 'masnew_movies',
             timeout: const Duration(seconds: 12),
           );
 
@@ -363,7 +358,7 @@ class _LoadingScreenState extends State<LoadingScreen>
             section: 'masnew_movies',
           );
           await MoiamovApiService.instance.loadSavedOrBundled(
-            section: 'masnew_featured',
+            
           );
           await MoiamovApiService.instance.loadSavedOrBundled(
             section: 'masnew_series',
@@ -465,7 +460,6 @@ class _LoadingScreenState extends State<LoadingScreen>
             decoration: BoxDecoration(
               color: scheme.surface,
               gradient: RadialGradient(
-                center: Alignment.center,
                 radius: 0.95,
                 colors: [
                   scheme.primary.withValues(alpha: _glowAnimation.value),
@@ -499,12 +493,11 @@ class _LoadingScreenState extends State<LoadingScreen>
                   right: 0,
                   child: Center(
                     child: Text(
-                      'v${PlayerConfig.appVersion}',
+                      'v${AppInfo.version}',
                       style: MoaiText.body(
                         context,
                         fontSize: 12,
                         color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -599,7 +592,6 @@ class _LoadingScreenState extends State<LoadingScreen>
             style: MoaiText.body(
               context,
               fontSize: 13,
-              fontWeight: FontWeight.w600,
               color: scheme.onTertiary,
             ),
           ),
@@ -610,7 +602,6 @@ class _LoadingScreenState extends State<LoadingScreen>
             focusNode: _cancelCatalogFocus,
             label: _cancelCatalogLabel(),
             autofocus: true,
-            variant: TvDialogButtonVariant.neutral,
             onPressed: _cancelCatalogUpdate,
           ),
         ],
@@ -654,7 +645,6 @@ class _LoadingScreenState extends State<LoadingScreen>
             style: MoaiText.display(
               context,
               fontSize: 18,
-              fontWeight: FontWeight.bold,
               color: scheme.onSurface,
             ),
           ),

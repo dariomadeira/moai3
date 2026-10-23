@@ -23,7 +23,6 @@ void main() {
     name: 'Venus 18+',
     logoUrl: '',
     country: 'Argentina',
-    category: 'General',
     fallbackUrls: const [],
   );
 
@@ -56,7 +55,7 @@ void main() {
     test('ChannelProvider nunca selecciona canal adulto por defecto si adultos está bloqueado', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await AppPreferences.init();
-      bool adultUnlocked = false;
+      const bool adultUnlocked = false;
 
       final provider = ChannelProvider(
         prefs,

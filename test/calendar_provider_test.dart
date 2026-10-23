@@ -145,7 +145,7 @@ void main() {
         subscriptionId: 'f1',
         title: 'GP de Mónaco — Clasificación',
         competition: 'F1',
-        sessionType: 'Qualy',
+        sessionType: 'f1_type_qualy',
         startDateTime: now.subtract(const Duration(minutes: 60)),
       );
       expect(f1Qualy.estimatedDuration.inMinutes, 75);
@@ -191,6 +191,9 @@ void main() {
 
 
     test('F1 no tiene eventos en fines de semana sin Gran Premio', () async {
+      // Reloj fijo: el calendario de respaldo 2026 se evalúa como si hoy fuera 20 Sep.
+      ArgentinaTime.debugUtcNow = () => DateTime.utc(2026, 9, 20, 15);
+      addTearDown(() => ArgentinaTime.debugUtcNow = null);
       final provider = CalendarProvider();
       await Future.delayed(const Duration(milliseconds: 50));
       await provider.toggleSubscription('f1');
@@ -209,14 +212,14 @@ void main() {
 
       // Domingo 27 de Septiembre es la Carrera
       final sundayEvents = provider.getEventsForDay(DateTime(2026, 9, 27));
-      final sundayRace = sundayEvents.where((e) => e.subscriptionId == 'f1' && e.sessionType == 'Carrera').toList();
+      final sundayRace = sundayEvents.where((e) => e.subscriptionId == 'f1' && e.sessionType == 'f1_type_race').toList();
       expect(sundayRace, isNotEmpty, reason: 'La carrera de F1 debe estar el Domingo 27 de Septiembre');
 
       // Sábado 26 de Septiembre es la Clasificación, no la Carrera
       final saturdayEvents = provider.getEventsForDay(DateTime(2026, 9, 26));
-      final saturdayRace = saturdayEvents.where((e) => e.subscriptionId == 'f1' && e.sessionType == 'Carrera').toList();
+      final saturdayRace = saturdayEvents.where((e) => e.subscriptionId == 'f1' && e.sessionType == 'f1_type_race').toList();
       expect(saturdayRace, isEmpty, reason: 'La carrera de F1 NO debe estar el Sábado');
-      final saturdayQualy = saturdayEvents.where((e) => e.subscriptionId == 'f1' && e.sessionType == 'Qualy').toList();
+      final saturdayQualy = saturdayEvents.where((e) => e.subscriptionId == 'f1' && e.sessionType == 'f1_type_qualy').toList();
       expect(saturdayQualy, isNotEmpty, reason: 'El Sábado 26 debe tener la Clasificación');
     });
 
@@ -233,9 +236,9 @@ void main() {
       };
 
       final events = F1CalendarService.parseRacesForTest([mockRaceJson]);
-      final race = events.firstWhere((e) => e.sessionType == 'Carrera');
-      final qualy = events.firstWhere((e) => e.sessionType == 'Qualy');
-      final fp1 = events.firstWhere((e) => e.sessionType == 'Práctica 1');
+      final race = events.firstWhere((e) => e.sessionType == 'f1_type_race');
+      final qualy = events.firstWhere((e) => e.sessionType == 'f1_type_qualy');
+      final fp1 = events.firstWhere((e) => e.sessionType == 'f1_type_p1');
 
       // El instante se guarda en UTC y el día civil es el de Argentina.
       final raceCivil = ArgentinaTime.toCivil(race.startDateTime);

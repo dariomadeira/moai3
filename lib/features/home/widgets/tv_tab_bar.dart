@@ -46,7 +46,7 @@ class TvTabBar extends StatelessWidget {
 
     return Padding(
       // Alineación vertical superior para sincronizar con NavigationRail M3.
-      padding: const EdgeInsets.only(top: 0, bottom: 8, right: 8),
+      padding: const EdgeInsets.only(bottom: 8, right: 8),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
@@ -56,7 +56,6 @@ class TvTabBar extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: borderColor,
-              width: 1.0,
             ),
           ),
           padding: const EdgeInsets.all(4),
@@ -71,7 +70,7 @@ class TvTabBar extends StatelessWidget {
                 focusNode: exploreFocusNode,
                 onSelect: () => onTabChanged('explore'),
                 onKeyLeft: onFocusLeft,
-                onKeyRight: () => searchFocusNode.requestFocus(),
+                onKeyRight: searchFocusNode.requestFocus,
                 onKeyDown: onFocusDown,
               ),
               const SizedBox(width: 4),
@@ -82,8 +81,8 @@ class TvTabBar extends StatelessWidget {
                 isSelected: selectedTab == 'search',
                 focusNode: searchFocusNode,
                 onSelect: () => onTabChanged('search'),
-                onKeyLeft: () => exploreFocusNode.requestFocus(),
-                onKeyRight: () => groupsFocusNode.requestFocus(),
+                onKeyLeft: exploreFocusNode.requestFocus,
+                onKeyRight: groupsFocusNode.requestFocus,
                 onKeyDown: onFocusDown,
               ),
               const SizedBox(width: 4),
@@ -94,7 +93,7 @@ class TvTabBar extends StatelessWidget {
                 isSelected: selectedTab == 'groups',
                 focusNode: groupsFocusNode,
                 onSelect: () => onTabChanged('groups'),
-                onKeyLeft: () => searchFocusNode.requestFocus(),
+                onKeyLeft: searchFocusNode.requestFocus,
                 onKeyRight: onFocusPlayer,
                 onKeyDown: onFocusDown,
               ),

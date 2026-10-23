@@ -32,7 +32,6 @@ class ViewerErrorDisplay extends StatelessWidget {
                   context,
                   color: scheme.onSurface,
                   fontSize: 13,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 6),

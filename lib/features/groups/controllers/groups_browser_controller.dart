@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moai3/features/channel_browser/controllers/channel_browser_controller.dart';
 import 'package:moai3/focus/focus_scroll_sync.dart';
-import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/models/channel_group.dart';
 import 'package:moai3/utils/safe_change_notifier.dart';
@@ -12,9 +11,6 @@ class GroupsBrowserController extends ChangeNotifier with SafeChangeNotifier {
   Channel? selectedChannel;
 
   List<Channel> filteredChannels = [];
-
-  final List<FocusNode> groupFocusNodes = [];
-  final List<FocusNode> channelFocusNodes = [];
 
   ChannelGroup? alphabetModeGroup;
   /// `null` = off; `0` = alfabeto de grupos; `1` = alfabeto de canales.
@@ -29,9 +25,6 @@ class GroupsBrowserController extends ChangeNotifier with SafeChangeNotifier {
       alphabetModePanelIndex == 0 &&
       alphabetModeGroup != null &&
       alphabetModeGroup!.isDeletable;
-
-  final ScrollController groupScrollController = ScrollController();
-  final ScrollController channelScrollController = ScrollController();
 
   bool activateAlphabetMode(ChannelGroup group) {
     alphabetModeGroup = group;
@@ -54,13 +47,11 @@ class GroupsBrowserController extends ChangeNotifier with SafeChangeNotifier {
     FocusScrollSync.syncFocusNodes(count, alphabetFocusNodes);
     safeNotifyListeners();
 
-    try {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (alphabetFocusNodes.isNotEmpty) {
-          alphabetFocusNodes[0].requestFocus();
-        }
-      });
-    } catch (_) {}
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (alphabetFocusNodes.isNotEmpty) {
+        alphabetFocusNodes[0].requestFocus();
+      }
+    });
     return true;
   }
 
@@ -80,13 +71,11 @@ class GroupsBrowserController extends ChangeNotifier with SafeChangeNotifier {
     FocusScrollSync.syncFocusNodes(alphabetLetters.length, alphabetFocusNodes);
     safeNotifyListeners();
 
-    try {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (alphabetFocusNodes.isNotEmpty) {
-          alphabetFocusNodes[0].requestFocus();
-        }
-      });
-    } catch (_) {}
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (alphabetFocusNodes.isNotEmpty) {
+        alphabetFocusNodes[0].requestFocus();
+      }
+    });
     return true;
   }
 
@@ -144,7 +133,6 @@ class GroupsBrowserController extends ChangeNotifier with SafeChangeNotifier {
                 g.name.toLowerCase() != 'adultos' &&
                 g.id.toLowerCase() != 'adultos')
             .toList();
-    FocusScrollSync.syncFocusNodes(groups.length, groupFocusNodes);
 
     if (selectedGroup == null && groups.isNotEmpty) {
       selectedGroup = groups.first;
@@ -173,43 +161,10 @@ class GroupsBrowserController extends ChangeNotifier with SafeChangeNotifier {
     safeNotifyListeners();
   }
 
-  void focusSelectedGroup() {
-    if (selectedGroup == null && groups.isNotEmpty) {
-      selectedGroup = groups.first;
-    }
-    var idx = groups.indexWhere((g) => g.id == selectedGroup?.id);
-    if (idx == -1 && groups.isNotEmpty) idx = 0;
-    if (idx == -1) return;
-    FocusScrollSync.focusListItem(
-      scrollController: groupScrollController,
-      focusNodes: groupFocusNodes,
-      index: idx,
-      itemHeight: TvLayoutConstants.categoryItemHeight,
-      itemCount: groups.length,
-    );
-  }
-
-  void focusSelectedChannel() {
-    if (selectedChannel == null && filteredChannels.isNotEmpty) {
-      selectedChannel = filteredChannels.first;
-    }
-    var idx = filteredChannels.indexWhere((c) => c.id == selectedChannel?.id);
-    if (idx == -1 && filteredChannels.isNotEmpty) idx = 0;
-    if (idx == -1) return;
-    FocusScrollSync.focusListItem(
-      scrollController: channelScrollController,
-      focusNodes: channelFocusNodes,
-      index: idx,
-      itemHeight: TvLayoutConstants.channelItemHeight,
-      itemCount: filteredChannels.length,
-    );
-  }
-
   void _refreshFilteredChannels(
       List<Channel> allChannels, List<String> favoriteChannelIds) {
     if (selectedGroup == null) {
       filteredChannels = [];
-      FocusScrollSync.syncFocusNodes(0, channelFocusNodes);
       return;
     }
 
@@ -230,19 +185,10 @@ class GroupsBrowserController extends ChangeNotifier with SafeChangeNotifier {
 
     filteredChannels
         .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-    FocusScrollSync.syncFocusNodes(filteredChannels.length, channelFocusNodes);
   }
 
   @override
   void dispose() {
-    groupScrollController.dispose();
-    channelScrollController.dispose();
-    for (final node in groupFocusNodes) {
-      FocusScrollSync.disposeNode(node);
-    }
-    for (final node in channelFocusNodes) {
-      FocusScrollSync.disposeNode(node);
-    }
     for (final node in alphabetFocusNodes) {
       FocusScrollSync.disposeNode(node);
     }

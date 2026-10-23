@@ -214,8 +214,6 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
             focusNode: _textFieldFocusNode,
             label: 'groups_name_label'.tr(),
             hint: 'groups_name_hint'.tr(),
-            keyboardType: TvKeyboardType.text,
-            textInputAction: TvTextInputAction.done,
             leadingIcon: MoaiIcons.tvGroupCreateDialogInput,
             onFocusDown: () => _createFocusNode.requestFocus(),
             onSubmitted: (_) => _createFocusNode.requestFocus(),
@@ -243,7 +241,6 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
         TvDialogButton(
           focusNode: _cancelFocusNode,
           label: 'common_cancel'.tr(),
-          variant: TvDialogButtonVariant.neutral,
           onPressed: () => Navigator.of(context).pop(),
           onKeyRight: () => _createFocusNode.requestFocus(),
           onKeyUp: () => _textFieldFocusNode.requestFocus(),

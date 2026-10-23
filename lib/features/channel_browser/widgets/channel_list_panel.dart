@@ -121,8 +121,6 @@ class ChannelListPanelState extends State<ChannelListPanel> {
                     child: TvWindowedGrid<Channel>(
                       key: _listKey,
                       items: widget.channels,
-                      windowSize: _windowSize,
-                      crossAxisCount: _crossAxisCount,
                       initialGlobalIndex: _selectedIndex,
                       itemExtent: _rowExtent,
                       showScrollDots: true,

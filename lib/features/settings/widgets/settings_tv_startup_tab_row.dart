@@ -41,7 +41,7 @@ class SettingsTvStartupTabRow extends StatelessWidget {
   }
 
   void _selectIndex(int index) {
-    final options = TvSettingsProvider.startupTvTabOptions;
+    const options = TvSettingsProvider.startupTvTabOptions;
     if (index < 0 || index >= options.length) return;
     final next = options[index];
     if (next != selectedTab) {
@@ -51,7 +51,7 @@ class SettingsTvStartupTabRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final options = TvSettingsProvider.startupTvTabOptions;
+    const options = TvSettingsProvider.startupTvTabOptions;
     final selectedIndex = _selectedIndex;
 
     return TvTile(

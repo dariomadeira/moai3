@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 extension MoaiThemeContext on BuildContext {
   ColorScheme get scheme => Theme.of(this).colorScheme;
 
-  /// Superficie elevada genérica (equivale a cards/paneles sin palette fija).
-  Color get elevatedSurface => scheme.surfaceContainerHigh;
 }
 
 /// Tipografía Moai (igual que moaiSmart): Quicksand títulos, Nunito cuerpo.

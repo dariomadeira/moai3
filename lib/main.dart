@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dynamic_color/dynamic_color.dart';
@@ -9,7 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:moai3/config/app_config.dart';
 import 'package:moai3/config/constants.dart';
-import 'package:moai3/config/player_config.dart';
+import 'package:moai3/config/app_info.dart';
 import 'package:moai3/helpers/notification_helper.dart';
 import 'package:moai3/routers/routers.dart';
 import 'package:moai3/services/app_preferences_service.dart';
@@ -40,7 +41,7 @@ class BadCertHttpOverrides extends HttpOverrides {
     return super.createHttpClient(context)
       ..badCertificateCallback = (X509Certificate cert, String host, int port) {
         final hostLower = host.toLowerCase();
-        if (kStrictSslHosts.any((strictHost) => hostLower.contains(strictHost))) {
+        if (kStrictSslHosts.any(hostLower.contains)) {
           return false; // Validación estricta SSL
         }
         return true; // Permitir fallback de certificado para otros (ej: scrapers, trackers)
@@ -51,18 +52,16 @@ class BadCertHttpOverrides extends HttpOverrides {
 void main() async {
   HttpOverrides.global = BadCertHttpOverrides();
   WidgetsFlutterBinding.ensureInitialized();
-  MoaiImageCacheManager.clearLegacyCache();
   PaintingBinding.instance.imageCache.maximumSize = kImageCacheMaximumSize;
   PaintingBinding.instance.imageCache.maximumSizeBytes =
       kImageCacheMaximumSizeBytes;
   try {
-    await dotenv.load(fileName: '.env');
+    await dotenv.load();
   } catch (e, st) {
     debugPrint('dotenv: no se pudo cargar .env ($e)\n$st');
   }
   await AppConfig.initialize();
-  await PlayerConfig.initialize();
-  await ArcadePluginService.instance.init();
+  await AppInfo.initialize();
 
   await EasyLocalization.ensureInitialized();
 
@@ -76,6 +75,8 @@ void main() async {
   }
 
   final appPreferences = await AppPreferences.init();
+  await ArcadePluginService.instance.init(appPreferences);
+  unawaited(MoaiImageCacheManager.clearLegacyCacheOnce(appPreferences));
   final themeProvider = ThemeProvider(appPreferences);
   final tvSettingsProvider = TvSettingsProvider(appPreferences);
   final channelProvider = ChannelProvider(
@@ -85,7 +86,7 @@ void main() async {
   final favoritesProvider = FavoritesProvider(appPreferences);
   final agendaClock = AgendaClockProvider(appPreferences);
   final weatherProvider = WeatherProvider(appPreferences);
-  final calendarProvider = CalendarProvider();
+  final calendarProvider = CalendarProvider(preferences: appPreferences);
   final featuredMoviesProvider = FeaturedMoviesProvider();
   final playbackStats = PlaybackStatsController();
   final debugLog = DebugLogController();
@@ -128,62 +129,48 @@ void main() async {
     );
   }
 
-  void syncChannelWithWatchParty() {
-    watchPartyProvider.reportPlayingChannel(channelProvider.selectedChannel);
-  }
-
-  channelProvider.addListener(syncChannelWithWatchParty);
-  bool prevWatchPartyEnabled = watchPartyProvider.enabled;
-  watchPartyProvider.addListener(() {
-    if (watchPartyProvider.enabled != prevWatchPartyEnabled) {
-      prevWatchPartyEnabled = watchPartyProvider.enabled;
-      if (prevWatchPartyEnabled) {
-        syncChannelWithWatchParty();
-      }
-    }
-  });
-
-  if (channelProvider.selectedChannel != null) {
-    syncChannelWithWatchParty();
-  }
-
   final router = createRouter(
-    tvSettingsProvider,
     identityService: deviceIdentityService,
     presenceService: supabasePresenceService,
   );
 
-  runApp(EasyLocalization(
-    path: kTranslationsPath,
-    supportedLocales: kSupportedLocales,
-    fallbackLocale: kFallbackLocale,
-    child: MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(value: themeProvider),
-        ChangeNotifierProvider.value(value: agendaClock),
-        ChangeNotifierProvider.value(value: weatherProvider),
-        ChangeNotifierProvider.value(value: tvSettingsProvider),
-        ChangeNotifierProvider.value(value: channelProvider),
-        ChangeNotifierProvider.value(value: favoritesProvider),
-        ChangeNotifierProvider.value(value: calendarProvider),
-        ChangeNotifierProvider.value(value: featuredMoviesProvider),
-        ChangeNotifierProvider.value(value: playbackStats),
-        ChangeNotifierProvider.value(value: debugLog),
-        ChangeNotifierProvider.value(value: channelProvider.pluginHost),
-        ChangeNotifierProvider.value(value: watchPartyProvider),
-        ChangeNotifierProvider.value(value: watchPartyVoiceCoordinator),
-        ChangeNotifierProvider<ArcadeNetplayService>.value(value: ArcadeNetplayService.instance),
-        Provider<DeviceIdentityService>.value(value: deviceIdentityService),
-        Provider<SupabasePresenceService>.value(value: supabasePresenceService),
-        Provider<WatchPartyService>.value(value: watchPartyService),
-      ],
-      child: MyApp(
-        router: router,
-        identityService: deviceIdentityService,
-        presenceService: supabasePresenceService,
+  runApp(
+    EasyLocalization(
+      path: kTranslationsPath,
+      supportedLocales: kSupportedLocales,
+      fallbackLocale: kFallbackLocale,
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: themeProvider),
+          ChangeNotifierProvider.value(value: agendaClock),
+          ChangeNotifierProvider.value(value: weatherProvider),
+          ChangeNotifierProvider.value(value: tvSettingsProvider),
+          ChangeNotifierProvider.value(value: channelProvider),
+          ChangeNotifierProvider.value(value: favoritesProvider),
+          ChangeNotifierProvider.value(value: calendarProvider),
+          ChangeNotifierProvider.value(value: featuredMoviesProvider),
+          ChangeNotifierProvider.value(value: playbackStats),
+          ChangeNotifierProvider.value(value: debugLog),
+          ChangeNotifierProvider.value(value: channelProvider.pluginHost),
+          ChangeNotifierProvider.value(value: watchPartyProvider),
+          ChangeNotifierProvider.value(value: watchPartyVoiceCoordinator),
+          ChangeNotifierProvider<ArcadeNetplayService>.value(
+            value: ArcadeNetplayService.instance,
+          ),
+          Provider<DeviceIdentityService>.value(value: deviceIdentityService),
+          Provider<SupabasePresenceService>.value(
+            value: supabasePresenceService,
+          ),
+          Provider<WatchPartyService>.value(value: watchPartyService),
+        ],
+        child: MyApp(
+          router: router,
+          identityService: deviceIdentityService,
+          presenceService: supabasePresenceService,
+        ),
       ),
     ),
-  ));
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -229,10 +216,7 @@ class _MyAppState extends State<MyApp> {
   void _handleForeground(String deviceId) {
     if (_isInForeground) return;
     _isInForeground = true;
-    widget.presenceService.updateOnlineStatus(
-      deviceId: deviceId,
-      online: true,
-    );
+    widget.presenceService.updateOnlineStatus(deviceId: deviceId, online: true);
   }
 
   void _handleBackground(String deviceId) {
@@ -266,14 +250,13 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _updateThemesIfNeeded(Color seed) {
-    if (_lastSeed == seed && _cachedLightTheme != null && _cachedDarkTheme != null) {
+    if (_lastSeed == seed &&
+        _cachedLightTheme != null &&
+        _cachedDarkTheme != null) {
       return;
     }
     _lastSeed = seed;
-    final lightScheme = ColorScheme.fromSeed(
-      seedColor: seed,
-      brightness: Brightness.light,
-    ).harmonized();
+    final lightScheme = ColorScheme.fromSeed(seedColor: seed).harmonized();
     final darkScheme = ColorScheme.fromSeed(
       seedColor: seed,
       brightness: Brightness.dark,
@@ -304,4 +287,3 @@ class _MyAppState extends State<MyApp> {
     );
   }
 }
-

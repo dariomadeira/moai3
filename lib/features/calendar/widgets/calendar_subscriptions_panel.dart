@@ -92,7 +92,6 @@ class CalendarSubscriptionsPanelState
                               child: TvWindowedList<SportSubscription>(
                                 key: _listKey,
                                 items: subscriptions,
-                                windowSize: _windowSize,
                                 itemExtent: _itemExtent,
                                 showScrollDots: true,
                                 initialGlobalIndex: _selectedIndex,

@@ -1,3 +1,4 @@
+import 'package:moai3/platform/platform_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/models/channel.dart';
@@ -133,7 +134,7 @@ class PluginResolveResult {
 
 /// Cliente Dart del canal `com.infomak.moai.tv/plugin`.
 class PluginHostService {
-  static const MethodChannel _channel = MethodChannel('com.infomak.moai.tv/plugin');
+  static const MethodChannel _channel = PlatformChannels.plugin;
 
   Future<List<PluginSource>> list() async {
     final raw = await _channel.invokeListMethod<dynamic>('list') ?? const [];

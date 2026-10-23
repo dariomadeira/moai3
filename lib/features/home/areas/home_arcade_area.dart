@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/features/games/screens/arcade_games_screen.dart';
@@ -72,10 +73,14 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
       return 'arcade_no_games_installed'.tr();
     }
     final active = installed.firstWhere(
-      (r) => r.filename.toLowerCase() == widget.romManager.activeRomFilename?.toLowerCase(),
+      (r) =>
+          r.filename.toLowerCase() ==
+          widget.romManager.activeRomFilename?.toLowerCase(),
       orElse: () => installed.first,
     );
-    if (active.name.isNotEmpty && active.name.toLowerCase() != active.filename.toLowerCase().replaceAll('.zip', '')) {
+    if (active.name.isNotEmpty &&
+        active.name.toLowerCase() !=
+            active.filename.toLowerCase().replaceAll('.zip', '')) {
       return active.name;
     }
     return widget.romManager.nameFromFilename(active.filename);
@@ -97,13 +102,16 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
     }
 
     final activeRom = widget.romManager.installedRoms.firstWhere(
-      (r) => r.filename.toLowerCase() == widget.romManager.activeRomFilename?.toLowerCase(),
+      (r) =>
+          r.filename.toLowerCase() ==
+          widget.romManager.activeRomFilename?.toLowerCase(),
       orElse: () => widget.romManager.installedRoms.first,
     );
 
     final identity = context.read<DeviceIdentityService>();
     final myDeviceId = identity.getOrCreateDeviceId();
-    final myNickname = context.read<WatchPartyProvider?>()?.myNickname ??
+    final myNickname =
+        context.read<WatchPartyProvider?>()?.myNickname ??
         'arcade_player_default'.tr();
 
     TvArcadeSelectFriendDialog.show(
@@ -119,7 +127,7 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
         );
 
         if (ok && mounted) {
-          TvArcadePrepDialog.show(
+          unawaited(TvArcadePrepDialog.show(
             context,
             onReadyToPlay: (session) {
               final romPath = widget.romManager.getActiveRomPath();
@@ -132,7 +140,7 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
                 ),
               );
             },
-          );
+          ));
         }
       },
     );
@@ -151,15 +159,9 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
     }
 
     final scheme = Theme.of(context).colorScheme;
-    final panelColors = [
-      scheme.surface.withValues(alpha: 0.8),
-    ];
-    final titles = [
-      'arcade_panel_title'.tr(),
-    ];
-    const icons = [
-      MoaiIcons.sportsEsportsOutlined,
-    ];
+    final panelColors = [scheme.surface.withValues(alpha: 0.8)];
+    final titles = ['arcade_panel_title'.tr()];
+    const icons = [MoaiIcons.sportsEsportsOutlined];
 
     return TvAccordionRowPreview(
       panelCount: 1,

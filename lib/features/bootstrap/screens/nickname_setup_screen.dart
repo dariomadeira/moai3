@@ -19,11 +19,15 @@ class NicknameSetupScreen extends StatelessWidget {
 
     try {
       await identity.saveNickname(trimmed);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[NicknameSetup] $e');
+    }
 
     try {
       await watchParty.updateNickname(trimmed);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[NicknameSetup] $e');
+    }
 
     if (context.mounted) {
       context.go('/home');

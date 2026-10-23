@@ -169,7 +169,6 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
         TvDialogButton(
           focusNode: _cancelFocus,
           label: 'arcade_prep_cancel'.tr(),
-          variant: TvDialogButtonVariant.neutral,
           onPressed: _onCancel,
         ),
       ],
@@ -230,7 +229,6 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
                     style: MoaiText.body(
                       context,
                       fontSize: 12,
-                      fontWeight: FontWeight.w600,
                       color: isDone ? activeColor : scheme.onSurfaceVariant,
                     ),
                   ),

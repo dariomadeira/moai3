@@ -133,7 +133,9 @@ class ArcadeWebRtcTransport {
     }
     try {
       dc.send(RTCDataChannelMessage(jsonEncode(packet.toJson())));
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ArcadeWebRtcTransport] $e');
+    }
   }
 
   void sendNetplayStart() {
@@ -143,17 +145,23 @@ class ArcadeWebRtcTransport {
     }
     try {
       dc.send(RTCDataChannelMessage(jsonEncode({'t': 'netplay_start'})));
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ArcadeWebRtcTransport] $e');
+    }
   }
 
   Future<void> dispose() async {
     try {
       await _dc?.close();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ArcadeWebRtcTransport] $e');
+    }
     _dc = null;
     try {
       await _pc?.close();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ArcadeWebRtcTransport] $e');
+    }
     _pc = null;
     _pendingRemoteIce.clear();
     _remoteDescriptionSet = false;
@@ -201,9 +209,7 @@ class ArcadeWebRtcTransport {
     };
 
     if (!isHost) {
-      _pc!.onDataChannel = (RTCDataChannel dc) {
-        _attachDataChannel(dc);
-      };
+      _pc!.onDataChannel = _attachDataChannel;
     }
   }
 
@@ -227,7 +233,9 @@ class ArcadeWebRtcTransport {
         if (packet != null && !_inputController.isClosed) {
           _inputController.add(packet);
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('[ArcadeWebRtcTransport] $e');
+      }
     };
   }
 
@@ -235,7 +243,9 @@ class ArcadeWebRtcTransport {
     for (final ice in _pendingRemoteIce) {
       try {
         await _pc?.addCandidate(ice);
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('[ArcadeWebRtcTransport] $e');
+      }
     }
     _pendingRemoteIce.clear();
   }

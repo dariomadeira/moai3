@@ -236,7 +236,7 @@ class _TvOnScreenKeyboardState extends State<TvOnScreenKeyboard> {
                 filled: false,
                 onPressed: widget.onCancel,
                 onArrowLeft: () {},
-                onArrowRight: () => _doneNode.requestFocus(),
+                onArrowRight: _doneNode.requestFocus,
                 onArrowUp: () {
                   if (_nodes.isEmpty) return;
                   final last = _nodes.last;
@@ -252,7 +252,7 @@ class _TvOnScreenKeyboardState extends State<TvOnScreenKeyboard> {
                 label: widget.doneLabel ?? 'keyboard_done'.tr(),
                 filled: true,
                 onPressed: widget.onDone,
-                onArrowLeft: () => _cancelNode.requestFocus(),
+                onArrowLeft: _cancelNode.requestFocus,
                 onArrowRight: () {},
                 onArrowUp: () {
                   if (_nodes.isEmpty) return;
@@ -364,7 +364,6 @@ class _TvKeyButtonState extends State<_TvKeyButton> {
           context,
           color: fg,
           fontSize: widget.label.length > 2 ? 10 : 14,
-          fontWeight: FontWeight.w600,
         ),
       );
     }
@@ -406,12 +405,10 @@ class _TvKeyButtonState extends State<_TvKeyButton> {
       },
       child: Material(
         color: bg,
-        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radius),
           side: BorderSide(
             color: borderColor,
-            width: 1.0,
           ),
         ),
         child: InkWell(
@@ -534,12 +531,10 @@ class _TvActionButtonState extends State<_TvActionButton> {
       },
       child: Material(
         color: bg,
-        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
           side: BorderSide(
             color: borderColor,
-            width: 1.0,
           ),
         ),
         child: InkWell(

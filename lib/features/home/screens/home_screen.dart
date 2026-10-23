@@ -14,6 +14,7 @@ import 'package:moai3/features/home/areas/home_dashboard_area.dart';
 import 'package:moai3/features/home/areas/home_movies_area.dart';
 import 'package:moai3/features/home/areas/home_settings_area.dart';
 import 'package:moai3/features/home/areas/home_tv_area.dart';
+import 'package:moai3/features/home/coordinators/presence_coordinator.dart';
 import 'package:moai3/features/home/widgets/double_back_exit_scope.dart';
 import 'package:moai3/features/home/widgets/tv_vertical_nav_rail.dart';
 import 'package:moai3/focus/tv_intents.dart';
@@ -120,14 +121,21 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _openingLiveSnackDialog = false;
   CalendarEvent? _currentSnackEvent;
   Timer? _modalClosedCooldownTimer;
-  Timer? _tvPresenceHeartbeatTimer;
-
-  static const Duration _tvPresenceHeartbeatInterval = Duration(seconds: 60);
+  late final PresenceCoordinator _presence;
 
   @override
   void initState() {
     super.initState();
     _romManager.initialize();
+    _presence = PresenceCoordinator(
+      deviceId: context.read<DeviceIdentityService>().getOrCreateDeviceId(),
+      presence: context.read<SupabasePresenceService>(),
+      channels: context.read<ChannelProvider>(),
+      watchParty: context.read<WatchPartyProvider>(),
+      onBlocked: (reason) {
+        if (mounted) context.go('/blocked', extra: reason);
+      },
+    );
     ModalRouteTracker.instance.addListener(_onModalTrackerChanged);
     ArcadePluginService.instance.addListener(_onArcadePluginChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -171,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
               );
 
               if (mounted) {
-                TvArcadePrepDialog.show(
+                unawaited(TvArcadePrepDialog.show(
                   context,
                   onReadyToPlay: (session) {
                     final romPath = _romManager.getActiveRomPath();
@@ -184,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   },
-                );
+                ));
               }
             },
             onDismiss: () async {
@@ -200,38 +208,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _updatePresenceForSection(int index) {
-    final identity = context.read<DeviceIdentityService>();
-    final presence = context.read<SupabasePresenceService>();
-    final watchParty = context.read<WatchPartyProvider>();
-    final deviceId = identity.getOrCreateDeviceId();
-
-    _tvPresenceHeartbeatTimer?.cancel();
-    _tvPresenceHeartbeatTimer = null;
-
-    // Online en TV (watch party) y Arcade (invites netplay).
-    if (index == _sectionTv || index == _sectionArcade) {
-      presence.updateOnlineStatus(deviceId: deviceId, online: true);
-      if (index == _sectionTv) {
-        watchParty.reportPlayingChannel(
-          context.read<ChannelProvider>().selectedChannel,
-        );
-      } else {
-        watchParty.reportCurrentChannel(channelId: null);
-      }
-      _tvPresenceHeartbeatTimer = Timer.periodic(_tvPresenceHeartbeatInterval, (
-        _,
-      ) {
-        if (!mounted) return;
-        if (_selectedIndex != _sectionTv && _selectedIndex != _sectionArcade) {
-          return;
-        }
-        presence.sendHeartbeat(deviceId: deviceId);
-      });
-    } else {
-      // Offline en Agenda / Ajustes
-      presence.updateOnlineStatus(deviceId: deviceId, online: false);
-      watchParty.reportCurrentChannel(channelId: null);
-    }
+    _presence.setMode(switch (index) {
+      _sectionTv => PresenceMode.watching,
+      _sectionArcade => PresenceMode.available,
+      _ => PresenceMode.offline,
+    });
   }
 
   void _switchSection(int index) {
@@ -374,7 +355,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (appUpdate != null && mounted) {
       // Se muestra el diálogo del APK y se aborta cualquier búsqueda de plugins.
       // Si el usuario actualiza, el proceso se reinicia/reinstala.
-      UpdateDialog.show(context, appUpdate);
+      unawaited(UpdateDialog.show(context, appUpdate));
       return;
     }
 
@@ -387,7 +368,7 @@ class _HomeScreenState extends State<HomeScreen> {
           pluginHost.sources,
         );
         if (pendingUpdates.isNotEmpty && mounted) {
-          PluginUpdateDialog.show(context, pendingUpdates);
+          unawaited(PluginUpdateDialog.show(context, pendingUpdates));
         }
       }
     } catch (e) {
@@ -397,7 +378,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    _tvPresenceHeartbeatTimer?.cancel();
+    _presence.dispose();
     ModalRouteTracker.instance.removeListener(_onModalTrackerChanged);
     _modalClosedCooldownTimer?.cancel();
     _liveEventsSub?.cancel();
@@ -597,9 +578,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               selectedIndex: _selectedIndex,
                               railScopeNode: _railScopeNode,
                               railFocusNode: _railFocusNode,
-                              onIndexChanged: (index) {
-                                _switchSection(index);
-                              },
+                              onIndexChanged: _switchSection,
                               onFocusRight: _onRailFocusRight,
                             ),
                           ),
@@ -686,14 +665,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     : _selectedIndex == _sectionFeatured
                                     ? HomeMoviesArea(
                                         key: _featuredAreaKey,
-                                        section: FeaturedMoviesProvider
-                                            .sectionFeatured,
                                         panelTitle:
                                             'movies_panel_featured_title'.tr(),
                                         accordionIcon:
                                             MoaiIcons.tvAccordionFeatured,
-                                        emptyMessage:
-                                            'movies_empty_featured'.tr(),
+                                        emptyMessage: 'movies_empty_featured'
+                                            .tr(),
                                         onExitLeft: _focusRail,
                                       )
                                     : _selectedIndex == _sectionMovies
@@ -701,12 +678,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                         key: _moviesAreaKey,
                                         section: FeaturedMoviesProvider
                                             .sectionMovies,
-                                        panelTitle:
-                                            'movies_panel_movies_title'.tr(),
+                                        panelTitle: 'movies_panel_movies_title'
+                                            .tr(),
                                         accordionIcon:
                                             MoaiIcons.tvAccordionMovies,
-                                        emptyMessage:
-                                            'movies_empty_movies'.tr(),
+                                        emptyMessage: 'movies_empty_movies'
+                                            .tr(),
                                         onExitLeft: _focusRail,
                                       )
                                     : _selectedIndex == _sectionSeries
@@ -714,12 +691,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                         key: _seriesAreaKey,
                                         section: FeaturedMoviesProvider
                                             .sectionSeries,
-                                        panelTitle:
-                                            'movies_panel_series_title'.tr(),
+                                        panelTitle: 'movies_panel_series_title'
+                                            .tr(),
                                         accordionIcon:
                                             MoaiIcons.tvAccordionSeries,
-                                        emptyMessage:
-                                            'movies_empty_series'.tr(),
+                                        emptyMessage: 'movies_empty_series'
+                                            .tr(),
                                         onExitLeft: _focusRail,
                                       )
                                     : HomeTvArea(

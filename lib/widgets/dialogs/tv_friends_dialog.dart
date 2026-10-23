@@ -36,7 +36,6 @@ class TvFriendsDialog extends StatefulWidget {
   static Future<void> show(BuildContext context) {
     return showTvGeneralDialog(
       context: context,
-      barrierDismissible: true,
       barrierLabel: 'TvFriendsDialog',
       builder: (dialogContext) => const TvFriendsDialog(),
     );
@@ -144,7 +143,6 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
   Future<void> _confirmDeleteFriend(FriendInfo friend) async {
     final confirmed = await showTvGeneralDialog<bool>(
       context: context,
-      barrierDismissible: true,
       barrierLabel: 'DeleteFriendConfirm',
       builder: (dialogContext) {
         final cancelFocus = FocusNode(debugLabel: 'delete_cancel');
@@ -159,17 +157,16 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
           actions: [
             TvDialogButton(
               label: 'common_cancel'.tr(),
-              variant: TvDialogButtonVariant.neutral,
               focusNode: cancelFocus,
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              onKeyRight: () => deleteFocus.requestFocus(),
+              onKeyRight: deleteFocus.requestFocus,
             ),
             TvDialogButton(
               label: 'friends_delete_button'.tr(),
               variant: TvDialogButtonVariant.destructive,
               focusNode: deleteFocus,
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              onKeyLeft: () => cancelFocus.requestFocus(),
+              onKeyLeft: cancelFocus.requestFocus,
             ),
           ],
         );
@@ -320,18 +317,15 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
         TvDialogButton(
           focusNode: _closeFocus,
           label: 'common_close'.tr(),
-          variant: TvDialogButtonVariant.neutral,
           onPressed: () => Navigator.of(context).pop(),
           onKeyUp: () {
             if (friends.isNotEmpty) {
               _friendsListKey.currentState?.ensureVisible(
                 friends.length - 1,
-                requestFocus: true,
               );
             } else if (requests.isNotEmpty) {
               _requestsListKey.currentState?.ensureVisible(
                 requests.length - 1,
-                requestFocus: true,
               );
             } else {
               _addFocus.requestFocus();
@@ -401,7 +395,6 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
     final hasRequests = watchParty.friendRequests.isNotEmpty;
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: TvTextField(
@@ -409,17 +402,16 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
             focusNode: _codeFocus,
             label: 'friends_input_label'.tr(),
             hint: 'friends_input_hint'.tr(),
-            keyboardType: TvKeyboardType.text,
             doneLabel: 'friends_add_button'.tr(),
             leadingIcon: MoaiIcons.badgeOutlined,
             maxLength: 10,
-            onSubmitted: (val) => _handleAddFriend(val),
-            onFocusRight: () => _addFocus.requestFocus(),
+            onSubmitted: _handleAddFriend,
+            onFocusRight: _addFocus.requestFocus,
             onFocusDown: () {
               if (hasFriends) {
-                _friendsListKey.currentState?.ensureVisible(0, requestFocus: true);
+                _friendsListKey.currentState?.ensureVisible(0);
               } else if (hasRequests) {
-                _requestsListKey.currentState?.ensureVisible(0, requestFocus: true);
+                _requestsListKey.currentState?.ensureVisible(0);
               } else {
                 _closeFocus.requestFocus();
               }
@@ -449,12 +441,12 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
                     _handleAddFriend();
                   }
                 },
-          onArrowLeft: () => _codeFocus.requestFocus(),
+          onArrowLeft: _codeFocus.requestFocus,
           onArrowDown: () {
             if (hasRequests) {
-              _requestsListKey.currentState?.ensureVisible(0, requestFocus: true);
+              _requestsListKey.currentState?.ensureVisible(0);
             } else if (hasFriends) {
-              _friendsListKey.currentState?.ensureVisible(0, requestFocus: true);
+              _friendsListKey.currentState?.ensureVisible(0);
             } else {
               _closeFocus.requestFocus();
             }
@@ -491,7 +483,6 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: borderColor,
-          width: 1.0,
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
@@ -513,7 +504,6 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
                       context,
                       color: scheme.onSurfaceVariant,
                       fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -549,7 +539,6 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
                       final targetIndex = min(global, requestsCount - 1);
                       _requestsListKey.currentState?.ensureVisible(
                         targetIndex,
-                        requestFocus: true,
                       );
                     }
                   },
@@ -587,7 +576,6 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: borderColor,
-          width: 1.0,
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
@@ -609,7 +597,6 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
                       context,
                       color: scheme.onSurfaceVariant,
                       fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -646,7 +633,6 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
                       final targetIndex = min(global, friendsCount - 1);
                       _friendsListKey.currentState?.ensureVisible(
                         targetIndex,
-                        requestFocus: true,
                       );
                     } else {
                       _codeFocus.requestFocus();
@@ -772,7 +758,6 @@ class _FriendTileState extends State<_FriendTile> {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: borderColor,
-                width: 1.0,
               ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -818,7 +803,6 @@ class _FriendTileState extends State<_FriendTile> {
                               context,
                               color: descColor,
                               fontSize: 10.5,
-                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           const SizedBox(width: 6),
@@ -1065,7 +1049,6 @@ class _RequestTileState extends State<_RequestTile> {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: borderColor,
-                width: 1.0,
               ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1109,7 +1092,6 @@ class _RequestTileState extends State<_RequestTile> {
                           context,
                           color: descColor,
                           fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],

@@ -1,11 +1,13 @@
+import 'package:flutter/foundation.dart';
+import 'package:moai3/platform/platform_channels.dart';
 import 'package:flutter/services.dart';
 
-/// Servicio Flutter para interactuar con el módulo nativo de captura de voz del control remoto.
-class RemoteVoiceTestService {
+/// Micrófono del control remoto y reproducción de mensajes de voz (Miremos Juntos).
+/// Lo usan el coordinador de voz y el diálogo de prueba de audio.
+class VoiceAudioService {
   static const MethodChannel _channel =
-      MethodChannel('com.infomak.moai.tv/remote_voice');
+      PlatformChannels.remoteVoice;
 
-  static Function()? onPlaybackFinished;
   static final List<void Function()> _playbackListeners = [];
 
   static void addPlaybackListener(void Function() listener) {
@@ -19,11 +21,12 @@ class RemoteVoiceTestService {
   static void initialize() {
     _channel.setMethodCallHandler((call) async {
       if (call.method == 'onPlaybackComplete') {
-        onPlaybackFinished?.call();
         for (final l in List<void Function()>.from(_playbackListeners)) {
           try {
             l();
-          } catch (_) {}
+          } catch (e) {
+            debugPrint('[VoiceAudioService] $e');
+          }
         }
       }
     });
@@ -53,7 +56,9 @@ class RemoteVoiceTestService {
   static Future<void> requestPermission() async {
     try {
       await _channel.invokeMethod('requestPermission');
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[VoiceAudioService] $e');
+    }
   }
 
   /// Inicia la grabación del micrófono utilizando AudioSource.VOICE_RECOGNITION.
@@ -106,6 +111,8 @@ class RemoteVoiceTestService {
   static Future<void> stopPlayback() async {
     try {
       await _channel.invokeMethod('stopPlayback');
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[VoiceAudioService] $e');
+    }
   }
 }

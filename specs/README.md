@@ -14,6 +14,9 @@ Todas las decisiones de diseño, contratos de plugins, modelos de datos y flujos
 - [SPEC-01: Guía Operativa del Modelo SSD](01_ssd_workflow_guide.md)  
   *Procedimiento para crear, modificar y verificar especificaciones antes de codificar.*
 
+- [SPEC-50: Plan Maestro de Optimización, Limpieza y Refactor](50_plan_optimizacion_refactor.md)  
+  *Fases priorizadas: código muerto, piezas rotas/redundantes, traducciones e iconos centralizados, división de responsabilidades, rendimiento y docs.*
+
 ### 2. Contratos e Interoperabilidad
 - [SPEC-10: Contrato de Plugins v1 (.dex)](contracts/plugin_contract_v1.md)  
   *Definición formal e inmutable de IPlugin, PluginManifest, ResolveRequest y ResolveResult.*

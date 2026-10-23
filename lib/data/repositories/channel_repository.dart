@@ -14,8 +14,6 @@ class ChannelRepository extends ChangeNotifier with SafeChangeNotifier {
   List<Channel> _channels = [];
   List<ChannelGroup> _customGroups = [];
   List<ChannelGroup> _groups = [];
-  bool _isLoading = false;
-  String? _loadError;
 
   ChannelRepository([this._prefs]) {
     _loadCustomGroups();
@@ -23,9 +21,6 @@ class ChannelRepository extends ChangeNotifier with SafeChangeNotifier {
 
   List<Channel> get channels => _channels;
   List<ChannelGroup> get groups => _groups;
-  bool get isLoading => _isLoading;
-  String? get loadError => _loadError;
-  String? get streamEngine => null;
 
   void _loadCustomGroups() {
     if (_prefs == null) return;
@@ -58,7 +53,7 @@ class ChannelRepository extends ChangeNotifier with SafeChangeNotifier {
               channelIds: _channels.isEmpty
                   ? List.unmodifiable(g.channelIds)
                   : g.channelIds
-                      .where((id) => validIds.contains(id))
+                      .where(validIds.contains)
                       .toList(),
             ))
         .toList();
@@ -68,13 +63,7 @@ class ChannelRepository extends ChangeNotifier with SafeChangeNotifier {
   /// Reemplaza el catálogo por los canales aportados por los plugins.
   void setPluginChannels(List<Channel> channels) {
     _channels = List.unmodifiable(channels);
-    _loadError = null;
-    _isLoading = false;
     _rebuildGroups();
-  }
-
-  Future<void> loadGroups() async {
-    _loadCustomGroups();
   }
 
   Future<void> createGroup(

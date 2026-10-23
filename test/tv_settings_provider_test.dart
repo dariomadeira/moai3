@@ -70,7 +70,7 @@ void main() {
     });
 
     test('shouldAttemptCatalogUpdate behaves correctly with weekly frequency', () {
-      final now = DateTime(2026, 10, 20, 12, 0);
+      final now = DateTime(2026, 10, 20, 12);
 
       // Primera vez (sin catálogo guardado) -> debe actualizar
       expect(

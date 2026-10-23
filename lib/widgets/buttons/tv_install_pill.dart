@@ -62,7 +62,7 @@ class TvInstallPill extends StatelessWidget {
         ? (installedLabel ?? 'sources_status_installed'.tr())
         : (installLabel ?? 'sources_install'.tr());
 
-    Widget content = Padding(
+    final Widget content = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
       child: isDownloading
           ? Row(

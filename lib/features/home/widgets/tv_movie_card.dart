@@ -128,7 +128,6 @@ class _TvMovieCardState extends State<TvMovieCard> {
                         CachedNetworkImage(
                           imageUrl: poster,
                           fit: BoxFit.cover,
-                          alignment: Alignment.center,
                           memCacheWidth: 400,
                           fadeInDuration: const Duration(milliseconds: 180),
                           fadeOutDuration: const Duration(milliseconds: 180),

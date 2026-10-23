@@ -105,7 +105,6 @@ class TvEmptyStateCard extends StatelessWidget {
                             ? scheme.onSurface
                             : scheme.onSurfaceVariant,
                         fontSize: 13,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),

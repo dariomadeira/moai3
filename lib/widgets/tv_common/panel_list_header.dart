@@ -28,7 +28,6 @@ class PanelListHeader extends StatelessWidget {
             context,
             color: scheme.onSurface,
             fontSize: TvPanelHeaderMetrics.subtitleFontSize,
-            fontWeight: FontWeight.w700,
           ),
         ),
         if (showFilterText) ...[

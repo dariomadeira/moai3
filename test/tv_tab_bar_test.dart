@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/features/home/widgets/tv_tab_bar.dart';
 
 void main() {
@@ -38,34 +39,34 @@ void main() {
     await tester.pumpAndSettle();
 
     // 1. When 'explore' is selected:
-    expect(find.byIcon(Icons.explore), findsOneWidget);
-    expect(find.byIcon(Icons.search_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.bookmarks_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.explore_outlined), findsNothing);
-    expect(find.byIcon(Icons.search), findsNothing);
-    expect(find.byIcon(Icons.bookmarks), findsNothing);
+    expect(find.byIcon(MoaiIcons.tvTabExplorarSelected), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.tvTabBuscar), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.tvTabMarcadores), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.tvTabExplorar), findsNothing);
+    expect(find.byIcon(MoaiIcons.tvTabBuscarSelected), findsNothing);
+    expect(find.byIcon(MoaiIcons.tvTabMarcadoresSelected), findsNothing);
 
     // 2. Tap search tab to switch selection to 'search'
-    await tester.tap(find.byIcon(Icons.search_outlined));
+    await tester.tap(find.byIcon(MoaiIcons.tvTabBuscar));
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.explore_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.search), findsOneWidget);
-    expect(find.byIcon(Icons.bookmarks_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.explore), findsNothing);
-    expect(find.byIcon(Icons.search_outlined), findsNothing);
-    expect(find.byIcon(Icons.bookmarks), findsNothing);
+    expect(find.byIcon(MoaiIcons.tvTabExplorar), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.tvTabBuscarSelected), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.tvTabMarcadores), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.tvTabExplorarSelected), findsNothing);
+    expect(find.byIcon(MoaiIcons.tvTabBuscar), findsNothing);
+    expect(find.byIcon(MoaiIcons.tvTabMarcadoresSelected), findsNothing);
 
     // 3. Tap groups tab to switch selection to 'groups'
-    await tester.tap(find.byIcon(Icons.bookmarks_outlined));
+    await tester.tap(find.byIcon(MoaiIcons.tvTabMarcadores));
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.explore_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.search_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.bookmarks), findsOneWidget);
-    expect(find.byIcon(Icons.explore), findsNothing);
-    expect(find.byIcon(Icons.search), findsNothing);
-    expect(find.byIcon(Icons.bookmarks_outlined), findsNothing);
+    expect(find.byIcon(MoaiIcons.tvTabExplorar), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.tvTabBuscar), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.tvTabMarcadoresSelected), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.tvTabExplorarSelected), findsNothing);
+    expect(find.byIcon(MoaiIcons.tvTabBuscarSelected), findsNothing);
+    expect(find.byIcon(MoaiIcons.tvTabMarcadores), findsNothing);
   });
 
   testWidgets('TvTabBar navigates between tabs using D-Pad arrow keys',

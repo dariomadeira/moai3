@@ -26,7 +26,6 @@ class TvMovieGenreChip extends StatelessWidget {
         style: MoaiText.body(
           context,
           fontSize: 12,
-          fontWeight: FontWeight.w600,
           color: scheme.onSurfaceVariant,
         ),
       ),

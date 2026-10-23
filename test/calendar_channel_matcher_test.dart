@@ -103,7 +103,6 @@ void main() {
         title: 'Racing vs Independiente',
         competition: 'Liga Profesional Argentina',
         startDateTime: DateTime.now(),
-        broadcaster: null,
       );
 
       final matches = CalendarChannelMatcher.findMatchingChannels(event, allChannels);

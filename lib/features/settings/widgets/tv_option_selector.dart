@@ -53,7 +53,6 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
           color: borderColor,
-          width: 1.0,
         ),
       );
     }

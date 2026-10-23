@@ -97,7 +97,7 @@ void main() {
     });
 
     test('VoiceMessageRecord serializa y deserializa en json correctamente (SPEC-37)', () {
-      final now = DateTime.utc(2026, 10, 1, 12, 0, 0);
+      final now = DateTime.utc(2026, 10, 1, 12);
       final record = VoiceMessageRecord(
         id: 'msg-1234',
         senderDeviceId: 'dev-1',

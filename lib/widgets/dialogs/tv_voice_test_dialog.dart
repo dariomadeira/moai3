@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:moai3/services/remote_voice_test_service.dart';
+import 'package:moai3/services/voice_audio_service.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/theme/moai_icons.dart';
@@ -18,7 +18,6 @@ class TvVoiceTestDialog extends StatefulWidget {
   static Future<void> show(BuildContext context) {
     return showTvGeneralDialog(
       context: context,
-      barrierDismissible: true,
       barrierLabel: 'TvVoiceTestDialog',
       builder: (dialogContext) => const TvVoiceTestDialog(),
     );
@@ -57,21 +56,23 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
       duration: const Duration(milliseconds: 900),
     );
 
-    RemoteVoiceTestService.initialize();
-    RemoteVoiceTestService.onPlaybackFinished = () {
-      if (mounted) {
-        _waveController.stop();
-        setState(() => _isPlaying = false);
-      }
-    };
+    VoiceAudioService.initialize();
+    VoiceAudioService.addPlaybackListener(_onPlaybackComplete);
     _initDiagnostic();
+  }
+
+  void _onPlaybackComplete() {
+    if (!mounted) return;
+    _waveController.stop();
+    setState(() => _isPlaying = false);
   }
 
   @override
   void dispose() {
+    VoiceAudioService.removePlaybackListener(_onPlaybackComplete);
     _waveController.dispose();
     _recordTimer?.cancel();
-    RemoteVoiceTestService.stopPlayback();
+    VoiceAudioService.stopPlayback();
     _recordFocus.dispose();
     _playFocus.dispose();
     _rerecordFocus.dispose();
@@ -81,8 +82,8 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
 
   Future<void> _initDiagnostic() async {
     setState(() => _isLoading = true);
-    final hasPerm = await RemoteVoiceTestService.hasPermission();
-    final hw = await RemoteVoiceTestService.checkHardware();
+    final hasPerm = await VoiceAudioService.hasPermission();
+    final hw = await VoiceAudioService.checkHardware();
 
     final rawDevices = hw['devices'] as List<dynamic>? ?? [];
     final devicesList = rawDevices
@@ -104,16 +105,16 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
   }
 
   Future<void> _requestPermission() async {
-    await RemoteVoiceTestService.requestPermission();
+    await VoiceAudioService.requestPermission();
     await Future.delayed(const Duration(milliseconds: 600));
-    final hasPerm = await RemoteVoiceTestService.hasPermission();
+    final hasPerm = await VoiceAudioService.hasPermission();
     if (!mounted) return;
     setState(() => _hasPermission = hasPerm);
   }
 
   Future<void> _startRecording() async {
     if (_isPlaying) {
-      await RemoteVoiceTestService.stopPlayback();
+      await VoiceAudioService.stopPlayback();
       _isPlaying = false;
     }
 
@@ -134,7 +135,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
     });
     _waveController.repeat(reverse: true);
 
-    final res = await RemoteVoiceTestService.startRecording();
+    final res = await VoiceAudioService.startRecording();
     if (res['success'] != true) {
       if (!mounted) return;
       _waveController.stop();
@@ -164,7 +165,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
     _recordTimer = null;
     _waveController.stop();
 
-    final res = await RemoteVoiceTestService.stopRecording();
+    final res = await VoiceAudioService.stopRecording();
     if (!mounted) return;
 
     if (res['success'] == true) {
@@ -193,7 +194,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
 
   Future<void> _togglePlayback() async {
     if (_isPlaying) {
-      await RemoteVoiceTestService.stopPlayback();
+      await VoiceAudioService.stopPlayback();
       _waveController.stop();
       setState(() => _isPlaying = false);
     } else {
@@ -202,7 +203,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
         _errorMessage = null;
       });
       _waveController.repeat(reverse: true);
-      final res = await RemoteVoiceTestService.playRecording();
+      final res = await VoiceAudioService.playRecording();
       if (!mounted) return;
       if (res['success'] != true) {
         _waveController.stop();
@@ -284,7 +285,6 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
         TvDialogButton(
           focusNode: _closeFocus,
           label: 'common_close'.tr(),
-          variant: TvDialogButtonVariant.neutral,
           onKeyUp: () {
             if (_recordedPath != null && !_isRecording) {
               _playFocus.requestFocus();
@@ -319,7 +319,6 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
               style: MoaiText.body(
                 context,
                 fontSize: 12,
-                fontWeight: FontWeight.w600,
                 color: scheme.onTertiaryContainer,
               ),
             ),
@@ -349,7 +348,6 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: borderColor,
-          width: 1.0,
         ),
       ),
       child: Column(
@@ -387,7 +385,6 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
           style: MoaiText.body(
             context,
             fontSize: 13,
-            fontWeight: FontWeight.w600,
             color: scheme.onSurface,
           ),
           textAlign: TextAlign.center,
@@ -399,7 +396,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
           label: 'mic_test_btn_record'.tr(),
           isPrimary: true,
           onPressed: _startRecording,
-          onKeyDown: () => _closeFocus.requestFocus(),
+          onKeyDown: _closeFocus.requestFocus,
         ),
       ],
     );
@@ -425,7 +422,6 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
               style: MoaiText.display(
                 context,
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
                 color: scheme.error,
               ),
             ),
@@ -439,7 +435,6 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
           style: MoaiText.body(
             context,
             fontSize: 12.5,
-            fontWeight: FontWeight.w600,
             color: scheme.onSurface,
           ),
         ),
@@ -450,11 +445,10 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
           label: 'mic_test_btn_stop'.tr(
             namedArgs: {'seconds': '$_recordSeconds'},
           ),
-          isPrimary: false,
           customBg: scheme.error,
           customFg: scheme.onError,
           onPressed: _stopRecording,
-          onKeyDown: () => _closeFocus.requestFocus(),
+          onKeyDown: _closeFocus.requestFocus,
         ),
       ],
     );
@@ -539,7 +533,6 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
               style: MoaiText.body(
                 context,
                 fontSize: 12,
-                fontWeight: FontWeight.w600,
                 color: scheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
@@ -555,7 +548,6 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
             style: MoaiText.body(
               context,
               fontSize: 12,
-              fontWeight: FontWeight.w600,
               color: scheme.error,
             ),
             textAlign: TextAlign.center,
@@ -577,8 +569,8 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
                   customBg: _isPlaying ? scheme.tertiary : null,
                   customFg: _isPlaying ? scheme.onTertiary : null,
                   onPressed: _togglePlayback,
-                  onKeyRight: () => _rerecordFocus.requestFocus(),
-                  onKeyDown: () => _closeFocus.requestFocus(),
+                  onKeyRight: _rerecordFocus.requestFocus,
+                  onKeyDown: _closeFocus.requestFocus,
                 ),
               ),
               const SizedBox(width: 12),
@@ -593,7 +585,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
                 onKeyLeft: () {
                   if (isAudioValid) _playFocus.requestFocus();
                 },
-                onKeyDown: () => _closeFocus.requestFocus(),
+                onKeyDown: _closeFocus.requestFocus,
               ),
             ),
           ],
@@ -613,7 +605,6 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
           height: 40,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: List.generate(barHeights.length, (index) {
               final offset = (index * 0.18) % 1.0;
               final factor = ((progress + offset) % 1.0);

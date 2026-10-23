@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/services/playback_stats_controller.dart';
-import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 
@@ -36,7 +35,6 @@ class TvViewerPanel extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: borderColor,
-          width: 1.0,
         ),
       ),
       child: Column(
@@ -66,8 +64,6 @@ class TvViewerPanel extends StatelessWidget {
   ) {
     final fallbackIndex =
         context.select((PlaybackStatsController s) => s.fallbackIndex);
-    final isPuppeteer =
-        context.select((ChannelProvider s) => s.isPuppeteerEngine);
 
     var displayServerNumber = fallbackIndex + 1;
     if (ch.fallbackUrls.isNotEmpty &&
@@ -109,7 +105,7 @@ class TvViewerPanel extends StatelessWidget {
               icon: MoaiIcons.tvViewerPillPlugin,
               label: ch.pluginTag!.trim(),
             ),
-          if (ch.fallbackUrls.length > 1 && !isPuppeteer)
+          if (ch.fallbackUrls.length > 1)
             TvMetaPill(
               color: scheme.tertiaryContainer,
               foreground: scheme.onTertiaryContainer,

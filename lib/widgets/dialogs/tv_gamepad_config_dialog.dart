@@ -20,7 +20,6 @@ class TvGamepadConfigDialog extends StatefulWidget {
   static Future<void> show(BuildContext context) {
     return showTvGeneralDialog(
       context: context,
-      barrierDismissible: true,
       barrierLabel: 'TvGamepadConfigDialog',
       builder: (dialogContext) => const TvGamepadConfigDialog(),
     );
@@ -196,7 +195,6 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: borderColor,
-              width: 1.0,
             ),
           );
 
@@ -416,7 +414,6 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                             // Fila superior: D-Pad a la izquierda + Sistema (Coin / Start) a la derecha
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 // D-Pad en cruz compacto con squircles
                                 SizedBox(
@@ -529,7 +526,6 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                                     context,
                                     color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
                                     fontSize: 10,
-                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 Text(
@@ -625,7 +621,6 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                 focusNode: _refreshFocus,
                 icon: MoaiIcons.refreshRounded,
                 label: 'gamepad_action_reset'.tr(),
-                variant: TvDialogButtonVariant.neutral,
                 onPressed: _clearTest,
               ),
               TvDialogButton(
@@ -736,7 +731,6 @@ class _SquircleButton extends StatelessWidget {
                             ? Colors.white.withValues(alpha: 0.8)
                             : scheme.onSurfaceVariant.withValues(alpha: 0.7),
                         fontSize: 9,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -781,7 +775,6 @@ class _GamepadDeviceCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: borderColor,
-            width: 1.0,
           ),
         );
 
@@ -849,7 +842,6 @@ class _GamepadDeviceCard extends StatelessWidget {
                     context,
                     color: scheme.onSurface,
                     fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],

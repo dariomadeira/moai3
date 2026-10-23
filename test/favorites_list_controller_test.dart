@@ -10,6 +10,8 @@ Channel _channel(String id, String name) => Channel(
     );
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   test('syncFrom repuebla favoritos cuando llegan los canales', () {
     final controller = FavoritesListController();
 

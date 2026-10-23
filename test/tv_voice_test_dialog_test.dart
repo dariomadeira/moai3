@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/widgets/dialogs/tv_voice_test_dialog.dart';
 
 void main() {
@@ -90,10 +91,10 @@ void main() {
     await tester.pump();
 
     // Now in recording state, should find stop button
-    expect(find.byIcon(Icons.stop_circle_outlined), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.stopCircleOutlined), findsOneWidget);
 
     // Tap stop
-    await tester.tap(find.byIcon(Icons.stop_circle_outlined));
+    await tester.tap(find.byIcon(MoaiIcons.stopCircleOutlined));
     await tester.pumpAndSettle();
 
     // Now should find play button and amplified badge

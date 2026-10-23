@@ -1,7 +1,8 @@
+import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:moai3/config/player_config.dart';
+import 'package:moai3/config/app_info.dart';
 import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/services/update_service.dart';
 import 'package:moai3/state/channel_provider.dart';
@@ -13,10 +14,7 @@ import 'package:moai3/widgets/tv_common/tv_value_chip.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
-enum _AboutItemType {
-  channelsLoaded,
-  checkUpdates,
-}
+enum _AboutItemType { channelsLoaded, checkUpdates }
 
 class SettingsAboutPanel extends StatefulWidget {
   final FocusNode focusNode;
@@ -62,7 +60,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
     });
 
     if (updateInfo != null) {
-      UpdateDialog.show(context, updateInfo);
+      unawaited(UpdateDialog.show(context, updateInfo));
     } else {
       setState(() {
         _statusChip = 'settings_about_up_to_date'.tr();
@@ -82,8 +80,9 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
 
     final String valueText;
     if (channelCount > 0) {
-      valueText =
-          'home_channels_count'.tr(namedArgs: {'count': '$channelCount'});
+      valueText = 'home_channels_count'.tr(
+        namedArgs: {'count': '$channelCount'},
+      );
     } else if (isLoading) {
       valueText = 'settings_about_loading'.tr();
     } else {
@@ -104,12 +103,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
         }
       },
       child: Container(
-        padding: const EdgeInsets.only(
-          left: 4,
-          right: 12,
-          top: 8,
-          bottom: 8,
-        ),
+        padding: const EdgeInsets.only(left: 4, right: 12, top: 8, bottom: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -141,7 +135,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
                       const SizedBox(height: 4),
                       Text(
                         'settings_about_version'.tr(
-                          namedArgs: {'version': PlayerConfig.appVersion},
+                          namedArgs: {'version': AppInfo.version},
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -158,15 +152,10 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
                   if (narrow) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        image,
-                        const SizedBox(height: 8),
-                        meta,
-                      ],
+                      children: [image, const SizedBox(height: 8), meta],
                     );
                   }
                   return Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       image,
                       const SizedBox(width: 16),
@@ -179,8 +168,10 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final targetHeight = (_windowSize * _itemExtent)
-                      .clamp(0.0, constraints.maxHeight);
+                  final targetHeight = (_windowSize * _itemExtent).clamp(
+                    0.0,
+                    constraints.maxHeight,
+                  );
                   return Align(
                     alignment: Alignment.bottomCenter,
                     child: SizedBox(
@@ -197,28 +188,31 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
                           onFocusedGlobalIndex: (idx) {
                             _selectedIndex = idx;
                           },
-                          itemBuilder: (
-                            context,
-                            item,
-                            focusNode,
-                            local,
-                            global,
-                            onKeyUp,
-                            onKeyDown,
-                          ) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: _buildItem(
-                                context: context,
-                                item: item,
-                                valueText: valueText,
-                                scheme: scheme,
-                                focusNode: focusNode,
-                                onKeyUp: onKeyUp,
-                                onKeyDown: onKeyDown,
-                              ),
-                            );
-                          },
+                          itemBuilder:
+                              (
+                                context,
+                                item,
+                                focusNode,
+                                local,
+                                global,
+                                onKeyUp,
+                                onKeyDown,
+                              ) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 4,
+                                  ),
+                                  child: _buildItem(
+                                    context: context,
+                                    item: item,
+                                    valueText: valueText,
+                                    scheme: scheme,
+                                    focusNode: focusNode,
+                                    onKeyUp: onKeyUp,
+                                    onKeyDown: onKeyDown,
+                                  ),
+                                );
+                              },
                         ),
                       ),
                     ),
@@ -281,8 +275,9 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
               final chipBg = isFocused
                   ? scheme.onPrimary.withValues(alpha: 0.18)
                   : scheme.primaryContainer;
-              final chipFg =
-                  isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
+              final chipFg = isFocused
+                  ? scheme.onPrimary
+                  : scheme.onPrimaryContainer;
 
               return Material(
                 color: chipBg,

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/state/watch_party_provider.dart';
-import 'package:moai3/utils/context_extensions.dart';
+import 'package:provider/provider.dart';
 import 'package:moai3/widgets/dialogs/tv_friends_dialog.dart';
 import 'package:moai3/widgets/dialogs/tv_nickname_dialog.dart';
 import 'package:moai3/widgets/dialogs/tv_voice_test_dialog.dart';
@@ -51,7 +51,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        final wp = context.readOptional<WatchPartyProvider>();
+        final wp = context.read<WatchPartyProvider?>();
         if (wp != null && wp.enabled) {
           wp.ensureUserCode();
           wp.fetchNickname(forceRemote: true);
@@ -66,7 +66,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final watchParty = context.watchOptional<WatchPartyProvider>();
+    final watchParty = context.watch<WatchPartyProvider?>();
     final isEnabled = watchParty?.enabled ?? false;
 
     final items = <_SettingsWatchPartyItemType>[
@@ -118,7 +118,6 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
                         child: TvWindowedList<_SettingsWatchPartyItemType>(
                           key: _listKey,
                           items: items,
-                          windowSize: _windowSize,
                           itemExtent: _itemExtent,
                           showScrollDots: true,
                           initialGlobalIndex: _selectedIndex,
@@ -295,7 +294,9 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
       if (newNick != null && newNick.trim().isNotEmpty) {
         try {
           await watchParty.updateNickname(newNick.trim());
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('[SettingsWatchPartyPanel] $e');
+        }
         await watchParty.setEnabled(true);
       }
     } else {
@@ -312,7 +313,6 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
     final newNick = await TvNicknameDialog.show(
       context,
       initialNickname: currentNick,
-      isMandatory: false,
     );
 
     if (newNick != null &&

@@ -37,7 +37,7 @@ class SettingsAgendaSnackDurationRow extends StatelessWidget {
   }
 
   void _selectIndex(int index) {
-    final options = CalendarProvider.snackDurationOptions;
+    const options = CalendarProvider.snackDurationOptions;
     if (index < 0 || index >= options.length) return;
     final next = options[index];
     if (next != selectedSeconds) {
@@ -47,7 +47,7 @@ class SettingsAgendaSnackDurationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final options = CalendarProvider.snackDurationOptions;
+    const options = CalendarProvider.snackDurationOptions;
     final selectedIndex = _selectedIndex;
 
     return TvTile(

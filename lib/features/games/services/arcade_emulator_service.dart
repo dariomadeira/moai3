@@ -1,3 +1,4 @@
+import 'package:moai3/platform/platform_channels.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -36,9 +37,12 @@ class GamepadAssignment {
 }
 
 /// Servicio singleton/provider para controlar el motor emulador nativo FBNeo vía MethodChannel.
-class ArcadeEmulatorService extends ChangeNotifier {
+class ArcadeEmulatorService {
   static const MethodChannel _channel =
-      MethodChannel('com.infomak.moai/arcade_channel');
+      PlatformChannels.arcade;
+
+  /// Retardo de input del lockstep de netplay (SPEC-38).
+  static const int netplayInputDelayFrames = 3;
 
   final StreamController<GamepadAssignment> _onGamepadAssignedController =
       StreamController<GamepadAssignment>.broadcast();
@@ -48,17 +52,7 @@ class ArcadeEmulatorService extends ChangeNotifier {
   Stream<GamepadAssignment> get onGamepadAssigned => _onGamepadAssignedController.stream;
   Stream<void> get onRequestExit => _onRequestExitController.stream;
 
-  bool _isInitialized = false;
-  bool _isRunning = false;
-  bool _isPaused = false;
-  String? _currentRomPath;
   int _currentInputMask = 0;
-
-  bool get isInitialized => _isInitialized;
-  bool get isRunning => _isRunning;
-  bool get isPaused => _isPaused;
-  String? get currentRomPath => _currentRomPath;
-  int get currentInputMask => _currentInputMask;
 
   ArcadeEmulatorService() {
     _channel.setMethodCallHandler(_handleNativeMethodCall);
@@ -66,9 +60,6 @@ class ArcadeEmulatorService extends ChangeNotifier {
 
   Future<dynamic> _handleNativeMethodCall(MethodCall call) async {
     switch (call.method) {
-      case 'onFrameRendered':
-        notifyListeners();
-        break;
       case 'onGamepadAssigned':
         int player = 0;
         String? deviceName;
@@ -110,8 +101,6 @@ class ArcadeEmulatorService extends ChangeNotifier {
     try {
       final bool result =
           await _channel.invokeMethod('initializeEmulator') ?? false;
-      _isInitialized = result;
-      notifyListeners();
       return result;
     } on PlatformException catch (e) {
       if (kDebugMode) {
@@ -139,12 +128,6 @@ class ArcadeEmulatorService extends ChangeNotifier {
     try {
       final bool result =
           await _channel.invokeMethod('loadRom', {'path': path}) ?? false;
-      if (result) {
-        _currentRomPath = path;
-        _isRunning = true;
-        _isPaused = false;
-      }
-      notifyListeners();
       return result;
     } on PlatformException catch (e) {
       if (kDebugMode) {
@@ -171,7 +154,7 @@ class ArcadeEmulatorService extends ChangeNotifier {
 
   Future<void> netplayEnable({
     required bool enabled,
-    int delayFrames = 3,
+    int delayFrames = netplayInputDelayFrames,
     bool isHost = true,
   }) async {
     try {
@@ -220,8 +203,6 @@ class ArcadeEmulatorService extends ChangeNotifier {
   Future<void> pause() async {
     try {
       await _channel.invokeMethod('pause');
-      _isPaused = true;
-      notifyListeners();
     } on PlatformException catch (_) {}
   }
 
@@ -229,8 +210,6 @@ class ArcadeEmulatorService extends ChangeNotifier {
   Future<void> resume() async {
     try {
       await _channel.invokeMethod('resume');
-      _isPaused = false;
-      notifyListeners();
     } on PlatformException catch (_) {}
   }
 
@@ -238,7 +217,6 @@ class ArcadeEmulatorService extends ChangeNotifier {
   Future<void> reset() async {
     try {
       await _channel.invokeMethod('reset');
-      notifyListeners();
     } on PlatformException catch (_) {}
   }
 
@@ -246,17 +224,12 @@ class ArcadeEmulatorService extends ChangeNotifier {
   Future<void> stop() async {
     try {
       await _channel.invokeMethod('stop');
-      _isRunning = false;
-      _isPaused = false;
-      _currentRomPath = null;
-      notifyListeners();
     } on PlatformException catch (_) {}
   }
 
-  @override
   void dispose() {
+    _channel.setMethodCallHandler(null);
     _onGamepadAssignedController.close();
     _onRequestExitController.close();
-    super.dispose();
   }
 }

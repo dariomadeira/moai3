@@ -72,7 +72,7 @@ class SportsScheduleService {
           competition: _cleanCompetitionName(catName, subId),
           startDateTime: dt,
           status: isExplicitLive ? CalendarEventStatus.live : null,
-          sessionType: 'Partido',
+          sessionType: 'calendar_session_match',
           broadcaster: _suggestBroadcaster(subId, rawTitle),
           channelHints: channelHints,
         ));

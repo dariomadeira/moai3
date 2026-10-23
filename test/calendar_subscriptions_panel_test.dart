@@ -52,8 +52,8 @@ void main() {
 
     // Verify TvSettingsSwitchRow instances are rendered for default subscriptions
     expect(find.byType(TvSettingsSwitchRow), findsWidgets);
-    expect(find.text('Fórmula 1'), findsOneWidget);
-    expect(find.text('Fútbol Argentino (LPF)'), findsOneWidget);
+    expect(find.text('calendar_sub_f1_name'), findsOneWidget);
+    expect(find.text('calendar_sub_lpf_name'), findsOneWidget);
 
     // Verify Switches are present
     expect(find.byType(Switch), findsWidgets);
@@ -80,7 +80,7 @@ void main() {
     expect(f1Initial, isFalse);
 
     // Tap on the first TvSettingsSwitchRow (F1)
-    await tester.tap(find.text('Fórmula 1'));
+    await tester.tap(find.text('calendar_sub_f1_name'));
     await tester.pump();
 
     final f1After = calendarProvider.subscriptions.firstWhere((s) => s.id == 'f1').isSubscribed;

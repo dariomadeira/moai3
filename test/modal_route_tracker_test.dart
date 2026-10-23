@@ -4,9 +4,7 @@ import 'package:moai3/services/modal_route_tracker.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 
 void main() {
-  setUp(() {
-    ModalRouteTracker.instance.resetForTesting();
-  });
+  setUp(ModalRouteTracker.instance.resetForTesting);
 
   group('ModalRouteTracker Unit & Widget Tests', () {
     test('inicia sin modales activos', () {

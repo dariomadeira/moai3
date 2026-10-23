@@ -18,6 +18,7 @@ class ModalRouteTracker extends NavigatorObserver with ChangeNotifier {
   bool get hasActiveModal => _activeModalCount > 0 || _manualPauseCount > 0;
 
   /// Cantidad actual de modales activos en la pila de navegación.
+  @visibleForTesting
   int get activeModalCount => _activeModalCount;
 
   /// Pausa manualmente la cola de notificaciones (útil para flujos críticos).

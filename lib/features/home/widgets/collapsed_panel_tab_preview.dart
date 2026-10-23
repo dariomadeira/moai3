@@ -39,7 +39,6 @@ class CollapsedPanelTabPreview extends StatelessWidget {
                 context,
                 color: textColor,
                 fontSize: 12,
-                fontWeight: FontWeight.w700,
                 letterSpacing: 1.0,
               ),
             ),

@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:moai3/services/app_preferences_service.dart';
 
 /// Gestor de caché persistente optimizado para logos de canales de TV.
 /// 
@@ -19,12 +21,18 @@ class MoaiImageCacheManager {
     ),
   );
 
-  /// Limpia de forma silenciosa la caché antigua que contenía imágenes con deformación forzada.
-  static Future<void> clearLegacyCache() async {
+  static const String _legacyClearedPref = 'moai_channel_logos_v2_cleared';
+
+  /// Borra una sola vez la caché v2 (logos deformados). TODO(SPEC-50 §1.7):
+  /// quitar en la release siguiente a la que la incluye.
+  static Future<void> clearLegacyCacheOnce(AppPreferences prefs) async {
+    if (prefs.readPreferenceBool(_legacyClearedPref)) return;
     try {
-      final legacy = CacheManager(Config(_legacyKey));
-      await legacy.emptyCache();
-    } catch (_) {}
+      await CacheManager(Config(_legacyKey)).emptyCache();
+      await prefs.saveBool(_legacyClearedPref, true);
+    } catch (e) {
+      debugPrint('[MoaiImageCacheManager] No se pudo limpiar la caché v2: $e');
+    }
   }
 
   /// Genera una clave de caché limpia para evitar que parámetros de consulta dinámicos

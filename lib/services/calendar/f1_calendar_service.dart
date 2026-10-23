@@ -71,7 +71,7 @@ class F1CalendarService {
         id: 'f1_r_${round}_fp1',
         title: '$raceName — ${'f1_session_fp1'.tr()}',
         competition: compName,
-        sessionType: 'f1_type_p1'.tr(),
+        sessionType: 'f1_type_p1',
         duration: const Duration(hours: 1),
         offset: sessionOffset,
       );
@@ -86,8 +86,8 @@ class F1CalendarService {
             : '$raceName — ${'f1_session_fp2'.tr()}',
         competition: compName,
         sessionType: r['SprintQualifying'] != null
-            ? 'f1_type_sprint_shootout'.tr()
-            : 'f1_type_p2'.tr(),
+            ? 'f1_type_sprint_shootout'
+            : 'f1_type_p2',
         duration: const Duration(minutes: 45),
         offset: sessionOffset,
       );
@@ -99,7 +99,7 @@ class F1CalendarService {
         id: 'f1_r_${round}_fp3',
         title: '$raceName — ${'f1_session_fp3'.tr()}',
         competition: compName,
-        sessionType: 'f1_type_p3'.tr(),
+        sessionType: 'f1_type_p3',
         duration: const Duration(hours: 1),
         offset: sessionOffset,
       );
@@ -111,7 +111,7 @@ class F1CalendarService {
         id: 'f1_r_${round}_sprint',
         title: '$raceName — ${'f1_session_sprint'.tr()}',
         competition: compName,
-        sessionType: 'f1_type_sprint'.tr(),
+        sessionType: 'f1_type_sprint',
         duration: const Duration(minutes: 45),
         offset: sessionOffset,
       );
@@ -123,7 +123,7 @@ class F1CalendarService {
         id: 'f1_r_${round}_qualy',
         title: '$raceName — ${'f1_session_qualy'.tr()}',
         competition: compName,
-        sessionType: 'f1_type_qualy'.tr(),
+        sessionType: 'f1_type_qualy',
         duration: const Duration(hours: 1),
         offset: sessionOffset,
       );
@@ -143,7 +143,7 @@ class F1CalendarService {
             title: '$raceName — ${'f1_session_gp'.tr()}',
             competition: compName,
             startDateTime: dt,
-            sessionType: 'f1_type_race'.tr(),
+            sessionType: 'f1_type_race',
             broadcaster: 'Fox Sports / Disney+',
             status: _calculateStatus(dt, const Duration(hours: 2)),
           ));
@@ -234,7 +234,7 @@ class F1CalendarService {
         title: '$raceName — ${'f1_session_practices'.tr()}',
         competition: 'f1_comp_circuit'.tr(namedArgs: {'circuit': circuit}),
         startDateTime: fpDate,
-        sessionType: 'f1_type_practices'.tr(),
+        sessionType: 'f1_type_practices',
         broadcaster: 'Fox Sports / Disney+',
         status: _calculateStatus(fpDate, const Duration(hours: 2)),
       ));
@@ -244,7 +244,7 @@ class F1CalendarService {
         title: '$raceName — ${'f1_session_qualy'.tr()}',
         competition: 'f1_comp_circuit'.tr(namedArgs: {'circuit': circuit}),
         startDateTime: qualyDate,
-        sessionType: 'f1_type_qualy'.tr(),
+        sessionType: 'f1_type_qualy',
         broadcaster: 'Fox Sports / Disney+',
         status: _calculateStatus(qualyDate, const Duration(hours: 1)),
       ));
@@ -254,7 +254,7 @@ class F1CalendarService {
         title: '$raceName — ${'f1_session_gp'.tr()}',
         competition: 'f1_comp_circuit'.tr(namedArgs: {'circuit': circuit}),
         startDateTime: raceDate,
-        sessionType: 'f1_type_race'.tr(),
+        sessionType: 'f1_type_race',
         broadcaster: 'Fox Sports / Disney+',
         status: _calculateStatus(raceDate, const Duration(hours: 2)),
       ));
@@ -266,8 +266,8 @@ class F1CalendarService {
       raceName: 'Gran Premio de España',
       circuit: 'Madring',
       fpDate: ArgentinaTime.fromCivil(2026, 9, 11, 8, 30),
-      qualyDate: ArgentinaTime.fromCivil(2026, 9, 12, 11, 0),
-      raceDate: ArgentinaTime.fromCivil(2026, 9, 13, 10, 0),
+      qualyDate: ArgentinaTime.fromCivil(2026, 9, 12, 11),
+      raceDate: ArgentinaTime.fromCivil(2026, 9, 13, 10),
     );
 
     // Fin de semana 18-20 Sep 2026: NO HAY F1
@@ -278,8 +278,8 @@ class F1CalendarService {
       raceName: 'Gran Premio de Azerbaiyán',
       circuit: 'Baku City Circuit',
       fpDate: ArgentinaTime.fromCivil(2026, 9, 25, 6, 30),
-      qualyDate: ArgentinaTime.fromCivil(2026, 9, 26, 9, 0),
-      raceDate: ArgentinaTime.fromCivil(2026, 9, 27, 8, 0),
+      qualyDate: ArgentinaTime.fromCivil(2026, 9, 26, 9),
+      raceDate: ArgentinaTime.fromCivil(2026, 9, 27, 8),
     );
 
     // GP 16: Bahrein / Malasia (4 Oct 2026)
@@ -288,8 +288,8 @@ class F1CalendarService {
       raceName: 'Gran Premio de Bahrein',
       circuit: 'Sepang Circuit',
       fpDate: ArgentinaTime.fromCivil(2026, 10, 2, 4, 30),
-      qualyDate: ArgentinaTime.fromCivil(2026, 10, 3, 5, 0),
-      raceDate: ArgentinaTime.fromCivil(2026, 10, 4, 4, 0),
+      qualyDate: ArgentinaTime.fromCivil(2026, 10, 3, 5),
+      raceDate: ArgentinaTime.fromCivil(2026, 10, 4, 4),
     );
 
     // GP 17: Singapur (11 Oct 2026)
@@ -298,8 +298,8 @@ class F1CalendarService {
       raceName: 'Gran Premio de Singapur',
       circuit: 'Marina Bay Street Circuit',
       fpDate: ArgentinaTime.fromCivil(2026, 10, 9, 6, 30),
-      qualyDate: ArgentinaTime.fromCivil(2026, 10, 10, 10, 0),
-      raceDate: ArgentinaTime.fromCivil(2026, 10, 11, 9, 0),
+      qualyDate: ArgentinaTime.fromCivil(2026, 10, 10, 10),
+      raceDate: ArgentinaTime.fromCivil(2026, 10, 11, 9),
     );
 
     // GP 18: Estados Unidos (25 Oct 2026)
@@ -308,8 +308,8 @@ class F1CalendarService {
       raceName: 'Gran Premio de Estados Unidos',
       circuit: 'Circuit of the Americas',
       fpDate: ArgentinaTime.fromCivil(2026, 10, 23, 14, 30),
-      qualyDate: ArgentinaTime.fromCivil(2026, 10, 24, 19, 0),
-      raceDate: ArgentinaTime.fromCivil(2026, 10, 25, 16, 0),
+      qualyDate: ArgentinaTime.fromCivil(2026, 10, 24, 19),
+      raceDate: ArgentinaTime.fromCivil(2026, 10, 25, 16),
     );
 
     return events;

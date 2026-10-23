@@ -101,7 +101,6 @@ class MovieProgressService {
       contentId: contentId,
       positionSeconds: posSec,
       totalDurationSeconds: totalSec,
-      isCompleted: false,
       lastWatchedAt: now,
     );
     final prefs = await SharedPreferences.getInstance();

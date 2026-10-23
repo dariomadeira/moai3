@@ -450,7 +450,6 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
       final activeDot = activeDotIndex;
 
       content = Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(child: grid),
           const SizedBox(width: 10),

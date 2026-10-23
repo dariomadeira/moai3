@@ -12,10 +12,10 @@ class CategoryColumn {
   });
 
   factory CategoryColumn.fromJson(Map<String, dynamic> json) {
-    var rawAssetList = json['assetList'] as List? ?? [];
-    List<MovieItem> movieList = rawAssetList
+    final rawAssetList = json['assetList'] as List? ?? [];
+    final List<MovieItem> movieList = rawAssetList
         .whereType<Map<String, dynamic>>()
-        .map((e) => MovieItem.fromJson(e))
+        .map(MovieItem.fromJson)
         .toList();
 
     final rawName =
@@ -221,7 +221,7 @@ class MovieItem {
     String? foundPoster;
     String? foundBackdrop;
     final List<String> collectedBackdrops = [];
-    var rawPosterList = json['posterList'] as List? ?? [];
+    final rawPosterList = json['posterList'] as List? ?? [];
     if (rawPosterList.isNotEmpty) {
       String? bestHighResIcon;
       String? bestStandardIcon;
@@ -438,7 +438,7 @@ class VodQualityOption {
   factory VodQualityOption.fromJson(Map<String, dynamic> json) {
     final list = (json['movieList'] as List? ?? [])
         .whereType<Map<String, dynamic>>()
-        .map((e) => VodMediaSource.fromJson(e))
+        .map(VodMediaSource.fromJson)
         .where((s) => s.mediaContentId.isNotEmpty)
         .toList();
     return VodQualityOption(
@@ -539,13 +539,13 @@ class VodPlayInfo {
 
     final rawQualities = (ep0['totalMovieList'] as List? ?? [])
         .whereType<Map<String, dynamic>>()
-        .map((e) => VodQualityOption.fromJson(e))
+        .map(VodQualityOption.fromJson)
         .where((q) => q.sources.isNotEmpty)
         .toList();
 
     final rawSubtitles = (ep0['subtitleList'] as List? ?? [])
         .whereType<Map<String, dynamic>>()
-        .map((e) => VodSubtitleOption.fromJson(e))
+        .map(VodSubtitleOption.fromJson)
         .where((s) => s.url.isNotEmpty)
         .toList();
 

@@ -18,6 +18,8 @@ Channel _ch({
     );
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('ChannelBrowserController', () {
     test('deriva países y selección en cascada', () {
       final browser = ChannelBrowserController();

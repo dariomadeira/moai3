@@ -1,3 +1,5 @@
+import 'package:moai3/platform/platform_channels.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -281,9 +283,7 @@ class MoiamovApiService {
     }
   }
 
-  static const MethodChannel _deviceChannel = MethodChannel(
-    'com.infomak.moai.tv/device',
-  );
+  static const MethodChannel _deviceChannel = PlatformChannels.device;
 
   /// Recolecta la huella de dispositivo real (mismo concepto que C1446c0 del
   /// APK) para registrarla en v3/snToken. Sin esto el server no emite token.
@@ -652,7 +652,7 @@ class MoiamovApiService {
               decoded['recommendList'] is List) {
             final list = (decoded['recommendList'] as List)
                 .whereType<Map<String, dynamic>>()
-                .map((e) => CategoryColumn.fromJson(e))
+                .map(CategoryColumn.fromJson)
                 .where((cat) => cat.movies.isNotEmpty)
                 .toList();
 
@@ -785,7 +785,7 @@ class MoiamovApiService {
             if (rawList != null) {
               final list = rawList
                   .whereType<Map<String, dynamic>>()
-                  .map((e) => CategoryColumn.fromJson(e))
+                  .map(CategoryColumn.fromJson)
                   .where((cat) => cat.movies.isNotEmpty)
                   .toList();
 
@@ -867,7 +867,7 @@ class MoiamovApiService {
     debugPrint(
       '🚀 [SYNC ALL] Iniciando sincronización integral de catálogo...',
     );
-    await syncCatalog(section: 'masnew_movies', timeout: timeout);
+    await syncCatalog(timeout: timeout);
     await syncCatalog(section: 'masnew_featured', timeout: timeout);
     await syncCatalog(section: 'masnew_series', timeout: timeout);
   }
@@ -979,7 +979,6 @@ class MoiamovApiService {
     return CatalogResult(
       categories: [],
       isFromNetwork: false,
-      source: CatalogSource.assetBundle,
       statusMessage: 'Sin catálogo de $sectionLabel.',
     );
   }
@@ -1002,7 +1001,7 @@ class MoiamovApiService {
     }
     final list = (decoded['recommendList'] as List)
         .whereType<Map<String, dynamic>>()
-        .map((e) => CategoryColumn.fromJson(e))
+        .map(CategoryColumn.fromJson)
         .where((cat) => cat.movies.isNotEmpty)
         .toList();
     if (list.isEmpty) return null;
@@ -1031,7 +1030,7 @@ class MoiamovApiService {
       if (data is Map<String, dynamic> && data['recommendList'] is List) {
         final list = (data['recommendList'] as List)
             .whereType<Map<String, dynamic>>()
-            .map((e) => CategoryColumn.fromJson(e))
+            .map(CategoryColumn.fromJson)
             .where((cat) => cat.movies.isNotEmpty)
             .toList();
 
@@ -1040,7 +1039,6 @@ class MoiamovApiService {
         final result = CatalogResult(
           categories: list,
           isFromNetwork: false,
-          source: CatalogSource.assetBundle,
           statusMessage:
               '$sectionLabel HARDCODEADOS ($total títulos en ${list.length} categorías)',
         );
@@ -1054,7 +1052,6 @@ class MoiamovApiService {
     return CatalogResult(
       categories: [],
       isFromNetwork: false,
-      source: CatalogSource.assetBundle,
       statusMessage: 'No se pudo cargar el catálogo de $sectionLabel.',
     );
   }
@@ -1395,8 +1392,8 @@ class MoiamovApiService {
           _currentSnField = _md5Hex('$snToken$kMoiamovSnSalt');
           _activeSnField = _currentSnField;
           final prefs = await SharedPreferences.getInstance();
-          prefs.setString('moiamov_sn_field', _currentSnField);
-          prefs.setString('moiamov_device_mac', _deviceMac);
+          unawaited(prefs.setString('moiamov_sn_field', _currentSnField));
+          unawaited(prefs.setString('moiamov_device_mac', _deviceMac));
           logLine(
             '✅ snField vinculado con MAC ($_deviceMac): ${_short(_currentSnField, 16)}',
           );
@@ -1529,7 +1526,6 @@ class MoiamovApiService {
               communicationKey: effectivePortalKey,
               params: playParams,
               androidId: androidId,
-              titanPort: -1,
             );
 
             await TitanRangerService.setEntries(entries);
@@ -1565,7 +1561,6 @@ class MoiamovApiService {
               '🛡️ [Titan Ranger] Despachando PrepareProgram para: "${movie.name}"...',
             );
             final statusResult = await TitanRangerService.prepareProgram(
-              instanceId: 0,
               // La app oficial pasa program.getName() (ID del programa) como
               // "name" y program.getBuss() ("vod") como "extra".
               name: programPayload['name']!.toString(),

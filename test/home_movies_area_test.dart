@@ -14,8 +14,7 @@ class _FakeFeaturedMoviesProvider extends FeaturedMoviesProvider {
   _FakeFeaturedMoviesProvider(
     this.mockCategories, {
     this.mockLoadedOnce = true,
-    this.mockIsLoading = false,
-  });
+  }) : mockIsLoading = false;
 
   @override
   List<CategoryColumn> get categories => mockCategories;
@@ -128,7 +127,6 @@ void main() {
       final provider = _FakeFeaturedMoviesProvider(
         [],
         mockLoadedOnce: false,
-        mockIsLoading: false,
       );
 
       await tester.pumpWidget(
@@ -157,8 +155,6 @@ void main() {
         (tester) async {
       final provider = _FakeFeaturedMoviesProvider(
         [],
-        mockLoadedOnce: true,
-        mockIsLoading: false,
       );
 
       await tester.pumpWidget(
@@ -186,8 +182,6 @@ void main() {
         (tester) async {
       final provider = _FakeFeaturedMoviesProvider(
         [],
-        mockLoadedOnce: true,
-        mockIsLoading: false,
       );
 
       await tester.pumpWidget(

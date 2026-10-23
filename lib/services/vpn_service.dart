@@ -1,3 +1,4 @@
+import 'package:moai3/platform/platform_channels.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -38,7 +39,7 @@ class VpnService {
   bool? _androidVpnPermissionGranted;
 
   static const MethodChannel _vpnPermissionChannel =
-      MethodChannel('com.infomak.moai.tv/vpn_permission');
+      PlatformChannels.vpnPermission;
 
   bool _permissionChannelWired = false;
 
@@ -297,17 +298,16 @@ class VpnService {
     try {
       // Proton/MX: setenv CLIENT_CERT 0 — sin certificado de cliente.
       // Si hace falta permiso, el plugin guarda config y abre el diálogo del SO.
-      _engine!
+      unawaited(_engine!
           .connect(
             ovpnConfig,
             'Moai',
             username: username,
             password: password,
-            certIsRequired: false,
           )
           .catchError((e) {
             debugPrint('❌ [VPN] Excepción en invocación connect: $e');
-          });
+          }));
     } catch (e) {
       debugPrint('❌ [VPN] Excepción sincrónica al invocar connect: $e');
       permissionDeadline.cancel();
@@ -416,7 +416,7 @@ class VpnService {
 
       if (_currentStage == VPNStage.disconnected) {
         timer.cancel();
-        sub.cancel();
+        unawaited(sub.cancel());
         return;
       }
 

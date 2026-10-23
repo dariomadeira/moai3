@@ -3,6 +3,8 @@ import 'package:moai3/features/groups/controllers/groups_browser_controller.dart
 import 'package:moai3/models/channel_group.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('GroupsBrowserController', () {
     late GroupsBrowserController controller;
 

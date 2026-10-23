@@ -10,7 +10,6 @@ import 'package:moai3/features/loading/screens/loading_screen.dart';
 import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/modal_route_tracker.dart';
 import 'package:moai3/services/supabase_presence_service.dart';
-import 'package:moai3/state/tv_settings_provider.dart';
 
 CustomTransitionPage<void> _fadePage({
   required GoRouterState state,
@@ -27,22 +26,15 @@ CustomTransitionPage<void> _fadePage({
 }
 
 /// Router de moai3 con control de acceso, presencia y arranque (SPEC-22).
-GoRouter createRouter(
-  TvSettingsProvider tvSettingsProvider, {
+GoRouter createRouter({
   required DeviceIdentityService identityService,
   required SupabasePresenceService presenceService,
 }) {
   return GoRouter(
     observers: [ModalRouteTracker.instance],
     initialLocation: '/loading',
-    refreshListenable: tvSettingsProvider,
-    redirect: (context, state) {
-      final loc = state.matchedLocation;
-      if (loc == '/' || loc == '/boot' || loc == '/server') {
-        return '/loading';
-      }
-      return null;
-    },
+    redirect: (context, state) =>
+        state.matchedLocation == '/' ? '/loading' : null,
     routes: [
       GoRoute(
         path: '/loading',

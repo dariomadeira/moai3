@@ -123,13 +123,12 @@ class AlphabetJumpPanel extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final maxH = constraints.maxHeight;
-          final extent = TvLayoutConstants.alphabetItemHeight;
+          const extent = TvLayoutConstants.alphabetItemHeight;
           final computedWindowSize =
               (maxH > 0 && maxH.isFinite) ? (maxH / extent).floor().clamp(4, 30) : 10;
 
           // Ventana según alto disponible; si hay menos letras, centra el bloque.
           return Align(
-            alignment: Alignment.center,
             child: TvWindowedList<String>(
               items: items,
               windowSize: computedWindowSize,

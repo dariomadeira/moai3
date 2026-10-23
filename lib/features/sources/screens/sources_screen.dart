@@ -129,7 +129,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
   void _focusPresetList() {
     if (_presetPlugins.isEmpty) return;
     final index = _selectedPresetIndex.clamp(0, _presetPlugins.length - 1);
-    _presetsListKey.currentState?.ensureVisible(index, requestFocus: true);
+    _presetsListKey.currentState?.ensureVisible(index);
   }
 
   void _resyncFocus(int sourceCount) {
@@ -212,15 +212,14 @@ class _SourcesScreenState extends State<SourcesScreen> {
                     SizedBox(
                       width: 54,
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           const SizedBox(height: 9),
                           TvBackPill(
                             focusNode: _backFocusNode,
-                            onKeyRight: () => _urlFocus.requestFocus(),
+                            onKeyRight: _urlFocus.requestFocus,
                             onKeyDown: hasSources
                                 ? () => _tileFocuses.first.requestFocus()
-                                : () => _emptyFocusNode.requestFocus(),
+                                : _emptyFocusNode.requestFocus,
                           ),
                           const Spacer(),
                         ],
@@ -258,7 +257,6 @@ class _SourcesScreenState extends State<SourcesScreen> {
                                           alpha: 0.7,
                                         ),
                                         fontSize: 12,
-                                        fontWeight: FontWeight.w700,
                                         letterSpacing: 1.0,
                                       ),
                                     ),
@@ -282,8 +280,6 @@ class _SourcesScreenState extends State<SourcesScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
                                     children: [
                                       Expanded(
                                         child: TvPanelHeader(
@@ -377,7 +373,6 @@ class _SourcesScreenState extends State<SourcesScreen> {
     final hasSources = controller.sources.isNotEmpty;
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: TvTextField(
@@ -385,16 +380,15 @@ class _SourcesScreenState extends State<SourcesScreen> {
             focusNode: _urlFocus,
             label: 'sources_url_label'.tr(),
             hint: 'sources_url_hint'.tr(),
-            keyboardType: TvKeyboardType.text,
             doneLabel: 'sources_install'.tr(),
             leadingIcon: MoaiIcons.tvSourcesUrlInput,
-            onSubmitted: (val) => _install(val),
-            onFocusLeft: () => _backFocusNode.requestFocus(),
-            onFocusRight: () => _installFocus.requestFocus(),
-            onFocusUp: () => _backFocusNode.requestFocus(),
+            onSubmitted: _install,
+            onFocusLeft: _backFocusNode.requestFocus,
+            onFocusRight: _installFocus.requestFocus,
+            onFocusUp: _backFocusNode.requestFocus,
             onFocusDown: hasSources
                 ? () => _tileFocuses.first.requestFocus()
-                : () => _emptyFocusNode.requestFocus(),
+                : _emptyFocusNode.requestFocus,
           ),
         ),
         const SizedBox(width: 10),
@@ -414,7 +408,6 @@ class _SourcesScreenState extends State<SourcesScreen> {
                       context,
                       title: 'sources_url_label'.tr(),
                       initialValue: text.isEmpty ? 'https://' : text,
-                      keyboardType: TvKeyboardType.text,
                       hint: 'sources_url_hint'.tr(),
                       doneLabel: 'sources_install'.tr(),
                     ).then((val) {
@@ -433,12 +426,12 @@ class _SourcesScreenState extends State<SourcesScreen> {
                   _urlController.text = _arUrl;
                   _install(_arUrl);
                 },
-          onArrowLeft: () => _urlFocus.requestFocus(),
+          onArrowLeft: _urlFocus.requestFocus,
           onArrowRight: _focusPresetList,
-          onArrowUp: () => _backFocusNode.requestFocus(),
+          onArrowUp: _backFocusNode.requestFocus,
           onArrowDown: hasSources
               ? () => _tileFocuses.first.requestFocus()
-              : () => _emptyFocusNode.requestFocus(),
+              : _emptyFocusNode.requestFocus,
         ),
       ],
     );
@@ -483,8 +476,8 @@ class _SourcesScreenState extends State<SourcesScreen> {
                         focusNode: _emptyFocusNode,
                         icon: MoaiIcons.extensionOffOutlined,
                         message: 'sources_empty'.tr(),
-                        onFocusLeft: () => _backFocusNode.requestFocus(),
-                        onFocusUp: () => _urlFocus.requestFocus(),
+                        onFocusLeft: _backFocusNode.requestFocus,
+                        onFocusUp: _urlFocus.requestFocus,
                         onFocusRight: _focusPresetList,
                       )
                     : LayoutBuilder(
@@ -506,8 +499,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                               onFocusedGlobalIndex: (idx) {
                                 _selectedInstalledIndex = idx;
                               },
-                              onFocusUpFromFirst: () =>
-                                  _urlFocus.requestFocus(),
+                              onFocusUpFromFirst: _urlFocus.requestFocus,
                               itemBuilder: (
                                 context,
                                 source,
@@ -528,8 +520,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                                     source: source,
                                     updateFocus: updateNode,
                                     removeFocus: removeNode,
-                                    onUpdateKeyLeft: () =>
-                                        _backFocusNode.requestFocus(),
+                                    onUpdateKeyLeft: _backFocusNode.requestFocus,
                                     onUpdateKeyUp: onKeyUp,
                                     onUpdateKeyDown: onKeyDown,
                                     onRemoveKeyUp: () {
@@ -593,8 +584,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                         onFocusedGlobalIndex: (idx) {
                           _selectedPresetIndex = idx;
                         },
-                        onFocusUpFromFirst: () =>
-                            _installFocus.requestFocus(),
+                        onFocusUpFromFirst: _installFocus.requestFocus,
                         itemBuilder: (
                           context,
                           preset,

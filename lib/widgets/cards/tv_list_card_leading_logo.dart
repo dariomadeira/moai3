@@ -135,8 +135,6 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
       if (isSvg) {
         logoContent = SafeNetworkSvg(
           url: cleanUrl,
-          fit: BoxFit.contain,
-          alignment: Alignment.center,
           headers: const {
             'User-Agent': 'Mozilla/5.0 (Linux; Android 10) MoaiTV/1.0',
           },
@@ -152,13 +150,10 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
           cacheKey: MoaiImageCacheManager.cleanCacheKey(cleanUrl),
           cacheManager: MoaiImageCacheManager.instance,
           fit: BoxFit.contain,
-          alignment: Alignment.center,
-          memCacheWidth: 120,
           memCacheHeight: 120,
           fadeInDuration: const Duration(milliseconds: 220),
           fadeOutDuration: const Duration(milliseconds: 180),
           fadeInCurve: Curves.easeOutCubic,
-          fadeOutCurve: Curves.easeOut,
           filterQuality: FilterQuality.medium,
           httpHeaders: const {
             'User-Agent': 'Mozilla/5.0 (Linux; Android 10) MoaiTV/1.0',
@@ -173,8 +168,6 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
             return Image(
               image: imageProvider,
               fit: BoxFit.contain,
-              alignment: Alignment.center,
-              filterQuality: FilterQuality.medium,
             );
           },
         );
@@ -183,8 +176,6 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
       logoContent = Image.asset(
         cleanUrl,
         fit: BoxFit.contain,
-        alignment: Alignment.center,
-        filterQuality: FilterQuality.medium,
         errorBuilder: (context, error, stackTrace) {
           _report(false);
           return errorPlaceholder;

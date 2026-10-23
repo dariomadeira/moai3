@@ -32,6 +32,7 @@ import 'package:moai3/focus/tv_intents.dart';
 import 'package:moai3/layout/tv_panel_layout.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/models/channel_group.dart';
+import 'package:moai3/services/modal_route_tracker.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
@@ -140,7 +141,8 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
       _joinedNotificationsSubscription?.cancel();
       _joinedNotificationsSubscription = wp.joinedChannelNotificationsStream
           .listen((friendName) {
-            if (!mounted) return;
+            // Aviso de segundo plano: no se muestra sobre un diálogo ni en Arcade.
+            if (!mounted || ModalRouteTracker.instance.hasActiveModal) return;
             MoaiSnackBar.show(
               context,
               message: 'watch_party_friend_joined'.tr(
@@ -492,7 +494,13 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     );
   }
 
-  bool get isPlayerFullScreen => _playerOverlay.isFullScreen;
+  /// Error de carga de plugins traducido, o `null` si no hubo error (SPEC-50 §2.1).
+  String? _channelLoadErrorMessage() {
+    final provider = _channelProvider;
+    final key = provider?.channelLoadError;
+    if (provider == null || key == null) return null;
+    return key.tr(namedArgs: provider.channelLoadErrorArgs);
+  }
 
   /// Back del D-pad / sistema. `true` si se consumió (no salir de la app).
   bool handleBack() {
@@ -589,8 +597,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     final channel =
         (_channelProvider ?? context.read<ChannelProvider>()).selectedChannel;
     if (channel != null && channel.isAdult) {
-      if (ChannelPlaybackHelpers.playableUrls(channel).length > 1 &&
-          !(_channelProvider?.isPuppeteerEngine ?? false)) {
+      if (ChannelPlaybackHelpers.playableUrls(channel).length > 1) {
         _serverSkipFocus.requestFocus();
       } else {
         _focusActiveContent();
@@ -765,6 +772,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
           onLongPress: () =>
               _activateAlphabet(TvPanelLayout.countryPanelIndex(showTvLog)),
           onFocusUp: _focusCurrentTab,
+          emptyMessage: _channelLoadErrorMessage(),
         ),
       );
     }
@@ -1037,15 +1045,11 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     final showTvLog = context.select((TvSettingsProvider s) => s.showTvLog);
     final channel = context.select((ChannelProvider s) => s.selectedChannel);
     final allChannels = context.select((ChannelProvider s) => s.allChannels);
-    final isPuppeteer = context.select(
-      (ChannelProvider s) => s.isPuppeteerEngine,
-    );
 
     final favChannels = _favorites.favoriteChannels;
     final showServerSkip =
         channel != null &&
-        ChannelPlaybackHelpers.playableUrls(channel).length > 1 &&
-        !isPuppeteer;
+        ChannelPlaybackHelpers.playableUrls(channel).length > 1;
 
     final panelCount = TvPanelLayout.panelCount(showTvLog);
     final active = _activePanelIndex.clamp(0, panelCount - 1);
@@ -1154,7 +1158,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                                       _exploreTabFocus.requestFocus();
                                     }
                                   },
-                                  onKeyDown: () => _viewerFocus.requestFocus(),
+                                  onKeyDown: _viewerFocus.requestFocus,
                                 ),
                               ),
                             ),
@@ -1212,10 +1216,8 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                                     CreateGroupButton(
                                       focusNode: _createGroupFocus,
                                       onKeyLeft: _focusActiveContent,
-                                      onKeyRight: () => _clearFavoritesFocus
-                                          .requestFocus(),
-                                      onKeyUp: () =>
-                                          _viewerFocus.requestFocus(),
+                                      onKeyRight: _clearFavoritesFocus.requestFocus,
+                                      onKeyUp: _viewerFocus.requestFocus,
                                       onKeyDown: () =>
                                           _focusViewerFavoritesBar(
                                             favChannels,
@@ -1225,14 +1227,11 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                                     const SizedBox(width: 6),
                                     ClearFavoritesButton(
                                       focusNode: _clearFavoritesFocus,
-                                      onKeyLeft: () =>
-                                          _createGroupFocus.requestFocus(),
+                                      onKeyLeft: _createGroupFocus.requestFocus,
                                       onKeyRight: !channel.isAdult
-                                          ? () => _favoriteBtnFocus
-                                                .requestFocus()
+                                          ? _favoriteBtnFocus.requestFocus
                                           : null,
-                                      onKeyUp: () =>
-                                          _viewerFocus.requestFocus(),
+                                      onKeyUp: _viewerFocus.requestFocus,
                                       onKeyDown: () =>
                                           _focusViewerFavoritesBar(
                                             favChannels,
@@ -1246,20 +1245,17 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                                     FavoriteButton(
                                       channel: channel,
                                       focusNode: _favoriteBtnFocus,
-                                      onKeyUp: () =>
-                                          _viewerFocus.requestFocus(),
+                                      onKeyUp: _viewerFocus.requestFocus,
                                       onKeyDown: () =>
                                           _focusViewerFavoritesBar(
                                             favChannels,
                                             channel,
                                           ),
                                       onKeyLeft: favChannels.isNotEmpty
-                                          ? () => _clearFavoritesFocus
-                                                .requestFocus()
+                                          ? _clearFavoritesFocus.requestFocus
                                           : _focusActiveContent,
                                       onKeyRight: showServerSkip
-                                          ? () => _serverSkipFocus
-                                                .requestFocus()
+                                          ? _serverSkipFocus.requestFocus
                                           : null,
                                     ),
                                   if (showServerSkip) ...[
@@ -1268,19 +1264,16 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                                       const SizedBox(width: 6),
                                     ServerSkipButton(
                                       focusNode: _serverSkipFocus,
-                                      onKeyUp: () =>
-                                          _viewerFocus.requestFocus(),
+                                      onKeyUp: _viewerFocus.requestFocus,
                                       onKeyDown: () =>
                                           _focusViewerFavoritesBar(
                                             favChannels,
                                             channel,
                                           ),
                                       onKeyLeft: !channel.isAdult
-                                          ? () => _favoriteBtnFocus
-                                                .requestFocus()
+                                          ? _favoriteBtnFocus.requestFocus
                                           : (favChannels.isNotEmpty
-                                              ? () => _clearFavoritesFocus
-                                                    .requestFocus()
+                                              ? _clearFavoritesFocus.requestFocus
                                               : _focusActiveContent),
                                     ),
                                   ],
@@ -1293,8 +1286,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                                 _favoritesBar.focusNodes.length,
                               ),
                               onFocusLeft: _focusSelectedChannel,
-                              onFocusRight: () =>
-                                  _viewerFocus.requestFocus(),
+                              onFocusRight: _viewerFocus.requestFocus,
                               onKeyUp: () {
                                 if (!channel.isAdult &&
                                     _favoriteBtnFocus.canRequestFocus) {
@@ -1309,7 +1301,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
                                   _viewerFocus.requestFocus();
                                 }
                               },
-                              onKeyDown: () => _viewerFocus.requestFocus(),
+                              onKeyDown: _viewerFocus.requestFocus,
                             ),
                           ),
                         ],

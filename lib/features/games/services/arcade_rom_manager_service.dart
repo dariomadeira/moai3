@@ -1,20 +1,26 @@
+import 'package:moai3/platform/platform_channels.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/features/games/models/arcade_rom_item.dart';
 
 class ArcadeRomManagerService extends ChangeNotifier {
-  static const MethodChannel _channel =
-      MethodChannel('com.infomak.moai/arcade_channel');
+  ArcadeRomManagerService({this._preferences});
+
+  AppPreferences? _preferences;
+
+  Future<AppPreferences> _prefs() async =>
+      _preferences ??= await AppPreferences.init();
+
+  static const MethodChannel _channel = PlatformChannels.arcade;
   static const String _activeRomKey = 'arcade_active_rom_filename';
 
   static const String defaultManifestUrl =
       'https://raw.githubusercontent.com/dariomadeira/moai_roms/main/manifest.json';
-  static const String localEmulatorManifestUrl =
-      'http://10.0.2.2:8080/manifest.json';
 
   List<ArcadeRomItem> _catalog = [];
   List<ArcadeRomItem> _installedRoms = [];
@@ -33,22 +39,22 @@ class ArcadeRomManagerService extends ChangeNotifier {
   Map<String, double> get downloadProgress => _downloadProgress;
 
   Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    _activeRomFilename = prefs.getString(_activeRomKey);
+    _activeRomFilename = (await _prefs()).readOptionalString(_activeRomKey);
     await refreshInstalledRoms();
-    fetchCatalog().catchError((e) {
+    unawaited(fetchCatalog().catchError((e) {
       if (kDebugMode) {
         debugPrint('[ArcadeRomManagerService] Error pre-cargando catálogo: $e');
       }
       return false;
-    });
+    }));
   }
 
   /// Consulta las ROMs presentes en el almacenamiento interno de la app.
   Future<List<ArcadeRomItem>> refreshInstalledRoms() async {
     try {
-      final List<dynamic>? rawList =
-          await _channel.invokeListMethod('getInstalledRoms');
+      final List<dynamic>? rawList = await _channel.invokeListMethod(
+        'getInstalledRoms',
+      );
       final List<ArcadeRomItem> list = [];
       if (rawList != null) {
         for (final item in rawList) {
@@ -56,10 +62,13 @@ class ArcadeRomManagerService extends ChangeNotifier {
             final filename = item['filename'] as String? ?? '';
             final path = item['path'] as String? ?? '';
             final sizeBytes = (item['sizeBytes'] as num?)?.toInt() ?? 0;
-            final label = '${(sizeBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-            final catalogMatch =
-                _catalog.where((c) => c.filename == filename).firstOrNull;
-            final resolvedName = catalogMatch != null && catalogMatch.name.isNotEmpty
+            final label =
+                '${(sizeBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+            final catalogMatch = _catalog
+                .where((c) => c.filename == filename)
+                .firstOrNull;
+            final resolvedName =
+                catalogMatch != null && catalogMatch.name.isNotEmpty
                 ? catalogMatch.name
                 : nameFromFilename(filename);
             list.add(
@@ -116,17 +125,19 @@ class ArcadeRomManagerService extends ChangeNotifier {
       final response = await request.close();
 
       if (response.statusCode != 200) {
-        _errorMessage = 'arcade_err_catalog_http'.tr(namedArgs: {
-          'code': response.statusCode.toString(),
-        });
+        _errorMessage = 'arcade_err_catalog_http'.tr(
+          namedArgs: {'code': response.statusCode.toString()},
+        );
         _isLoading = false;
         notifyListeners();
         return false;
       }
 
       final body = await response.transform(utf8.decoder).join();
-      final Map<String, dynamic> data = jsonDecode(body) as Map<String, dynamic>;
-      final List<dynamic> gamesJson = (data['games'] ?? data['juegos'] ?? []) as List<dynamic>;
+      final Map<String, dynamic> data =
+          jsonDecode(body) as Map<String, dynamic>;
+      final List<dynamic> gamesJson =
+          (data['games'] ?? data['juegos'] ?? []) as List<dynamic>;
       final baseUri = Uri.parse(url);
       _catalog = gamesJson.map((g) {
         final item = ArcadeRomItem.fromJson(g as Map<String, dynamic>);
@@ -144,9 +155,9 @@ class ArcadeRomManagerService extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = 'arcade_err_repo_connect'.tr(namedArgs: {
-        'error': e.toString(),
-      });
+      _errorMessage = 'arcade_err_repo_connect'.tr(
+        namedArgs: {'error': e.toString()},
+      );
       _isLoading = false;
       notifyListeners();
       return false;
@@ -180,9 +191,11 @@ class ArcadeRomManagerService extends ChangeNotifier {
       if (response.statusCode != 200) {
         _downloadProgress.remove(filename);
         notifyListeners();
-        throw Exception('arcade_err_download_http'.tr(namedArgs: {
-          'code': response.statusCode.toString(),
-        }));
+        throw Exception(
+          'arcade_err_download_http'.tr(
+            namedArgs: {'code': response.statusCode.toString()},
+          ),
+        );
       }
 
       final contentLength = response.contentLength;
@@ -226,10 +239,14 @@ class ArcadeRomManagerService extends ChangeNotifier {
       for (final installed in _installedRoms) {
         if (installed.filename != filename) {
           try {
-            await _channel.invokeMethod('deleteRom', {'name': installed.filename});
+            await _channel.invokeMethod('deleteRom', {
+              'name': installed.filename,
+            });
           } catch (e) {
             if (kDebugMode) {
-              debugPrint('[ArcadeRomManagerService] Error purgando ROM anterior ${installed.filename}: $e');
+              debugPrint(
+                '[ArcadeRomManagerService] Error purgando ROM anterior ${installed.filename}: $e',
+              );
             }
           }
         }
@@ -244,10 +261,9 @@ class ArcadeRomManagerService extends ChangeNotifier {
         debugPrint('[ArcadeRomManagerService] Error descargando $filename: $e');
       }
       _downloadProgress.remove(filename);
-      _errorMessage = 'arcade_download_error'.tr(namedArgs: {
-        'filename': filename,
-        'error': '$e',
-      });
+      _errorMessage = 'arcade_download_error'.tr(
+        namedArgs: {'filename': filename, 'error': '$e'},
+      );
       notifyListeners();
       return false;
     }
@@ -276,8 +292,7 @@ class ArcadeRomManagerService extends ChangeNotifier {
   /// Establece cuál es la ROM activa actual seleccionada para jugar.
   Future<void> setActiveRom(String filename) async {
     _activeRomFilename = filename;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_activeRomKey, filename);
+    await (await _prefs()).saveString(_activeRomKey, filename);
     notifyListeners();
   }
 
@@ -322,20 +337,13 @@ class ArcadeRomManagerService extends ChangeNotifier {
       final cat = _catalog[i];
       final installed = _installedRoms.firstWhere(
         (ins) => ins.filename == cat.filename,
-        orElse: () => const ArcadeRomItem(id: '', name: '', filename: '', url: ''),
+        orElse: () =>
+            const ArcadeRomItem(id: '', name: '', filename: '', url: ''),
       );
       if (installed.filename.isNotEmpty) {
-        _catalog[i] = cat.copyWith(
-          isInstalled: true,
-          localPath: installed.localPath,
-          localSizeBytes: installed.localSizeBytes,
-        );
+        _catalog[i] = cat.copyWith(isInstalled: true);
       } else {
-        _catalog[i] = cat.copyWith(
-          isInstalled: false,
-          localPath: null,
-          localSizeBytes: null,
-        );
+        _catalog[i] = cat.copyWith(isInstalled: false);
       }
     }
   }

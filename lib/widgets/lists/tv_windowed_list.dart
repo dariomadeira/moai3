@@ -376,7 +376,6 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
       final activeDot = activeDotIndex;
 
       content = Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(child: list),
           const SizedBox(width: 10),

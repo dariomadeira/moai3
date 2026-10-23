@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -189,13 +190,11 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
                           color: borderColor,
-                          width: 1.0,
                         ),
                       ),
                       padding: const EdgeInsets.all(4),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           for (int i = 0; i < availableSections.length; i++) ...[
                             if (i > 0) const SizedBox(height: 5),
@@ -233,40 +232,49 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
     final isHovered = _isFocused && _focusedIndex == section;
 
     final IconData iconData;
+    final String labelKey;
 
     switch (section) {
       case sectionHome:
         iconData =
             isSelected ? MoaiIcons.railHomeSelected : MoaiIcons.railHome;
+        labelKey = 'home_rail_home_title';
         break;
       case sectionTv:
         iconData = isSelected ? MoaiIcons.railTvSelected : MoaiIcons.railTv;
+        labelKey = 'home_rail_tv_title';
         break;
       case sectionFeatured:
         iconData = isSelected
             ? MoaiIcons.railFeaturedSelected
             : MoaiIcons.railFeatured;
+        labelKey = 'home_rail_featured_title';
         break;
       case sectionMovies:
         iconData =
             isSelected ? MoaiIcons.railMoviesSelected : MoaiIcons.railMovies;
+        labelKey = 'home_rail_movies_title';
         break;
       case sectionSeries:
         iconData =
             isSelected ? MoaiIcons.railSeriesSelected : MoaiIcons.railSeries;
+        labelKey = 'home_rail_series_title';
         break;
       case sectionCalendar:
         iconData =
             isSelected ? MoaiIcons.railCalendarSelected : MoaiIcons.railCalendar;
+        labelKey = 'home_rail_calendar_title';
         break;
       case sectionArcade:
         iconData =
             isSelected ? MoaiIcons.railArcadeSelected : MoaiIcons.railArcade;
+        labelKey = 'home_rail_arcade_title';
         break;
       case sectionSettings:
       default:
         iconData =
             isSelected ? MoaiIcons.railSettingsSelected : MoaiIcons.railSettings;
+        labelKey = 'home_rail_settings_title';
         break;
     }
 
@@ -292,7 +300,6 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
 
     if (section == sectionCalendar && todayEvents > 0) {
       iconWidget = Badge(
-        isLabelVisible: true,
         backgroundColor: scheme.tertiaryContainer,
         textColor: scheme.onTertiaryContainer,
         textStyle: const TextStyle(
@@ -305,22 +312,28 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
       );
     }
 
-    return InkWell(
-      onTap: () {
-        setState(() => _focusedIndex = section);
-        widget.onIndexChanged(section);
-        widget.railFocusNode.requestFocus();
-      },
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: pillColor,
-          shape: BoxShape.circle,
+    // El rail es solo íconos: el título va como etiqueta de accesibilidad.
+    return Semantics(
+      label: labelKey.tr(),
+      button: true,
+      selected: isSelected,
+      child: InkWell(
+        onTap: () {
+          setState(() => _focusedIndex = section);
+          widget.onIndexChanged(section);
+          widget.railFocusNode.requestFocus();
+        },
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: pillColor,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: iconWidget,
         ),
-        alignment: Alignment.center,
-        child: iconWidget,
       ),
     );
   }

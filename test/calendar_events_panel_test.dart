@@ -3,14 +3,30 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/features/calendar/widgets/calendar_events_panel.dart';
 import 'package:moai3/features/home/areas/home_calendar_area.dart';
+import 'package:moai3/models/calendar_event.dart';
+import 'package:moai3/services/calendar/argentina_time.dart';
 import 'package:moai3/state/calendar_provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+    // Miércoles 21 Oct 2026, 12:00 ART: semana Lun 19 – Dom 25.
+    ArgentinaTime.debugUtcNow = () => DateTime.utc(2026, 10, 21, 15);
   });
+
+  tearDown(() => ArgentinaTime.debugUtcNow = null);
+
+  CalendarEvent event(String id, String sub, String title, int day, int hour) =>
+      CalendarEvent(
+        id: id,
+        subscriptionId: sub,
+        title: title,
+        competition: sub,
+        startDateTime: ArgentinaTime.fromCivil(2026, 10, day, hour),
+      );
 
   Widget wrap(Widget child, {required CalendarProvider calendarProvider}) {
     return ChangeNotifierProvider<CalendarProvider>.value(
@@ -54,8 +70,8 @@ void main() {
     expect(find.text('DOM'), findsOneWidget);
 
     // Verify chevron navigation buttons exist
-    expect(find.byIcon(Icons.chevron_left), findsOneWidget);
-    expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.chevronLeft), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.chevronRight), findsOneWidget);
 
     focusNode.dispose();
   });
@@ -108,28 +124,28 @@ void main() {
     await tester.pump();
 
     // Initially on current week: return button is not needed
-    expect(find.byIcon(Icons.today_outlined), findsNothing);
+    expect(find.byIcon(MoaiIcons.todayOutlined), findsNothing);
 
     // Tap Next week
-    final nextBtn = find.byIcon(Icons.chevron_right);
+    final nextBtn = find.byIcon(MoaiIcons.chevronRight);
     await tester.tap(nextBtn);
     await tester.pump();
 
     // In week +1, the "Semana actual" button appears in header actions
-    expect(find.byIcon(Icons.today_outlined), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.todayOutlined), findsOneWidget);
     expect(find.text('calendar_week_current'), findsOneWidget);
 
     // Tap "Semana actual" to return
-    await tester.tap(find.byIcon(Icons.today_outlined));
+    await tester.tap(find.byIcon(MoaiIcons.todayOutlined));
     await tester.pump();
 
     // Now tap Prev week to go to -1
-    final prevBtn = find.byIcon(Icons.chevron_left);
+    final prevBtn = find.byIcon(MoaiIcons.chevronLeft);
     await tester.tap(prevBtn);
     await tester.pump();
 
     // At week -1 (limit), chevron_left should no longer be rendered
-    expect(find.byIcon(Icons.chevron_left), findsNothing);
+    expect(find.byIcon(MoaiIcons.chevronLeft), findsNothing);
 
     focusNode.dispose();
   });
@@ -142,7 +158,11 @@ void main() {
     };
 
     final calendarProvider = CalendarProvider();
-    await calendarProvider.refreshEvents(force: true);
+    await tester.pump();
+    calendarProvider.debugSetEvents([
+      event('lpf_mon', 'lpf_ar', 'Estudiantes vs Gimnasia LP', 19, 20),
+      event('nfl_thu', 'nfl', 'Chiefs vs Broncos', 22, 21),
+    ]);
     await calendarProvider.toggleSubscription('lpf_ar');
     await calendarProvider.toggleSubscription('nfl');
     final focusNode = FocusNode();
@@ -171,52 +191,6 @@ void main() {
 
     FlutterError.onError = oldOnError;
     expect(captured, isNull);
-    focusNode.dispose();
-  });
-
-  testWidgets('focuses Sunday (DOM) when entering from the right (subscriptions)', (tester) async {
-    final calendarProvider = CalendarProvider();
-    final focusNode = FocusNode();
-    final key = GlobalKey<CalendarEventsPanelState>();
-
-    await tester.pumpWidget(
-      wrap(
-        CalendarEventsPanel(
-          key: key,
-          focusNode: focusNode,
-          onKeyLeft: () {},
-          onKeyRight: () {},
-        ),
-        calendarProvider: calendarProvider,
-      ),
-    );
-    await tester.pump();
-
-    // Call focusFromRight (as happens when user presses left from subscriptions)
-    key.currentState?.focusFromRight();
-    await tester.pump();
-
-    // In grid, day index 6 (DOM) should be selected: pressing arrowRight should call onKeyRight
-    bool exitedRight = false;
-    await tester.pumpWidget(
-      wrap(
-        CalendarEventsPanel(
-          key: key,
-          focusNode: focusNode,
-          onKeyLeft: () {},
-          onKeyRight: () {
-            exitedRight = true;
-          },
-        ),
-        calendarProvider: calendarProvider,
-      ),
-    );
-    await tester.pump();
-
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
-    await tester.pump();
-    expect(exitedRight, isTrue);
-
     focusNode.dispose();
   });
 
@@ -284,7 +258,10 @@ void main() {
 
   testWidgets('renders finished events with FIN badge, solid muted colors, and non-interactive', (tester) async {
     final calendarProvider = CalendarProvider();
-    await calendarProvider.refreshEvents(force: true);
+    await tester.pump();
+    calendarProvider.debugSetEvents([
+      event('lpf_mon', 'lpf_ar', 'Estudiantes vs Gimnasia LP', 19, 20),
+    ]);
     await calendarProvider.toggleSubscription('lpf_ar');
     final focusNode = FocusNode();
 
@@ -302,20 +279,23 @@ void main() {
 
     // In current week, Monday 21 20:00 (Estudiantes vs Gimnasia LP) is in the past
     // It should render with FIN badge (without icon)
-    expect(find.text('FIN'), findsWidgets);
+    expect(find.text('calendar_status_finished'), findsWidgets);
 
     // Verify the title is present
     expect(find.text('Estudiantes vs Gimnasia LP'), findsOneWidget);
 
     // Verify the subscription sport icon (soccer) is present on the card
-    expect(find.byIcon(Icons.sports_soccer_outlined), findsWidgets);
+    expect(find.byIcon(CalendarProvider.getSubscriptionIcon('lpf_ar')), findsWidgets);
 
     focusNode.dispose();
   });
 
   testWidgets('renders subscription sport icon matching the event subscription (NFL football)', (tester) async {
     final calendarProvider = CalendarProvider();
-    await calendarProvider.refreshEvents(force: true);
+    await tester.pump();
+    calendarProvider.debugSetEvents([
+      event('nfl_thu', 'nfl', 'Chiefs vs Broncos', 22, 21),
+    ]);
     await calendarProvider.toggleSubscription('nfl');
     final focusNode = FocusNode();
 
@@ -332,19 +312,19 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify NFL events display the american football icon
-    expect(find.byIcon(Icons.sports_football_outlined), findsWidgets);
+    expect(find.byIcon(CalendarProvider.getSubscriptionIcon('nfl')), findsWidgets);
 
     focusNode.dispose();
   });
 
   testWidgets('renders pill arrows in dedicated reserved space above and below when day has more than 4 events', (tester) async {
     final calendarProvider = CalendarProvider();
-    await calendarProvider.refreshEvents(force: true);
-    await calendarProvider.toggleSubscription('champions');
-    await calendarProvider.toggleSubscription('nfl');
+    await tester.pump();
+    calendarProvider.debugSetEvents([
+      for (var i = 0; i < 5; i++)
+        event('lpf_sun_$i', 'lpf_ar', 'Partido $i', 25, 12 + i),
+    ]);
     await calendarProvider.toggleSubscription('lpf_ar');
-    await calendarProvider.toggleSubscription('premier');
-    await calendarProvider.toggleSubscription('nba');
     final focusNode = FocusNode();
 
     await tester.pumpWidget(
@@ -360,7 +340,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // On Sunday, there are 5 events (> 4), so pill arrow is rendered
-    expect(find.byIcon(Icons.keyboard_arrow_down), findsWidgets);
+    expect(find.byIcon(MoaiIcons.keyboardArrowDown), findsWidgets);
 
     focusNode.dispose();
   });

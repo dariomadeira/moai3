@@ -2,12 +2,11 @@ import 'dart:io';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:moai3/services/app_preferences_service.dart';
 
 /// Servicio singleton para gestionar la descarga, instalación y desinstalación
 /// del plugin del motor nativo Arcade (FBNeo libfbneo.so).
 class ArcadePluginService extends ChangeNotifier {
-  static const String _keyInstalled = 'arcade_plugin_installed';
   static const String _keyCorePath = 'arcade_plugin_core_path';
 
   static const String baseUrl =
@@ -28,9 +27,16 @@ class ArcadePluginService extends ChangeNotifier {
   static final ArcadePluginService instance = ArcadePluginService._internal();
   ArcadePluginService._internal();
 
-  Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
-    _installedCorePath = prefs.getString(_keyCorePath);
+  late AppPreferences _prefs;
+
+  Future<void> init(AppPreferences prefs) async {
+    _prefs = prefs;
+    await refresh();
+  }
+
+  /// Revalida que el core `.so` guardado siga en disco.
+  Future<void> refresh() async {
+    _installedCorePath = _prefs.readOptionalString(_keyCorePath);
 
     // Verificar si el archivo .so existe en disco
     if (_installedCorePath != null) {
@@ -40,7 +46,7 @@ class ArcadePluginService extends ChangeNotifier {
       } else {
         _isInstalled = false;
         _installedCorePath = null;
-        await prefs.setBool(_keyInstalled, false);
+        await _prefs.removePreference(_keyCorePath);
       }
     } else {
       _isInstalled = false;
@@ -119,9 +125,7 @@ class ArcadePluginService extends ChangeNotifier {
       _isInstalled = true;
       _isDownloading = false;
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_keyInstalled, true);
-      await prefs.setString(_keyCorePath, _installedCorePath!);
+      await _prefs.saveString(_keyCorePath, _installedCorePath!);
 
       _statusMessage = 'plugins_arcade_installed_success'.tr();
       notifyListeners();
@@ -149,9 +153,7 @@ class ArcadePluginService extends ChangeNotifier {
       _downloadProgress = 0.0;
       _statusMessage = 'plugins_arcade_uninstalled_success'.tr();
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_keyInstalled, false);
-      await prefs.remove(_keyCorePath);
+      await _prefs.removePreference(_keyCorePath);
 
       notifyListeners();
       return true;

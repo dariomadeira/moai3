@@ -1,8 +1,9 @@
+import 'package:moai3/platform/platform_channels.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+import 'package:moai3/config/app_info.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// Información de una versión disponible para actualizar.
@@ -35,7 +36,7 @@ class AppUpdateInfo {
 /// Servicio encargado de verificar, descargar e instalar actualizaciones OTA.
 class UpdateService {
   static const MethodChannel _deviceChannel =
-      MethodChannel('com.infomak.moai.tv/device');
+      PlatformChannels.device;
 
   /// URL de consulta de versiones (por defecto GitHub Releases del repositorio de moai3).
   /// También soporta un endpoint JSON estándar.
@@ -122,8 +123,7 @@ class UpdateService {
   static Future<AppUpdateInfo?> _parseUpdateData(dynamic data) async {
     if (data is! Map<String, dynamic>) return null;
 
-    final packageInfo = await PackageInfo.fromPlatform();
-    final currentVersion = packageInfo.version.trim();
+    final currentVersion = AppInfo.version.trim();
 
     String remoteVersion = '';
     String apkUrl = '';
@@ -187,7 +187,7 @@ class UpdateService {
     }
 
     // Limpiar etiquetas especiales de la descripción visible
-    String cleanChangelog = changelog
+    final String cleanChangelog = changelog
         .replaceAll(RegExp(r'\[(mandatory|obligatoria|required)\]', caseSensitive: false), '')
         .replaceAll(RegExp(r'min_version\s*[:=]\s*[0-9]+\.[0-9]+\.[0-9]+', caseSensitive: false), '')
         .trim();

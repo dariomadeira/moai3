@@ -1,5 +1,6 @@
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/models/channel.dart';
+import 'package:moai3/utils/text_normalize.dart';
 
 /// Motor de correlación determinista entre eventos deportivos y canales instalados en MoAI TV.
 class CalendarChannelMatcher {
@@ -18,15 +19,15 @@ class CalendarChannelMatcher {
 
     final rawBroadcaster = event.broadcaster?.trim() ?? '';
     final subId = event.subscriptionId.toLowerCase();
-    final competition = _normalize(event.competition);
-    final title = _normalize(event.title);
+    final competition = normalizeText(event.competition);
+    final title = normalizeText(event.title);
 
     // 0. Coincidencias exactas por IDs explícitos informados por el evento (ej: moaiplug_daddylive)
     if (event.channelHints.isNotEmpty) {
       for (final hint in event.channelHints) {
         final trimmedHint = hint.trim();
         if (trimmedHint.isEmpty) continue;
-        final normHint = _normalize(trimmedHint);
+        final normHint = normalizeText(trimmedHint);
 
         for (final channel in channels) {
           if (matchedIds.contains(channel.id)) continue;
@@ -36,8 +37,8 @@ class CalendarChannelMatcher {
 
           if (chPluginId == trimmedHint ||
               chId == trimmedHint ||
-              _normalize(chPluginId) == normHint ||
-              _normalize(chId) == normHint) {
+              normalizeText(chPluginId) == normHint ||
+              normalizeText(chId) == normHint) {
             matchedIds.add(channel.id);
             results.add(channel);
             if (results.length >= maxResults) return results;
@@ -51,14 +52,14 @@ class CalendarChannelMatcher {
 
     // 2. Coincidencias primarias basadas en el broadcaster explícito
     for (final token in broadcasterTokens) {
-      final normToken = _normalize(token);
+      final normToken = normalizeText(token);
       if (normToken.isEmpty) continue;
 
       for (final channel in channels) {
         if (matchedIds.contains(channel.id)) continue;
 
-        final chName = _normalize(channel.name);
-        final chId = _normalize(channel.pluginChannelId ?? channel.id);
+        final chName = normalizeText(channel.name);
+        final chId = normalizeText(channel.pluginChannelId ?? channel.id);
 
         if (_isMatch(normToken, chName, chId)) {
           matchedIds.add(channel.id);
@@ -72,7 +73,7 @@ class CalendarChannelMatcher {
     if (results.isEmpty) {
       final fallbackKeywords = _getFallbackKeywords(subId, competition, title);
       for (final kw in fallbackKeywords) {
-        final normKw = _normalize(kw);
+        final normKw = normalizeText(kw);
         for (final channel in channels) {
           if (matchedIds.contains(channel.id)) continue;
 
@@ -83,8 +84,8 @@ class CalendarChannelMatcher {
             continue;
           }
 
-          final chName = _normalize(channel.name);
-          final chId = _normalize(channel.pluginChannelId ?? channel.id);
+          final chName = normalizeText(channel.name);
+          final chId = normalizeText(channel.pluginChannelId ?? channel.id);
 
           if (_isMatch(normKw, chName, chId)) {
             matchedIds.add(channel.id);
@@ -185,13 +186,4 @@ class CalendarChannelMatcher {
     return const [];
   }
 
-  static String _normalize(String s) {
-    var clean = s.toLowerCase();
-    const withDia = 'áéíóúüñàèìòù';
-    const withoutDia = 'aeiouunaeiou';
-    for (var i = 0; i < withDia.length; i++) {
-      clean = clean.replaceAll(withDia[i], withoutDia[i]);
-    }
-    return clean.replaceAll(RegExp(r'[^a-z0-9 ]+'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
-  }
 }

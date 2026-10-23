@@ -41,7 +41,7 @@ void main() {
 
     test('loadFallbackCatalog loads bundled assets', () async {
       final service = MoiamovApiService.instance;
-      final result = await service.loadFallbackCatalog(section: 'masnew_featured');
+      final result = await service.loadFallbackCatalog();
 
       expect(result.categories, isNotEmpty);
       expect(result.totalMovies, greaterThan(0));

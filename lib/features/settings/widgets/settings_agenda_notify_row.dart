@@ -35,7 +35,7 @@ class SettingsAgendaNotifyRow extends StatelessWidget {
   }
 
   void _selectIndex(int index) {
-    final options = CalendarProvider.notifyLeadOptions;
+    const options = CalendarProvider.notifyLeadOptions;
     if (index < 0 || index >= options.length) return;
     final next = options[index];
     if (next != selectedMinutes) {
@@ -45,7 +45,7 @@ class SettingsAgendaNotifyRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final options = CalendarProvider.notifyLeadOptions;
+    const options = CalendarProvider.notifyLeadOptions;
     final selectedIndex = _selectedIndex;
 
     return TvTile(

@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:moai3/models/friend_info.dart';
 import 'package:moai3/models/voice_message_record.dart';
@@ -341,7 +341,8 @@ class WatchPartyService {
   }
 
   /// Se suscribe en tiempo real a nuevos mensajes de voz en la sala (SPEC-37).
-  RealtimeChannel subscribeToVoiceMessages({
+  /// Devuelve la función que cancela la suscripción.
+  Future<void> Function() subscribeToVoiceMessages({
     required void Function(VoiceMessageRecord message) onMessageReceived,
   }) {
     final client = _effectiveClient;
@@ -354,10 +355,12 @@ class WatchPartyService {
         try {
           final record = VoiceMessageRecord.fromJson(payload.newRecord);
           onMessageReceived(record);
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('[WatchPartyService] $e');
+        }
       },
     ).subscribe();
-    return channel;
+    return channel.unsubscribe;
   }
 
   /// Se suscribe en tiempo real a actualizaciones de presencia y canal en 'devices' (SPEC-37).
@@ -373,7 +376,9 @@ class WatchPartyService {
       callback: (payload) {
         try {
           onDeviceUpdated(payload.newRecord);
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('[WatchPartyService] $e');
+        }
       },
     ).subscribe();
     return channel;
@@ -401,7 +406,9 @@ class WatchPartyService {
           }
         }
         onPresenceUpdated(presencesList);
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('[WatchPartyService] $e');
+      }
     }
 
     channel

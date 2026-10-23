@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/services/playback_stats_controller.dart';
 
 void main() {
@@ -11,16 +11,14 @@ void main() {
 
       stats.setBuffering();
       expect(stats.status, PlaybackHealth.buffering);
-      expect(stats.showLoadingOverlay, isTrue);
 
       stats.setPlaying();
       expect(stats.status, PlaybackHealth.playing);
-      expect(stats.showLoadingOverlay, isFalse);
 
       stats.setError();
       expect(stats.status, PlaybackHealth.error);
-      // setIdle no limpia error (igual que Smart / diseño del controller).
-      stats.setIdle();
+      // Un error no se pisa con playing/buffering hasta reconectar.
+      stats.setPlaying();
       expect(stats.status, PlaybackHealth.error);
     });
 
@@ -31,13 +29,11 @@ void main() {
       expect(stats.fallbackIndex, 2);
     });
 
-    test('setBackend legacy actualiza backend', () {
+    test('setBackend del motor arranca en buffering', () {
       final stats = PlaybackStatsController();
-      stats.setBackend(PlayerBackend.legacyVideoPlayer);
-      expect(stats.backend, PlayerBackend.legacyVideoPlayer);
-      expect(stats.showsMediaKitStats, isFalse);
+      stats.setBackend(PlayerBackend.engineKotlin);
+      expect(stats.backend, PlayerBackend.engineKotlin);
+      expect(stats.status, PlaybackHealth.buffering);
     });
   });
 }
-
-

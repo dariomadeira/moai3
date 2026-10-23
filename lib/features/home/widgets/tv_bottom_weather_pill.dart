@@ -15,25 +15,33 @@ class TvBottomWeatherPill extends StatefulWidget {
 }
 
 class _TvBottomWeatherPillState extends State<TvBottomWeatherPill> {
-  late Timer _timer;
+  Timer? _timer;
   late DateTime _now;
 
   @override
   void initState() {
     super.initState();
     _now = DateTime.now();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+    _scheduleNextMinute();
+  }
+
+  /// Un solo tic por minuto, alineado al cambio de minuto.
+  void _scheduleNextMinute() {
+    final now = DateTime.now();
+    final untilNext = Duration(
+      seconds: 60 - now.second,
+      milliseconds: -now.millisecond,
+    );
+    _timer = Timer(untilNext, () {
       if (!mounted) return;
-      final now = DateTime.now();
-      if (now.minute != _now.minute) {
-        setState(() => _now = now);
-      }
+      setState(() => _now = DateTime.now());
+      _scheduleNextMinute();
     });
   }
 
   @override
   void dispose() {
-    _timer.cancel();
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -53,7 +61,7 @@ class _TvBottomWeatherPillState extends State<TvBottomWeatherPill> {
         decoration: BoxDecoration(
           color: baseColor,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: borderColor, width: 1.0),
+          border: Border.all(color: borderColor),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -125,7 +133,6 @@ class _TvBottomWeatherPillState extends State<TvBottomWeatherPill> {
                   TvWeatherAnimatedIcon(
                     lottieUrl: lottieUrl,
                     updateToken: updateToken,
-                    size: 34,
                   ),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 4),

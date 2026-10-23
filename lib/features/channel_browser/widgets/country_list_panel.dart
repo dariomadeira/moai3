@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:moai3/widgets/tv_common/panel_list_header.dart';
 import 'package:moai3/focus/focus_retry.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
-import 'package:moai3/widgets/cards/country_card.dart';
+import 'package:moai3/features/channel_browser/country_flag_assets.dart';
+import 'package:moai3/widgets/cards/tv_icon_list_card.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
 import 'package:moai3/widgets/lists/tv_fixed_window_viewport.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
@@ -19,6 +20,10 @@ class CountryListPanel extends StatefulWidget {
   final VoidCallback onLongPress;
   final VoidCallback? onFocusUp;
 
+  /// Mensaje del estado vacío; por defecto "sin grupos". Se usa para mostrar
+  /// un error de carga de plugins.
+  final String? emptyMessage;
+
   const CountryListPanel({
     super.key,
     required this.title,
@@ -28,6 +33,7 @@ class CountryListPanel extends StatefulWidget {
     required this.onSelect,
     required this.onLongPress,
     this.onFocusUp,
+    this.emptyMessage,
   });
 
   @override
@@ -89,7 +95,6 @@ class CountryListPanelState extends State<CountryListPanel> {
 
     return Container(
       padding: const EdgeInsets.only(
-        left: 0,
         right: 12,
         top: 8,
         bottom: 8,
@@ -106,7 +111,7 @@ class CountryListPanelState extends State<CountryListPanel> {
                 ? TvEmptyStateCard(
                     focusNode: _emptyFocusNode,
                     icon: MoaiIcons.tvAccordionGrupos,
-                    message: 'browser_countries_empty'.tr(),
+                    message: widget.emptyMessage ?? 'browser_countries_empty'.tr(),
                     onFocusUp: widget.onFocusUp,
                   )
                 : TvFixedWindowViewport(
@@ -115,9 +120,7 @@ class CountryListPanelState extends State<CountryListPanel> {
                     child: TvWindowedList<String>(
                       key: _listKey,
                       items: widget.countries,
-                      windowSize: windowSize,
                       initialGlobalIndex: _selectedIndex,
-                      itemExtent: itemExtent,
                       showScrollDots: true,
                       focusOnMount: false,
                       onFocusUpFromFirst: widget.onFocusUp,
@@ -130,10 +133,14 @@ class CountryListPanelState extends State<CountryListPanel> {
                         onKeyUp,
                         onKeyDown,
                       ) {
-                        return CountryCard(
+                        return TvIconListCard(
                           key: ValueKey('country-$country'),
-                          country: country,
-                          flagUrl: widget.countryFlags[country],
+                          label: country,
+                          icon: MoaiIcons.tvDisplays,
+                          leading: CountryFlagAssets.leadingFor(
+                            country,
+                            flagUrl: widget.countryFlags[country],
+                          ),
                           isSelected: widget.selectedCountry == country,
                           focusNode: focusNode,
                           onLongPress: widget.onLongPress,

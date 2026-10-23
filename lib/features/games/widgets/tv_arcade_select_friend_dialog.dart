@@ -25,7 +25,6 @@ class TvArcadeSelectFriendDialog extends StatefulWidget {
   }) {
     return showTvGeneralDialog(
       context: context,
-      barrierDismissible: true,
       barrierLabel: 'TvArcadeSelectFriendDialog',
       builder: (dialogContext) => TvArcadeSelectFriendDialog(
         onFriendSelected: onFriendSelected,
@@ -109,16 +108,15 @@ class _TvArcadeSelectFriendDialogState
               listKey: _listKey,
               friends: sortedFriends,
               onSelect: _select,
-              onFocusDownFromLast: () => _closeFocus.requestFocus(),
+              onFocusDownFromLast: _closeFocus.requestFocus,
             ),
       actions: [
         TvDialogButton(
           focusNode: _closeFocus,
           label: 'arcade_select_friend_close'.tr(),
-          variant: TvDialogButtonVariant.neutral,
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
           onKeyUp: sortedFriends.isEmpty
-              ? () => _manageFocus.requestFocus()
+              ? _manageFocus.requestFocus
               : () => _listKey.currentState?.ensureVisible(
                     sortedFriends.length - 1,
                   ),
@@ -215,7 +213,6 @@ class _EmptyFriends extends StatelessWidget {
             style: MoaiText.body(
               context,
               fontSize: 14,
-              fontWeight: FontWeight.w600,
               color: scheme.onSurface,
             ),
           ),

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/models/friend_info.dart';
+import 'package:moai3/models/voice_message_record.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/watch_party_service.dart';
@@ -17,6 +18,12 @@ class FakeService extends WatchPartyService {
 
   @override
   Future<List<FriendInfo>> getFriends(String deviceId) async => fakeFriends;
+
+  @override
+  Future<void> Function() subscribeToVoiceMessages({
+    required void Function(VoiceMessageRecord message) onMessageReceived,
+  }) =>
+      () async {};
 }
 
 void main() {
@@ -27,9 +34,6 @@ void main() {
     late DeviceIdentityService identityService;
 
     setUp(() async {
-      WatchPartyOverlay.debugForceVisible = false;
-      WatchPartyOverlay.debugSimulateIncomingAudio = false;
-      WatchPartyOverlay.debugSimulateRecording = false;
       SharedPreferences.setMockInitialValues({
         'watch_party_enabled': true,
         'device_id': 'my-device-id',
@@ -64,7 +68,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Symbols.mic), findsNothing);
+      expect(find.byIcon(MoaiIcons.mic), findsNothing);
       provider.dispose();
     });
 
@@ -105,7 +109,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Symbols.mic), findsNothing);
+      expect(find.byIcon(MoaiIcons.mic), findsNothing);
       provider.dispose();
     });
 
@@ -160,51 +164,9 @@ void main() {
       expect(find.text('watch_party_friend_joined'), findsOneWidget);
 
       // Verifica el botón central de micrófono
-      expect(find.byIcon(Symbols.mic), findsOneWidget);
+      expect(find.byIcon(MoaiIcons.mic), findsOneWidget);
 
       coordinator.dispose();
-      provider.dispose();
-    });
-
-    testWidgets('se fuerza la visibilidad en modo desarrollador con datos mock y chips simulados', (tester) async {
-      WatchPartyOverlay.debugForceVisible = true;
-      WatchPartyOverlay.debugSimulateIncomingAudio = true;
-      WatchPartyOverlay.debugMockFriendsCount = 2;
-
-      final service = FakeService();
-      final provider = WatchPartyProvider(
-        preferences: prefs,
-        service: service,
-        identityService: identityService,
-      );
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Stack(
-              children: [
-                ChangeNotifierProvider<WatchPartyProvider>.value(
-                  value: provider,
-                  child: const WatchPartyOverlay(),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      // Verifica chip izquierdo con mock friends
-      expect(find.text('watch_party_friend_joined'), findsOneWidget);
-
-      // Verifica botón central de micrófono
-      expect(find.byIcon(Symbols.mic), findsOneWidget);
-
-      // Verifica chip derecho simulado
-      expect(find.text('watch_party_friend_speaking'), findsOneWidget);
-
-      await tester.pump(const Duration(seconds: 10));
-
       provider.dispose();
     });
   });

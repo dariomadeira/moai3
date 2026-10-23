@@ -27,7 +27,6 @@ void main() {
       wrap(
         const TvNicknameDialog(
           initialNickname: 'Juan TV',
-          isMandatory: false,
         ),
       ),
     );
@@ -74,7 +73,6 @@ void main() {
       wrap(
         const TvNicknameDialog(
           initialNickname: '',
-          isMandatory: false,
         ),
       ),
     );

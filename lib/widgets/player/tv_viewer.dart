@@ -15,7 +15,7 @@ import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/player/tv_viewer_focus_wrapper.dart';
 import 'package:moai3/widgets/player/viewer_error_display.dart';
-import 'package:moai3/utils/context_extensions.dart';
+import 'package:provider/provider.dart';
 import 'package:moai3/widgets/player/watch_party_overlay.dart';
 
 /// Visor TV usando el motor Kotlin nativo (ExoPlayer) con widget `Texture`.
@@ -81,8 +81,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
   }
 
   ReconnectLogCallback get _reconnectLogger =>
-      (message, {level = ReconnectLogLevel.info}) =>
-          _log(message, level: level);
+      _log;
 
   String get _currentUrl => widget.channel == null
       ? ''
@@ -113,7 +112,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
         _wasBackgrounded = true;
         _session.begin();
         _reconnect.reset();
-        _watchParty?.reportCurrentChannel(channelId: null);
+        _watchParty?.reportCurrentChannel();
         unawaited(_disposeEngine().then((_) {
           _safeSetState(() {
             _hasFirstFrame = false;
@@ -150,9 +149,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
     super.didChangeDependencies();
     _stats ??= context.read<PlaybackStatsController>();
     _pluginHost ??= context.read<PluginHostController>();
-    try {
-      _watchParty ??= context.read<WatchPartyProvider>();
-    } catch (_) {}
+    _watchParty ??= context.read<WatchPartyProvider?>();
   }
 
   @override
@@ -222,10 +219,6 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
     _hasFirstFrame = event.firstFrameRendered;
     _isBuffering = event.state == MoaiEngineState.buffering;
     final stats = _stats;
-
-    if (event.videoWidth != null && event.videoWidth! > 0) {
-      stats?.setVideoWidth(event.videoWidth!);
-    }
 
     if (event.state == MoaiEngineState.error) {
       stats?.setError();
@@ -364,7 +357,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
     final effectiveFullScreen = _effectiveFullScreen;
 
     final engine = _engine;
-    Widget content = _errorMessage != null
+    final Widget content = _errorMessage != null
         ? ViewerErrorDisplay(errorMessage: _errorMessage!)
         : (engine != null && engine.hasTexture && _hasFirstFrame)
             ? EnginePlayerView(
@@ -398,12 +391,11 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
                 ],
               );
 
-    final watchParty = context.watchOptional<WatchPartyProvider>() ?? _watchParty;
+    final watchParty = context.watch<WatchPartyProvider?>() ?? _watchParty;
 
     final isWatchPartyActive = effectiveFullScreen &&
-        (WatchPartyOverlay.debugForceVisible ||
-            ((watchParty?.enabled ?? false) &&
-                (watchParty?.hasFriendsInSameChannel ?? false)));
+        (watchParty?.enabled ?? false) &&
+        (watchParty?.hasFriendsInSameChannel ?? false);
 
     final baseColor = scheme.surface.withValues(alpha: 0.8);
     final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);

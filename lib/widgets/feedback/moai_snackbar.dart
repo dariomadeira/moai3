@@ -21,6 +21,7 @@ class MoaiSnackBar {
     Color? backgroundColor,
     String? hint,
     VoidCallback? onAction,
+    VoidCallback? onBack,
     double bottomMargin = defaultBottomMargin,
     Duration duration = defaultDuration,
     double targetWidth = defaultSnackWidth,
@@ -38,7 +39,6 @@ class MoaiSnackBar {
       margin: EdgeInsets.fromLTRB(24, 0, 24, bottomMargin),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       content: Align(
-        alignment: Alignment.center,
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: targetWidth),
           child: _MoaiSnackBarBody(
@@ -49,6 +49,7 @@ class MoaiSnackBar {
             foregroundColor: fg,
             backgroundColor: bg,
             onAction: onAction,
+            onBack: onBack,
             textContext: context,
           ),
         ),
@@ -58,7 +59,10 @@ class MoaiSnackBar {
   }
 
   /// Muestra un SnackBar genérico estilo pill usando el BuildContext.
-  /// [onDismiss] se llama si el snack se cierra sin ejecutar [onAction].
+  ///
+  /// [onDismiss] se llama solo si el usuario lo descarta: atrás con el snack
+  /// enfocado, vencimiento o deslizamiento. Que otro snack o un diálogo lo
+  /// tape NO cuenta como descarte (SPEC-50 §2.3).
   static void show(
     BuildContext context, {
     required String message,
@@ -73,7 +77,7 @@ class MoaiSnackBar {
   }) {
     final messenger = ScaffoldMessenger.of(context);
     messenger.removeCurrentSnackBar();
-    var acted = false;
+    var settled = false;
     final controller = messenger.showSnackBar(
       buildSnackBar(
         context: context,
@@ -85,8 +89,15 @@ class MoaiSnackBar {
         onAction: onAction == null
             ? null
             : () {
-                acted = true;
+                settled = true;
                 onAction();
+                messenger.hideCurrentSnackBar();
+              },
+        onBack: onDismiss == null
+            ? null
+            : () {
+                settled = true;
+                onDismiss();
                 messenger.hideCurrentSnackBar();
               },
         bottomMargin: bottomMargin,
@@ -94,8 +105,13 @@ class MoaiSnackBar {
       ),
     );
     if (onDismiss != null) {
-      controller.closed.then((_) {
-        if (!acted) onDismiss();
+      controller.closed.then((reason) {
+        if (settled) return;
+        if (reason == SnackBarClosedReason.timeout ||
+            reason == SnackBarClosedReason.swipe ||
+            reason == SnackBarClosedReason.dismiss) {
+          onDismiss();
+        }
       });
     }
   }
@@ -173,6 +189,7 @@ class _MoaiSnackBarBody extends StatefulWidget {
   final Color foregroundColor;
   final Color backgroundColor;
   final VoidCallback? onAction;
+  final VoidCallback? onBack;
   final BuildContext? textContext;
 
   const _MoaiSnackBarBody({
@@ -183,6 +200,7 @@ class _MoaiSnackBarBody extends StatefulWidget {
     this.hint,
     this.icon,
     this.onAction,
+    this.onBack,
     this.textContext,
   });
 
@@ -269,7 +287,6 @@ class _MoaiSnackBarBodyState extends State<_MoaiSnackBarBody> {
                   textContext,
                   color: fg,
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
                   height: 1.3,
                 ),
                 maxLines: 2,
@@ -318,6 +335,13 @@ class _MoaiSnackBarBodyState extends State<_MoaiSnackBarBody> {
         if (event is KeyDownEvent &&
             TvKeyHandler.isActionKey(event.logicalKey)) {
           _runAction();
+          return KeyEventResult.handled;
+        }
+        if (event is KeyDownEvent &&
+            widget.onBack != null &&
+            (event.logicalKey == LogicalKeyboardKey.goBack ||
+                event.logicalKey == LogicalKeyboardKey.escape)) {
+          widget.onBack!();
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;

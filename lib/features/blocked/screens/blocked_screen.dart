@@ -34,7 +34,6 @@ class BlockedScreen extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Icon(
                     MoaiIcons.block,
@@ -61,9 +60,7 @@ class BlockedScreen extends StatelessWidget {
                   const SizedBox(height: 32),
                   FilledButton(
                     autofocus: true,
-                    onPressed: () {
-                      SystemNavigator.pop();
-                    },
+                    onPressed: SystemNavigator.pop,
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 40,

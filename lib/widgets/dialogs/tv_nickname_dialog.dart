@@ -116,8 +116,6 @@ class _TvNicknameDialogState extends State<TvNicknameDialog> {
             focusNode: _textFieldFocusNode,
             label: 'nickname_dialog_label'.tr(),
             hint: 'nickname_dialog_hint'.tr(),
-            keyboardType: TvKeyboardType.text,
-            textInputAction: TvTextInputAction.done,
             leadingIcon: MoaiIcons.personOutline,
             maxLength: 30,
             onFocusDown: () => _saveFocusNode.requestFocus(),
@@ -147,8 +145,7 @@ class _TvNicknameDialogState extends State<TvNicknameDialog> {
           TvDialogButton(
             focusNode: _cancelFocusNode,
             label: 'common_cancel'.tr(),
-            variant: TvDialogButtonVariant.neutral,
-            onPressed: () => Navigator.of(context).pop(null),
+            onPressed: () => Navigator.of(context).pop(),
             onKeyRight: () => _saveFocusNode.requestFocus(),
             onKeyUp: () => _textFieldFocusNode.requestFocus(),
           ),

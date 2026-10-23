@@ -74,7 +74,6 @@ class TvDialog extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: borderColor,
-              width: 1.0,
             ),
             boxShadow: [
               BoxShadow(
@@ -106,7 +105,6 @@ class TvDialog extends StatelessWidget {
                         title != null ||
                         titleWidget != null) ...[
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     if (iconWidget != null)
                       iconWidget!
@@ -130,7 +128,6 @@ class TvDialog extends StatelessWidget {
                               style: MoaiText.display(
                                 context,
                                 fontSize: 18,
-                                fontWeight: FontWeight.bold,
                                 color: scheme.onSurface,
                               ),
                             ),
@@ -359,7 +356,6 @@ Future<T?> showTvGeneralDialog<T>({
     barrierDismissible: barrierDismissible,
     barrierLabel: barrierLabel ?? 'common_close'.tr(),
     barrierColor: barrierColor ?? Colors.black.withValues(alpha: 0.7),
-    transitionDuration: const Duration(milliseconds: 200),
     pageBuilder: (ctx, anim, secAnim) => builder(ctx),
     transitionBuilder: (ctx, anim, secAnim, child) {
       final curved =

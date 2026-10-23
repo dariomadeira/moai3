@@ -1,3 +1,4 @@
+import 'package:moai3/platform/platform_channels.dart';
 import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:moai3/features/games/models/arcade_netplay_state.dart';
 import 'package:moai3/features/games/services/arcade_emulator_service.dart';
 import 'package:moai3/features/games/services/arcade_netplay_service.dart';
+import 'package:moai3/services/modal_route_tracker.dart';
 import 'package:moai3/features/games/services/arcade_webrtc_transport.dart';
 import 'package:moai3/features/games/widgets/arcade_controller_overlay.dart';
 import 'package:moai3/features/games/widgets/arcade_view_container.dart';
@@ -43,11 +45,15 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
   final Set<int> _notifiedPlayers = {};
 
   static const String _defaultRomPath = '/data/user/0/com.infomak.moai/files/mvsc.zip';
-  static const MethodChannel _tvPlayerChannel = MethodChannel('com.infomak.moai.tv/player');
+  static const MethodChannel _tvPlayerChannel = PlatformChannels.player;
 
   @override
   void initState() {
     super.initState();
+    // Mientras se juega no aparecen avisos de segundo plano y las invitaciones
+    // se responden "ocupado" (SPEC-50 §2.3).
+    ModalRouteTracker.instance.pause();
+    ArcadeNetplayService.instance.setPlaying(true);
     // Pausar cualquier transmisión de TV activa para liberar decodificadores y CPU
     _tvPlayerChannel.invokeMethod<void>('pauseAll');
 
@@ -122,7 +128,6 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
     if (session != null) {
       await _emulatorService.netplayEnable(
         enabled: true,
-        delayFrames: ArcadeNetplayService.netplayInputDelayFrames,
         isHost: session.isHost,
       );
       _netplayInputTicker = Timer.periodic(const Duration(milliseconds: 16), (_) {
@@ -168,6 +173,8 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
     _emulatorService.dispose();
     // Reanudar la transmisión de TV al salir del Arcade
     _tvPlayerChannel.invokeMethod<void>('resumeAll');
+    ArcadeNetplayService.instance.setPlaying(false);
+    ModalRouteTracker.instance.resume();
     super.dispose();
   }
 
@@ -295,7 +302,6 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
     }();
 
     return PopScope(
-      canPop: true,
       child: Focus(
         focusNode: _gamepadFocusNode,
         autofocus: true,

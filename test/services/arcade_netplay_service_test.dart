@@ -4,7 +4,7 @@ import 'package:moai3/features/games/models/arcade_netplay_state.dart';
 void main() {
   group('ArcadeNetplay Models & Flow', () {
     test('ArcadeNetplayInvite serialization and deserialization works correctly', () {
-      final invite = ArcadeNetplayInvite(
+      const invite = ArcadeNetplayInvite(
         sessionId: 'test-session-123',
         hostDeviceId: 'host-dev-1',
         hostNickname: 'Player One',
@@ -40,35 +40,14 @@ void main() {
       );
 
       expect(session.isHost, isTrue);
-      expect(session.playerNumber, equals(1));
       expect(session.status, equals(ArcadeNetplayStatus.preparingRoms));
-      expect(session.areBothReady, isFalse);
 
       session.myProgress = 1.0;
       session.peerProgress = 1.0;
       session.status = ArcadeNetplayStatus.ready;
 
-      expect(session.areBothReady, isTrue);
-
       session.status = ArcadeNetplayStatus.inGame;
       expect(session.status, equals(ArcadeNetplayStatus.inGame));
-    });
-
-    test('Guest player gets playerNumber 2', () {
-      final session = ArcadeNetplaySession(
-        sessionId: 'session-guest',
-        isHost: false,
-        myDeviceId: 'dev-2',
-        myNickname: 'Player 2',
-        peerDeviceId: 'dev-1',
-        peerNickname: 'Host Master',
-        romFilename: 'mslug.zip',
-        romName: 'Metal Slug',
-        romUrl: 'https://example.com/mslug.zip',
-      );
-
-      expect(session.isHost, isFalse);
-      expect(session.playerNumber, equals(2));
     });
   });
 }

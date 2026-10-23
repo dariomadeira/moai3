@@ -3,6 +3,8 @@ import 'package:moai3/features/search/controllers/home_search_controller.dart';
 import 'package:moai3/models/channel.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('HomeSearchController memoria', () {
     test('query vacía o corta no crea resultados', () {
       final search = HomeSearchController();

@@ -3,10 +3,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:moai3/models/voice_message_record.dart';
 import 'package:moai3/services/device_identity_service.dart';
-import 'package:moai3/services/remote_voice_test_service.dart';
+import 'package:moai3/services/voice_audio_service.dart';
 import 'package:moai3/services/watch_party_service.dart';
 import 'package:moai3/state/watch_party_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class _QueuedVoiceMessage {
   final VoiceMessageRecord record;
@@ -23,7 +22,7 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
   final WatchPartyService watchPartyService;
   final DeviceIdentityService identityService;
 
-  RealtimeChannel? _realtimeChannel;
+  Future<void> Function()? _cancelVoiceSubscription;
   final List<_QueuedVoiceMessage> _incomingQueue = [];
 
   bool _isRecording = false;
@@ -32,7 +31,6 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
 
   bool _isPlaying = false;
   String? _currentSpeakerName;
-  int _currentAudioDurationMs = 0;
   Timer? _playbackTimeoutTimer;
   bool _isQueuePaused = false;
 
@@ -48,12 +46,12 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
   int get recordingSeconds => _recordingSeconds;
   bool get isPlaying => _isPlaying;
   String? get currentSpeakerName => _currentSpeakerName;
-  int get currentAudioDurationMs => _currentAudioDurationMs;
+  @visibleForTesting
   int get queueLength => _incomingQueue.length;
 
   void _init() {
-    RemoteVoiceTestService.initialize();
-    RemoteVoiceTestService.addPlaybackListener(_onPlaybackComplete);
+    VoiceAudioService.initialize();
+    VoiceAudioService.addPlaybackListener(_onPlaybackComplete);
 
     // Suscribirse a mensajes de voz en Supabase Realtime si Watch Party está activo
     if (watchPartyProvider.enabled) {
@@ -64,9 +62,9 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
   }
 
   void _onProviderChanged() {
-    if (watchPartyProvider.enabled && _realtimeChannel == null) {
+    if (watchPartyProvider.enabled && _cancelVoiceSubscription == null) {
       _subscribeToRealtime();
-    } else if (!watchPartyProvider.enabled && _realtimeChannel != null) {
+    } else if (!watchPartyProvider.enabled && _cancelVoiceSubscription != null) {
       _unsubscribeFromRealtime();
       _incomingQueue.clear();
       _stopPlayback();
@@ -75,7 +73,7 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
 
   void _subscribeToRealtime() {
     try {
-      _realtimeChannel = watchPartyService.subscribeToVoiceMessages(
+      _cancelVoiceSubscription = watchPartyService.subscribeToVoiceMessages(
         onMessageReceived: handleIncomingVoiceMessage,
       );
     } catch (e) {
@@ -85,11 +83,11 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
 
   void _unsubscribeFromRealtime() {
     try {
-      _realtimeChannel?.unsubscribe();
+      _cancelVoiceSubscription?.call();
     } catch (e) {
       debugPrint('[WatchPartyVoiceCoordinator] Error al desuscribir de Realtime: $e');
     }
-    _realtimeChannel = null;
+    _cancelVoiceSubscription = null;
   }
 
   /// Procesa un mensaje de voz entrante con el estricto filtro de privacidad (SPEC-37):
@@ -169,10 +167,10 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
     if (_isRecording) return;
 
     // Verificar / solicitar permisos si hace falta
-    final hasPerm = await RemoteVoiceTestService.hasPermission();
+    final hasPerm = await VoiceAudioService.hasPermission();
     if (!hasPerm) {
-      await RemoteVoiceTestService.requestPermission();
-      final granted = await RemoteVoiceTestService.hasPermission();
+      await VoiceAudioService.requestPermission();
+      final granted = await VoiceAudioService.hasPermission();
       if (!granted) return;
     }
 
@@ -180,7 +178,7 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
     _isQueuePaused = true;
     _stopPlayback();
 
-    final res = await RemoteVoiceTestService.startRecording();
+    final res = await VoiceAudioService.startRecording();
     if (res['success'] == true) {
       _isRecording = true;
       _recordingSeconds = 0;
@@ -210,7 +208,7 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final res = await RemoteVoiceTestService.stopRecording();
+      final res = await VoiceAudioService.stopRecording();
       if (res['success'] == true && res['path'] != null) {
         final filePath = res['path'] as String;
         final file = File(filePath);
@@ -262,7 +260,7 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await RemoteVoiceTestService.stopRecording();
+      await VoiceAudioService.stopRecording();
     } catch (e) {
       debugPrint('[WatchPartyVoiceCoordinator] Error al cancelar grabación: $e');
     }
@@ -279,18 +277,15 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
     final item = _incomingQueue.removeAt(0);
     _isPlaying = true;
     _currentSpeakerName = item.senderName;
-    _currentAudioDurationMs = item.record.durationMs;
     notifyListeners();
 
     // Reproducir con el motor nativo + LoudnessEnhancer
-    RemoteVoiceTestService.playAudio(item.record.audioUrl);
+    VoiceAudioService.playAudio(item.record.audioUrl);
 
     // Timeout de seguridad en caso de que el callback no se dispare
     _playbackTimeoutTimer?.cancel();
     final safetySeconds = (item.record.durationMs / 1000).ceil() + 3;
-    _playbackTimeoutTimer = Timer(Duration(seconds: safetySeconds.clamp(4, 25)), () {
-      _onPlaybackComplete();
-    });
+    _playbackTimeoutTimer = Timer(Duration(seconds: safetySeconds.clamp(4, 25)), _onPlaybackComplete);
   }
 
   void _onPlaybackComplete() {
@@ -299,7 +294,6 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
     _playbackTimeoutTimer = null;
     _isPlaying = false;
     _currentSpeakerName = null;
-    _currentAudioDurationMs = 0;
     notifyListeners();
 
     _playNextIfPossible();
@@ -310,10 +304,11 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
     _playbackTimeoutTimer = null;
     _isPlaying = false;
     _currentSpeakerName = null;
-    _currentAudioDurationMs = 0;
     try {
-      RemoteVoiceTestService.stopPlayback();
-    } catch (_) {}
+      VoiceAudioService.stopPlayback();
+    } catch (e) {
+      debugPrint('[WatchPartyVoiceCoordinator] $e');
+    }
     notifyListeners();
   }
 
@@ -333,7 +328,7 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
   void dispose() {
     _recordingTimer?.cancel();
     _playbackTimeoutTimer?.cancel();
-    RemoteVoiceTestService.removePlaybackListener(_onPlaybackComplete);
+    VoiceAudioService.removePlaybackListener(_onPlaybackComplete);
     _unsubscribeFromRealtime();
     watchPartyProvider.removeListener(_onProviderChanged);
     super.dispose();

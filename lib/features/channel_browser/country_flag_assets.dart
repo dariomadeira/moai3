@@ -48,7 +48,6 @@ class _NetworkFlagImage extends StatelessWidget {
       width: 30,
       height: 20,
       fit: BoxFit.cover,
-      memCacheWidth: 80,
       memCacheHeight: 60,
       fadeInDuration: const Duration(milliseconds: 150),
       fadeOutDuration: const Duration(milliseconds: 150),

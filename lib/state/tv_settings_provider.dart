@@ -1,3 +1,4 @@
+import 'package:moai3/platform/platform_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -52,7 +53,7 @@ class TvSettingsProvider extends ChangeNotifier {
   ];
 
   static const MethodChannel _deviceChannel =
-      MethodChannel('com.infomak.moai.tv/device');
+      PlatformChannels.device;
 
   final AppPreferences _prefs;
 
@@ -80,11 +81,9 @@ class TvSettingsProvider extends ChangeNotifier {
     _hasOverlapConfig = _prefs.readPreferenceBool(_hasOverlapConfigKey);
     _skipCatalogUpdate = _prefs.readPreferenceBool(
       _skipCatalogUpdateKey,
-      defaultValue: false,
     );
     _uiSoundsDisabled = _prefs.readPreferenceBool(
       _uiSoundsDisabledKey,
-      defaultValue: false,
     );
     _catalogUpdateFrequency = CatalogUpdateFrequency.fromStorage(
       _prefs.readOptionalString(_catalogUpdateFrequencyKey),

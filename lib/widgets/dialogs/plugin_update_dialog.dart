@@ -166,7 +166,6 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
                             style: MoaiText.body(
                               context,
                               fontSize: 13,
-                              fontWeight: FontWeight.w600,
                               color: scheme.onSurface,
                             ),
                           ),
@@ -215,8 +214,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
         TvDialogButton(
           focusNode: _cancelBtnFocus,
           label: 'update_action_later'.tr(),
-          variant: TvDialogButtonVariant.neutral,
-          onKeyRight: () => _updateBtnFocus.requestFocus(),
+          onKeyRight: _updateBtnFocus.requestFocus,
           onPressed: () => Navigator.of(context).pop(),
         ),
         const SizedBox(width: 12),
@@ -224,7 +222,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
           focusNode: _updateBtnFocus,
           label: 'update_action_update_now'.tr(),
           variant: TvDialogButtonVariant.primary,
-          onKeyLeft: () => _cancelBtnFocus.requestFocus(),
+          onKeyLeft: _cancelBtnFocus.requestFocus,
           onPressed: _startUpdate,
         ),
       ];
@@ -277,7 +275,6 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
               style: MoaiText.display(
                 context,
                 fontSize: 16,
-                fontWeight: FontWeight.bold,
                 color: scheme.onSurface,
               ),
             ),
@@ -317,8 +314,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
         TvDialogButton(
           focusNode: _cancelBtnFocus,
           label: 'common_close'.tr(),
-          variant: TvDialogButtonVariant.neutral,
-          onKeyRight: () => _retryBtnFocus.requestFocus(),
+          onKeyRight: _retryBtnFocus.requestFocus,
           onPressed: () => Navigator.of(context).pop(),
         ),
         const SizedBox(width: 12),
@@ -326,14 +322,13 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
           focusNode: _retryBtnFocus,
           label: 'update_action_retry'.tr(),
           variant: TvDialogButtonVariant.primary,
-          onKeyLeft: () => _cancelBtnFocus.requestFocus(),
+          onKeyLeft: _cancelBtnFocus.requestFocus,
           onPressed: _startUpdate,
         ),
       ];
     }
 
     return TvDialog(
-      width: 480,
       icon: MoaiIcons.extension,
       title: widget.updates.length == 1
           ? 'plugin_update_title_singular'.tr()

@@ -86,7 +86,6 @@ class SettingsAgendaPanelState extends State<SettingsAgendaPanel> {
                         child: TvWindowedList<_SettingsAgendaItemType>(
                           key: _listKey,
                           items: items,
-                          windowSize: _windowSize,
                           itemExtent: _itemExtent,
                           showScrollDots: true,
                           initialGlobalIndex: _selectedIndex,

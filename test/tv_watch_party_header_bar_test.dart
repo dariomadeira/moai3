@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/features/home/widgets/tv_watch_party_header_bar.dart';
 import 'package:moai3/models/friend_info.dart';
 import 'package:moai3/services/app_preferences_service.dart';
@@ -11,8 +11,11 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeWatchPartyService extends WatchPartyService {
+  final List<FriendInfo> friends;
+  _FakeWatchPartyService({this.friends = const []});
+
   @override
-  Future<List<FriendInfo>> getFriends(String deviceId) async => [];
+  Future<List<FriendInfo>> getFriends(String deviceId) async => friends;
 }
 
 void main() {
@@ -53,33 +56,46 @@ void main() {
       );
 
       expect(find.byType(TvWatchPartyHeaderBar), findsOneWidget);
-      expect(find.byIcon(Symbols.mic), findsNothing);
-      expect(find.byIcon(Symbols.group), findsNothing);
+      expect(find.byIcon(MoaiIcons.mic), findsNothing);
+      expect(find.byIcon(MoaiIcons.voiceSelection), findsNothing);
     });
 
-    testWidgets('muestra las píldoras en modo de testeo / depuración', (tester) async {
-      TvWatchPartyHeaderBar.setDebugMode(
-        forceVisible: true,
-        simulateIncomingAudio: true,
-        simulateRecording: false,
-        mockFriendsCount: 3,
+    testWidgets('muestra el micrófono si un amigo mira el mismo canal', (tester) async {
+      final service = _FakeWatchPartyService(friends: [
+        FriendInfo(
+          deviceId: 'friend-ana',
+          userCode: 'MOAI-3001',
+          nickname: 'Ana',
+          isOnline: true,
+          currentChannelId: 'plugin:ar:tyc_sports',
+          currentChannelName: 'TyC Sports',
+        ),
+      ]);
+      final provider = WatchPartyProvider(
+        preferences: prefs,
+        service: service,
+        identityService: identityService,
       );
+      await provider.loadFriends();
+      provider.reportCurrentChannel(
+        channelId: 'plugin:ar:tyc_sports',
+        channelName: 'TyC Sports',
+      );
+      await tester.pump(const Duration(seconds: 4));
 
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
           home: Scaffold(
-            body: TvWatchPartyHeaderBar(),
+            body: ChangeNotifierProvider<WatchPartyProvider>.value(
+              value: provider,
+              child: const TvWatchPartyHeaderBar(),
+            ),
           ),
         ),
       );
 
-      expect(find.byIcon(Symbols.mic), findsOneWidget);
-      expect(find.byIcon(Symbols.voice_selection), findsOneWidget);
-      expect(find.text('watch_party_friend_speaking'), findsOneWidget);
-
-      // Limpiar modo debug
-      TvWatchPartyHeaderBar.debugForceVisible = false;
-      TvWatchPartyHeaderBar.debugSimulateIncomingAudio = false;
+      expect(find.byIcon(MoaiIcons.mic), findsOneWidget);
+      provider.dispose();
     });
   });
 }

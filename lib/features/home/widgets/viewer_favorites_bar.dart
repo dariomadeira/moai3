@@ -57,7 +57,6 @@ class ViewerFavoritesBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: borderColor,
-            width: 1.0,
           ),
         ),
           child: Column(
@@ -75,7 +74,6 @@ class ViewerFavoritesBar extends StatelessWidget {
                           context,
                           color: scheme.onSurface,
                           fontSize: 12,
-                          fontWeight: FontWeight.w700,
                           letterSpacing: 0.8,
                         ),
                       ),

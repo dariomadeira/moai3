@@ -187,7 +187,6 @@ class _TvFocusButtonState extends State<TvFocusButton> {
         curve: Curves.easeOutCubic,
         child: Material(
           color: bg,
-          elevation: 0,
           shadowColor: Colors.transparent,
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
@@ -243,38 +242,6 @@ class _TvFocusButtonState extends State<TvFocusButton> {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// Contenedor de panel M3 (como el sheet del teclado): fill, sin sombra ni borde.
-class TvPanel extends StatelessWidget {
-  final Widget child;
-  final EdgeInsetsGeometry padding;
-  final double radius;
-  final Color? color;
-
-  const TvPanel({
-    super.key,
-    required this.child,
-    this.padding = const EdgeInsets.all(20),
-    this.radius = 24,
-    this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Material(
-      color: color ?? scheme.surfaceContainerLow,
-      elevation: 0,
-      shadowColor: Colors.transparent,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(radius),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Padding(padding: padding, child: child),
     );
   }
 }

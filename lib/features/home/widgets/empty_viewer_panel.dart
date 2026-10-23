@@ -32,7 +32,6 @@ class EmptyViewerPanel extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: borderColor,
-          width: 1.0,
         ),
       ),
       child: Center(

@@ -51,10 +51,11 @@ class ChannelProvider extends ChangeNotifier {
 
   List<Channel> get allChannels => _channelRepository.channels;
   List<ChannelGroup> get groups => _channelRepository.groups;
-  bool get isLoadingChannels => _channelRepository.isLoading;
-  String? get channelLoadError => _channelRepository.loadError;
-  String? get streamEngine => _channelRepository.streamEngine;
-  bool get isPuppeteerEngine => streamEngine == 'puppeteer';
+  bool get isLoadingChannels => _pluginHost.loading;
+
+  /// Clave i18n del último error de plugins (con [channelLoadErrorArgs]).
+  String? get channelLoadError => _pluginHost.error;
+  Map<String, String> get channelLoadErrorArgs => _pluginHost.errorNamedArgs;
   Channel? get selectedChannel => _selectedChannel;
 
   PluginHostController get pluginHost => _pluginHost;

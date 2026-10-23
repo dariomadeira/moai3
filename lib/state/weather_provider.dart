@@ -47,6 +47,7 @@ class WeatherProvider extends ChangeNotifier {
   bool get isAutoLocation => _locationMode == 'auto';
 
   /// Nombre de la localidad personalizada configurada, o null si está en modo automático.
+  @visibleForTesting
   String? get customLocationName => _customName;
 
   /// Nombre legible de la ubicación para mostrar en los paneles de TV.
@@ -68,15 +69,6 @@ class WeatherProvider extends ChangeNotifier {
     }
     return '33°'; // Fallback por defecto mientras se obtiene la ubicación
   }
-
-  /// Ciudad actual o cadena vacía si no se ha cargado.
-  String get cityDisplay => _weather?.city ?? '';
-
-  /// Condición meteorológica (ej: "Soleado", "Lluvia").
-  String get conditionDisplay => _weather?.condition ?? '';
-
-  /// URL del icono del clima actual.
-  String get iconUrlDisplay => _weather?.iconUrl ?? '';
 
   /// Retorna la URL CDN del archivo JSON Lottie animado correspondiente al clima actual.
   String get lottieUrl {

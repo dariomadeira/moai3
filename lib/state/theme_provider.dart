@@ -16,7 +16,7 @@ class ThemeProvider extends ChangeNotifier {
 
   ThemeProvider(this._prefs) {
     _darkMode = _prefs.readPreferenceBool(_darkModeKey, defaultValue: true);
-    _autoAccent = _prefs.readPreferenceBool(_autoAccentKey, defaultValue: false);
+    _autoAccent = _prefs.readPreferenceBool(_autoAccentKey);
     final savedManualIndex = MoaiAccentColors.clampIndex(
       _prefs.readPreferenceInt(_accentColorIndexKey),
     );

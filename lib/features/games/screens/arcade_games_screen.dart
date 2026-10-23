@@ -82,7 +82,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
   void _focusCatalogList() {
     if (widget.romManager.catalog.isEmpty) return;
     final index = _selectedCatalogIndex.clamp(0, widget.romManager.catalog.length - 1);
-    _catalogListKey.currentState?.ensureVisible(index, requestFocus: true);
+    _catalogListKey.currentState?.ensureVisible(index);
   }
 
   @override
@@ -164,15 +164,14 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                     SizedBox(
                       width: 54,
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           const SizedBox(height: 9),
                           TvBackPill(
                             focusNode: _backFocusNode,
-                            onKeyRight: () => _urlFocus.requestFocus(),
+                            onKeyRight: _urlFocus.requestFocus,
                             onKeyDown: hasInstalled
                                 ? () => _installedDeleteFocuses.first.requestFocus()
-                                : () => _emptyFocusNode.requestFocus(),
+                                : _emptyFocusNode.requestFocus,
                           ),
                           const Spacer(),
                         ],
@@ -210,7 +209,6 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                                           alpha: 0.7,
                                         ),
                                         fontSize: 12,
-                                        fontWeight: FontWeight.w700,
                                         letterSpacing: 1.0,
                                       ),
                                     ),
@@ -234,7 +232,6 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   Row(
-                                    crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
                                       Expanded(
                                         child: TvPanelHeader(
@@ -326,7 +323,6 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
     bool hasInstalled,
   ) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: TvTextField(
@@ -334,16 +330,15 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
             focusNode: _urlFocus,
             label: 'arcade_input_url_label'.tr(),
             hint: 'arcade_input_url_hint'.tr(),
-            keyboardType: TvKeyboardType.text,
             doneLabel: 'arcade_input_url_done'.tr(),
             leadingIcon: MoaiIcons.tvSourcesUrlInput,
             onSubmitted: (val) => _loadData(),
-            onFocusLeft: () => _backFocusNode.requestFocus(),
-            onFocusRight: () => _refreshFocus.requestFocus(),
-            onFocusUp: () => _backFocusNode.requestFocus(),
+            onFocusLeft: _backFocusNode.requestFocus,
+            onFocusRight: _refreshFocus.requestFocus,
+            onFocusUp: _backFocusNode.requestFocus,
             onFocusDown: hasInstalled
                 ? () => _installedDeleteFocuses.first.requestFocus()
-                : () => _emptyFocusNode.requestFocus(),
+                : _emptyFocusNode.requestFocus,
           ),
         ),
         const SizedBox(width: 10),
@@ -354,13 +349,13 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
           height: 60,
           radius: 30,
           variant: TvButtonVariant.tonal,
-          onPressed: widget.romManager.isLoading ? null : () => _loadData(),
-          onArrowLeft: () => _urlFocus.requestFocus(),
+          onPressed: widget.romManager.isLoading ? null : _loadData,
+          onArrowLeft: _urlFocus.requestFocus,
           onArrowRight: _focusCatalogList,
-          onArrowUp: () => _backFocusNode.requestFocus(),
+          onArrowUp: _backFocusNode.requestFocus,
           onArrowDown: hasInstalled
               ? () => _installedDeleteFocuses.first.requestFocus()
-              : () => _emptyFocusNode.requestFocus(),
+              : _emptyFocusNode.requestFocus,
         ),
       ],
     );
@@ -399,8 +394,8 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                         focusNode: _emptyFocusNode,
                         icon: MoaiIcons.arcadeRomItem,
                         message: 'arcade_empty_installed_msg'.tr(),
-                        onFocusLeft: () => _backFocusNode.requestFocus(),
-                        onFocusUp: () => _urlFocus.requestFocus(),
+                        onFocusLeft: _backFocusNode.requestFocus,
+                        onFocusUp: _urlFocus.requestFocus,
                         onFocusRight: _focusCatalogList,
                       )
                     : LayoutBuilder(
@@ -423,8 +418,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                               onFocusedGlobalIndex: (idx) {
                                 _selectedInstalledIndex = idx;
                               },
-                              onFocusUpFromFirst: () =>
-                                  _urlFocus.requestFocus(),
+                              onFocusUpFromFirst: _urlFocus.requestFocus,
                               itemBuilder: (
                                 context,
                                 item,
@@ -451,8 +445,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                                       }
                                     },
                                     onDeleteKeyDown: onKeyDown,
-                                    onDeleteKeyLeft: () =>
-                                        _backFocusNode.requestFocus(),
+                                    onDeleteKeyLeft: _backFocusNode.requestFocus,
                                     onDeleteKeyRight: _focusCatalogList,
                                     onDelete: () => _deleteRom(item),
                                   ),
@@ -521,8 +514,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                                   onFocusedGlobalIndex: (idx) {
                                     _selectedCatalogIndex = idx;
                                   },
-                                  onFocusUpFromFirst: () =>
-                                      _refreshFocus.requestFocus(),
+                                  onFocusUpFromFirst: _refreshFocus.requestFocus,
                                   itemBuilder: (
                                     context,
                                     item,

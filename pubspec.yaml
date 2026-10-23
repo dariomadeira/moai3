@@ -71,9 +71,10 @@ dev_dependencies:
 flutter_launcher_icons:
   ios: true
   android: true
-  image_path: "assets/images/iconApp.png"
-  adaptive_icon_background: "assets/images/background.png" 
-  adaptive_icon_foreground: "assets/images/foreground.png"
+  # Fuentes del ícono fuera de assets/ para no empaquetarlas en el APK (SPEC-50 §1.7).
+  image_path: "assets_src/launcher/iconApp.png"
+  adaptive_icon_background: "assets_src/launcher/background.png"
+  adaptive_icon_foreground: "assets_src/launcher/foreground.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

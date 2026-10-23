@@ -11,14 +11,9 @@ import 'package:moai3/theme/moai_icons.dart';
 /// Componente de la barra superior en Modo TV para la funcionalidad "Mirar juntos".
 ///
 /// Muestra dinámicamente:
-/// 1. Área Audio Entrante ("Carlos TV hablando..."): Idéntica en colores y estilos al Overlay (scheme.primary y scheme.onPrimary).
+/// 1. Área Audio Entrante ("{amigo} hablando..."): Idéntica en colores y estilos al Overlay (scheme.primary y scheme.onPrimary).
 /// 2. Área Micrófono: Enfocable por D-Pad con respuestas completas de navegación.
 class TvWatchPartyHeaderBar extends StatefulWidget {
-  /// Modo Desarrollador / Testeo: Forzar visibilidad y simulaciones para pruebas visuales en TV
-  static bool debugForceVisible = false;
-  static bool debugSimulateIncomingAudio = false;
-  static bool debugSimulateRecording = false;
-
   final String? channelName;
   final FocusNode? micFocusNode;
   final VoidCallback? onLongPressMic;
@@ -35,18 +30,6 @@ class TvWatchPartyHeaderBar extends StatefulWidget {
     this.onKeyUp,
     this.onKeyDown,
   });
-
-  /// Método auxiliar para activar fácilmente el modo de testeo desde cualquier pantalla/diálogo de prueba.
-  static void setDebugMode({
-    bool forceVisible = true,
-    bool simulateIncomingAudio = false,
-    bool simulateRecording = false,
-    int mockFriendsCount = 2,
-  }) {
-    debugForceVisible = forceVisible;
-    debugSimulateIncomingAudio = simulateIncomingAudio;
-    debugSimulateRecording = simulateRecording;
-  }
 
   @override
   State<TvWatchPartyHeaderBar> createState() => _TvWatchPartyHeaderBarState();
@@ -86,25 +69,18 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
 
   @override
   Widget build(BuildContext context) {
-    final isDevMode = TvWatchPartyHeaderBar.debugForceVisible;
     final watchPartyProvider = context.watch<WatchPartyProvider?>();
     final coordinator = context.watch<WatchPartyVoiceCoordinator?>();
 
-    final watchPartyEnabled =
-        isDevMode || (watchPartyProvider?.enabled ?? false);
+    final watchPartyEnabled = watchPartyProvider?.enabled ?? false;
 
     final hasFriendsInChannel = watchPartyEnabled &&
-        (isDevMode || (watchPartyProvider?.hasFriendsInSameChannel ?? false));
+        (watchPartyProvider?.hasFriendsInSameChannel ?? false);
     final isRecording = watchPartyEnabled &&
-        (TvWatchPartyHeaderBar.debugSimulateRecording ||
-            (coordinator?.isRecording ?? false));
+        (coordinator?.isRecording ?? false);
     final isPlaying = watchPartyEnabled &&
-        (TvWatchPartyHeaderBar.debugSimulateIncomingAudio ||
-            (coordinator?.isPlaying ?? false));
-    final speakerName = (TvWatchPartyHeaderBar.debugSimulateIncomingAudio
-            ? 'Carlos TV'
-            : null) ??
-        coordinator?.currentSpeakerName;
+        (coordinator?.isPlaying ?? false);
+    final speakerName = coordinator?.currentSpeakerName;
 
     final showYellowMic = hasFriendsInChannel;
 
@@ -120,7 +96,6 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
     return SizedBox(
       height: 40,
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             if (hasChannelName) ...[
               Expanded(
@@ -132,13 +107,12 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
                     context,
                     color: scheme.onSurface,
                     fontSize: 28,
-                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               const SizedBox(width: 8),
             ],
-            // 1. Audio Entrante ("Carlos TV hablando...")
+            // 1. Audio Entrante ("{amigo} hablando...")
             if (isPlaying) ...[
               ExcludeFocus(
                 child: AnimatedSize(
@@ -172,7 +146,6 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
                                 context,
                                 color: scheme.onPrimary,
                                 fontSize: 12,
-                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),

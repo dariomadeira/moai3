@@ -118,9 +118,7 @@ void main() {
       await provider.toggleSubscription('lpf_ar');
 
       final emittedBatches = <List<CalendarEvent>>[];
-      final sub = provider.onLiveEventsStarted.listen((batch) {
-        emittedBatches.add(batch);
-      });
+      final sub = provider.onLiveEventsStarted.listen(emittedBatches.add);
 
       // Primera comprobación sin nuevos eventos
       provider.checkNewLiveEvents();

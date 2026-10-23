@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -64,7 +65,7 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
   void initState() {
     super.initState();
     _arcadePlugin.addListener(_onPluginUpdated);
-    _arcadePlugin.init();
+    unawaited(_arcadePlugin.refresh());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         if (_arcadePlugin.isInstalled) {
@@ -83,7 +84,7 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
   void _focusAvailableList() {
     if (_availablePlugins.isEmpty) return;
     final index = _selectedAvailableIndex.clamp(0, _availablePlugins.length - 1);
-    _availableListKey.currentState?.ensureVisible(index, requestFocus: true);
+    _availableListKey.currentState?.ensureVisible(index);
   }
 
   @override
@@ -166,7 +167,6 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                     SizedBox(
                       width: 54,
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           const SizedBox(height: 9),
                           TvBackPill(
@@ -222,7 +222,6 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                                           alpha: 0.7,
                                         ),
                                         fontSize: 12,
-                                        fontWeight: FontWeight.w700,
                                         letterSpacing: 1.0,
                                       ),
                                     ),
@@ -246,7 +245,6 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   Row(
-                                    crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
                                       Expanded(
                                         child: TvPanelHeader(
@@ -321,8 +319,8 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                         focusNode: _emptyFocusNode,
                         icon: MoaiIcons.extensionOffOutlined,
                         message: 'plugins_empty_installed_msg'.tr(),
-                        onFocusLeft: () => _backFocusNode.requestFocus(),
-                        onFocusUp: () => _backFocusNode.requestFocus(),
+                        onFocusLeft: _backFocusNode.requestFocus,
+                        onFocusUp: _backFocusNode.requestFocus,
                         onFocusRight: _focusAvailableList,
                       )
                     : LayoutBuilder(
@@ -347,9 +345,9 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                                 removeFocus: _installedRemoveFocus,
                                 onUpdate: _installArcade,
                                 onRemove: _uninstallArcade,
-                                onUpdateKeyLeft: () => _backFocusNode.requestFocus(),
-                                onUpdateKeyUp: () => _backFocusNode.requestFocus(),
-                                onRemoveKeyUp: () => _backFocusNode.requestFocus(),
+                                onUpdateKeyLeft: _backFocusNode.requestFocus,
+                                onUpdateKeyUp: _backFocusNode.requestFocus,
+                                onRemoveKeyUp: _backFocusNode.requestFocus,
                                 onRemoveKeyRight: _focusAvailableList,
                               ),
                             ),
@@ -398,7 +396,7 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                         onFocusedGlobalIndex: (idx) {
                           _selectedAvailableIndex = idx;
                         },
-                        onFocusUpFromFirst: () => _backFocusNode.requestFocus(),
+                        onFocusUpFromFirst: _backFocusNode.requestFocus,
                         itemBuilder: (
                           context,
                           item,

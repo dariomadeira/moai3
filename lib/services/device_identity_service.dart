@@ -1,7 +1,8 @@
+import 'package:moai3/platform/platform_channels.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+import 'package:moai3/config/app_info.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:moai3/models/device_record.dart';
@@ -29,7 +30,7 @@ class DeviceIdentityService {
     Uuid? uuid,
     MethodChannel? channel,
   })  : _uuid = uuid ?? const Uuid(),
-        _channel = channel ?? const MethodChannel('com.infomak.moai.tv/device');
+        _channel = channel ?? PlatformChannels.device;
 
   /// Inicializa de manera asíncrona la identidad única del hardware físico.
   /// 
@@ -171,26 +172,13 @@ class DeviceIdentityService {
     return newId;
   }
 
-  /// Obtiene la versión actual de la aplicación (ej: "3.0.19+12").
-  Future<String> getAppVersion() async {
-    try {
-      final info = await PackageInfo.fromPlatform();
-      if (info.buildNumber.isNotEmpty) {
-        return '${info.version}+${info.buildNumber}';
-      }
-      return info.version.isNotEmpty ? info.version : '3.0.0';
-    } catch (_) {
-      return '3.0.0';
-    }
-  }
-
   /// Obtiene el objeto consolidado [DeviceIdentity].
   Future<DeviceIdentity> getIdentity() async {
     if (_cachedDeviceId == null) {
       await initialize();
     }
     final id = getOrCreateDeviceId();
-    final version = await getAppVersion();
+    final version = AppInfo.fullVersion;
     final firstLaunchStr = _preferences.readOptionalString(keyFirstLaunch);
     final firstLaunch = firstLaunchStr != null
         ? DateTime.tryParse(firstLaunchStr) ?? DateTime.now()

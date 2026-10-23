@@ -109,7 +109,7 @@ void main() {
       expect(provider.currentChannelId, equals('ch-1'));
 
       // Salida inmediata de canal o pausa
-      provider.reportCurrentChannel(channelId: null);
+      provider.reportCurrentChannel();
       expect(provider.currentChannelId, isNull);
       expect(provider.currentChannelName, isNull);
       expect(fakeService.reportedChannelId, isNull);

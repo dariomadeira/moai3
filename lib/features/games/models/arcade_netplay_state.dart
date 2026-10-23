@@ -110,10 +110,4 @@ class ArcadeNetplaySession {
     this.exitReason,
   });
 
-  /// Determina si ambos jugadores están 100% listos para iniciar la emulación.
-  bool get areBothReady =>
-      myProgress >= 1.0 && peerProgress >= 1.0 && status == ArcadeNetplayStatus.ready;
-
-  /// Número de jugador asignado (1 para Host, 2 para Invitado).
-  int get playerNumber => isHost ? 1 : 2;
 }

@@ -121,7 +121,6 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: boxBorderColor,
-                    width: 1.0,
                   ),
                 ),
                 child: Stack(
@@ -165,7 +164,6 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: dialogBorderColor,
-                      width: 1.0,
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -208,7 +206,6 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
                                         style: MoaiText.display(
                                           context,
                                           fontSize: 18,
-                                          fontWeight: FontWeight.bold,
                                           color: scheme.onSurface,
                                         ),
                                       ),
@@ -234,7 +231,7 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
                               value: _tempX,
                               focusNode: _xFocus,
                               onChanged: (v) => setState(() => _tempX = v),
-                              onFocusDown: () => _yFocus.requestFocus(),
+                              onFocusDown: _yFocus.requestFocus,
                             ),
                             const SizedBox(height: 10),
                             _PaddingAdjuster(
@@ -242,15 +239,15 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
                               value: _tempY,
                               focusNode: _yFocus,
                               onChanged: (v) => setState(() => _tempY = v),
-                              onFocusUp: () => _xFocus.requestFocus(),
-                              onFocusDown: () => _buttonFocus.requestFocus(),
+                              onFocusUp: _xFocus.requestFocus,
+                              onFocusDown: _buttonFocus.requestFocus,
                             ),
                             const SizedBox(height: 16),
                             TvFocusButton(
                               focusNode: _buttonFocus,
                               label: 'overlap_save'.tr(),
                               onPressed: _save,
-                              onArrowUp: () => _yFocus.requestFocus(),
+                              onArrowUp: _yFocus.requestFocus,
                             ),
                           ],
                         ),
@@ -358,7 +355,6 @@ class _PaddingAdjusterState extends State<_PaddingAdjuster> {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: borderColor,
-              width: 1.0,
             ),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

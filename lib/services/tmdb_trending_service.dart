@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../config/constants.dart';
 import '../models/movie_models.dart';
+import 'package:moai3/utils/text_normalize.dart';
 
 /// Servicio para consultar estrenos y tendencias globales de TMDb
 /// y cruzarlos con el catálogo local de películas.
@@ -14,17 +15,6 @@ class TmdbTrendingService {
   List<Map<String, dynamic>>? _cachedTmdbMovies;
   DateTime? _lastFetchTime;
 
-  /// Limpia y normaliza texto para facilitar comparaciones (sin tildes, minúsculas, sin signos)
-  static String _normalize(String? text) {
-    if (text == null || text.trim().isEmpty) return '';
-    var clean = text.toLowerCase().trim();
-    const withDia = 'áéíóúüñÁÉÍÓÚÜÑ';
-    const withoutDia = 'aeiouunAEIOUUN';
-    for (int i = 0; i < withDia.length; i++) {
-      clean = clean.replaceAll(withDia[i], withoutDia[i]);
-    }
-    return clean.replaceAll(RegExp(r'[^a-z0-9 ]+'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
-  }
 
   /// Consulta tendencias y estrenos de la semana en TMDb.
   /// Guarda en caché en memoria por 4 horas para no hacer peticiones de más.
@@ -114,15 +104,15 @@ class TmdbTrendingService {
     for (final tm in tmdbList) {
       if (matchedMovies.length >= targetCount) break;
 
-      final tmTitle = _normalize(tm['title']?.toString());
-      final tmOrig = _normalize(tm['original_title']?.toString());
+      final tmTitle = normalizeText(tm['title']?.toString());
+      final tmOrig = normalizeText(tm['original_title']?.toString());
 
       for (final lm in allCatalogMovies) {
         if (matchedIds.contains(lm.contentId)) continue;
         if (lm.isTrailer) continue; // No incluir trailers en la fila de películas
 
-        final lmName = _normalize(lm.name);
-        final lmAlias = _normalize(lm.alias);
+        final lmName = normalizeText(lm.name);
+        final lmAlias = normalizeText(lm.alias);
 
         final isMatch = (tmTitle.isNotEmpty && (tmTitle == lmName || tmTitle == lmAlias || (tmTitle.length > 6 && lmName.contains(tmTitle)))) ||
             (tmOrig.isNotEmpty && (tmOrig == lmName || tmOrig == lmAlias || (tmOrig.length > 6 && lmAlias.contains(tmOrig))));
@@ -141,7 +131,7 @@ class TmdbTrendingService {
     // o las más recientes de 2026/2025
     if (matchedMovies.length < targetCount) {
       for (final cat in existingCategories) {
-        final catName = _normalize(cat.columnName);
+        final catName = normalizeText(cat.columnName);
         if (catName.contains('teatrales') || catName.contains('2026')) {
           for (final m in cat.movies) {
             if (matchedMovies.length >= targetCount) break;

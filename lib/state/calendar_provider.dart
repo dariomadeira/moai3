@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/models/sport_subscription.dart';
 import 'package:moai3/services/calendar/argentina_time.dart';
@@ -26,7 +26,6 @@ class CalendarProvider extends ChangeNotifier {
       sport: 'motorsport',
       description: 'calendar_sub_f1_desc',
       icon: MoaiIcons.calendarSubF1,
-      isSubscribed: false,
     ),
     SportSubscription(
       id: 'lpf_ar',
@@ -34,7 +33,6 @@ class CalendarProvider extends ChangeNotifier {
       sport: 'soccer',
       description: 'calendar_sub_lpf_desc',
       icon: MoaiIcons.calendarSubLpf,
-      isSubscribed: false,
     ),
     SportSubscription(
       id: 'champions',
@@ -42,7 +40,6 @@ class CalendarProvider extends ChangeNotifier {
       sport: 'soccer',
       description: 'calendar_sub_champions_desc',
       icon: MoaiIcons.calendarSubChampions,
-      isSubscribed: false,
     ),
     SportSubscription(
       id: 'premier',
@@ -50,7 +47,6 @@ class CalendarProvider extends ChangeNotifier {
       sport: 'soccer',
       description: 'calendar_sub_premier_desc',
       icon: MoaiIcons.calendarSubPremier,
-      isSubscribed: false,
     ),
     SportSubscription(
       id: 'nfl',
@@ -58,7 +54,6 @@ class CalendarProvider extends ChangeNotifier {
       sport: 'american_football',
       description: 'calendar_sub_nfl_desc',
       icon: MoaiIcons.calendarSubNfl,
-      isSubscribed: false,
     ),
     SportSubscription(
       id: 'motogp',
@@ -66,7 +61,6 @@ class CalendarProvider extends ChangeNotifier {
       sport: 'motorsport',
       description: 'calendar_sub_motogp_desc',
       icon: MoaiIcons.calendarSubMotogp,
-      isSubscribed: false,
     ),
     SportSubscription(
       id: 'nba',
@@ -74,7 +68,6 @@ class CalendarProvider extends ChangeNotifier {
       sport: 'basketball',
       description: 'calendar_sub_nba_desc',
       icon: MoaiIcons.calendarSubNba,
-      isSubscribed: false,
     ),
   ];
 
@@ -110,7 +103,12 @@ class CalendarProvider extends ChangeNotifier {
   /// Permite deshabilitar el ticker en tests unitarios o widgets para evitar timers pendientes.
   static bool enablePeriodicTicker = true;
 
-  CalendarProvider({bool? startTicker}) {
+  AppPreferences? _preferences;
+
+  Future<AppPreferences> _prefs() async =>
+      _preferences ??= await AppPreferences.init();
+
+  CalendarProvider({this._preferences, bool? startTicker}) {
     _init();
     final shouldStart = startTicker ?? (enablePeriodicTicker && !_isInTest);
     if (shouldStart) {
@@ -150,6 +148,7 @@ class CalendarProvider extends ChangeNotifier {
   }
 
   /// Evalúa si hay eventos recién iniciados en las suscripciones activas y los emite agrupados.
+  @visibleForTesting
   void checkNewLiveEvents() {
     _checkNewLiveEvents();
   }
@@ -190,8 +189,17 @@ class CalendarProvider extends ChangeNotifier {
   }
 
   List<SportSubscription> get subscriptions => List.unmodifiable(_subscriptions);
-  List<CalendarEvent> get allEvents => List.unmodifiable(_events);
   bool get isLoading => _isLoading;
+
+  /// Reemplaza los eventos sin pasar por la red (tests de widgets).
+  @visibleForTesting
+  void debugSetEvents(List<CalendarEvent> events) {
+    _events = [...events]
+      ..sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
+    // Evita que el refresh inicial del constructor pise estos eventos.
+    _lastFetchTime = DateTime.now();
+    _notify();
+  }
 
   /// Retorna los eventos filtrados por las competiciones suscriptas y ordenados cronológicamente.
   List<CalendarEvent> get subscribedEvents {
@@ -211,16 +219,6 @@ class CalendarProvider extends ChangeNotifier {
   /// Contador de eventos de hoy para el Badge del NavigationRail (total programado para el día).
   int get todayEventCount {
     return subscribedEvents.where((e) => e.isToday).length;
-  }
-
-  /// Agrupa los eventos suscriptos por día (solo año-mes-día).
-  Map<DateTime, List<CalendarEvent>> get eventsGroupedByDay {
-    final Map<DateTime, List<CalendarEvent>> map = {};
-    for (final ev in subscribedEvents) {
-      final day = ArgentinaTime.dateOnly(ev.startDateTime);
-      map.putIfAbsent(day, () => []).add(ev);
-    }
-    return map;
   }
 
   /// Obtiene el lunes correspondiente a una fecha (a las 00:00:00).
@@ -257,8 +255,8 @@ class CalendarProvider extends ChangeNotifier {
 
   Future<void> _loadNotifyLead() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final saved = prefs.getInt(_notifyLeadKey);
+      final prefs = await _prefs();
+      final saved = prefs.readOptionalInt(_notifyLeadKey);
       if (saved != null && notifyLeadOptions.contains(saved)) {
         _notifyLeadMinutes = saved;
       }
@@ -269,8 +267,8 @@ class CalendarProvider extends ChangeNotifier {
 
   Future<void> _loadSnackDuration() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final saved = prefs.getInt(_snackDurationKey);
+      final prefs = await _prefs();
+      final saved = prefs.readOptionalInt(_snackDurationKey);
       if (saved != null && snackDurationOptions.contains(saved)) {
         _snackDurationSeconds = saved;
       }
@@ -281,8 +279,8 @@ class CalendarProvider extends ChangeNotifier {
 
   Future<void> _loadSubscriptions() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedActiveIds = prefs.getStringList(_prefsKey);
+      final prefs = await _prefs();
+      final savedActiveIds = prefs.readOptionalStringList(_prefsKey);
 
       if (savedActiveIds == null) {
         _subscriptions = List.from(defaultSubscriptions);
@@ -308,12 +306,12 @@ class CalendarProvider extends ChangeNotifier {
     _notify();
 
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await _prefs();
       final activeIds = _subscriptions
           .where((s) => s.isSubscribed)
           .map((s) => s.id)
           .toList();
-      await prefs.setStringList(_prefsKey, activeIds);
+      await prefs.saveStringList(_prefsKey, activeIds);
     } catch (e) {
       debugPrint('[CalendarProvider] Error guardando suscripciones: $e');
     }
@@ -338,29 +336,10 @@ class CalendarProvider extends ChangeNotifier {
       final f1 = results[0];
       final sports = results[1];
 
-      // Generar calendario de soporte para semanas -1 hasta +4
-      final now = ArgentinaTime.now();
-      final currentMonday = getMondayOfWeek(now);
-      final List<CalendarEvent> generated = [];
-      for (var offset = -1; offset <= 4; offset++) {
-        final mon = currentMonday.add(Duration(days: offset * 7));
-        generated.addAll(generateMockFixturesForWeek(mon));
-      }
-
-      // Si tenemos eventos deportivos reales para el día de hoy, omitimos los mock fixtures
-      // de hoy para que la columna del día actual solo muestre partidos reales.
-      final todayRealEvents = sports.where((e) => e.isToday).isNotEmpty;
-      final filteredGenerated = generated.where((e) {
-        if (todayRealEvents && e.isToday) {
-          return false;
-        }
-        return true;
-      });
-
       final combined = <CalendarEvent>[];
       final seenIds = <String>{};
 
-      for (final ev in [...f1, ...sports, ...filteredGenerated]) {
+      for (final ev in [...f1, ...sports]) {
         if (seenIds.add(ev.id)) {
           combined.add(ev);
         }
@@ -403,8 +382,8 @@ class CalendarProvider extends ChangeNotifier {
     if (next == _snackDurationSeconds) return;
     _snackDurationSeconds = next;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(_snackDurationKey, next);
+      final prefs = await _prefs();
+      await prefs.saveInt(_snackDurationKey, next);
     } catch (e) {
       debugPrint('[CalendarProvider] Error al guardar duración del snack: $e');
     }
@@ -416,8 +395,8 @@ class CalendarProvider extends ChangeNotifier {
     if (next == _notifyLeadMinutes) return;
     _notifyLeadMinutes = next;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(_notifyLeadKey, next);
+      final prefs = await _prefs();
+      await prefs.saveInt(_notifyLeadKey, next);
     } catch (e) {
       debugPrint('[CalendarProvider] Error al guardar aviso: $e');
     }
@@ -493,190 +472,5 @@ class CalendarProvider extends ChangeNotifier {
       return getSubscriptionIcon(firstSub);
     }
     return MoaiIcons.liveTvOutlined;
-  }
-
-  /// Genera eventos representativos para una semana (del Lunes al Domingo dado).
-  static List<CalendarEvent> generateMockFixturesForWeek(DateTime monday) {
-    final cleanMonday = DateTime(monday.year, monday.month, monday.day);
-    final List<CalendarEvent> fixtures = [];
-
-    DateTime kickoff(DateTime day, int hour, int minute) {
-      return ArgentinaTime.fromCivil(day.year, day.month, day.day, hour, minute);
-    }
-
-    // Lunes
-    fixtures.add(CalendarEvent(
-      id: 'mock_lpf_mon_${cleanMonday.millisecondsSinceEpoch}',
-      subscriptionId: 'lpf_ar',
-      title: 'calendar_mock_lpf_estudiantes'.tr(),
-      competition: 'calendar_comp_lpf'.tr(),
-      startDateTime: kickoff(cleanMonday, 8, 0),
-      sessionType: 'calendar_session_regular'.tr(),
-      broadcaster: 'TNT Sports',
-    ));
-
-    // Martes
-    final tue = cleanMonday.add(const Duration(days: 1));
-    fixtures.add(CalendarEvent(
-      id: 'mock_ucl_tue_1_${tue.millisecondsSinceEpoch}',
-      subscriptionId: 'champions',
-      title: 'calendar_mock_ucl_madrid'.tr(),
-      competition: 'calendar_comp_ucl'.tr(),
-      startDateTime: kickoff(tue, 16, 0),
-      sessionType: 'calendar_session_groups'.tr(),
-      broadcaster: 'ESPN / Disney+',
-    ));
-    fixtures.add(CalendarEvent(
-      id: 'mock_ucl_tue_2_${tue.millisecondsSinceEpoch}',
-      subscriptionId: 'champions',
-      title: 'calendar_mock_ucl_psg'.tr(),
-      competition: 'calendar_comp_ucl'.tr(),
-      startDateTime: kickoff(tue, 16, 0),
-      sessionType: 'calendar_session_groups'.tr(),
-      broadcaster: 'Fox Sports',
-    ));
-
-    // Miércoles
-    final wed = cleanMonday.add(const Duration(days: 2));
-    fixtures.add(CalendarEvent(
-      id: 'mock_ucl_wed_1_${wed.millisecondsSinceEpoch}',
-      subscriptionId: 'champions',
-      title: 'calendar_mock_ucl_barca'.tr(),
-      competition: 'calendar_comp_ucl'.tr(),
-      startDateTime: kickoff(wed, 16, 0),
-      sessionType: 'calendar_session_groups'.tr(),
-      broadcaster: 'ESPN / Disney+',
-    ));
-    fixtures.add(CalendarEvent(
-      id: 'mock_nba_wed_${wed.millisecondsSinceEpoch}',
-      subscriptionId: 'nba',
-      title: 'calendar_mock_nba_warriors'.tr(),
-      competition: 'calendar_comp_nba'.tr(),
-      startDateTime: kickoff(wed, 21, 30),
-      sessionType: 'calendar_session_regular_season'.tr(),
-      broadcaster: 'ESPN 2',
-    ));
-
-    // Jueves
-    final thu = cleanMonday.add(const Duration(days: 3));
-    fixtures.add(CalendarEvent(
-      id: 'mock_nfl_thu_${thu.millisecondsSinceEpoch}',
-      subscriptionId: 'nfl',
-      title: 'calendar_mock_nfl_chiefs'.tr(),
-      competition: 'calendar_comp_nfl_tnf'.tr(),
-      startDateTime: kickoff(thu, 21, 15),
-      sessionType: 'calendar_session_regular_season'.tr(),
-      broadcaster: 'ESPN',
-    ));
-
-    // Viernes
-    final fri = cleanMonday.add(const Duration(days: 4));
-    fixtures.add(CalendarEvent(
-      id: 'mock_lpf_fri_1_${fri.millisecondsSinceEpoch}',
-      subscriptionId: 'lpf_ar',
-      title: 'calendar_mock_lpf_racing'.tr(),
-      competition: 'calendar_comp_lpf'.tr(),
-      startDateTime: kickoff(fri, 19, 0),
-      sessionType: 'calendar_session_regular'.tr(),
-      broadcaster: 'ESPN Premium',
-    ));
-    fixtures.add(CalendarEvent(
-      id: 'mock_lpf_fri_2_${fri.millisecondsSinceEpoch}',
-      subscriptionId: 'lpf_ar',
-      title: 'calendar_mock_lpf_newells'.tr(),
-      competition: 'calendar_comp_lpf'.tr(),
-      startDateTime: kickoff(fri, 21, 15),
-      sessionType: 'calendar_session_clasico'.tr(),
-      broadcaster: 'TNT Sports',
-    ));
-
-    // Sábado
-    final sat = cleanMonday.add(const Duration(days: 5));
-    fixtures.add(CalendarEvent(
-      id: 'mock_pl_sat_1_${sat.millisecondsSinceEpoch}',
-      subscriptionId: 'premier',
-      title: 'calendar_mock_pl_liverpool'.tr(),
-      competition: 'calendar_comp_premier'.tr(),
-      startDateTime: kickoff(sat, 8, 30),
-      sessionType: 'calendar_session_matchday'.tr(),
-      broadcaster: 'ESPN',
-    ));
-    fixtures.add(CalendarEvent(
-      id: 'mock_pl_sat_2_${sat.millisecondsSinceEpoch}',
-      subscriptionId: 'premier',
-      title: 'calendar_mock_pl_city'.tr(),
-      competition: 'calendar_comp_premier'.tr(),
-      startDateTime: kickoff(sat, 13, 30),
-      sessionType: 'calendar_session_matchday'.tr(),
-      broadcaster: 'ESPN / Disney+',
-    ));
-    fixtures.add(CalendarEvent(
-      id: 'mock_lpf_sat_1_${sat.millisecondsSinceEpoch}',
-      subscriptionId: 'lpf_ar',
-      title: 'calendar_mock_lpf_sanlorenzo'.tr(),
-      competition: 'calendar_comp_lpf'.tr(),
-      startDateTime: kickoff(sat, 17, 0),
-      sessionType: 'calendar_session_clasico'.tr(),
-      broadcaster: 'TNT Sports',
-    ));
-    fixtures.add(CalendarEvent(
-      id: 'mock_lpf_sat_2_${sat.millisecondsSinceEpoch}',
-      subscriptionId: 'lpf_ar',
-      title: 'calendar_mock_lpf_boca'.tr(),
-      competition: 'calendar_comp_lpf'.tr(),
-      startDateTime: kickoff(sat, 19, 30),
-      sessionType: 'calendar_session_regular'.tr(),
-      broadcaster: 'ESPN Premium',
-    ));
-
-    // Domingo
-    final sun = cleanMonday.add(const Duration(days: 6));
-    fixtures.add(CalendarEvent(
-      id: 'mock_pl_sun_1_${sun.millisecondsSinceEpoch}',
-      subscriptionId: 'premier',
-      title: 'calendar_mock_pl_tottenham'.tr(),
-      competition: 'calendar_comp_premier'.tr(),
-      startDateTime: kickoff(sun, 11, 30),
-      sessionType: 'calendar_session_super_sunday'.tr(),
-      broadcaster: 'ESPN',
-    ));
-    fixtures.add(CalendarEvent(
-      id: 'mock_lpf_sun_super_${sun.millisecondsSinceEpoch}',
-      subscriptionId: 'lpf_ar',
-      title: 'calendar_mock_lpf_river'.tr(),
-      competition: 'calendar_comp_lpf'.tr(),
-      startDateTime: kickoff(sun, 17, 30),
-      sessionType: 'calendar_session_clasico'.tr(),
-      broadcaster: 'ESPN Premium / TNT Sports',
-    ));
-    fixtures.add(CalendarEvent(
-      id: 'mock_nba_sun_${sun.millisecondsSinceEpoch}',
-      subscriptionId: 'nba',
-      title: 'calendar_mock_nba_lakers'.tr(),
-      competition: 'calendar_comp_nba_sunday'.tr(),
-      startDateTime: kickoff(sun, 20, 0),
-      sessionType: 'calendar_session_regular_season'.tr(),
-      broadcaster: 'ESPN',
-    ));
-    fixtures.add(CalendarEvent(
-      id: 'mock_nfl_sun_snf_${sun.millisecondsSinceEpoch}',
-      subscriptionId: 'nfl',
-      title: 'calendar_mock_nfl_49ers'.tr(),
-      competition: 'calendar_comp_nfl_snf'.tr(),
-      startDateTime: kickoff(sun, 21, 20),
-      sessionType: 'calendar_session_snf'.tr(),
-      broadcaster: 'ESPN / Disney+',
-    ));
-    fixtures.add(CalendarEvent(
-      id: 'mock_nfl_sun_afternoon_${sun.millisecondsSinceEpoch}',
-      subscriptionId: 'nfl',
-      title: 'calendar_mock_nfl_packers'.tr(),
-      competition: 'calendar_comp_nfl_afternoon'.tr(),
-      startDateTime: kickoff(sun, 14, 0),
-      sessionType: 'calendar_session_regular'.tr(),
-      broadcaster: 'Fox Sports',
-    ));
-
-    return fixtures;
   }
 }

@@ -10,7 +10,6 @@ import 'package:moai3/services/calendar/calendar_channel_matcher.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/widgets/cards/new_channel_card.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
@@ -87,24 +86,6 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
 
   bool _hadFocus = false;
   Timer? _tickerTimer;
-
-  /// Enfocar explícitamente desde la izquierda (Lunes / col 0)
-  void focusFromLeft() {
-    setState(() {
-      _focusSection = _FocusSection.grid;
-      _selectedDayIndex = 0;
-    });
-    widget.focusNode.requestFocus();
-  }
-
-  /// Enfocar explícitamente desde la derecha (Domingo / col 6)
-  void focusFromRight() {
-    setState(() {
-      _focusSection = _FocusSection.grid;
-      _selectedDayIndex = 6;
-    });
-    widget.focusNode.requestFocus();
-  }
 
   @override
   void initState() {
@@ -501,7 +482,6 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                           style: MoaiText.display(
                             context,
                             fontSize: 15,
-                            fontWeight: FontWeight.w700,
                             color: scheme.onSurface,
                           ),
                         ),
@@ -685,7 +665,7 @@ class _HeaderButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: baseColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor, width: 1.0),
+            border: Border.all(color: borderColor),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -829,7 +809,7 @@ class _DayColumn extends StatelessWidget {
             decoration: BoxDecoration(
               color: headerBase,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: headerBorderColor, width: 1.0),
+              border: Border.all(color: headerBorderColor),
             ),
             child: Stack(
               children: [
@@ -1037,12 +1017,11 @@ class _DayColumn extends StatelessWidget {
         decoration: BoxDecoration(
           color: baseColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor, width: 1.0),
+          border: Border.all(color: borderColor),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(
               MoaiIcons.eventBusyOutlined,
@@ -1093,10 +1072,7 @@ class _CalendarEventGridCard extends StatelessWidget {
       event.subscriptionId,
     );
 
-    final finishedText = 'calendar_status_finished'.tr();
-    final finishedLabel = (finishedText == 'calendar_status_finished')
-        ? 'FIN'
-        : finishedText;
+    final finishedLabel = 'calendar_status_finished'.tr();
 
     // Paleta de colores adaptativa según estado y foco con gradiente y borde sutil
     final Color baseColor;
@@ -1154,7 +1130,7 @@ class _CalendarEventGridCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: baseColor,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: borderColor, width: 1.0),
+            border: Border.all(color: borderColor),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1180,7 +1156,6 @@ class _CalendarEventGridCard extends StatelessWidget {
                         style: MoaiText.display(
                           context,
                           fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
                           color: fgColor,
                         ),
                       ),
@@ -1250,7 +1225,7 @@ class _CalendarEventGridCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'PROX.',
+                            'calendar_status_upcoming_short'.tr(),
                             style: MoaiText.body(
                               context,
                               fontSize: 8,
@@ -1329,7 +1304,7 @@ class _CalendarEventDialogContentState
       if (!mounted) return;
       // Si el evento está en vivo y hay canales disponibles, enfocar el primer canal; de lo contrario cerrar
       if (widget.isLive && _matchingChannels.isNotEmpty) {
-        _listKey.currentState?.ensureVisible(0, requestFocus: true);
+        _listKey.currentState?.ensureVisible(0);
       } else {
         _closeFocusNode.requestFocus();
       }
@@ -1372,7 +1347,7 @@ class _CalendarEventDialogContentState
         TvInfoTile(
           icon: MoaiIcons.calendarDialogSport,
           label: 'calendar_event_sport'.tr(),
-          description: event.sessionType ?? event.competition,
+          description: event.sessionType?.tr() ?? event.competition,
         ),
         if (event.broadcaster != null && event.broadcaster!.isNotEmpty) ...[
           const SizedBox(height: 8),
@@ -1405,14 +1380,12 @@ class _CalendarEventDialogContentState
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: panelBorder,
-                      width: 1.0,
                     ),
                   ),
                   child: TvWindowedList<Channel>(
                     key: _listKey,
                     items: _matchingChannels,
                     windowSize: 4,
-                    itemExtent: TvLayoutConstants.channelItemHeight,
                     showScrollDots: true,
                     itemBuilder:
                         (
@@ -1429,7 +1402,7 @@ class _CalendarEventDialogContentState
                             channel: ch,
                             isSelected: false,
                             focusNode: focusNode,
-                            onKeyLeft: () => _closeFocusNode.requestFocus(),
+                            onKeyLeft: _closeFocusNode.requestFocus,
                             onKeyUp: onKeyUp,
                             onKeyDown: () {
                               if (global >= _matchingChannels.length - 1) {
@@ -1482,10 +1455,7 @@ class _CalendarEventDialogContentState
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      'calendar_status_finished'.tr() ==
-                              'calendar_status_finished'
-                          ? 'FIN'
-                          : 'calendar_status_finished'.tr(),
+                      'calendar_status_finished'.tr(),
                       style: MoaiText.body(
                         context,
                         fontSize: 9.5,
@@ -1505,7 +1475,7 @@ class _CalendarEventDialogContentState
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      'PROX.',
+                      'calendar_status_upcoming_short'.tr(),
                       style: MoaiText.body(
                         context,
                         fontSize: 9.5,
@@ -1522,7 +1492,7 @@ class _CalendarEventDialogContentState
             if (keyEvent is KeyDownEvent && hasChannels) {
               if (keyEvent.logicalKey == LogicalKeyboardKey.arrowRight ||
                   keyEvent.logicalKey == LogicalKeyboardKey.arrowUp) {
-                _listKey.currentState?.ensureVisible(0, requestFocus: true);
+                _listKey.currentState?.ensureVisible(0);
                 return KeyEventResult.handled;
               }
             }
@@ -1531,7 +1501,6 @@ class _CalendarEventDialogContentState
           child: TvDialogButton(
             focusNode: _closeFocusNode,
             label: 'calendar_dialog_close'.tr(),
-            variant: TvDialogButtonVariant.neutral,
             autofocus: !widget.isLive || !hasChannels,
             onPressed: () => Navigator.of(context).pop(),
           ),

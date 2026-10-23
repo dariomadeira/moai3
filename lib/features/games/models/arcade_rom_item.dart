@@ -51,8 +51,6 @@ class ArcadeRomItem {
 
   ArcadeRomItem copyWith({
     bool? isInstalled,
-    String? localPath,
-    int? localSizeBytes,
     String? url,
   }) {
     return ArcadeRomItem(
@@ -67,8 +65,8 @@ class ArcadeRomItem {
       url: url ?? this.url,
       description: description,
       isInstalled: isInstalled ?? this.isInstalled,
-      localPath: localPath ?? this.localPath,
-      localSizeBytes: localSizeBytes ?? this.localSizeBytes,
+      localPath: localPath,
+      localSizeBytes: localSizeBytes,
     );
   }
 }

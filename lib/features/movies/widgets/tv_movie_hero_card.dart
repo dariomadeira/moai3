@@ -200,7 +200,6 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           if (widget.isLoading) ...[
                             SizedBox(

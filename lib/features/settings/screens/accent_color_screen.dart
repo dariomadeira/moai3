@@ -45,7 +45,7 @@ class _AccentColorScreenState extends State<AccentColorScreen> {
   }
 
   void _focusList() {
-    _listKey.currentState?.ensureVisible(_selectedItemIndex, requestFocus: true);
+    _listKey.currentState?.ensureVisible(_selectedItemIndex);
   }
 
   @override
@@ -115,7 +115,6 @@ class _AccentColorScreenState extends State<AccentColorScreen> {
                     SizedBox(
                       width: 54,
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           const SizedBox(height: 9),
                           TvBackPill(
@@ -159,7 +158,6 @@ class _AccentColorScreenState extends State<AccentColorScreen> {
                                           alpha: 0.7,
                                         ),
                                         fontSize: 12,
-                                        fontWeight: FontWeight.w700,
                                         letterSpacing: 1.0,
                                       ),
                                     ),
@@ -207,7 +205,6 @@ class _AccentColorScreenState extends State<AccentColorScreen> {
                                                   _AccentScreenItemType>(
                                                 key: _listKey,
                                                 items: items,
-                                                windowSize: _windowSize,
                                                 itemExtent: _itemExtent,
                                                 showScrollDots: true,
                                                 initialGlobalIndex:
@@ -215,9 +212,7 @@ class _AccentColorScreenState extends State<AccentColorScreen> {
                                                 onFocusedGlobalIndex: (idx) {
                                                   _selectedItemIndex = idx;
                                                 },
-                                                onFocusUpFromFirst: () =>
-                                                    _backFocusNode
-                                                        .requestFocus(),
+                                                onFocusUpFromFirst: _backFocusNode.requestFocus,
                                                 itemBuilder: (
                                                   context,
                                                   item,
@@ -241,12 +236,8 @@ class _AccentColorScreenState extends State<AccentColorScreen> {
                                                           focusNode: focusNode,
                                                           selectedIndex:
                                                               selectedIndex,
-                                                          onChanged: (idx) =>
-                                                              theme.setAccentColorIndex(
-                                                                  idx),
-                                                          onKeyLeft: () =>
-                                                              _backFocusNode
-                                                                  .requestFocus(),
+                                                          onChanged: theme.setAccentColorIndex,
+                                                          onKeyLeft: _backFocusNode.requestFocus,
                                                           onKeyUp: onKeyUp,
                                                           onKeyDown: onKeyDown,
                                                         ),
@@ -271,13 +262,8 @@ class _AccentColorScreenState extends State<AccentColorScreen> {
                                                               'settings_general_auto_accent_desc'
                                                                   .tr(),
                                                           value: isAutoAccent,
-                                                          onChanged: (auto) {
-                                                            theme.setAutoAccent(
-                                                                auto);
-                                                          },
-                                                          onKeyLeft: () =>
-                                                              _backFocusNode
-                                                                  .requestFocus(),
+                                                          onChanged: theme.setAutoAccent,
+                                                          onKeyLeft: _backFocusNode.requestFocus,
                                                           onKeyUp: onKeyUp,
                                                           onKeyDown: onKeyDown,
                                                         ),

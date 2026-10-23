@@ -177,13 +177,12 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                     SizedBox(
                       width: 54,
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           const SizedBox(height: 9),
                           TvBackPill(
                             focusNode: _backFocusNode,
-                            onKeyRight: () => _heroFocusNode.requestFocus(),
-                            onKeyDown: () => _heroFocusNode.requestFocus(),
+                            onKeyRight: _heroFocusNode.requestFocus,
+                            onKeyDown: _heroFocusNode.requestFocus,
                             onPressed: () => Navigator.of(context).maybePop(),
                           ),
                           const Spacer(),
@@ -219,7 +218,6 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                           alpha: 0.7,
                                         ),
                                         fontSize: 12,
-                                        fontWeight: FontWeight.w700,
                                         letterSpacing: 1.0,
                                       ),
                                     ),
@@ -309,15 +307,9 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                                       ? 'Reanudar'
                                                       : 'Reproducir',
                                                   onPressed: _onPlayPressed,
-                                                  onArrowLeft: () =>
-                                                      _backFocusNode
-                                                          .requestFocus(),
-                                                  onArrowDown: () =>
-                                                      _favFocusNode
-                                                          .requestFocus(),
-                                                  onArrowUp: () =>
-                                                      _backFocusNode
-                                                          .requestFocus(),
+                                                  onArrowLeft: _backFocusNode.requestFocus,
+                                                  onArrowDown: _favFocusNode.requestFocus,
+                                                  onArrowUp: _backFocusNode.requestFocus,
                                                 ),
                                               ),
                                               const SizedBox(height: 12),
@@ -339,12 +331,8 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                                   fontSize: 13,
                                                   radius: 20,
                                                   onPressed: _toggleFavorite,
-                                                  onArrowLeft: () =>
-                                                      _backFocusNode
-                                                          .requestFocus(),
-                                                  onArrowUp: () =>
-                                                      _heroFocusNode
-                                                          .requestFocus(),
+                                                  onArrowLeft: _backFocusNode.requestFocus,
+                                                  onArrowUp: _heroFocusNode.requestFocus,
                                                 ),
                                               ),
                                             ],
@@ -376,8 +364,6 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
       shaderCallback: (bounds) {
         // Desvanecimiento suave en X: el borde izquierdo se vuelve 100% transparente
         return const LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
           colors: [Colors.transparent, Colors.white],
           stops: [0.0, 0.40],
         ).createShader(bounds);

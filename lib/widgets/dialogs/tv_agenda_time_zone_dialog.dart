@@ -17,7 +17,6 @@ class TvAgendaTimeZoneDialog extends StatefulWidget {
   static Future<void> show(BuildContext context) {
     return showTvGeneralDialog(
       context: context,
-      barrierDismissible: true,
       barrierLabel: 'TvAgendaTimeZoneDialog',
       builder: (_) => const TvAgendaTimeZoneDialog(),
     );
@@ -110,7 +109,6 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
             focusNode: _searchFocusNode,
             label: 'settings_agenda_utc_search_hint'.tr(),
             hint: 'search_field_hint'.tr(),
-            keyboardType: TvKeyboardType.text,
             textInputAction: TvTextInputAction.search,
             dense: true,
             leadingIcon: MoaiIcons.searchOutlined,
@@ -137,7 +135,6 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
         TvDialogButton(
           focusNode: _closeBtnFocus,
           label: 'common_close'.tr(),
-          variant: TvDialogButtonVariant.neutral,
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
           onKeyUp: () {
             if (_filteredZones.isNotEmpty) {
@@ -190,7 +187,7 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
 
     const windowSize = 3;
     const itemExtent = 66.0;
-    final targetHeight = (windowSize * itemExtent);
+    const targetHeight = (windowSize * itemExtent);
 
     return SizedBox(
       height: targetHeight,
@@ -201,8 +198,8 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
         itemExtent: itemExtent,
         showScrollDots: true,
         initialGlobalIndex: _selectedResultIndex,
-        onFocusUpFromFirst: () => _searchFocusNode.requestFocus(),
-        onFocusDownFromLast: () => _closeBtnFocus.requestFocus(),
+        onFocusUpFromFirst: _searchFocusNode.requestFocus,
+        onFocusDownFromLast: _closeBtnFocus.requestFocus,
         onFocusedGlobalIndex: (idx) => _selectedResultIndex = idx,
         itemBuilder: (
           context,

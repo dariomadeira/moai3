@@ -17,12 +17,6 @@ import 'package:moai3/theme/moai_icons.dart';
 /// 2. El reproductor está en pantalla completa.
 /// 3. Hay al menos un amigo sintonizando el mismo canal.
 class WatchPartyOverlay extends StatefulWidget {
-  /// Modo Desarrollador: Forzar visibilidad y simulaciones para rediseño visual
-  static bool debugForceVisible = false;
-  static bool debugSimulateIncomingAudio = false;
-  static bool debugSimulateRecording = false;
-  static int debugMockFriendsCount = 1;
-
   final WatchPartyVoiceCoordinator? coordinator;
   final FocusNode? micFocusNode;
 
@@ -51,11 +45,6 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
   final List<String> _pendingNotifications = [];
   WatchPartyProvider? _subscribedProvider;
 
-  String? _simulatedAudioSpeaker;
-
-  Timer? _devSimulationTimer;
-  Timer? _devAudioTimer;
-
   @override
   void initState() {
     super.initState();
@@ -67,33 +56,6 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
     }
 
     _micFocusNode.addListener(_onFocusChange);
-
-    // En modo desarrollo, simular la secuencia de notificaciones visuales:
-    // 1. Notificación de conexión a la izquierda (3.5s)
-    // 2. Al cerrarse, notificación de audio entrante a la derecha (3.5s)
-    if (WatchPartyOverlay.debugForceVisible) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _activeNotificationMessage == null) {
-          _enqueueNotification('watch_party_debug_name'.tr());
-          _devSimulationTimer?.cancel();
-          _devSimulationTimer = Timer(const Duration(milliseconds: 3800), () {
-            if (mounted) {
-              setState(() {
-                _simulatedAudioSpeaker = 'watch_party_debug_name'.tr();
-              });
-              _devAudioTimer?.cancel();
-              _devAudioTimer = Timer(const Duration(milliseconds: 3500), () {
-                if (mounted) {
-                  setState(() {
-                    _simulatedAudioSpeaker = null;
-                  });
-                }
-              });
-            }
-          });
-        }
-      });
-    }
   }
 
   void _onFocusChange() {
@@ -104,8 +66,6 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
 
   @override
   void dispose() {
-    _devSimulationTimer?.cancel();
-    _devAudioTimer?.cancel();
     _notificationSubscription?.cancel();
     _notificationDisplayTimer?.cancel();
     _longPressTimer?.cancel();
@@ -178,19 +138,15 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
     final coordinator = widget.coordinator ??
         (context.watch<WatchPartyVoiceCoordinator?>());
 
-    final isDevMode = WatchPartyOverlay.debugForceVisible;
-
     if (_subscribedProvider != watchParty) {
       _notificationSubscription?.cancel();
       _subscribedProvider = watchParty;
       _notificationSubscription =
-          watchParty.joinedChannelNotificationsStream.listen((msg) {
-        _enqueueNotification(msg);
-      });
+          watchParty.joinedChannelNotificationsStream.listen(_enqueueNotification);
     }
 
-    // Regla de visibilidad SPEC-37: Si no está habilitado o no hay amigos en este canal, ocultar (salvo en modo debug)
-    if (!isDevMode && (!watchParty.enabled || !watchParty.hasFriendsInSameChannel)) {
+    // Regla de visibilidad SPEC-37: Si no está habilitado o no hay amigos en este canal, ocultar.
+    if (!watchParty.enabled || !watchParty.hasFriendsInSameChannel) {
       return const SizedBox.shrink();
     }
 
@@ -207,14 +163,9 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
 
 
 
-    final isRecording = WatchPartyOverlay.debugSimulateRecording ||
-        (coordinator?.isRecording ?? false);
-    final isPlaying = WatchPartyOverlay.debugSimulateIncomingAudio ||
-        _simulatedAudioSpeaker != null ||
-        (coordinator?.isPlaying ?? false);
-    final speakerName = _simulatedAudioSpeaker ??
-        coordinator?.currentSpeakerName ??
-        'watch_party_debug_name'.tr();
+    final isRecording = coordinator?.isRecording ?? false;
+    final isPlaying = coordinator?.isPlaying ?? false;
+    final speakerName = coordinator?.currentSpeakerName;
 
     final scheme = Theme.of(context).colorScheme;
 
@@ -223,10 +174,7 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
             .tr(namedArgs: {'name': _activeNotificationMessage!})
         : null;
 
-    TvSettingsProvider? tvSettings;
-    try {
-      tvSettings = context.watch<TvSettingsProvider?>();
-    } catch (_) {}
+    final tvSettings = context.watch<TvSettingsProvider?>();
 
     final overscanY = tvSettings?.overlapPaddingY ?? 20.0;
     final overscanX = tvSettings?.overlapPaddingX ?? 20.0;
@@ -291,7 +239,6 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: scheme.outlineVariant.withValues(alpha: 0.48),
-            width: 1.0,
           ),
         ),
         child: Row(
@@ -312,7 +259,6 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
                   context,
                   color: fg,
                   fontSize: 12,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -341,7 +287,7 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
         ? scheme.onTertiary
         : (isRecording ? scheme.error : scheme.onTertiaryContainer);
 
-    Widget micContent = Container(
+    final Widget micContent = Container(
       width: 48,
       height: 30,
       decoration: BoxDecoration(
@@ -351,7 +297,6 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
           color: _isMicFocused
               ? scheme.primary
               : scheme.outlineVariant.withValues(alpha: 0.48),
-          width: 1.0,
         ),
       ),
       child: Center(
@@ -456,7 +401,7 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
 
   Widget _buildIncomingAudioChip(
     BuildContext context,
-    String speakerName,
+    String? speakerName,
     ColorScheme scheme,
   ) {
     // Usar colores idénticos a MoaiSnackBar (scheme.primary y scheme.onPrimary)
@@ -472,7 +417,6 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: scheme.outlineVariant.withValues(alpha: 0.48),
-            width: 1.0,
           ),
         ),
         child: Row(
@@ -486,15 +430,16 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
             const SizedBox(width: 6),
             Flexible(
               child: Text(
-                'watch_party_friend_speaking'
-                    .tr(namedArgs: {'name': speakerName}),
+                speakerName != null
+                    ? 'watch_party_friend_speaking'
+                        .tr(namedArgs: {'name': speakerName})
+                    : 'watch_party_listening_audio'.tr(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: MoaiText.body(
                   context,
                   color: fg,
                   fontSize: 12,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),

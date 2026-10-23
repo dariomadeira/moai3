@@ -11,11 +11,7 @@ class AppPreferences {
     return AppPreferences._(prefs);
   }
 
-  Future<void> resetAll() => _prefs.clear();
-
   Future<void> removePreference(String key) => _prefs.remove(key);
-
-  String readPreferenceString(String key) => _prefs.getString(key) ?? '';
 
   /// `null` si la clave no existe o el valor está vacío.
   String? readOptionalString(String key) {
@@ -32,6 +28,12 @@ class AppPreferences {
 
   /// `null` si la clave no existe (distinto de `false` guardado).
   bool? readOptionalBool(String key) => _prefs.getBool(key);
+
+  /// `null` si la clave no existe.
+  int? readOptionalInt(String key) => _prefs.getInt(key);
+
+  /// `null` si la clave no existe (distinto de una lista vacía guardada).
+  List<String>? readOptionalStringList(String key) => _prefs.getStringList(key);
 
   Future<void> saveBool(String key, bool value) => _prefs.setBool(key, value);
 

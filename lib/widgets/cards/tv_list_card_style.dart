@@ -29,7 +29,6 @@ class TvListCardStyle {
       color: focused
           ? scheme.primary
           : scheme.outlineVariant.withValues(alpha: 0.12),
-      width: 1.0,
     );
 
     if (focused) {

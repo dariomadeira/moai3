@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:moai3/focus/focus_scroll_sync.dart';
-import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/layout/tv_panel_layout.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/utils/safe_change_notifier.dart';
@@ -14,14 +13,6 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
   Map<String, String> countryFlags = {};
   List<String> categories = [];
   List<Channel> channels = [];
-
-  final List<FocusNode> countryFocusNodes = [];
-  final List<FocusNode> categoryFocusNodes = [];
-  final List<FocusNode> channelFocusNodes = [];
-
-  final ScrollController countryScrollController = ScrollController();
-  final ScrollController categoryScrollController = ScrollController();
-  final ScrollController channelScrollController = ScrollController();
 
   int? alphabetModePanelIndex;
   List<String> alphabetLetters = [];
@@ -51,7 +42,6 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
       }
     }
     countryFlags = flags;
-    FocusScrollSync.syncFocusNodes(countries.length, countryFocusNodes);
   }
 
   void syncFromChannels(List<Channel> allChannels, {bool? isAdultUnlocked}) {
@@ -62,9 +52,7 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
     if (countries.isEmpty) {
       selectedCountry = '';
       categories = [];
-      FocusScrollSync.syncFocusNodes(0, categoryFocusNodes);
       channels = [];
-      FocusScrollSync.syncFocusNodes(0, channelFocusNodes);
       selectedCategory = '';
       selectedChannel = null;
       safeNotifyListeners();
@@ -199,7 +187,6 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
         .toSet()
         .toList()
       ..sort();
-    FocusScrollSync.syncFocusNodes(categories.length, categoryFocusNodes);
   }
 
   void _refreshChannels(List<Channel> allChannels) {
@@ -215,7 +202,6 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
       ..sort(
         (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
       );
-    FocusScrollSync.syncFocusNodes(channels.length, channelFocusNodes);
   }
 
   bool activateAlphabetMode(int panelIndex, bool showTvLog) {
@@ -286,62 +272,8 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
     return panelIndex;
   }
 
-  void focusSelectedCountry() {
-    var idx = countries.indexOf(selectedCountry);
-    if (idx == -1 && countries.isNotEmpty) idx = 0;
-    if (idx == -1) return;
-    FocusScrollSync.focusListItem(
-      scrollController: countryScrollController,
-      focusNodes: countryFocusNodes,
-      index: idx,
-      itemHeight: TvLayoutConstants.countryItemHeight,
-      itemCount: countries.length,
-    );
-  }
-
-  void focusSelectedCategory() {
-    var idx = categories.indexOf(selectedCategory);
-    if (idx == -1 && categories.isNotEmpty) idx = 0;
-    if (idx == -1) return;
-    FocusScrollSync.focusListItem(
-      scrollController: categoryScrollController,
-      focusNodes: categoryFocusNodes,
-      index: idx,
-      itemHeight: TvLayoutConstants.categoryItemHeight,
-      itemCount: categories.length,
-    );
-  }
-
-  void focusSelectedChannel() {
-    if (selectedChannel == null && channels.isNotEmpty) {
-      selectedChannel = channels.first;
-    }
-    var idx = channels.indexWhere((c) => c.id == selectedChannel?.id);
-    if (idx == -1 && channels.isNotEmpty) idx = 0;
-    if (idx == -1) return;
-    FocusScrollSync.focusListItem(
-      scrollController: channelScrollController,
-      focusNodes: channelFocusNodes,
-      index: idx,
-      itemHeight: TvLayoutConstants.channelItemHeight,
-      itemCount: channels.length,
-    );
-  }
-
   @override
   void dispose() {
-    countryScrollController.dispose();
-    categoryScrollController.dispose();
-    channelScrollController.dispose();
-    for (final node in countryFocusNodes) {
-      FocusScrollSync.disposeNode(node);
-    }
-    for (final node in categoryFocusNodes) {
-      FocusScrollSync.disposeNode(node);
-    }
-    for (final node in channelFocusNodes) {
-      FocusScrollSync.disposeNode(node);
-    }
     for (final node in alphabetFocusNodes) {
       FocusScrollSync.disposeNode(node);
     }

@@ -1,6 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:moai3/config/app_config.dart';
-import 'package:moai3/config/player_config.dart';
+import 'package:moai3/config/app_info.dart';
 import 'package:moai3/features/player/playback/channel_playback_helpers.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/services/playback_stats_controller.dart';
@@ -12,10 +12,6 @@ class DebugLogFormatters {
         return '—';
       case PlayerBackend.engineKotlin:
         return 'debug_backend_kotlin'.tr();
-      case PlayerBackend.legacyVideoPlayer:
-        return 'debug_backend_legacy'.tr();
-      case PlayerBackend.youtube:
-        return 'debug_backend_youtube'.tr();
     }
   }
 
@@ -53,7 +49,7 @@ class DebugLogFormatters {
 
 
   static String memoryLabel() =>
-      'debug_memory'.tr(namedArgs: {'mb': '${PlayerConfig.totalRamMb}'});
+      'debug_memory'.tr(namedArgs: {'mb': '${AppInfo.totalRamMb}'});
 
   static String debugStatusLabel() =>
       AppConfig.debugMode

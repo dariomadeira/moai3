@@ -40,7 +40,7 @@ class SettingsCatalogFrequencyRow extends StatelessWidget {
 
   void _selectIndex(int index) {
     if (!enabled) return;
-    final options = CatalogUpdateFrequency.options;
+    const options = CatalogUpdateFrequency.options;
     if (index < 0 || index >= options.length) return;
     final next = options[index];
     if (next != selected) {
@@ -50,7 +50,7 @@ class SettingsCatalogFrequencyRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final options = CatalogUpdateFrequency.options;
+    const options = CatalogUpdateFrequency.options;
     final selectedIndex = _selectedIndex;
     final description = enabled
         ? 'settings_general_catalog_frequency_desc'.tr()

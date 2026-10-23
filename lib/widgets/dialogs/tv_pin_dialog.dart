@@ -59,10 +59,8 @@ class TvPinDialog extends StatefulWidget {
   }) {
     return showGeneralDialog<String?>(
       context: context,
-      barrierDismissible: false,
       barrierColor: Colors.black.withValues(alpha: 0.75),
       pageBuilder: (context, _, _) => TvPinDialog(
-        mode: TvPinDialogMode.verify,
         customTitle: title,
         customSubtitle: subtitle,
         onValidate: onValidate,
@@ -93,10 +91,8 @@ class TvPinDialog extends StatefulWidget {
 
     final success = await showGeneralDialog<bool?>(
       context: context,
-      barrierDismissible: false,
       barrierColor: Colors.black.withValues(alpha: 0.75),
       pageBuilder: (context, _, _) => TvPinDialog(
-        mode: TvPinDialogMode.verify,
         tvSettings: tvSettings,
         customTitle: 'parental_pin_title_enter'.tr(),
         customSubtitle: 'settings_tv_adult_content_desc'.tr(),
@@ -122,7 +118,6 @@ class TvPinDialog extends StatefulWidget {
   ) async {
     final success = await showGeneralDialog<bool?>(
       context: context,
-      barrierDismissible: false,
       barrierColor: Colors.black.withValues(alpha: 0.75),
       pageBuilder: (context, _, _) => TvPinDialog(
         mode: TvPinDialogMode.create,
@@ -152,7 +147,6 @@ class TvPinDialog extends StatefulWidget {
 
     final success = await showGeneralDialog<bool?>(
       context: context,
-      barrierDismissible: false,
       barrierColor: Colors.black.withValues(alpha: 0.75),
       pageBuilder: (context, _, _) => TvPinDialog(
         mode: TvPinDialogMode.change,
@@ -455,7 +449,7 @@ class _TvPinDialogState extends State<TvPinDialog>
     }
 
     if (key == LogicalKeyboardKey.escape) {
-      Navigator.of(context).pop(null);
+      Navigator.of(context).pop();
       return KeyEventResult.handled;
     }
 
@@ -498,7 +492,6 @@ class _TvPinDialogState extends State<TvPinDialog>
             style: MoaiText.display(
               context,
               fontSize: 18,
-              fontWeight: FontWeight.w700,
               color: scheme.onSurface,
             ),
           ),
@@ -528,7 +521,6 @@ class _TvPinDialogState extends State<TvPinDialog>
             : null,
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(height: 8),
 
@@ -567,7 +559,6 @@ class _TvPinDialogState extends State<TvPinDialog>
                             style: MoaiText.body(
                               context,
                               fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
                               color: scheme.error,
                             ),
                           ),
@@ -588,9 +579,8 @@ class _TvPinDialogState extends State<TvPinDialog>
           TvDialogButton(
             focusNode: _cancelBtnFocus,
             label: 'common_cancel'.tr(),
-            variant: TvDialogButtonVariant.neutral,
             onKeyUp: () => _focusGrid[3][1].requestFocus(),
-            onPressed: () => Navigator.of(context).pop(null),
+            onPressed: () => Navigator.of(context).pop(),
           ),
         ],
       ),
@@ -605,7 +595,6 @@ class _TvPinDialogState extends State<TvPinDialog>
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: scheme.outlineVariant.withValues(alpha: 0.25),
-          width: 1.0,
         ),
       ),
       child: Row(
@@ -637,7 +626,6 @@ class _TvPinDialogState extends State<TvPinDialog>
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: boxBorderColor,
-                width: 1.0,
               ),
             ),
             alignment: Alignment.center,
@@ -731,7 +719,7 @@ class _TvPinDialogState extends State<TvPinDialog>
               icon: MoaiIcons.pinClose,
               isAction: true,
               scheme: scheme,
-              onTap: () => Navigator.of(context).pop(null),
+              onTap: () => Navigator.of(context).pop(),
             ),
           ],
         ),
@@ -826,7 +814,6 @@ class _TvPinDialogState extends State<TvPinDialog>
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: borderColor,
-                      width: 1.0,
                     ),
                   ),
                   alignment: Alignment.center,
@@ -835,8 +822,6 @@ class _TvPinDialogState extends State<TvPinDialog>
                           label,
                           style: MoaiText.body(
                             context,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
                             color: fg,
                           ),
                         )

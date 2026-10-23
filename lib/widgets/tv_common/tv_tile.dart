@@ -193,7 +193,6 @@ class _TvTileChrome extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: borderColor,
-          width: 1.0,
         ),
       ),
       padding:
@@ -230,7 +229,6 @@ class _TvTileChrome extends StatelessWidget {
                       style: MoaiText.body(
                         context,
                         color: titleColor,
-                        fontSize: 15,
                         fontWeight: FontWeight.w700,
                       ),
                     ),

@@ -30,30 +30,35 @@ class CalendarEvent {
     this.channelHints = const [],
   }) : _explicitStatus = status;
 
+  static const _practiceSessions = {
+    'f1_type_p1',
+    'f1_type_p2',
+    'f1_type_p3',
+    'f1_type_practices',
+  };
+  static const _sprintSessions = {'f1_type_sprint', 'f1_type_sprint_shootout'};
+
   /// Retorna la duración estimada del evento según el deporte y tipo de sesión.
+  ///
+  /// [sessionType] es una clave estable (`f1_type_*`); el título viene de la
+  /// fuente externa y solo se usa como respaldo.
   Duration get estimatedDuration {
     final sub = subscriptionId.toLowerCase();
-    final session = (sessionType ?? '').toLowerCase();
     final tit = title.toLowerCase();
 
     // 1. Motorsport: F1 y MotoGP
     if (sub.contains('f1') || sub.contains('motogp')) {
-      if (session.contains('práctica') ||
-          session.contains('practice') ||
-          session.contains('libre') ||
-          session.contains('fp') ||
+      if (_practiceSessions.contains(sessionType) ||
           tit.contains('práctica') ||
           tit.contains('practice')) {
         return const Duration(minutes: 75); // 60 min de sesión + margen
       }
-      if (session.contains('qualy') ||
-          session.contains('clasificación') ||
-          session.contains('qualifying') ||
+      if (sessionType == 'f1_type_qualy' ||
           tit.contains('clasificación') ||
           tit.contains('qualy')) {
         return const Duration(minutes: 75); // Q1+Q2+Q3 ~60 min + margen
       }
-      if (session.contains('sprint') || tit.contains('sprint')) {
+      if (_sprintSessions.contains(sessionType) || tit.contains('sprint')) {
         return const Duration(minutes: 60); // Sprint dura ~30 min + margen
       }
       // Carrera principal: F1/MotoGP duran ~90-110 min (máx FIA 120 min)

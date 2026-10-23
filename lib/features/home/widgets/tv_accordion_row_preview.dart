@@ -70,7 +70,6 @@ class TvAccordionRowPreview extends StatelessWidget {
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isExpanded ? borderExpanded : borderCollapsed,
-                      width: 1.0,
                     ),
                   ),
                   child: Row(

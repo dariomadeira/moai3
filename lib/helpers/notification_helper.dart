@@ -5,16 +5,10 @@ import 'package:moai3/theme/moai_icons.dart';
 /// Helper global para mostrar notificaciones estilo Pill unificado en toda la app.
 class NotificationHelper {
   static GlobalKey<ScaffoldMessengerState>? _scaffoldMessengerKey;
-  static BuildContext? _context;
 
   /// Inicializa el helper con la GlobalKey del ScaffoldMessenger
   static void initialize(GlobalKey<ScaffoldMessengerState> key) {
     _scaffoldMessengerKey = key;
-  }
-
-  /// Actualiza el contexto para acceder al tema actual
-  static void updateContext(BuildContext context) {
-    _context = context;
   }
 
   /// Muestra un snackbar genérico estilo pill
@@ -37,7 +31,7 @@ class NotificationHelper {
       messenger.removeCurrentSnackBar();
       return messenger.showSnackBar(
         MoaiSnackBar.buildSnackBar(
-          context: _scaffoldMessengerKey?.currentContext ?? _context,
+          context: _scaffoldMessengerKey?.currentContext,
           message: message,
           icon: icon,
           iconColor: iconColor,
@@ -58,11 +52,6 @@ class NotificationHelper {
     _scaffoldMessengerKey?.currentState?.hideCurrentSnackBar();
   }
 
-  /// Remueve de inmediato el snackbar actual
-  static void removeCurrent() {
-    _scaffoldMessengerKey?.currentState?.removeCurrentSnackBar();
-  }
-
   /// Muestra un snackbar de error
   static void showError(String message) {
     show(
@@ -77,7 +66,6 @@ class NotificationHelper {
     show(
       message: message,
       icon: MoaiIcons.checkCircleOutline,
-      duration: const Duration(seconds: 2),
     );
   }
 
@@ -86,7 +74,6 @@ class NotificationHelper {
     show(
       message: message,
       icon: MoaiIcons.infoOutline,
-      duration: const Duration(seconds: 2),
     );
   }
 

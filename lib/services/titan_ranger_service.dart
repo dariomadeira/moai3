@@ -1,12 +1,11 @@
+import 'package:moai3/platform/platform_channels.dart';
 import 'dart:io';
 import 'package:flutter/services.dart';
 
 /// Servicio puente con la biblioteca nativa libranger-jni.so (Titan Ranger).
 /// Usado para resolver la autenticación y balanceo de streams VOD/Live (Alternativa B).
 class TitanRangerService {
-  static const MethodChannel _channel = MethodChannel(
-    'com.infomak.moai.tv/titan_ranger',
-  );
+  static const MethodChannel _channel = PlatformChannels.titanRanger;
 
   static bool _initialized = false;
   static Future<bool>? _initFuture;

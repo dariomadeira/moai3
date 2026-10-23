@@ -1,3 +1,4 @@
+import 'package:moai3/platform/platform_channels.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -78,7 +79,7 @@ class MoaiMediaSpec {
 /// Controlador Dart del motor ExoPlayer nativo que renderiza a un
 /// `SurfaceTexture` de Flutter (widget `Texture`). Sin PlatformView.
 class MoaiEngineController extends ChangeNotifier {
-  static const MethodChannel _control = MethodChannel('com.infomak.moai.tv/player');
+  static const MethodChannel _control = PlatformChannels.player;
 
   /// Tiempo máximo de buffering sin primer cuadro antes de reportar error
   /// accionable (evita el spinner infinito).
@@ -93,9 +94,7 @@ class MoaiEngineController extends ChangeNotifier {
   int? get textureId => _textureId;
   MoaiEngineEvent get event => _event;
   bool get isPlaying => _event.isPlaying;
-  bool get hasFirstFrame => _event.firstFrameRendered;
   bool get hasTexture => _textureId != null;
-  bool get disposed => _handle == null;
 
   Future<void> create() async {
     if (_handle != null) return;
@@ -104,7 +103,7 @@ class MoaiEngineController extends ChangeNotifier {
       _handle = result!['handle'] as int;
       _textureId = result['textureId'] as int;
       debugPrint('[MoaiEngine] creado handle=$_handle texture=$_textureId');
-      final events = EventChannel('com.infomak.moai.tv/player/events/$_handle');
+      final events = PlatformChannels.playerEvents(_handle!);
       _eventsSub = events.receiveBroadcastStream().listen(_onNativeEvent);
     } catch (e) {
       _event = _event.copyWith(

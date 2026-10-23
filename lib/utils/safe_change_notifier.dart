@@ -2,6 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 
 /// Evita `notifyListeners()` durante la fase de build del framework.
+///
+/// Los errores de los listeners los reporta `notifyListeners()` con
+/// `FlutterError.reportError`; acá no se silencia nada (SPEC-50 §2.9).
 mixin SafeChangeNotifier on ChangeNotifier {
   bool _isNotifierDisposed = false;
 
@@ -13,27 +16,14 @@ mixin SafeChangeNotifier on ChangeNotifier {
 
   void safeNotifyListeners() {
     if (_isNotifierDisposed) return;
-    try {
-      final phase = SchedulerBinding.instance.schedulerPhase;
-      if (phase == SchedulerPhase.idle ||
-          phase == SchedulerPhase.postFrameCallbacks) {
-        notifyListeners();
-        return;
-      }
-      SchedulerBinding.instance.addPostFrameCallback((_) {
-        if (!_isNotifierDisposed) {
-          try {
-            if (hasListeners) notifyListeners();
-          } catch (_) {}
-        }
-      });
-    } catch (_) {
-      if (!_isNotifierDisposed) {
-        try {
-          notifyListeners();
-        } catch (_) {}
-      }
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.idle ||
+        phase == SchedulerPhase.postFrameCallbacks) {
+      notifyListeners();
+      return;
     }
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!_isNotifierDisposed && hasListeners) notifyListeners();
+    });
   }
 }
-

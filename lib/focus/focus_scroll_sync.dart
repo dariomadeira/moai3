@@ -19,46 +19,6 @@ abstract final class FocusScrollSync {
     }
   }
 
-  static void scrollToIndex({
-    required ScrollController controller,
-    required int index,
-    required double itemHeight,
-    required int itemCount,
-    Duration duration = const Duration(milliseconds: 250),
-    bool instant = false,
-  }) {
-    if (!controller.hasClients || index < 0) return;
-
-    final targetOffset = index * itemHeight;
-    var shouldScroll = true;
-    var viewportHeight = 500.0;
-
-    if (controller.position.hasPixels) {
-      viewportHeight = controller.position.viewportDimension;
-      if (viewportHeight <= 0) viewportHeight = 500.0;
-      if ((controller.offset - targetOffset).abs() <= 1.0) {
-        shouldScroll = false;
-      }
-    }
-
-    if (shouldScroll) {
-      final maxExtent = (itemCount * itemHeight - viewportHeight)
-          .clamp(0.0, double.infinity);
-      final clamped = targetOffset.clamp(0.0, maxExtent);
-      // jumpTo: el ítem debe existir en el árbol YA para que el FocusNode
-      // tenga context. animateTo deja el foco en el limbo ~250ms.
-      if (instant) {
-        controller.jumpTo(clamped);
-      } else {
-        controller.animateTo(
-          clamped,
-          duration: duration,
-          curve: Curves.easeOutCubic,
-        );
-      }
-    }
-  }
-
   static void requestFocusAtIndex(
     List<FocusNode> nodes,
     int index, {
@@ -104,49 +64,6 @@ abstract final class FocusScrollSync {
     });
   }
 
-  static void focusListItem({
-    required ScrollController scrollController,
-    required List<FocusNode> focusNodes,
-    required int index,
-    required double itemHeight,
-    required int itemCount,
-    VoidCallback? onMissing,
-    int retryCount = 0,
-  }) {
-    if (index < 0) {
-      onMissing?.call();
-      return;
-    }
-
-    if (!scrollController.hasClients) {
-      if (retryCount < 40) {
-        SchedulerBinding.instance.addPostFrameCallback((_) {
-          focusListItem(
-            scrollController: scrollController,
-            focusNodes: focusNodes,
-            index: index,
-            itemHeight: itemHeight,
-            itemCount: itemCount,
-            onMissing: onMissing,
-            retryCount: retryCount + 1,
-          );
-        });
-      } else {
-        onMissing?.call();
-      }
-      return;
-    }
-
-    scrollToIndex(
-      controller: scrollController,
-      index: index,
-      itemHeight: itemHeight,
-      itemCount: itemCount,
-      instant: true,
-    );
-    requestFocusAtIndex(focusNodes, index, onMissing: onMissing);
-  }
-
   static void scrollToHorizontalIndex({
     required ScrollController controller,
     required int index,
@@ -154,7 +71,6 @@ abstract final class FocusScrollSync {
     required double itemVisualWidth,
     required int itemCount,
     double paddingStart = 0,
-    double paddingEnd = 0,
     double edgeInset = 0,
     Duration duration = const Duration(milliseconds: 250),
   }) {
@@ -224,7 +140,6 @@ abstract final class FocusScrollSync {
     required double itemVisualWidth,
     required int itemCount,
     double paddingStart = 0,
-    double paddingEnd = 0,
     double edgeInset = 0,
     VoidCallback? onMissing,
     int retryCount = 0,
@@ -245,7 +160,6 @@ abstract final class FocusScrollSync {
             itemVisualWidth: itemVisualWidth,
             itemCount: itemCount,
             paddingStart: paddingStart,
-            paddingEnd: paddingEnd,
             edgeInset: edgeInset,
             onMissing: onMissing,
             retryCount: retryCount + 1,
@@ -264,7 +178,6 @@ abstract final class FocusScrollSync {
       itemVisualWidth: itemVisualWidth,
       itemCount: itemCount,
       paddingStart: paddingStart,
-      paddingEnd: paddingEnd,
       edgeInset: edgeInset,
     );
     requestFocusAtIndex(focusNodes, index, onMissing: onMissing);

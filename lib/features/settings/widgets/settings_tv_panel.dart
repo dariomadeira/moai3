@@ -101,7 +101,6 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
                           key: _listKey,
                           focusOnMount: false,
                           items: items,
-                          windowSize: _windowSize,
                           itemExtent: _itemExtent,
                           showScrollDots: true,
                           initialGlobalIndex: _selectedIndex,

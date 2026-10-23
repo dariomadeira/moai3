@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/widgets/dialogs/tv_pin_dialog.dart';
@@ -38,7 +39,6 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           const TvPinDialog(
-            mode: TvPinDialogMode.verify,
             customTitle: 'Test PIN',
           ),
         ),
@@ -54,8 +54,8 @@ void main() {
       }
 
       // Check icons
-      expect(find.byIcon(Icons.backspace_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.close_outlined), findsOneWidget);
+      expect(find.byIcon(MoaiIcons.pinBackspace), findsOneWidget);
+      expect(find.byIcon(MoaiIcons.pinClose), findsOneWidget);
     });
 
     testWidgets('create mode transitions from step 1 to step 2 without closing dialog', (tester) async {
@@ -167,7 +167,6 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           TvPinDialog(
-            mode: TvPinDialogMode.verify,
             onValidate: (pin) async {
               enteredPin = pin;
               return true;

@@ -1,3 +1,4 @@
+import 'package:moai3/platform/platform_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -34,7 +35,7 @@ class GamepadDeviceInfo {
 /// Servicio singleton/gestor para detectar mandos y gestionar perfiles de control.
 class GamepadManagerService extends ChangeNotifier {
   static const MethodChannel _channel =
-      MethodChannel('com.infomak.moai/arcade_channel');
+      PlatformChannels.arcade;
 
   List<GamepadDeviceInfo> _connectedGamepads = [];
   bool _isLoading = false;
@@ -52,7 +53,7 @@ class GamepadManagerService extends ChangeNotifier {
       if (raw != null) {
         _connectedGamepads = raw
             .whereType<Map<dynamic, dynamic>>()
-            .map((m) => GamepadDeviceInfo.fromMap(m))
+            .map(GamepadDeviceInfo.fromMap)
             .toList();
       } else {
         _connectedGamepads = [];

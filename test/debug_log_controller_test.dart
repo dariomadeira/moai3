@@ -3,6 +3,8 @@ import 'package:moai3/config/app_config.dart';
 import 'package:moai3/services/debug_log_controller.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('DebugLogController', () {
     tearDown(() {
       AppConfig.debugModeOverride = null;

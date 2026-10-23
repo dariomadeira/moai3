@@ -98,7 +98,6 @@ class _ServerSkipButtonState extends State<ServerSkipButton> {
                   color:
                       _isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
                   fontSize: 12,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],

@@ -30,7 +30,7 @@ class ArcadeViewContainer extends StatelessWidget {
       );
     }
 
-    return Center(
+    return const Center(
       child: Text(
         'El emulador de Arcade requiere un dispositivo Android.',
         style: TextStyle(color: Colors.white70),

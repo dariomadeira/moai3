@@ -10,6 +10,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 class MockWatchPartyService extends WatchPartyService {
   VoiceMessageRecord? lastSentMessage;
 
+  /// Sin Realtime: los tests llaman a [handleIncomingVoiceMessage] directo.
+  @override
+  Future<void> Function() subscribeToVoiceMessages({
+    required void Function(VoiceMessageRecord message) onMessageReceived,
+  }) =>
+      () async {};
+
   @override
   Future<VoiceMessageRecord> sendVoiceMessage({
     required String senderDeviceId,

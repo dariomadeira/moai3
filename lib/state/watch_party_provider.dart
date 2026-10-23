@@ -44,12 +44,15 @@ class WatchPartyProvider extends ChangeNotifier {
   String get userCode {
     if (_userCode == 'MOAI-????' || _userCode.isEmpty) {
       final savedCode = identityService.getUserCode();
-      if (savedCode != null && savedCode.trim().isNotEmpty && savedCode != 'MOAI-????') {
+      if (savedCode != null &&
+          savedCode.trim().isNotEmpty &&
+          savedCode != 'MOAI-????') {
         _userCode = savedCode.trim();
       }
     }
     return _userCode;
   }
+
   String? get nickname {
     if (_nickname == null || _nickname!.trim().isEmpty) {
       final saved = identityService.getNickname();
@@ -59,6 +62,7 @@ class WatchPartyProvider extends ChangeNotifier {
     }
     return _nickname;
   }
+
   /// Nombre local preferido para mostrar a otros usuarios (nickname o fallback a userCode).
   String get myNickname =>
       (_nickname?.trim().isNotEmpty == true) ? _nickname!.trim() : userCode;
@@ -86,19 +90,19 @@ class WatchPartyProvider extends ChangeNotifier {
       return const [];
     }
     return _friends
-        .where((f) => f.isWatchingSameChannel(_currentChannelId, _currentChannelName))
+        .where(
+          (f) =>
+              f.isWatchingSameChannel(_currentChannelId, _currentChannelName),
+        )
         .toList();
   }
-
-  /// Cantidad de amigos mirando el mismo canal.
-  int get friendsWatchingCurrentChannelCount => friendsWatchingCurrentChannel.length;
 
   /// Indica si hay al menos un amigo mirando el mismo canal.
   bool get hasFriendsInSameChannel => friendsWatchingCurrentChannel.isNotEmpty;
 
   void _init() {
     _deviceId = identityService.getOrCreateDeviceId();
-    _enabled = preferences.readPreferenceBool(keyWatchPartyEnabled, defaultValue: false);
+    _enabled = preferences.readPreferenceBool(keyWatchPartyEnabled);
     _userCode = identityService.getUserCode() ?? 'MOAI-????';
     _nickname = identityService.getNickname();
 
@@ -132,7 +136,9 @@ class WatchPartyProvider extends ChangeNotifier {
           }
           return _nickname;
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('[WatchPartyProvider] $e');
+      }
     }
     return _nickname;
   }
@@ -154,7 +160,9 @@ class WatchPartyProvider extends ChangeNotifier {
   /// Asegura que el código de usuario propio esté cargado (preferencias o Supabase).
   Future<void> ensureUserCode() async {
     final savedCode = identityService.getUserCode();
-    if (savedCode != null && savedCode.trim().isNotEmpty && savedCode != 'MOAI-????') {
+    if (savedCode != null &&
+        savedCode.trim().isNotEmpty &&
+        savedCode != 'MOAI-????') {
       if (_userCode != savedCode) {
         _userCode = savedCode;
         notifyListeners();
@@ -168,7 +176,9 @@ class WatchPartyProvider extends ChangeNotifier {
         if (remoteCode != null && remoteCode.trim().isNotEmpty) {
           updateUserCode(remoteCode.trim());
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('[WatchPartyProvider] $e');
+      }
     }
   }
 
@@ -207,11 +217,7 @@ class WatchPartyProvider extends ChangeNotifier {
         _currentChannelId = null;
         _currentChannelName = null;
         if (_deviceId.isNotEmpty) {
-          service.reportCurrentChannel(
-            deviceId: _deviceId,
-            channelId: null,
-            channelName: null,
-          );
+          unawaited(service.reportCurrentChannel(deviceId: _deviceId));
         }
       }
     }
@@ -240,7 +246,9 @@ class WatchPartyProvider extends ChangeNotifier {
     try {
       final updatedRequests = await service.getFriendRequests(_deviceId);
       _friendRequests = updatedRequests;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[WatchPartyProvider] $e');
+    }
 
     if (showLoading) {
       _isLoading = false;
@@ -299,7 +307,7 @@ class WatchPartyProvider extends ChangeNotifier {
       );
 
       _friends = _friends.where((f) => f.deviceId != friendDeviceId).toList();
-      await loadFriends(showLoading: false);
+      await loadFriends();
       _errorMessage = null;
     } catch (e) {
       _errorMessage = e.toString();
@@ -313,7 +321,7 @@ class WatchPartyProvider extends ChangeNotifier {
   /// Publica el canal en reproducción. Adultos y null no se informan a amigos.
   void reportPlayingChannel(Channel? channel) {
     if (channel == null || channel.isAdult) {
-      reportCurrentChannel(channelId: null);
+      reportCurrentChannel();
       return;
     }
     reportCurrentChannel(channelId: channel.id, channelName: channel.name);
@@ -324,13 +332,17 @@ class WatchPartyProvider extends ChangeNotifier {
   void reportCurrentChannel({String? channelId, String? channelName}) {
     if (!_enabled) return;
 
-    final normalizedId =
-        (channelId != null && channelId.trim().isNotEmpty) ? channelId.trim() : null;
+    final normalizedId = (channelId != null && channelId.trim().isNotEmpty)
+        ? channelId.trim()
+        : null;
     final normalizedName =
-        (channelName != null && channelName.trim().isNotEmpty) ? channelName.trim() : null;
+        (channelName != null && channelName.trim().isNotEmpty)
+        ? channelName.trim()
+        : null;
 
     // Si ya está exactamente en este canal reportado, no duplicar llamadas
-    if (_currentChannelId == normalizedId && _currentChannelName == normalizedName) {
+    if (_currentChannelId == normalizedId &&
+        _currentChannelName == normalizedName) {
       return;
     }
 
@@ -348,20 +360,24 @@ class WatchPartyProvider extends ChangeNotifier {
 
     if (_deviceId.isNotEmpty) {
       if (_presenceRealtimeChannel != null) {
-        unawaited(_presenceRealtimeChannel!.track({
-          'device_id': _deviceId,
-          'user_code': _userCode,
-          'nickname': _nickname,
-          'channel_id': normalizedId,
-          'channel_name': normalizedName,
-        }));
+        unawaited(
+          _presenceRealtimeChannel!.track({
+            'device_id': _deviceId,
+            'user_code': _userCode,
+            'nickname': _nickname,
+            'channel_id': normalizedId,
+            'channel_name': normalizedName,
+          }),
+        );
       }
 
-      unawaited(service.reportCurrentChannel(
-        deviceId: _deviceId,
-        channelId: normalizedId,
-        channelName: normalizedName,
-      ));
+      unawaited(
+        service.reportCurrentChannel(
+          deviceId: _deviceId,
+          channelId: normalizedId,
+          channelName: normalizedName,
+        ),
+      );
     }
   }
 
@@ -369,9 +385,14 @@ class WatchPartyProvider extends ChangeNotifier {
     if (_currentChannelId == null || _currentChannelId!.isEmpty) return;
 
     for (final friend in _friends) {
-      final isWatching = friend.isWatchingSameChannel(_currentChannelId, _currentChannelName);
+      final isWatching = friend.isWatchingSameChannel(
+        _currentChannelId,
+        _currentChannelName,
+      );
       if (isWatching) {
-        if (!_notifiedFriendDeviceIdsInCurrentChannel.contains(friend.deviceId)) {
+        if (!_notifiedFriendDeviceIdsInCurrentChannel.contains(
+          friend.deviceId,
+        )) {
           _notifiedFriendDeviceIdsInCurrentChannel.add(friend.deviceId);
           final name = friend.nickname ?? friend.userCode;
           notifyFriendJoinedChannel(name);
@@ -397,14 +418,18 @@ class WatchPartyProvider extends ChangeNotifier {
         },
         onPresenceUpdated: _onRealtimePresencesUpdated,
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[WatchPartyProvider] $e');
+    }
   }
 
   void _unsubscribeFromPresenceRealtime() {
     try {
       _presenceRealtimeChannel?.untrack();
       _presenceRealtimeChannel?.unsubscribe();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[WatchPartyProvider] $e');
+    }
     _presenceRealtimeChannel = null;
   }
 
@@ -445,11 +470,7 @@ class WatchPartyProvider extends ChangeNotifier {
         }
       } else {
         if (friend.isOnline || friend.currentChannelId != null) {
-          _friends[i] = friend.copyWith(
-            isOnline: false,
-            currentChannelId: null,
-            currentChannelName: null,
-          );
+          _friends[i] = friend.copyWith(isOnline: false);
           changed = true;
         }
       }
@@ -495,13 +516,17 @@ class WatchPartyProvider extends ChangeNotifier {
       _devicesRealtimeChannel = service.subscribeToDevicesUpdates(
         onDeviceUpdated: _onDeviceRecordUpdated,
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[WatchPartyProvider] $e');
+    }
   }
 
   void _unsubscribeFromDevicesRealtime() {
     try {
       _devicesRealtimeChannel?.unsubscribe();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[WatchPartyProvider] $e');
+    }
     _devicesRealtimeChannel = null;
   }
 
@@ -524,7 +549,9 @@ class WatchPartyProvider extends ChangeNotifier {
     // Si el registro actualizado es nuestro propio dispositivo (ej. modificado en Supabase dashboard)
     if (updatedDeviceId == _deviceId) {
       final newNick = record['nickname'] as String?;
-      if (newNick != null && newNick.trim().isNotEmpty && newNick.trim() != _nickname) {
+      if (newNick != null &&
+          newNick.trim().isNotEmpty &&
+          newNick.trim() != _nickname) {
         _nickname = newNick.trim();
         identityService.saveNickname(_nickname!);
         notifyListeners();
@@ -549,8 +576,14 @@ class WatchPartyProvider extends ChangeNotifier {
       _sortFriends();
 
       // Emitir notificación si el amigo acaba de entrar al mismo canal
-      final wasWatching = old.isWatchingSameChannel(_currentChannelId, _currentChannelName);
-      final isNowWatching = updated.isWatchingSameChannel(_currentChannelId, _currentChannelName);
+      final wasWatching = old.isWatchingSameChannel(
+        _currentChannelId,
+        _currentChannelName,
+      );
+      final isNowWatching = updated.isWatchingSameChannel(
+        _currentChannelId,
+        _currentChannelName,
+      );
       if (!wasWatching && isNowWatching) {
         final name = updated.nickname ?? updated.userCode;
         notifyFriendJoinedChannel(name);

@@ -21,7 +21,7 @@ class FeaturedMoviesProvider extends ChangeNotifier {
   final Map<String, _CatalogSectionState> _sections = {};
 
   _CatalogSectionState _stateFor(String section) =>
-      _sections.putIfAbsent(section, () => _CatalogSectionState());
+      _sections.putIfAbsent(section, _CatalogSectionState.new);
 
   List<MovieItem> itemsFor(String section) {
     if (section == sectionFeatured && !_sections.containsKey(section)) {

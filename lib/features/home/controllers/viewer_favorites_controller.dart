@@ -25,7 +25,6 @@ class ViewerFavoritesController {
       itemVisualWidth: _itemVisualWidth,
       itemCount: itemCount,
       paddingStart: TvLayoutConstants.viewerFavoritesBarPaddingStart,
-      paddingEnd: TvLayoutConstants.viewerFavoritesBarPaddingEnd,
       edgeInset: _scrollInset,
     );
   }

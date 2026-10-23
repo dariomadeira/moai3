@@ -1,3 +1,5 @@
+import 'package:moai3/platform/platform_channels.dart';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -29,7 +31,7 @@ class DoubleBackExitScope extends StatefulWidget {
 }
 
 class DoubleBackExitScopeState extends State<DoubleBackExitScope> {
-  static const _deviceChannel = MethodChannel('com.infomak.moai.tv/device');
+  static const _deviceChannel = PlatformChannels.device;
 
   DateTime? _lastBackTime;
   DateTime? _lastHandledTime;
@@ -46,7 +48,7 @@ class DoubleBackExitScopeState extends State<DoubleBackExitScope> {
         // Fallback si el canal nativo no está disponible.
       }
     }
-    SystemNavigator.pop();
+    unawaited(SystemNavigator.pop());
   }
 
   void handleBack() {
@@ -91,4 +93,3 @@ class DoubleBackExitScopeState extends State<DoubleBackExitScope> {
     );
   }
 }
-

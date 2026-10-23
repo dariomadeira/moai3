@@ -17,7 +17,6 @@ class ArcadeNetplayService extends ChangeNotifier {
   static const String _globalChannelName = 'arcade_netplay_global';
   static const Duration _inviteTimeout = Duration(seconds: 30);
   static const Duration _iceTimeout = Duration(seconds: 20);
-  static const int netplayInputDelayFrames = 3;
 
   SupabaseClient? _client;
   RealtimeChannel? _globalChannel;
@@ -46,20 +45,14 @@ class ArcadeNetplayService extends ChangeNotifier {
   Stream<ArcadeNetplayInputPacket> get onRemoteInputPacket =>
       _remoteInputController.stream;
 
-  /// Compat: solo máscara (sin frame). Preferir [onRemoteInputPacket].
-  Stream<int> get onRemoteInputReceived =>
-      onRemoteInputPacket.map((p) => p.mask);
-
   Stream<ArcadeNetplayInvite> get onIncomingInvite =>
       _inviteStreamController.stream;
 
   ArcadeNetplaySession? get currentSession => _currentSession;
-  ArcadeNetplayInvite? get pendingIncomingInvite => _pendingIncomingInvite;
   bool get hasActiveSession =>
       _currentSession != null &&
       _currentSession!.status != ArcadeNetplayStatus.idle &&
       _currentSession!.status != ArcadeNetplayStatus.terminated;
-  bool get isWebRtcConnected => _webrtc?.isConnected ?? false;
 
   void initialize({SupabaseClient? client, required String myDeviceId}) {
     _client = client ?? Supabase.instance.client;
@@ -76,7 +69,10 @@ class ArcadeNetplayService extends ChangeNotifier {
         callback: (payload) {
           final target = payload['guestDeviceId'] as String?;
           if (target == myDeviceId) {
-            _handleIncomingInvite(ArcadeNetplayInvite.fromMap(payload));
+            _handleIncomingInvite(
+              ArcadeNetplayInvite.fromMap(payload),
+              myDeviceId,
+            );
           }
         },
       );
@@ -89,9 +85,10 @@ class ArcadeNetplayService extends ChangeNotifier {
               _currentSession != null &&
               _currentSession!.isHost) {
             final accepted = payload['accepted'] as bool? ?? false;
+            final busy = payload['busy'] as bool? ?? false;
             final sessionId = payload['sessionId'] as String?;
             if (_currentSession!.sessionId == sessionId) {
-              _handleInviteResponse(accepted);
+              _handleInviteResponse(accepted, busy: busy);
             }
           }
         },
@@ -105,14 +102,30 @@ class ArcadeNetplayService extends ChangeNotifier {
     }
   }
 
-  void _handleIncomingInvite(ArcadeNetplayInvite invite) {
-    if (hasActiveSession) return;
+  bool _playing = false;
+
+  /// Lo marca [ArcadeScreen] mientras hay un juego en pantalla: las invitaciones
+  /// que lleguen se responden "ocupado" sin interrumpir (SPEC-50 D-1).
+  void setPlaying(bool playing) => _playing = playing;
+
+  void _handleIncomingInvite(ArcadeNetplayInvite invite, String myDeviceId) {
+    if (hasActiveSession || _playing) {
+      unawaited(_sendInviteResponse(
+        invite,
+        myDeviceId: myDeviceId,
+        accepted: false,
+        busy: true,
+      ).catchError((Object e) {
+        debugPrint('[ArcadeNetplayService] Error al responder ocupado: $e');
+      }));
+      return;
+    }
     _pendingIncomingInvite = invite;
     _inviteStreamController.add(invite);
     notifyListeners();
   }
 
-  void _handleInviteResponse(bool accepted) {
+  void _handleInviteResponse(bool accepted, {bool busy = false}) {
     _inviteTimer?.cancel();
     _inviteTimer = null;
     if (_currentSession == null) return;
@@ -130,7 +143,8 @@ class ArcadeNetplayService extends ChangeNotifier {
       }());
     } else {
       _currentSession!.status = ArcadeNetplayStatus.terminated;
-      _currentSession!.exitReason = 'arcade_invite_rejected'.tr();
+      _currentSession!.exitReason =
+          (busy ? 'arcade_invite_busy' : 'arcade_invite_rejected').tr();
       notifyListeners();
       unawaited(_cleanupSession());
     }
@@ -230,23 +244,13 @@ class ArcadeNetplayService extends ChangeNotifier {
       romFilename: invite.romFilename,
       romName: invite.romName,
       romUrl: invite.romUrl,
-      status: ArcadeNetplayStatus.preparingRoms,
       myStatusText: 'arcade_verifying_local'.tr(),
       peerStatusText: 'arcade_connecting'.tr(),
     );
     notifyListeners();
 
     try {
-      await _globalChannel?.sendBroadcastMessage(
-        event: 'invite_response',
-        payload: {
-          'sessionId': invite.sessionId,
-          'hostDeviceId': invite.hostDeviceId,
-          'guestDeviceId': myDeviceId,
-          'accepted': true,
-        },
-      );
-
+      await _sendInviteResponse(invite, myDeviceId: myDeviceId, accepted: true);
       await _connectSessionChannel();
       await startRomPreparation(romManager);
     } catch (e) {
@@ -263,18 +267,29 @@ class ArcadeNetplayService extends ChangeNotifier {
     _pendingIncomingInvite = null;
     notifyListeners();
     if (invite == null) return;
-
     try {
-      await _globalChannel?.sendBroadcastMessage(
-        event: 'invite_response',
-        payload: {
-          'sessionId': invite.sessionId,
-          'hostDeviceId': invite.hostDeviceId,
-          'guestDeviceId': myDeviceId,
-          'accepted': false,
-        },
-      );
-    } catch (_) {}
+      await _sendInviteResponse(invite, myDeviceId: myDeviceId, accepted: false);
+    } catch (e) {
+      debugPrint('[ArcadeNetplayService] Error al rechazar invitación: $e');
+    }
+  }
+
+  Future<void> _sendInviteResponse(
+    ArcadeNetplayInvite invite, {
+    required String myDeviceId,
+    required bool accepted,
+    bool busy = false,
+  }) async {
+    await _globalChannel?.sendBroadcastMessage(
+      event: 'invite_response',
+      payload: {
+        'sessionId': invite.sessionId,
+        'hostDeviceId': invite.hostDeviceId,
+        'guestDeviceId': myDeviceId,
+        'accepted': accepted,
+        if (busy) 'busy': true,
+      },
+    );
   }
 
   Future<void> _connectSessionChannel() async {
@@ -436,13 +451,7 @@ class ArcadeNetplayService extends ChangeNotifier {
         id: session.romFilename,
         name: session.romName,
         filename: session.romFilename,
-        system: 'CPS-2',
-        year: '',
-        company: 'Capcom',
-        sizeBytes: 0,
-        sizeLabel: '',
         url: session.romUrl,
-        description: '',
       ),
     );
 
@@ -494,7 +503,9 @@ class ArcadeNetplayService extends ChangeNotifier {
           'statusText': statusText,
         },
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ArcadeNetplayService] $e');
+    }
   }
 
   Future<void> _broadcastReady() async {
@@ -505,7 +516,9 @@ class ArcadeNetplayService extends ChangeNotifier {
         event: 'ready_to_play',
         payload: {'senderDeviceId': session.myDeviceId},
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ArcadeNetplayService] $e');
+    }
   }
 
   Future<void> _broadcastCancel(String reason) async {
@@ -519,7 +532,9 @@ class ArcadeNetplayService extends ChangeNotifier {
           'reason': reason,
         },
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ArcadeNetplayService] $e');
+    }
   }
 
   Future<void> _broadcastWebrtcSignal(Map<String, dynamic> signal) async {
@@ -535,7 +550,9 @@ class ArcadeNetplayService extends ChangeNotifier {
           ...signal,
         },
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ArcadeNetplayService] $e');
+    }
   }
 
   Future<void> _checkIfBothReady() async {
@@ -692,7 +709,9 @@ class ArcadeNetplayService extends ChangeNotifier {
 
     try {
       await _sessionChannel?.unsubscribe();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ArcadeNetplayService] $e');
+    }
     _sessionChannel = null;
     _sessionSubscribed = null;
     _pendingIncomingInvite = null;
@@ -706,7 +725,9 @@ class ArcadeNetplayService extends ChangeNotifier {
     unawaited(_cleanupSession());
     try {
       _globalChannel?.unsubscribe();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ArcadeNetplayService] $e');
+    }
     _globalChannel = null;
     _remoteInputController.close();
     _inviteStreamController.close();

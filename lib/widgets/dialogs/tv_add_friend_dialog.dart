@@ -120,7 +120,6 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
     final scheme = theme.colorScheme;
 
     return TvDialog(
-      width: 480,
       icon: MoaiIcons.personAddAlt1,
       title: 'friend_add_dialog_title'.tr(),
       subtitle: 'friend_add_dialog_subtitle'.tr(),
@@ -172,7 +171,6 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
                         style: MoaiText.display(
                           context,
                           fontSize: 20,
-                          fontWeight: FontWeight.bold,
                           color: scheme.primary,
                         ),
                       ),
@@ -187,7 +185,6 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
                         style: MoaiText.display(
                           context,
                           fontSize: 22,
-                          fontWeight: FontWeight.bold,
                           letterSpacing: 6.0,
                           color: _codeController.text.isEmpty
                               ? scheme.onSurfaceVariant.withValues(alpha: 0.4)
@@ -220,7 +217,6 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
                       context,
                       fontSize: 13,
                       color: scheme.error,
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -232,19 +228,18 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
       actions: [
         TvDialogButton(
           label: 'friend_add_dialog_cancel'.tr(),
-          variant: TvDialogButtonVariant.neutral,
           focusNode: _cancelFocusNode,
           onPressed: () => Navigator.of(context).pop(false),
-          onKeyRight: () => _addFocusNode.requestFocus(),
-          onKeyUp: () => _inputFocusNode.requestFocus(),
+          onKeyRight: _addFocusNode.requestFocus,
+          onKeyUp: _inputFocusNode.requestFocus,
         ),
         TvDialogButton(
           label: _isSubmitting ? 'friend_add_dialog_verifying'.tr() : 'friend_add_dialog_submit'.tr(),
           variant: TvDialogButtonVariant.primary,
           focusNode: _addFocusNode,
           onPressed: _isSubmitting ? () {} : _handleSubmit,
-          onKeyLeft: () => _cancelFocusNode.requestFocus(),
-          onKeyUp: () => _inputFocusNode.requestFocus(),
+          onKeyLeft: _cancelFocusNode.requestFocus,
+          onKeyUp: _inputFocusNode.requestFocus,
         ),
       ],
     );

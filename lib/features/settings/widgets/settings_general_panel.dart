@@ -53,7 +53,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
 
-    final items = const <_SettingsGeneralItemType>[
+    const items = <_SettingsGeneralItemType>[
       _SettingsGeneralItemType.plugins,
       _SettingsGeneralItemType.overscan,
       _SettingsGeneralItemType.weatherLocation,
@@ -98,7 +98,6 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
                         child: TvWindowedList<_SettingsGeneralItemType>(
                           key: _listKey,
                           items: items,
-                          windowSize: _windowSize,
                           itemExtent: _itemExtent,
                           showScrollDots: true,
                           initialGlobalIndex: _selectedIndex,
