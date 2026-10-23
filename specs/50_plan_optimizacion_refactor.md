@@ -42,7 +42,7 @@ Dejar moai3 **sin código muerto, sin piezas rotas ni redundantes, con traduccio
 
 | Fase | Estado (2026-10-23) |
 | :--- | :--- |
-| 0 | **Hecha** salvo 0.1 (métricas, requiere el TV). Tests: 211 OK / 1 falla (películas, fuera de alcance). `flutter analyze` limpio con lints estrictos. Detector en `tool/find_unused.dart`. |
+| 0 | **Hecha.** 0.1: línea base de arranque en `specs/verification/baseline_performance.md` (Chromecast HD, profile: ~9,1 s hasta video). Tests: 211 OK / 1 falla (películas, fuera de alcance). `flutter analyze` limpio con lints estrictos. Detector en `tool/find_unused.dart`. |
 | 1 | **Hecha.** Ver hallazgos extra abajo. |
 | 2 | **En curso.** Hechos: 2.1 (error de canales visible; bitrate borrado), 2.3 (invitación ya no se rechaza sola; Arcade suspende avisos de fondo y responde "ocupado"), 2.4 (`PresenceCoordinator` + bloqueo en vivo), 2.5, 2.6 (`lib/platform/platform_channels.dart`), 2.7 (calendario y arcade vía `AppPreferences`), 2.8 (`AppInfo`), 2.9 (`SafeChangeNotifier`, búsquedas de provider nullable, catches con log), parte de 2.10 (`VoiceAudioService`, `normalizeText`, envoltorios de cards, reloj por minuto). Hechos después: 2.2 (TLS estricto en hosts críticos y en la descarga del `.dex`; streams siguen permisivos), 2.10 `TvPressDetector` + tecla OK uniforme. Pendientes: `FocusRequester` (va con 5.4) y variantes de botón (requiere aprobar capturas). |
 | 3 | **Hecha** salvo 3.4 (helper de formatos) y ordenar `es.json`. 689 literales → `LocaleKeys`; claves genéricas en `common_*`; guarda en `test/translations_test.dart` (sincronía, claves sin uso, literales y textos hardcodeados). |
