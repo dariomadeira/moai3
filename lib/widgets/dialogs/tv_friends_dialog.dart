@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/models/friend_info.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -740,10 +741,7 @@ class _FriendTileState extends State<_FriendTile> {
             widget.onKeyRightAcross();
             return KeyEventResult.handled;
           }
-          if (key == LogicalKeyboardKey.enter ||
-              key == LogicalKeyboardKey.select ||
-              key == LogicalKeyboardKey.space ||
-              key == LogicalKeyboardKey.gameButtonA) {
+          if (TvKeyHandler.isActionKey(key)) {
             widget.onDelete();
             return KeyEventResult.handled;
           }
@@ -1029,10 +1027,7 @@ class _RequestTileState extends State<_RequestTile> {
             widget.onKeyLeftAcross();
             return KeyEventResult.handled;
           }
-          if (key == LogicalKeyboardKey.enter ||
-              key == LogicalKeyboardKey.select ||
-              key == LogicalKeyboardKey.space ||
-              key == LogicalKeyboardKey.gameButtonA) {
+          if (TvKeyHandler.isActionKey(key)) {
             if (!widget.isLoading) {
               widget.onAccept();
             }

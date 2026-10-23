@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/features/games/services/arcade_emulator_service.dart';
 import 'package:moai3/features/games/services/gamepad_manager_service.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -127,10 +128,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
     } else if (key == LogicalKeyboardKey.gameButtonRight1 || key == LogicalKeyboardKey.keyL || key == LogicalKeyboardKey.keyO) {
       bit = ArcadeButtons.punchHeavy;
       label = 'gamepad_btn_hp'.tr();
-    } else if (key == LogicalKeyboardKey.gameButtonA ||
-        key == LogicalKeyboardKey.select ||
-        key == LogicalKeyboardKey.enter ||
-        key == LogicalKeyboardKey.space ||
+    } else if (TvKeyHandler.isActionKey(key) ||
         key == LogicalKeyboardKey.keyB ||
         key == LogicalKeyboardKey.keyK) {
       bit = ArcadeButtons.kickLight;

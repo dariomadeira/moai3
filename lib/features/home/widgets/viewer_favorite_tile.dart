@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
@@ -91,11 +92,7 @@ class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
         onFocusChange: (focus) => setState(() => _isFocused = focus),
         onKeyEvent: (node, event) {
           final key = event.logicalKey;
-          final isActionButton = key == LogicalKeyboardKey.enter ||
-              key == LogicalKeyboardKey.numpadEnter ||
-              key == LogicalKeyboardKey.select ||
-              key == LogicalKeyboardKey.gameButtonA ||
-              key == LogicalKeyboardKey.space;
+          final isActionButton = TvKeyHandler.isActionKey(key);
 
           if (!isActionButton) return KeyEventResult.ignored;
           if (event is KeyDownEvent) {

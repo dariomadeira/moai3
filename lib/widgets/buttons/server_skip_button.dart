@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
@@ -65,9 +66,7 @@ class _ServerSkipButtonState extends State<ServerSkipButton> {
               ? KeyEventResult.handled
               : KeyEventResult.ignored;
         }
-        if (key == LogicalKeyboardKey.enter ||
-            key == LogicalKeyboardKey.select ||
-            key == LogicalKeyboardKey.space) {
+        if (TvKeyHandler.isActionKey(key)) {
           context.read<ChannelProvider>().skipServer();
           return KeyEventResult.handled;
         }

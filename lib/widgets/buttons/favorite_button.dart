@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -104,9 +105,7 @@ class _FavoriteButtonState extends State<FavoriteButton> {
               return KeyEventResult.handled;
             }
             return KeyEventResult.ignored;
-          } else if (key == LogicalKeyboardKey.enter ||
-              key == LogicalKeyboardKey.select ||
-              key == LogicalKeyboardKey.space) {
+          } else if (TvKeyHandler.isActionKey(key)) {
             context.read<FavoritesProvider>().toggleFavorite(widget.channel);
             return KeyEventResult.handled;
           }

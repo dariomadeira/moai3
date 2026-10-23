@@ -3,6 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/services/calendar/argentina_time.dart';
@@ -159,11 +160,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
   ) {
     final key = event.logicalKey;
     final isAction =
-        key == LogicalKeyboardKey.select ||
-        key == LogicalKeyboardKey.enter ||
-        key == LogicalKeyboardKey.numpadEnter ||
-        key == LogicalKeyboardKey.space ||
-        key == LogicalKeyboardKey.gameButtonA;
+        TvKeyHandler.isActionKey(key);
 
     if (_focusSection == _FocusSection.grid && isAction) {
       if (event is KeyDownEvent) {
@@ -225,9 +222,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
         return KeyEventResult.handled;
       }
 
-      if (key == LogicalKeyboardKey.select ||
-          key == LogicalKeyboardKey.enter ||
-          key == LogicalKeyboardKey.space) {
+      if (TvKeyHandler.isActionKey(key)) {
         final action = actions[_headerActionIndex];
         if (action == _HeaderAction.refresh) {
           _refreshCalendar(calendar);

@@ -3,6 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/services/watch_party_voice_coordinator.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -211,11 +212,7 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
           }
         }
 
-        final isActionButton = key == LogicalKeyboardKey.select ||
-            key == LogicalKeyboardKey.enter ||
-            key == LogicalKeyboardKey.numpadEnter ||
-            key == LogicalKeyboardKey.gameButtonA ||
-            key == LogicalKeyboardKey.space;
+        final isActionButton = TvKeyHandler.isActionKey(key);
 
         if (isActionButton) {
           if (event is KeyDownEvent || event is KeyRepeatEvent) {

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/services/voice_audio_service.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
@@ -686,9 +687,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
       onKeyEvent: (node, event) {
         if (event is! KeyDownEvent) return KeyEventResult.ignored;
         final key = event.logicalKey;
-        if (key == LogicalKeyboardKey.select ||
-            key == LogicalKeyboardKey.enter ||
-            key == LogicalKeyboardKey.space) {
+        if (TvKeyHandler.isActionKey(key)) {
           onPressed();
           return KeyEventResult.handled;
         }

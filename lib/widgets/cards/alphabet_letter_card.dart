@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
 
 class AlphabetLetterCard extends StatefulWidget {
@@ -42,9 +43,7 @@ class _AlphabetLetterCardState extends State<AlphabetLetterCard> {
         onKeyEvent: (node, event) {
           final key = event.logicalKey;
           final isActionButton =
-              key == LogicalKeyboardKey.enter ||
-              key == LogicalKeyboardKey.select ||
-              key == LogicalKeyboardKey.space;
+              TvKeyHandler.isActionKey(key);
 
           if (event is KeyDownEvent || event is KeyRepeatEvent) {
             // Nunca L/R con filtro activo (no cambiar de panel).

@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/widgets/buttons/tv_back_pill.dart';
 import 'package:moai3/widgets/buttons/tv_install_pill.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
@@ -876,10 +877,7 @@ class _IconButtonActionState extends State<_IconButtonAction> {
           widget.onKeyRight!();
           return KeyEventResult.handled;
         }
-        if (key == LogicalKeyboardKey.enter ||
-            key == LogicalKeyboardKey.select ||
-            key == LogicalKeyboardKey.space ||
-            key == LogicalKeyboardKey.gameButtonA) {
+        if (TvKeyHandler.isActionKey(key)) {
           widget.onPressed();
           return KeyEventResult.handled;
         }

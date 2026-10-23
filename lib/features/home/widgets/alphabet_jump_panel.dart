@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/cards/alphabet_letter_card.dart';
@@ -41,9 +42,7 @@ class _AlphabetDeleteCardState extends State<AlphabetDeleteCard> {
         onKeyEvent: (node, event) {
           final key = event.logicalKey;
           final isActionButton =
-              key == LogicalKeyboardKey.enter ||
-              key == LogicalKeyboardKey.select ||
-              key == LogicalKeyboardKey.space;
+              TvKeyHandler.isActionKey(key);
 
           if (event is KeyDownEvent || event is KeyRepeatEvent) {
             // Nunca L/R: no cambiar de panel con filtro activo.

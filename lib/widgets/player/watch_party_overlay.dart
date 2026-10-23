@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/services/modal_route_tracker.dart';
 import 'package:moai3/services/watch_party_voice_coordinator.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
@@ -312,11 +313,7 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
       focusNode: _micFocusNode,
       onKeyEvent: (node, event) {
         final key = event.logicalKey;
-        final isActionButton = key == LogicalKeyboardKey.select ||
-            key == LogicalKeyboardKey.enter ||
-            key == LogicalKeyboardKey.numpadEnter ||
-            key == LogicalKeyboardKey.gameButtonA ||
-            key == LogicalKeyboardKey.space;
+        final isActionButton = TvKeyHandler.isActionKey(key);
 
         if (isActionButton) {
           if (event is KeyDownEvent || event is KeyRepeatEvent) {

@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
 
 /// Variante semántica para los botones de acción en modales de Android TV.
@@ -285,10 +286,7 @@ class _TvDialogButtonState extends State<TvDialogButton> {
         if (event is! KeyDownEvent) return KeyEventResult.ignored;
         final key = event.logicalKey;
 
-        if (key == LogicalKeyboardKey.enter ||
-            key == LogicalKeyboardKey.select ||
-            key == LogicalKeyboardKey.space ||
-            key == LogicalKeyboardKey.gameButtonA) {
+        if (TvKeyHandler.isActionKey(key)) {
           widget.onPressed();
           return KeyEventResult.handled;
         }

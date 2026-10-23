@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
 
 /// Variante visual alineada al teclado TV (fills, sin bordes).
@@ -146,10 +147,7 @@ class _TvFocusButtonState extends State<TvFocusButton> {
             widget.onArrowRight!();
             return KeyEventResult.handled;
           }
-          if (key == LogicalKeyboardKey.enter ||
-              key == LogicalKeyboardKey.select ||
-              key == LogicalKeyboardKey.space ||
-              key == LogicalKeyboardKey.gameButtonA) {
+          if (TvKeyHandler.isActionKey(key)) {
             if (!enabled) return KeyEventResult.handled;
             if (widget.onLongPress != null) {
               if (_holdTimer == null && !_longPressHandled) {
@@ -165,10 +163,7 @@ class _TvFocusButtonState extends State<TvFocusButton> {
             return KeyEventResult.handled;
           }
         } else if (event is KeyUpEvent) {
-          if (key == LogicalKeyboardKey.enter ||
-              key == LogicalKeyboardKey.select ||
-              key == LogicalKeyboardKey.space ||
-              key == LogicalKeyboardKey.gameButtonA) {
+          if (TvKeyHandler.isActionKey(key)) {
             if (_longPressHandled) {
               _longPressHandled = false;
               _cancelHoldTimer();

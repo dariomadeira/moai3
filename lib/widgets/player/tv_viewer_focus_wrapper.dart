@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/focus/tv_key_handler.dart';
 
 /// D-pad focus wrapper for the player area.
 ///
@@ -49,9 +50,7 @@ class TvViewerFocusWrapper extends StatelessWidget {
           key == LogicalKeyboardKey.arrowDown ||
           key == LogicalKeyboardKey.arrowLeft ||
           key == LogicalKeyboardKey.arrowRight ||
-          key == LogicalKeyboardKey.select ||
-          key == LogicalKeyboardKey.enter ||
-          key == LogicalKeyboardKey.space ||
+          TvKeyHandler.isActionKey(key) ||
           key == LogicalKeyboardKey.escape ||
           key == LogicalKeyboardKey.goBack) {
         if (onFullScreenChanged != null) {
@@ -64,9 +63,7 @@ class TvViewerFocusWrapper extends StatelessWidget {
       return KeyEventResult.ignored;
     }
 
-    if (key == LogicalKeyboardKey.select ||
-        key == LogicalKeyboardKey.enter ||
-        key == LogicalKeyboardKey.space) {
+    if (TvKeyHandler.isActionKey(key)) {
       onFullScreenChanged?.call(true);
       return KeyEventResult.handled;
     }

@@ -1,12 +1,10 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/cards/tv_list_card_leading_logo.dart';
 import 'package:moai3/widgets/cards/tv_list_card_style.dart';
+import 'package:moai3/widgets/tv_common/tv_press_detector.dart';
 import 'package:provider/provider.dart';
 
 /// Tile de canal para grilla 2 columnas: logo arriba, nombre abajo.
@@ -40,9 +38,6 @@ class ChannelGridTile extends StatefulWidget {
 
 class _ChannelGridTileState extends State<ChannelGridTile> {
   bool _isFocused = false;
-  Timer? _longPressTimer;
-  bool _longPressTriggered = false;
-  bool _isKeyDown = false;
   /// Optimistic: URL no vacía hasta que el logo confirme error/éxito.
   late bool _logoOk;
 
@@ -63,12 +58,6 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
         widget.channel.logoUrl != oldWidget.channel.logoUrl) {
       _logoOk = !TvListCardLeadingLogo.isUrlFailed(widget.channel.logoUrl);
     }
-  }
-
-  @override
-  void dispose() {
-    _longPressTimer?.cancel();
-    super.dispose();
   }
 
   @override
@@ -102,68 +91,15 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Focus(
+      child: TvPressDetector(
         focusNode: widget.focusNode,
         onFocusChange: (focus) => setState(() => _isFocused = focus),
-        onKeyEvent: (node, event) {
-          final key = event.logicalKey;
-          final isActionButton = key == LogicalKeyboardKey.enter ||
-              key == LogicalKeyboardKey.numpadEnter ||
-              key == LogicalKeyboardKey.select ||
-              key == LogicalKeyboardKey.gameButtonA ||
-              key == LogicalKeyboardKey.space;
-
-          if (event is KeyDownEvent || event is KeyRepeatEvent) {
-            if (key == LogicalKeyboardKey.arrowRight) {
-              if (event is KeyRepeatEvent) return KeyEventResult.handled;
-              if (widget.onKeyRight != null && widget.onKeyRight!()) {
-                return KeyEventResult.handled;
-              }
-              return KeyEventResult.ignored;
-            }
-            if (key == LogicalKeyboardKey.arrowLeft) {
-              if (event is KeyRepeatEvent) return KeyEventResult.handled;
-              if (widget.onKeyLeft != null && widget.onKeyLeft!()) {
-                return KeyEventResult.handled;
-              }
-              return KeyEventResult.ignored;
-            }
-            if (key == LogicalKeyboardKey.arrowUp) {
-              if (widget.onKeyUp != null) {
-                widget.onKeyUp!();
-                return KeyEventResult.handled;
-              }
-            } else if (key == LogicalKeyboardKey.arrowDown) {
-              if (widget.onKeyDown != null) {
-                widget.onKeyDown!();
-                return KeyEventResult.handled;
-              }
-            } else if (isActionButton) {
-              if (event is KeyDownEvent && !_isKeyDown) {
-                _isKeyDown = true;
-                _longPressTriggered = false;
-                _longPressTimer = Timer(const Duration(milliseconds: 800), () {
-                  _longPressTriggered = true;
-                  widget.onLongPress?.call();
-                });
-              }
-              return KeyEventResult.handled;
-            }
-          } else if (event is KeyUpEvent) {
-            if (isActionButton) {
-              if (_isKeyDown) {
-                _isKeyDown = false;
-                _longPressTimer?.cancel();
-                _longPressTimer = null;
-                if (!_longPressTriggered) {
-                  widget.onTap();
-                }
-              }
-              return KeyEventResult.handled;
-            }
-          }
-          return KeyEventResult.ignored;
-        },
+        onPress: widget.onTap,
+        onLongPress: widget.onLongPress,
+        onLeft: widget.onKeyLeft,
+        onRight: widget.onKeyRight,
+        onUp: widget.onKeyUp,
+        onDown: widget.onKeyDown,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () {
