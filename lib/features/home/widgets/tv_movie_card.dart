@@ -1,10 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:reicons/reicons.dart';
 
 /// Tarjeta de película Moiamov para Smart TV con soporte D-Pad.
 class TvMovieCard extends StatefulWidget {
@@ -35,9 +35,9 @@ class _TvMovieCardState extends State<TvMovieCard> {
   bool _isFocused = false;
 
   IconData get _cardIcon {
-    if (widget.movie.isTrailer) return ReiconIcons.reel;
-    if (widget.movie.isSeries) return ReiconIcons.clapperboardText;
-    return ReiconIcons.videoFrame2;
+    if (widget.movie.isTrailer) return MoaiIcons.vodTrailer;
+    if (widget.movie.isSeries) return MoaiIcons.vodSeries;
+    return MoaiIcons.vodMovie;
   }
 
   @override

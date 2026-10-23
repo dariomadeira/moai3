@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/movies/widgets/tv_movie_genre_chip.dart';
@@ -14,7 +15,6 @@ import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 import 'package:moai3/features/movies/screens/movie_player_screen.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/services/movie_progress_service.dart';
-import 'package:reicons/reicons.dart';
 
 /// Pantalla de detalle de película para Smart TV con diseño Split Cinemático 60/40.
 class MovieDetailScreen extends StatefulWidget {
@@ -197,7 +197,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                           activeIndex: 0,
                           colors: [scheme.surface.withValues(alpha: 0.85)],
                           titles: const ['Película'],
-                          icons: const [ReiconIcons.clapperboardOpen],
+                          icons: const [MoaiIcons.vodPoster],
                           onPanelTap: (_) {},
                           tabBuilder: (index, isExpanded) {
                             return Padding(
@@ -224,7 +224,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                   ),
                                   const SizedBox(height: 6),
                                   Icon(
-                                    ReiconIcons.clapperboardOpen,
+                                    MoaiIcons.vodPoster,
                                     size: 20,
                                     color: scheme.onSurfaceVariant.withValues(
                                       alpha: 0.85,
@@ -322,8 +322,8 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                                       ? 'En Favoritos'
                                                       : 'Favorito',
                                                   icon: _isFavorite
-                                                      ? ReiconFilledIcons.star
-                                                      : ReiconIcons.star,
+                                                      ? MoaiIcons.vodRatingFilled
+                                                      : MoaiIcons.vodRating,
                                                   variant: _isFavorite
                                                       ? TvButtonVariant.tonal
                                                       : TvButtonVariant.surface,
@@ -452,20 +452,20 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
               TvMetaPill(
                 color: scheme.tertiaryContainer,
                 foreground: scheme.onTertiaryContainer,
-                icon: ReiconIcons.calendar,
+                icon: MoaiIcons.vodReleaseDate,
                 label: year,
               ),
             if (duration != null && duration.isNotEmpty)
               TvMetaPill(
                 color: scheme.tertiaryContainer,
                 foreground: scheme.onTertiaryContainer,
-                icon: ReiconIcons.clockCircle,
+                icon: MoaiIcons.vodDuration,
                 label: duration,
               ),
             TvMetaPill(
               color: scheme.tertiaryContainer,
               foreground: scheme.onTertiaryContainer,
-              icon: ReiconIcons.hd,
+              icon: MoaiIcons.vodQuality,
               label: '1080P HD',
             ),
             if (_watchProgress != null)
@@ -473,14 +473,14 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                 TvMetaPill(
                   color: const Color(0xFF10B981).withValues(alpha: 0.22),
                   foreground: const Color(0xFF34D399),
-                  icon: ReiconFilledIcons.checkCircle,
+                  icon: MoaiIcons.vodWatched,
                   label: 'Vista',
                 )
               else if (_watchProgress!.canResume)
                 TvMetaPill(
                   color: scheme.primary.withValues(alpha: 0.2),
                   foreground: scheme.primary,
-                  icon: ReiconIcons.history,
+                  icon: MoaiIcons.vodResume,
                   label: '${(_watchProgress!.progressPercentage * 100).toInt()}% visto',
                 ),
           ],
@@ -634,7 +634,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     return TvMetaPill(
       color: bg,
       foreground: fg,
-      icon: ReiconFilledIcons.star,
+      icon: MoaiIcons.vodRatingFilled,
       label: scoreText,
     );
   }

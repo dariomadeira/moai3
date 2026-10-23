@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/engine/engine_player_view.dart';
 import 'package:moai3/engine/moai_engine_player.dart';
@@ -9,7 +10,6 @@ import 'package:moai3/services/movie_progress_service.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/buttons/tv_back_pill.dart';
 import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
-import 'package:reicons/reicons.dart';
 
 /// Pantalla completa de reproducción de películas para Smart TV.
 /// Soporta controles nativos de D-Pad (Play/Pausa, Seek ±10s, OSD cinemático y persistencia).
@@ -336,8 +336,8 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
                         children: [
                           Icon(
                             _seekBadgeText!.startsWith('+')
-                                ? Icons.forward_10_rounded
-                                : Icons.replay_10_rounded,
+                                ? MoaiIcons.vodSkipForward
+                                : MoaiIcons.vodSkipBack,
                             color: scheme.primary,
                             size: 26,
                           ),
@@ -412,14 +412,14 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
                             TvMetaPill(
                               color: scheme.primaryContainer.withValues(alpha: 0.8),
                               foreground: scheme.onPrimaryContainer,
-                              icon: ReiconIcons.hd,
+                              icon: MoaiIcons.vodQuality,
                               label: widget.stream.quality,
                             ),
                             const SizedBox(width: 8),
                             TvMetaPill(
                               color: Colors.white.withValues(alpha: 0.18),
                               foreground: Colors.white,
-                              icon: ReiconIcons.volumeUp,
+                              icon: MoaiIcons.vodAudio,
                               label: widget.stream.audioInfo,
                             ),
                             if (widget.stream.subtitleName != null) ...[
@@ -427,7 +427,7 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
                               TvMetaPill(
                                 color: Colors.white.withValues(alpha: 0.18),
                                 foreground: Colors.white,
-                                icon: ReiconIcons.text,
+                                icon: MoaiIcons.vodSubtitles,
                                 label: widget.stream.subtitleName!,
                               ),
                             ],
@@ -471,8 +471,8 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
                                   children: [
                                     Icon(
                                       _isPlaying
-                                          ? ReiconFilledIcons.play
-                                          : ReiconFilledIcons.pause,
+                                          ? MoaiIcons.vodPlay
+                                          : MoaiIcons.vodPause,
                                       size: 16,
                                       color: scheme.primary,
                                     ),

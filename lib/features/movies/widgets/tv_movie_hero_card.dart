@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
-import 'package:reicons/reicons.dart';
 
 /// Tarjeta visual cinematográfica 16:9 para la pantalla de detalle de películas en Smart TV.
 class TvMovieHeroCard extends StatefulWidget {
@@ -224,7 +224,7 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
                             ),
                           ] else ...[
                             Icon(
-                              ReiconFilledIcons.play,
+                              MoaiIcons.vodPlay,
                               size: 15,
                               color: _isFocused ? scheme.onPrimary : Colors.white,
                             ),
@@ -259,7 +259,7 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
         color: scheme.surfaceContainerHigh,
         child: Center(
           child: Icon(
-            ReiconIcons.videoFrame2,
+            MoaiIcons.vodMovie,
             size: 48,
             color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
           ),
@@ -283,7 +283,7 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
           color: scheme.surfaceContainerHigh,
           child: Center(
             child: Icon(
-              ReiconIcons.videoFrame2,
+              MoaiIcons.vodMovie,
               size: 48,
               color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
             ),
@@ -293,7 +293,7 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
           color: scheme.surfaceContainerHigh,
           child: Center(
             child: Icon(
-              ReiconIcons.videoFrame2,
+              MoaiIcons.vodMovie,
               size: 48,
               color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
             ),

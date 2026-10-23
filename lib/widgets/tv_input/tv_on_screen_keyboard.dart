@@ -1,11 +1,11 @@
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_layouts.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
-import 'package:reicons/reicons.dart';
 
 typedef TvKeyPressed = void Function(TvKeyDef key);
 
@@ -346,13 +346,13 @@ class _TvKeyButtonState extends State<_TvKeyButton> {
     Widget childContent;
     if (widget.action == TvKeyAction.shift) {
       childContent = Icon(
-        ReiconIcons.arrowUp,
+        MoaiIcons.keyboardShift,
         size: 16,
         color: fg,
       );
     } else if (widget.action == TvKeyAction.backspace) {
       childContent = Icon(
-        ReiconIcons.tagCross2,
+        MoaiIcons.keyboardBackspace,
         size: 16,
         color: fg,
       );
