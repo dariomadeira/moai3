@@ -66,7 +66,8 @@ Hallazgos que aparecieron al ejecutar (no estaban en el análisis original):
 - `docs/evidencias/` no está vacía (capturas de películas): se deja.
 - **Miremos Juntos con datos viejos**: cuando un amigo entraba al canal que se mira, el aviso salía pero la lista no se actualizaba y el siguiente sondeo podía repetir el aviso; y `FriendInfo.copyWith` usa `??`, así que un canal `null` (el amigo dejó de mirar) conservaba el anterior hasta el sondeo de 15 s. Corregido en `FriendsRoster`.
 - **Ajustes saltaba un panel al volver**: las listas de los paneles (salvo TV) y de Suscripciones tomaban el foco al montarse y el → del rail avanzaba al panel siguiente. Ya pasaba antes de SPEC-50. Corregido con `focusOnMount: false` + test de regresión; verificado en Chromecast.
-- **Probado en Chromecast (2026-10-23)**: arranque, TV conserva el panel al volver, Agenda (grilla, suscripciones, eventos de F1 con badges), Ajustes recuerda el panel, diálogos de amigos y de micrófono; sin excepciones en el log.
+- **Probado en Chromecast (2026-10-23)**: arranque, TV conserva el panel al volver, Agenda (grilla, suscripciones, eventos de F1 con badges), Ajustes recuerda el panel, diálogos de amigos y de micrófono, Arcade (entrada de foco, configuración de gamepad, catálogo de juegos); sin excepciones en el log. Pendiente en dispositivo: "Iniciar juego" (requiere una ROM instalada) y el PIN.
+- **Volver a TV ya no le da el foco al reproductor** (decisión del usuario): solo el arranque enfoca el visor; desde el rail, TV se comporta como las demás secciones.
 
 ## 2. Resumen de Fases
 
