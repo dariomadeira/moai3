@@ -18,17 +18,21 @@ A diferencia de los dispositivos táctiles, la experiencia en Android TV depende
 
 ## 2. Componentes Clave del Motor de Foco
 
-### 2.1. `FocusScrollSync`
-Gestiona la sincronización entre el estado de las colecciones de datos, los controladores de scroll y la lista de `FocusNode`s:
+### 2.1. Listas virtuales y `FocusScrollSync`
+Las listas de países, categorías, canales y grupos usan `TvWindowedList` / `TvWindowedGrid`, que crean y descartan sus propios `FocusNode` solo para los ítems visibles. Los controllers (`ChannelBrowserController`, `GroupsBrowserController`) guardan únicamente datos y selección: no tienen un nodo por canal ni `ScrollController` (SPEC-50 §1.2).
 
-1. **`syncFocusNodes(targetCount, nodesList)`**:
-   - Ajusta dinámicamente el tamaño de la lista de nodos al número de elementos (`targetCount`).
-   - Descarta y libera (`dispose()`) los nodos sobrantes para prevenir fugas de memoria.
-2. **`scrollToIndex(...)`**:
-   - Calcula el desplazamiento exacto multiplicando el índice por el alto del ítem (`itemHeight`).
-   - Soporta modo instantáneo (`instant: true` con `jumpTo`): esencial cuando se cambia de categoría o canal por teclado rápido, pues `animateTo` tardaría ~250ms durante los cuales el widget destino aún no existe en el árbol de renderizado.
-3. **`requestFocusAtIndex(nodes, index, ...)`**:
-   - Intenta hacer `requestFocus()` sobre el nodo solicitado. Si el widget aún no está montado en el viewport, ejecuta un mecanismo de reintento (`SchedulerBinding.instance.addPostFrameCallback`) hasta que el contexto esté disponible.
+`FocusScrollSync` queda para listas chicas de tamaño variable (alfabeto, favoritos del visor, resultados de búsqueda):
+
+1. **`syncFocusNodes(targetCount, nodesList)`**: ajusta la lista de nodos al número de elementos y libera (`dispose()`) los sobrantes.
+2. **`requestFocusAtIndex(nodes, index, ...)`**: hace `requestFocus()` sobre el nodo; si el widget aún no está montado, reintenta en los frames siguientes (`addPostFrameCallback`) hasta que haya contexto.
+3. **`focusHorizontalItem(...)`** / **`scrollToHorizontalIndex(...)`**: barra de favoritos del visor.
+
+### 2.1.1. `TvPressDetector`
+Foco y teclas de los ítems de lista (`TvIconListCard`, `ChannelGridTile`, `NewChannelCard`):
+- OK: tap al soltar; con `onLongPress`, mantener `TvTiming.longPress` (800 ms) dispara la pulsación larga y no el tap.
+- ←/→: las repeticiones se bloquean; el callback devuelve si consumió la tecla.
+- ↑/↓: se consumen solo si hay callback, incluidas las repeticiones.
+- Al perder el foco con OK apretado se cancela la pulsación pendiente.
 
 ### 2.2. `TvKeyHandler`
 Normaliza la captura de eventos de hardware procedentes de controles remotos IR/Bluetooth y gamepads:

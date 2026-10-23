@@ -1,6 +1,8 @@
 # SPEC-34: Diagnóstico y Captura de Voz del Control Remoto (PoC y Amplificación)
 
 ## 1. Propósito
+> **Estado**: la captura dejó de ser PoC: `VoiceAudioService` es el motor de audio de Miremos Juntos (SPEC-37); el diálogo de prueba es un consumidor más.
+
 Proveer una solución empírica y no invasiva para capturar transmisiones de voz (Voice-over-BLE) de manera transparente por software mediante el framework estándar de audio de Android (`AudioSource.VOICE_RECOGNITION`), diagnosticando el hardware y aplicando normalización y amplificación digital de la señal de voz.
 
 ---
@@ -10,7 +12,7 @@ Proveer una solución empírica y no invasiva para capturar transmisiones de voz
 ```mermaid
 graph TD
     A[Usuario pulsa 'Grabar' en TV] --> B[TvVoiceTestDialog]
-    B --> C[RemoteVoiceTestService / MethodChannel]
+    B --> C[VoiceAudioService / MethodChannel]
     C --> D[RemoteVoiceManager Kotlin]
     D --> E[MediaRecorder con AudioSource.VOICE_RECOGNITION]
     E --> F[AudioPolicy / HAL de Android TV]
@@ -44,7 +46,7 @@ Al especificar `MediaRecorder.AudioSource.VOICE_RECOGNITION` (código 6), la pol
   - Emite `onPlaybackComplete` al finalizar la reproducción.
 
 ### 3.2 Capa Flutter
-- [`RemoteVoiceTestService`](file:///g:/moai_func/moai/moai3/lib/services/remote_voice_test_service.dart):
+- [`VoiceAudioService`](file:///g:/moai_func/moai/moai3/lib/services/voice_audio_service.dart):
   - Métodos asíncronos tipados para invocar las operaciones nativas y registrar handlers de callback.
 - [`TvVoiceTestDialog`](file:///g:/moai_func/moai/moai3/lib/widgets/dialogs/tv_voice_test_dialog.dart):
   - Diálogo modal con diseño M3 Expressive, optimizado para navegación D-Pad en 10 pies.

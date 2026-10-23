@@ -231,6 +231,8 @@ class DeviceIdentity {
 | **RB-02** | Si el registro no existe en Supabase, se crea automáticamente con `is_active = true`. |
 | **RB-03** | El campo `online` debe ser `true` mientras la app esté en primer plano y `false` cuando esté en segundo plano o cerrada. Se implementa con ciclo de vida inmediato + Heartbeat de 45 segundos en primer plano + tarea programada en Supabase (`pg_cron`) que pasa a `online = false` a dispositivos con `last_seen` mayor a 2 minutos. |
 | **RB-04** | Si `is_active = false`, el dispositivo no puede acceder al home. La app muestra la pantalla de bloqueo y se cierra al presionar "Aceptar". |
+| **RB-04b** | El bloqueo aplica también en vivo: con la app abierta, `PresenceCoordinator` escucha el registro del dispositivo (Realtime) y navega a `/blocked` en cuanto `is_active` pasa a `false` (SPEC-50 §2.4). |
+| **RB-11** | `PresenceCoordinator` es el único que reporta presencia: online con heartbeat en TV y Arcade, offline en el resto; el canal actual se reporta solo en TV. |
 | **RB-05** | La versión de la app se registra en cada arranque para trazabilidad. |
 | **RB-06** | La pantalla de carga debe tener un timeout máximo de 10 segundos. Si Supabase no responde, mostrar error de conexión con opción de reintentar. |
 | **RB-07** | El `device_id` se obtiene de `SharedPreferences` con la clave `'device_id'`. Si no existe, se genera con `UUID v4`. |

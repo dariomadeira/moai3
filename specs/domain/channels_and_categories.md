@@ -96,8 +96,8 @@ Claves `icon` persistidas → `IconData` centralizado en `lib/theme/moai_icons.d
 
 Todos los ítems del panel Países usan `MoaiIcons.tvDisplays` (`Symbols.tv_displays`).
 
-### 3.3. Iconografía de categorías (`CategoryCard`)
+### 3.3. Iconografía de categorías y grupos
 
 Mapa canónico en `MoaiIcons.tvCategoryIcons` / constantes `tvCategory*` (Aire, Deportes, Cine, …).  
-Resolución: `MoaiIcons.tvCategoryIconFor(name)` → fallback `tvCategoryFallback`.  
-No duplicar el mapa en `category_card.dart`.
+Resolución: `MoaiIcons.tvCategoryIconFor(name)`, sin importar tildes ni mayúsculas (`normalizeText`) → fallback `tvCategoryFallback`.  
+Grupos: `MoaiIcons.groupIconFor(iconKey)`. Los paneles usan `TvIconListCard` directamente; ningún otro archivo mapea íconos (SPEC-50 §4).

@@ -2,7 +2,8 @@
 
 > **Estado**: Vigente (ampliado en `xumovies`, v3.0.36+)  
 > **Área**: Plataforma / Interoperabilidad Flutter <-> Android  
-> **Implementación Nativa**: `android/app/src/main/kotlin/com/infomak/moai/MainActivity.kt`, `games/ArcadeEmulatorManager.kt`
+> **Implementación Nativa**: `android/app/src/main/kotlin/com/infomak/moai/MainActivity.kt`, `games/ArcadeEmulatorManager.kt`, `PlayerEngine.kt`  
+> **Lado Dart**: los nombres viven solo en `lib/platform/platform_channels.dart` (`PlatformChannels`); ningún otro archivo crea un `MethodChannel` (SPEC-50 §2.6).
 
 ---
 
@@ -13,9 +14,9 @@
 | `com.infomak.moai.tv/player` | `MethodChannel` | Control del ciclo de vida del reproductor ExoPlayer sobre Texture |
 | `com.infomak.moai.tv/player/events/{handle}` | `EventChannel` | Emisión continua de eventos de reproducción y métricas de video |
 | `com.infomak.moai.tv/plugin` | `MethodChannel` | Gestión del ciclo de vida y resolución de plugins `.dex` |
-| `com.infomak.moai.tv/device` | `MethodChannel` | Hardware, emulador, mute de clicks UI D-Pad |
+| `com.infomak.moai.tv/device` | `MethodChannel` | RAM, identidad de hardware, salir, mute de clicks UI D-Pad, instalar APK |
 | `com.infomak.moai/arcade_channel` | `MethodChannel` | Emulador FBNeo/libretro, ROMs, gamepad, **netplay lockstep** |
-| `com.infomak.moai.tv/remote_voice` | `MethodChannel` | PoC micrófono del control remoto (SPEC-34) |
+| `com.infomak.moai.tv/remote_voice` | `MethodChannel` | Micrófono del control remoto y audio de Miremos Juntos (`VoiceAudioService`) |
 | `com.infomak.moai.tv/vpn_permission` | `MethodChannel` | Nativo → Flutter: denegación del aviso VPN del SO (SPEC-39) |
 
 ---
@@ -135,9 +136,6 @@ Emite eventos de estado como mapas JSON:
 
 #### `getTotalRamMb`
 - **Respuesta**: `int` (Total de memoria RAM del dispositivo en Megabytes).
-
-#### `isEmulator`
-- **Respuesta**: `bool` (Heurística basada en `Build.FINGERPRINT`, `Build.MODEL` y `Build.HARDWARE`).
 
 #### `setUiDpadSoundsEnabled` (xumovies)
 - **Argumentos**: `{"enabled": bool}` — `false` silencia clicks UI (preferencia `ui_sounds_disabled`).
