@@ -2,19 +2,16 @@ import 'dart:async';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/data/repositories/calendar_repository.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/models/sport_subscription.dart';
 import 'package:moai3/services/calendar/argentina_time.dart';
-import 'package:moai3/services/calendar/f1_calendar_service.dart';
-import 'package:moai3/services/calendar/sports_schedule_service.dart';
+import 'package:moai3/services/calendar/live_event_detector.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
 /// Proveedor de estado central para Suscripciones Deportivas y Calendario de Eventos en Moai TV.
 class CalendarProvider extends ChangeNotifier {
-  static const String _prefsKey = 'moai_calendar_subscriptions';
-  static const String _notifyLeadKey = 'moai_calendar_notify_lead_minutes';
-  static const String _snackDurationKey = 'moai_calendar_snack_duration_seconds';
   static const List<int> notifyLeadOptions = [0, 10, 15, 30];
   static const List<int> snackDurationOptions = [2, 4, 8];
   static const int defaultSnackDurationSeconds = 4;
@@ -83,9 +80,7 @@ class CalendarProvider extends ChangeNotifier {
   Timer? _statusTicker;
   int _lastKnownTodayCount = -1;
   int _lastKnownDay = -1;
-  final Set<String> _notifiedEventIds = {};
-  bool _isFirstEventsLoad = true;
-  int _notifyLeadMinutes = 0;
+  final _liveDetector = LiveEventDetector();
   int _snackDurationSeconds = defaultSnackDurationSeconds;
   final StreamController<List<CalendarEvent>> _liveEventsController =
       StreamController<List<CalendarEvent>>.broadcast();
@@ -104,12 +99,10 @@ class CalendarProvider extends ChangeNotifier {
   /// Permite deshabilitar el ticker en tests unitarios o widgets para evitar timers pendientes.
   static bool enablePeriodicTicker = true;
 
-  AppPreferences? _preferences;
+  final CalendarRepository _repository;
 
-  Future<AppPreferences> _prefs() async =>
-      _preferences ??= await AppPreferences.init();
-
-  CalendarProvider({this._preferences, bool? startTicker}) {
+  CalendarProvider({AppPreferences? preferences, bool? startTicker})
+    : _repository = CalendarRepository(preferences: preferences) {
     _init();
     final shouldStart = startTicker ?? (enablePeriodicTicker && !_isInTest);
     if (shouldStart) {
@@ -154,27 +147,10 @@ class CalendarProvider extends ChangeNotifier {
     _checkNewLiveEvents();
   }
 
-  bool _isInNotifyWindow(CalendarEvent event) {
-    if (event.status == CalendarEventStatus.finished) return false;
-    final now = ArgentinaTime.utcNow();
-    final start = event.startDateTime.toUtc();
-    final notifyAt = start.subtract(Duration(minutes: _notifyLeadMinutes));
-    return !now.isBefore(notifyAt);
-  }
-
   void _checkNewLiveEvents() {
-    final newLive = subscribedEvents
-        .where((e) =>
-            _isInNotifyWindow(e) && !_notifiedEventIds.contains(e.id))
-        .toList();
-
-    if (newLive.isNotEmpty) {
-      for (final e in newLive) {
-        _notifiedEventIds.add(e.id);
-      }
-      if (!_disposed && !_liveEventsController.isClosed) {
-        _liveEventsController.add(newLive);
-      }
+    final newLive = _liveDetector.takeNew(subscribedEvents);
+    if (newLive.isNotEmpty && !_disposed && !_liveEventsController.isClosed) {
+      _liveEventsController.add(newLive);
     }
   }
 
@@ -255,34 +231,22 @@ class CalendarProvider extends ChangeNotifier {
   }
 
   Future<void> _loadNotifyLead() async {
-    try {
-      final prefs = await _prefs();
-      final saved = prefs.readOptionalInt(_notifyLeadKey);
-      if (saved != null && notifyLeadOptions.contains(saved)) {
-        _notifyLeadMinutes = saved;
-      }
-    } catch (e) {
-      debugPrint('[CalendarProvider] Error al leer aviso: $e');
+    final saved = await _repository.loadNotifyLeadMinutes();
+    if (saved != null && notifyLeadOptions.contains(saved)) {
+      _liveDetector.leadMinutes = saved;
     }
   }
 
   Future<void> _loadSnackDuration() async {
-    try {
-      final prefs = await _prefs();
-      final saved = prefs.readOptionalInt(_snackDurationKey);
-      if (saved != null && snackDurationOptions.contains(saved)) {
-        _snackDurationSeconds = saved;
-      }
-    } catch (e) {
-      debugPrint('[CalendarProvider] Error al leer duración del snack: $e');
+    final saved = await _repository.loadSnackDurationSeconds();
+    if (saved != null && snackDurationOptions.contains(saved)) {
+      _snackDurationSeconds = saved;
     }
   }
 
   Future<void> _loadSubscriptions() async {
     try {
-      final prefs = await _prefs();
-      final savedActiveIds = prefs.readOptionalStringList(_prefsKey);
-
+      final savedActiveIds = await _repository.loadActiveSubscriptionIds();
       if (savedActiveIds == null) {
         _subscriptions = List.from(defaultSubscriptions);
       } else {
@@ -306,16 +270,10 @@ class CalendarProvider extends ChangeNotifier {
     _subscriptions[index] = updated;
     _notify();
 
-    try {
-      final prefs = await _prefs();
-      final activeIds = _subscriptions
-          .where((s) => s.isSubscribed)
-          .map((s) => s.id)
-          .toList();
-      await prefs.saveStringList(_prefsKey, activeIds);
-    } catch (e) {
-      debugPrint('[CalendarProvider] Error guardando suscripciones: $e');
-    }
+    await _repository.saveActiveSubscriptionIds([
+      for (final s in _subscriptions)
+        if (s.isSubscribed) s.id,
+    ]);
   }
 
   Future<void> refreshEvents({bool force = false}) async {
@@ -330,38 +288,10 @@ class CalendarProvider extends ChangeNotifier {
     _notify();
 
     try {
-      final f1EventsFuture = F1CalendarService.fetchF1Events();
-      final sportsEventsFuture = SportsScheduleService.fetchSportsEvents();
-
-      final results = await Future.wait([f1EventsFuture, sportsEventsFuture]);
-      final f1 = results[0];
-      final sports = results[1];
-
-      final combined = <CalendarEvent>[];
-      final seenIds = <String>{};
-
-      for (final ev in [...f1, ...sports]) {
-        if (seenIds.add(ev.id)) {
-          combined.add(ev);
-        }
-      }
-
-      combined.sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
-
-      _events = combined;
+      _events = await _repository.fetchEvents();
       _lastFetchTime = DateTime.now();
-
-      if (_isFirstEventsLoad) {
-        _isFirstEventsLoad = false;
-        for (final ev in combined) {
-          if (_isInNotifyWindow(ev) ||
-              ev.status == CalendarEventStatus.finished) {
-            _notifiedEventIds.add(ev.id);
-          }
-        }
-      } else {
-        _checkNewLiveEvents();
-      }
+      // La primera carga no avisa lo que ya estaba en curso al abrir la app.
+      if (!_liveDetector.prime(_events)) _checkNewLiveEvents();
     } catch (e) {
       debugPrint('[CalendarProvider] Error al actualizar eventos: $e');
     } finally {
@@ -370,7 +300,7 @@ class CalendarProvider extends ChangeNotifier {
     }
   }
 
-  int get notifyLeadMinutes => _notifyLeadMinutes;
+  int get notifyLeadMinutes => _liveDetector.leadMinutes;
 
   int get snackDurationSeconds => _snackDurationSeconds;
 
@@ -382,25 +312,15 @@ class CalendarProvider extends ChangeNotifier {
         : defaultSnackDurationSeconds;
     if (next == _snackDurationSeconds) return;
     _snackDurationSeconds = next;
-    try {
-      final prefs = await _prefs();
-      await prefs.saveInt(_snackDurationKey, next);
-    } catch (e) {
-      debugPrint('[CalendarProvider] Error al guardar duración del snack: $e');
-    }
+    await _repository.saveSnackDurationSeconds(next);
     _notify();
   }
 
   Future<void> setNotifyLeadMinutes(int minutes) async {
     final next = notifyLeadOptions.contains(minutes) ? minutes : 0;
-    if (next == _notifyLeadMinutes) return;
-    _notifyLeadMinutes = next;
-    try {
-      final prefs = await _prefs();
-      await prefs.saveInt(_notifyLeadKey, next);
-    } catch (e) {
-      debugPrint('[CalendarProvider] Error al guardar aviso: $e');
-    }
+    if (next == _liveDetector.leadMinutes) return;
+    _liveDetector.leadMinutes = next;
+    await _repository.saveNotifyLeadMinutes(next);
     _notify();
   }
 
