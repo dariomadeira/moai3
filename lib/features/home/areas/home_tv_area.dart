@@ -12,6 +12,7 @@ import 'package:moai3/features/favorites/controllers/favorites_list_controller.d
 import 'package:moai3/features/groups/controllers/groups_browser_controller.dart';
 import 'package:moai3/features/groups/widgets/group_list_panel.dart';
 import 'package:moai3/features/home/areas/home_area.dart';
+import 'package:moai3/features/home/controllers/tv_browser_session.dart';
 import 'package:moai3/features/home/controllers/player_overlay_controller.dart';
 import 'package:moai3/features/home/controllers/viewer_favorites_controller.dart';
 import 'package:moai3/features/home/widgets/alphabet_jump_panel.dart';
@@ -54,7 +55,14 @@ import 'package:moai3/theme/moai_icons.dart';
 class HomeTvArea extends StatefulWidget {
   final VoidCallback onExitLeft;
 
-  const HomeTvArea({super.key, required this.onExitLeft});
+  /// Navegación que sobrevive al cambio de sección (la crea HomeScreen).
+  final TvBrowserSession session;
+
+  const HomeTvArea({
+    super.key,
+    required this.onExitLeft,
+    required this.session,
+  });
 
   @override
   State<HomeTvArea> createState() => HomeTvAreaState();
@@ -62,11 +70,12 @@ class HomeTvArea extends StatefulWidget {
 
 class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     with WidgetsBindingObserver {
-  final _browser = ChannelBrowserController();
-  final _search = HomeSearchController();
-  final _groups = GroupsBrowserController();
-  final _favorites = FavoritesListController();
-  final _favoritesBar = ViewerFavoritesController();
+  TvBrowserSession get _session => widget.session;
+  ChannelBrowserController get _browser => _session.browser;
+  HomeSearchController get _search => _session.search;
+  GroupsBrowserController get _groups => _session.groups;
+  FavoritesListController get _favorites => _session.favorites;
+  ViewerFavoritesController get _favoritesBar => _session.favoritesBar;
   final _playerOverlay = PlayerOverlayController();
   final _tvFocus = TvFocusController();
 
@@ -121,7 +130,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
   @override
   void initState() {
     super.initState();
-    _search.initialize();
+    if (!_session.isPopulated) _search.initialize();
     _browser.addListener(_rebuild);
     _search.addListener(_rebuild);
     _groups.addListener(_rebuild);
@@ -141,7 +150,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     _channelProvider = context.read<ChannelProvider>();
     _tvSettingsProvider = context.read<TvSettingsProvider>();
     _favoritesProvider = context.read<FavoritesProvider>();
-    _tvTab = _tvSettingsProvider?.startupTvTab ?? TvTab.explore;
+    _tvTab = _session.tab ?? _tvSettingsProvider?.startupTvTab ?? TvTab.explore;
 
     final wp = context.read<WatchPartyProvider?>();
     if (wp != null) {
@@ -172,18 +181,35 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     );
 
     _lastShowTvLog = _tvSettingsProvider!.showTvLog;
-    _activePanelIndex = TvPanelLayout.channelPanelIndex(_lastShowTvLog);
+    final savedPanel = _session.activePanelIndex;
+    _activePanelIndex = savedPanel == null
+        ? TvPanelLayout.channelPanelIndex(_lastShowTvLog)
+        : TvPanelLayout.remapPanelIndex(
+            savedPanel,
+            _session.activePanelShowTvLog ?? _lastShowTvLog,
+            _lastShowTvLog,
+          );
+    _groupsPanelIndex = _session.groupsPanelIndex;
     _lastChannelIds = _channelProvider!.allChannels.map((c) => c.id).toList();
     _lastFavoriteIds = List.from(_favoritesProvider!.favoriteChannelIds);
     _lastGroupIds = _channelProvider!.groups.map((g) => g.id).toList();
     _lastOverlapX = _tvSettingsProvider!.overlapPaddingX;
     _lastOverlapY = _tvSettingsProvider!.overlapPaddingY;
 
-    _browser.initializeFromChannels(
-      _channelProvider!.allChannels,
-      initial: _channelProvider!.selectedChannel,
-      isAdultUnlocked: _lastIsAdultUnlocked,
-    );
+    if (_session.isPopulated) {
+      // Volver a TV: conservar la selección y solo aplicar cambios del catálogo
+      // o del bloqueo de adultos ocurridos mientras tanto.
+      _browser.syncFromChannels(
+        _channelProvider!.allChannels,
+        isAdultUnlocked: _lastIsAdultUnlocked,
+      );
+    } else {
+      _browser.initializeFromChannels(
+        _channelProvider!.allChannels,
+        initial: _channelProvider!.selectedChannel,
+        isAdultUnlocked: _lastIsAdultUnlocked,
+      );
+    }
     _favorites.syncFrom(
       _channelProvider!.allChannels,
       _favoritesProvider!.favoriteChannelIds,
@@ -200,8 +226,9 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     final initial = _channelProvider!.selectedChannel;
     if (initial != null) {
       _lastPlayingChannelId = initial.id;
-      _groups.selectChannel(initial);
+      if (!_session.isPopulated) _groups.selectChannel(initial);
     }
+    _session.tab = _tvTab;
   }
 
   void _rebuild() {
@@ -381,11 +408,11 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     _groups.removeListener(_rebuild);
     _favorites.removeListener(_rebuild);
     _playerOverlay.removeListener(_onPlayerOverlayChanged);
-    _browser.dispose();
-    _search.dispose();
-    _groups.dispose();
-    _favorites.dispose();
-    _favoritesBar.dispose();
+    _session
+      ..tab = _tvTab
+      ..activePanelIndex = _activePanelIndex
+      ..activePanelShowTvLog = _lastShowTvLog
+      ..groupsPanelIndex = _groupsPanelIndex;
     _playerOverlay.dispose();
     _exploreTabFocus.dispose();
     _searchTabFocus.dispose();

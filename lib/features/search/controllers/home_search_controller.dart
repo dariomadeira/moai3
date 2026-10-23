@@ -30,26 +30,40 @@ class HomeSearchController extends ChangeNotifier with SafeChangeNotifier {
     safeNotifyListeners();
   }
 
+  List<Channel> Function()? _getAllChannels;
+  bool Function()? _isAdultUnlocked;
+  bool _listening = false;
+  bool _lastHasQuery = false;
+
+  /// Conecta la búsqueda a las fuentes actuales. Se puede llamar en cada
+  /// montaje del área TV: el listener se registra una sola vez.
   void attachQueryListener(
     List<Channel> Function() getAllChannels, {
     bool Function()? isAdultUnlocked,
   }) {
-    var lastHasQuery = hasQuery;
-    queryController.addListener(() {
-      final nowHasQuery = hasQuery;
-      if (nowHasQuery != lastHasQuery) {
-        lastHasQuery = nowHasQuery;
-        safeNotifyListeners();
-      }
-      _debounce?.cancel();
-      _debounce = Timer(const Duration(milliseconds: 300), () {
-        final unlocked = isAdultUnlocked?.call() ?? false;
-        updateResults(
-          getAllChannels(),
-          queryController.text,
-          isAdultUnlocked: unlocked,
-        );
-      });
+    _getAllChannels = getAllChannels;
+    _isAdultUnlocked = isAdultUnlocked;
+    if (_listening) return;
+    _listening = true;
+    _lastHasQuery = hasQuery;
+    queryController.addListener(_onQueryChanged);
+  }
+
+  void _onQueryChanged() {
+    final nowHasQuery = hasQuery;
+    if (nowHasQuery != _lastHasQuery) {
+      _lastHasQuery = nowHasQuery;
+      safeNotifyListeners();
+    }
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      final getAll = _getAllChannels;
+      if (getAll == null) return;
+      updateResults(
+        getAll(),
+        queryController.text,
+        isAdultUnlocked: _isAdultUnlocked?.call() ?? false,
+      );
     });
   }
 

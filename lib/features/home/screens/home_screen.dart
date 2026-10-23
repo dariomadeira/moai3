@@ -14,6 +14,7 @@ import 'package:moai3/features/home/areas/home_dashboard_area.dart';
 import 'package:moai3/features/home/areas/home_movies_area.dart';
 import 'package:moai3/features/home/areas/home_settings_area.dart';
 import 'package:moai3/features/home/areas/home_tv_area.dart';
+import 'package:moai3/features/home/controllers/tv_browser_session.dart';
 import 'package:moai3/features/home/coordinators/presence_coordinator.dart';
 import 'package:moai3/features/home/coordinators/startup_update_checker.dart';
 import 'package:moai3/features/home/home_section.dart';
@@ -111,6 +112,9 @@ class _HomeScreenState extends State<HomeScreen> {
   CalendarEvent? _currentSnackEvent;
   Timer? _modalClosedCooldownTimer;
   late final PresenceCoordinator _presence;
+
+  /// Navegación de TV que se conserva al ir a otras secciones y volver.
+  final _tvSession = TvBrowserSession();
 
   @override
   void initState() {
@@ -324,6 +328,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _presence.dispose();
+    _tvSession.dispose();
     ModalRouteTracker.instance.removeListener(_onModalTrackerChanged);
     _modalClosedCooldownTimer?.cancel();
     _liveEventsSub?.cancel();
@@ -545,6 +550,7 @@ class _HomeScreenState extends State<HomeScreen> {
       HomeSection.tv => HomeTvArea(
           key: _tvAreaKey,
           onExitLeft: _focusRail,
+          session: _tvSession,
         ),
     };
   }

@@ -20,6 +20,7 @@ import 'package:moai3/state/theme_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/state/weather_provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -150,6 +151,24 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     expect(FocusManager.instance.primaryFocus?.debugLabel, 'home_rail');
     expect(isSelected(tester, 'home_rail_calendar_title'), isTrue);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('TV conserva la pestaña al ir a la Agenda y volver', (tester) async {
+    await pumpHome(tester);
+    await tester.tap(find.byIcon(MoaiIcons.tvTabBuscar));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byIcon(MoaiIcons.tvTabBuscarSelected), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('home_rail_calendar_title'));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byIcon(MoaiIcons.tvTabBuscarSelected), findsNothing);
+
+    await tester.tap(find.bySemanticsLabel('home_rail_tv_title'));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byIcon(MoaiIcons.tvTabBuscarSelected), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 5));
