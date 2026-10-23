@@ -92,6 +92,8 @@ class CalendarSubscriptionsPanelState
                               alignment: Alignment.topCenter,
                               child: TvWindowedList<SportSubscription>(
                                 key: _listKey,
+                                // La entrada de foco la decide el área (rail →, cambio de panel).
+                                focusOnMount: false,
                                 items: subscriptions,
                                 itemExtent: _itemExtent,
                                 showScrollDots: true,

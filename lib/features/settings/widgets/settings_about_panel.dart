@@ -181,6 +181,8 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
                         alignment: Alignment.topCenter,
                         child: TvWindowedList<_AboutItemType>(
                           key: _listKey,
+                          // La entrada de foco la decide el área (rail →, cambio de panel).
+                          focusOnMount: false,
                           items: items,
                           windowSize: _windowSize,
                           itemExtent: _itemExtent,

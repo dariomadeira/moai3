@@ -214,4 +214,43 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 5));
   });
+
+  testWidgets('volver a Ajustes entra al panel recordado sin saltar al siguiente', (
+    tester,
+  ) async {
+    await pumpHome(tester);
+    Future<void> frames() async {
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+    }
+
+    // Antes, los paneles con lista tomaban el foco al montarse y el → del
+    // rail avanzaba un panel de más.
+    const panels = {
+      'settings_movies_series_title': 'settings_movies_series',
+      'settings_agenda_title': 'settings_agenda',
+      'settings_watch_party_title': 'settings_watch_party',
+      'settings_general_title': 'settings_general',
+    };
+    for (final MapEntry(key: title, value: node) in panels.entries) {
+      await tester.tap(find.bySemanticsLabel('home_rail_settings_title'));
+      await frames();
+      await tester.tap(find.text(title).first);
+      await frames();
+      expect(focusWithin(node), isTrue, reason: 'al abrir $title');
+      await tester.tap(find.bySemanticsLabel('home_rail_tv_title'));
+      await frames();
+
+      await tester.tap(find.bySemanticsLabel('home_rail_settings_title'));
+      await frames();
+      expect(FocusManager.instance.primaryFocus?.debugLabel, 'home_rail');
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await frames();
+      expect(focusWithin(node), isTrue, reason: 'al volver a $title');
+    }
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 5));
+  });
 }

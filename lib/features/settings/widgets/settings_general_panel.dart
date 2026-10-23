@@ -98,6 +98,8 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
                         alignment: Alignment.topCenter,
                         child: TvWindowedList<_SettingsGeneralItemType>(
                           key: _listKey,
+                          // La entrada de foco la decide el área (rail →, cambio de panel).
+                          focusOnMount: false,
                           items: items,
                           itemExtent: _itemExtent,
                           showScrollDots: true,
