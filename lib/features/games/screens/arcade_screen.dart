@@ -182,10 +182,18 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
   KeyEventResult _handleGamepadKeyEvent(FocusNode node, KeyEvent event) {
     final key = event.logicalKey;
 
-    // Permitir salir con Tecla Back / Escape
+    // Back del control: lo cierra el back del sistema (llega al soltar la
+    // tecla). Cerrar acá también hacía que ese segundo back llegara al home y
+    // le quitara el foco a "Iniciar juego".
+    if (key == LogicalKeyboardKey.goBack) {
+      return event is KeyUpEvent
+          ? KeyEventResult.ignored
+          : KeyEventResult.handled;
+    }
+
+    // Escape / retroceso de teclado no generan back del sistema.
     if (event is KeyDownEvent &&
-        (key == LogicalKeyboardKey.goBack ||
-         key == LogicalKeyboardKey.escape ||
+        (key == LogicalKeyboardKey.escape ||
          key == LogicalKeyboardKey.backspace)) {
       if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
