@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/home/widgets/tv_movie_card.dart';
 import 'package:moai3/features/movies/screens/movie_detail_screen.dart';
-import 'package:moai3/focus/focus_retry.dart';
+import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/state/featured_movies_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
@@ -39,6 +39,7 @@ class HomeMoviesArea extends StatefulWidget {
 }
 
 class HomeMoviesAreaState extends State<HomeMoviesArea> {
+  late final _focus = FocusRequester(isMounted: () => mounted);
   static const int _crossAxisCount = 5;
 
   final ScrollController _scrollController = ScrollController();
@@ -55,7 +56,7 @@ class HomeMoviesAreaState extends State<HomeMoviesArea> {
     final provider = context.read<FeaturedMoviesProvider>();
     final categories = provider.categoriesFor(widget.section);
     if (categories.isEmpty) {
-      requestFocusWithRetry(_emptyFocusNode, isMounted: () => mounted);
+      _focus.node(_emptyFocusNode);
       return;
     }
     _focusCard(_lastFocusedCat, _lastFocusedRow, _lastFocusedCol);

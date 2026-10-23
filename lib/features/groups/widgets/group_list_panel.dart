@@ -1,8 +1,8 @@
+import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/widgets/tv_common/panel_list_header.dart';
-import 'package:moai3/focus/focus_retry.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/models/channel_group.dart';
 import 'package:moai3/widgets/cards/tv_icon_list_card.dart';
@@ -32,7 +32,9 @@ class GroupListPanel extends StatefulWidget {
   State<GroupListPanel> createState() => GroupListPanelState();
 }
 
-class GroupListPanelState extends State<GroupListPanel> {
+class GroupListPanelState extends State<GroupListPanel>
+    implements FocusSelectable {
+  late final _focus = FocusRequester(isMounted: () => mounted);
   final _listKey = GlobalKey<TvWindowedListState<ChannelGroup>>();
   final FocusNode _emptyFocusNode = FocusNode(debugLabel: 'group_empty');
 
@@ -51,9 +53,10 @@ class GroupListPanelState extends State<GroupListPanel> {
   }
 
   /// Lo llama HomeTvArea (rail → / ← desde canales / alfabeto).
+  @override
   void focusSelected() {
     if (widget.groups.isEmpty) {
-      requestFocusWithRetry(_emptyFocusNode, isMounted: () => mounted);
+      _focus.node(_emptyFocusNode);
       return;
     }
     _listKey.currentState?.ensureVisible(_selectedIndex);
@@ -61,7 +64,7 @@ class GroupListPanelState extends State<GroupListPanel> {
 
   void focusGlobalIndex(int index) {
     if (widget.groups.isEmpty) {
-      requestFocusWithRetry(_emptyFocusNode, isMounted: () => mounted);
+      _focus.node(_emptyFocusNode);
       return;
     }
     _listKey.currentState?.ensureVisible(index);

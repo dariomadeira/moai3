@@ -1,8 +1,8 @@
+import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/widgets/tv_common/panel_list_header.dart';
-import 'package:moai3/focus/focus_retry.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/widgets/cards/tv_icon_list_card.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
@@ -35,7 +35,9 @@ class CategoryListPanel extends StatefulWidget {
   State<CategoryListPanel> createState() => CategoryListPanelState();
 }
 
-class CategoryListPanelState extends State<CategoryListPanel> {
+class CategoryListPanelState extends State<CategoryListPanel>
+    implements FocusSelectable {
+  late final _focus = FocusRequester(isMounted: () => mounted);
   final _listKey = GlobalKey<TvWindowedListState<String>>();
   final FocusNode _emptyFocusNode = FocusNode(debugLabel: 'category_empty');
 
@@ -52,9 +54,10 @@ class CategoryListPanelState extends State<CategoryListPanel> {
   }
 
   /// Lo llama HomeTvArea (L/R paneles / alfabeto / returnFocus).
+  @override
   void focusSelected() {
     if (widget.categories.isEmpty) {
-      requestFocusWithRetry(_emptyFocusNode, isMounted: () => mounted);
+      _focus.node(_emptyFocusNode);
       return;
     }
     _listKey.currentState?.ensureVisible(_selectedIndex);
@@ -62,7 +65,7 @@ class CategoryListPanelState extends State<CategoryListPanel> {
 
   void focusGlobalIndex(int index) {
     if (widget.categories.isEmpty) {
-      requestFocusWithRetry(_emptyFocusNode, isMounted: () => mounted);
+      _focus.node(_emptyFocusNode);
       return;
     }
     _listKey.currentState?.ensureVisible(index);

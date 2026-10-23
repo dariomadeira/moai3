@@ -26,7 +26,7 @@ import 'package:moai3/widgets/dialogs/tv_friends_dialog.dart';
 import 'package:moai3/features/player/playback/channel_playback_helpers.dart';
 import 'package:moai3/features/search/controllers/home_search_controller.dart';
 import 'package:moai3/features/search/widgets/search_panel.dart';
-import 'package:moai3/focus/focus_retry.dart';
+import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/focus/focus_scroll_sync.dart';
 import 'package:moai3/focus/tv_focus_controller.dart';
 import 'package:moai3/focus/tv_intents.dart';
@@ -88,6 +88,9 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
   final _serverSkipFocus = FocusNode(debugLabel: 'tv_server_skip');
   final _logFocus = FocusNode(debugLabel: 'tv_log');
   final _watchPartyMicFocusNode = FocusNode(debugLabel: 'tv_header_mic');
+  /// Un solo dueño de los pedidos de foco del área: el más nuevo gana.
+  late final _focus = FocusRequester(isMounted: () => mounted);
+
   final _countryPanelKey = GlobalKey<CountryListPanelState>();
   final _categoryPanelKey = GlobalKey<CategoryListPanelState>();
   final _channelPanelKey = GlobalKey<ChannelListPanelState>();
@@ -235,17 +238,12 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     }
   }
 
-  void _requestInitialPlayerFocus([int attempt = 0]) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || attempt > 30) return;
-      if (_playerOverlay.hasValidRect) {
+  void _requestInitialPlayerFocus() => _focus.request(() {
+        if (!_playerOverlay.hasValidRect) return false;
         _viewerFocus.requestFocus();
         _playerOverlay.markInitialFocusDone();
-      } else {
-        _requestInitialPlayerFocus(attempt + 1);
-      }
-    });
-  }
+        return true;
+      }, maxFrames: 30);
 
   void _onStateChanged() {
     if (!mounted) return;
@@ -407,10 +405,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     });
   }
 
-  /// Igual que Settings / Smart: esperar a que el nodo exista en el árbol.
-  void _requestFocusWithRetry(FocusNode node, [int attempts = 15]) {
-    requestFocusWithRetry(node, isMounted: () => mounted, attempts: attempts);
-  }
+  void _requestFocusWithRetry(FocusNode node) => _focus.node(node);
 
   void _activatePanel(int index) {
     setState(() => _activePanelIndex = index);
@@ -426,53 +421,13 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     }
   };
 
-  void _focusSelectedCountry([int attempts = 15]) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final state = _countryPanelKey.currentState;
-      if (state != null) {
-        state.focusSelected();
-      } else if (attempts > 0) {
-        _focusSelectedCountry(attempts - 1);
-      }
-    });
-  }
+  void _focusSelectedCountry() => _focus.selected(_countryPanelKey);
 
-  void _focusSelectedCategory([int attempts = 15]) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final state = _categoryPanelKey.currentState;
-      if (state != null) {
-        state.focusSelected();
-      } else if (attempts > 0) {
-        _focusSelectedCategory(attempts - 1);
-      }
-    });
-  }
+  void _focusSelectedCategory() => _focus.selected(_categoryPanelKey);
 
-  void _focusSelectedChannel([int attempts = 15]) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final state = _channelPanelKey.currentState;
-      if (state != null) {
-        state.focusSelected();
-      } else if (attempts > 0) {
-        _focusSelectedChannel(attempts - 1);
-      }
-    });
-  }
+  void _focusSelectedChannel() => _focus.selected(_channelPanelKey);
 
-  void _focusGroupsChannel([int attempts = 15]) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final state = _groupsChannelPanelKey.currentState;
-      if (state != null) {
-        state.focusSelected();
-      } else if (attempts > 0) {
-        _focusGroupsChannel(attempts - 1);
-      }
-    });
-  }
+  void _focusGroupsChannel() => _focus.selected(_groupsChannelPanelKey);
 
   /// Entrada a Buscar: si hay query (X visible) → clear; si no → campo.
   void _focusSearchPanelEntry() {
@@ -557,17 +512,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     returnFocusToActivePanel();
   }
 
-  void _focusSelectedGroup([int attempts = 15]) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final state = _groupListPanelKey.currentState;
-      if (state != null) {
-        state.focusSelected();
-      } else if (attempts > 0) {
-        _focusSelectedGroup(attempts - 1);
-      }
-    });
-  }
+  void _focusSelectedGroup() => _focus.selected(_groupListPanelKey);
 
   void _focusGroupsPanel() {
     if (_groupsPanelIndex == 0) {
@@ -691,17 +636,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
 
   bool get _groupsAlphabetActive => _groups.isAlphabetMode;
 
-  void _focusSearchResults([int attempts = 15]) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final state = _searchPanelKey.currentState;
-      if (state != null) {
-        state.focusSelected();
-      } else if (attempts > 0) {
-        _focusSearchResults(attempts - 1);
-      }
-    });
-  }
+  void _focusSearchResults() => _focus.selected(_searchPanelKey);
 
   void _onAlphabetLetter(String letter) {
     final showTvLog = context.read<TvSettingsProvider>().showTvLog;

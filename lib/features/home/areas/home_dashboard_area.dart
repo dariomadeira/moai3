@@ -3,7 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
-import 'package:moai3/focus/focus_retry.dart';
+import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
@@ -23,11 +23,12 @@ class HomeDashboardArea extends StatefulWidget {
 }
 
 class HomeDashboardAreaState extends State<HomeDashboardArea> {
+  late final _focus = FocusRequester(isMounted: () => mounted);
   final FocusNode _panelFocusNode = FocusNode(debugLabel: 'home_dashboard_panel');
 
   void requestEntryFocus() {
     if (!mounted) return;
-    requestFocusWithRetry(_panelFocusNode, isMounted: () => mounted);
+    _focus.node(_panelFocusNode);
   }
 
   @override

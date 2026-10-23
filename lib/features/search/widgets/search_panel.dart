@@ -1,3 +1,4 @@
+import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -45,7 +46,8 @@ class SearchPanel extends StatefulWidget {
   State<SearchPanel> createState() => SearchPanelState();
 }
 
-class SearchPanelState extends State<SearchPanel> {
+class SearchPanelState extends State<SearchPanel>
+    implements FocusSelectable {
   static const int _windowSize = 9;
   static const int _crossAxisCount = 3;
   static const int _rowCount = _windowSize ~/ _crossAxisCount;
@@ -60,6 +62,7 @@ class SearchPanelState extends State<SearchPanel> {
     return 0;
   }
 
+  @override
   void focusSelected() {
     if (widget.searchResults.isEmpty) {
       _focusInputFromFirstResult();

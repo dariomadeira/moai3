@@ -19,6 +19,7 @@ import 'package:moai3/features/home/coordinators/startup_update_checker.dart';
 import 'package:moai3/features/home/home_section.dart';
 import 'package:moai3/features/home/widgets/double_back_exit_scope.dart';
 import 'package:moai3/features/home/widgets/tv_vertical_nav_rail.dart';
+import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/focus/tv_intents.dart';
 import 'package:moai3/focus/tv_shortcuts.dart';
 import 'package:moai3/widgets/feedback/notification_helper.dart';
@@ -346,17 +347,10 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  void _requestFocusWithRetry(FocusNode node, [int attempts = 15]) {
-    if (!mounted) return;
-    if (node.context != null) {
-      node.requestFocus();
-      return;
-    }
-    if (attempts <= 0) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _requestFocusWithRetry(node, attempts - 1);
-    });
-  }
+  late final _focus = FocusRequester(isMounted: () => mounted);
+
+  void _requestFocusWithRetry(FocusNode node) =>
+      _focus.node(node, immediate: true);
 
   void _focusRail() {
     if (mounted) _railFocusNode.requestFocus();

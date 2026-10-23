@@ -1,8 +1,8 @@
+import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/widgets/tv_common/panel_list_header.dart';
-import 'package:moai3/focus/focus_retry.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/features/channel_browser/country_flag_assets.dart';
 import 'package:moai3/widgets/cards/tv_icon_list_card.dart';
@@ -41,7 +41,9 @@ class CountryListPanel extends StatefulWidget {
   State<CountryListPanel> createState() => CountryListPanelState();
 }
 
-class CountryListPanelState extends State<CountryListPanel> {
+class CountryListPanelState extends State<CountryListPanel>
+    implements FocusSelectable {
+  late final _focus = FocusRequester(isMounted: () => mounted);
   final _listKey = GlobalKey<TvWindowedListState<String>>();
   final FocusNode _emptyFocusNode = FocusNode(debugLabel: 'country_empty');
 
@@ -58,9 +60,10 @@ class CountryListPanelState extends State<CountryListPanel> {
   }
 
   /// Lo llama HomeTvArea (rail → / ← desde categorías / alfabeto).
+  @override
   void focusSelected() {
     if (widget.countries.isEmpty) {
-      requestFocusWithRetry(_emptyFocusNode, isMounted: () => mounted);
+      _focus.node(_emptyFocusNode);
       return;
     }
     _listKey.currentState?.ensureVisible(_selectedIndex);
@@ -68,7 +71,7 @@ class CountryListPanelState extends State<CountryListPanel> {
 
   void focusGlobalIndex(int index) {
     if (widget.countries.isEmpty) {
-      requestFocusWithRetry(_emptyFocusNode, isMounted: () => mounted);
+      _focus.node(_emptyFocusNode);
       return;
     }
     _listKey.currentState?.ensureVisible(index);

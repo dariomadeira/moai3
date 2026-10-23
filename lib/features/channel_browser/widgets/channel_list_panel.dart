@@ -1,8 +1,8 @@
+import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/widgets/tv_common/panel_list_header.dart';
-import 'package:moai3/focus/focus_retry.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/widgets/cards/channel_grid_tile.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
@@ -35,7 +35,9 @@ class ChannelListPanel extends StatefulWidget {
   State<ChannelListPanel> createState() => ChannelListPanelState();
 }
 
-class ChannelListPanelState extends State<ChannelListPanel> {
+class ChannelListPanelState extends State<ChannelListPanel>
+    implements FocusSelectable {
+  late final _focus = FocusRequester(isMounted: () => mounted);
   static const int _windowSize = 6;
   static const int _crossAxisCount = 2;
   static const double _rowExtent = 114.0;
@@ -58,9 +60,10 @@ class ChannelListPanelState extends State<ChannelListPanel> {
     return 0;
   }
 
+  @override
   void focusSelected() {
     if (widget.channels.isEmpty) {
-      requestFocusWithRetry(_emptyFocusNode, isMounted: () => mounted);
+      _focus.node(_emptyFocusNode);
       return;
     }
     _listKey.currentState?.ensureVisible(_selectedIndex);
@@ -68,7 +71,7 @@ class ChannelListPanelState extends State<ChannelListPanel> {
 
   void focusGlobalIndex(int index) {
     if (widget.channels.isEmpty) {
-      requestFocusWithRetry(_emptyFocusNode, isMounted: () => mounted);
+      _focus.node(_emptyFocusNode);
       return;
     }
     _listKey.currentState?.ensureVisible(index);
