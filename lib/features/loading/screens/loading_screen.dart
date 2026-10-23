@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -40,7 +41,7 @@ class _LoadingScreenState extends State<LoadingScreen>
 
   bool _isLoading = true;
   String? _errorMessage;
-  String _statusText = 'loading_connecting'.tr();
+  String _statusText = LocaleKeys.loading_connecting.tr();
   bool _catalogUpdateInProgress = false;
   bool _catalogCancelRequested = false;
   /// Invalida awaits en vuelo al cancelar o reiniciar sync.
@@ -98,12 +99,12 @@ class _LoadingScreenState extends State<LoadingScreen>
 
   String _cancelCatalogLabel() {
     final savedAt = _storedCatalogAt;
-    if (savedAt == null) return 'loading_catalog_cancel_no_date'.tr();
+    if (savedAt == null) return LocaleKeys.loading_catalog_cancel_no_date.tr();
     final local = savedAt.toLocal();
     final day = local.day.toString().padLeft(2, '0');
     final month = local.month.toString().padLeft(2, '0');
     final date = '$day/$month/${local.year}';
-    return 'loading_catalog_cancel'.tr(namedArgs: {'date': date});
+    return LocaleKeys.loading_catalog_cancel.tr(namedArgs: {'date': date});
   }
 
   Future<void> _loadSavedSections() async {
@@ -116,7 +117,7 @@ class _LoadingScreenState extends State<LoadingScreen>
     setState(() {
       _isLoading = true;
       _errorMessage = null;
-      _statusText = 'loading_connecting'.tr();
+      _statusText = LocaleKeys.loading_connecting.tr();
     });
 
     MoiamovApiService.logLine('▶ Inicio de verificación de arranque Moai');
@@ -177,7 +178,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       // Sin sync: skip → solo assets; frecuencia no vencida → último guardado o assets.
       if (!shouldSyncCatalog) {
         if (mounted) {
-          setState(() => _statusText = 'loading_catalog_cached'.tr());
+          setState(() => _statusText = LocaleKeys.loading_catalog_cached.tr());
         }
         if (skipCatalogUpdate) {
           MoiamovApiService.logLine('Catálogo de assets (actualizar apagado).');
@@ -215,7 +216,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       if (_isCatalogRunCurrent(catalogRunId)) {
         setState(() {
           _catalogUpdateInProgress = true;
-          _statusText = 'loading_secure_connecting'.tr();
+          _statusText = LocaleKeys.loading_secure_connecting.tr();
         });
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_isCatalogRunCurrent(catalogRunId)) {
@@ -245,7 +246,7 @@ class _LoadingScreenState extends State<LoadingScreen>
               !sessionOk;
           node++) {
         setState(() {
-          _statusText = 'loading_secure_connecting'.tr();
+          _statusText = LocaleKeys.loading_secure_connecting.tr();
         });
         MoiamovApiService.logLine('Nodo ${node + 1}/$maxNodes');
 
@@ -263,7 +264,7 @@ class _LoadingScreenState extends State<LoadingScreen>
         }
 
         if (_isCatalogRunCurrent(catalogRunId)) {
-          setState(() => _statusText = 'loading_secure_verified'.tr());
+          setState(() => _statusText = LocaleKeys.loading_secure_verified.tr());
         }
         MoiamovApiService.logLine(
             'Conexión lista. Salida: ${VpnService.instance.lastExitIp} '
@@ -273,7 +274,7 @@ class _LoadingScreenState extends State<LoadingScreen>
         if (!_isCatalogRunCurrent(catalogRunId)) break;
 
         if (_isCatalogRunCurrent(catalogRunId)) {
-          setState(() => _statusText = 'loading_session_init'.tr());
+          setState(() => _statusText = LocaleKeys.loading_session_init.tr());
         }
         MoiamovApiService.logLine('Solicitando sesión de dispositivo (sin credenciales)...');
         sessionOk = await MoiamovApiService.instance.ensureSession();
@@ -294,7 +295,7 @@ class _LoadingScreenState extends State<LoadingScreen>
         for (int attempt = 1; attempt <= 3; attempt++) {
           if (!_isCatalogRunCurrent(catalogRunId)) break;
           setState(() {
-            _statusText = 'loading_catalog_downloading'.tr();
+            _statusText = LocaleKeys.loading_catalog_downloading.tr();
           });
 
           final catResult = await MoiamovApiService.instance.syncCatalog(
@@ -313,7 +314,7 @@ class _LoadingScreenState extends State<LoadingScreen>
           if (catResult.isFreshLive) {
             if (_isCatalogRunCurrent(catalogRunId)) {
               setState(() {
-                _statusText = 'loading_catalog_updated'.tr();
+                _statusText = LocaleKeys.loading_catalog_updated.tr();
               });
             }
             await _pause(const Duration(milliseconds: 1200));
@@ -323,8 +324,8 @@ class _LoadingScreenState extends State<LoadingScreen>
             if (_isCatalogRunCurrent(catalogRunId)) {
               setState(() {
                 _statusText = catResult.isHardcoded
-                    ? 'loading_catalog_fallback'.tr()
-                    : 'loading_catalog_cached'.tr();
+                    ? LocaleKeys.loading_catalog_fallback.tr()
+                    : LocaleKeys.loading_catalog_cached.tr();
               });
             }
             await _pause(const Duration(milliseconds: 1200));
@@ -339,7 +340,7 @@ class _LoadingScreenState extends State<LoadingScreen>
         // --- 4. Desconectar servicio de fondo después de sincronizar ---
         if (_isCatalogRunCurrent(catalogRunId)) {
           setState(() {
-            _statusText = 'loading_secure_disconnecting'.tr();
+            _statusText = LocaleKeys.loading_secure_disconnecting.tr();
           });
         }
         await VpnService.instance.disconnect();
@@ -349,7 +350,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       } else if (_isCatalogRunCurrent(catalogRunId)) {
         // Sin VPN y/o sin sesión: desconectar y cargar respaldo
         setState(() {
-          _statusText = 'loading_catalog_fallback'.tr();
+          _statusText = LocaleKeys.loading_catalog_fallback.tr();
         });
         await VpnService.instance.disconnect();
         await _pause(const Duration(milliseconds: 1500));
@@ -366,8 +367,8 @@ class _LoadingScreenState extends State<LoadingScreen>
           if (_isCatalogRunCurrent(catalogRunId)) {
             setState(() {
               _statusText = movies.isHardcoded
-                  ? 'loading_catalog_fallback'.tr()
-                  : 'loading_catalog_cached'.tr();
+                  ? LocaleKeys.loading_catalog_fallback.tr()
+                  : LocaleKeys.loading_catalog_cached.tr();
             });
           }
           await _pause(const Duration(milliseconds: 1200));
@@ -396,7 +397,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       if (!mounted) return;
 
       setState(() {
-        _statusText = 'loading_ready'.tr();
+        _statusText = LocaleKeys.loading_ready.tr();
       });
       await Future.delayed(const Duration(milliseconds: 1200));
       }
@@ -425,7 +426,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = 'loading_error_connection'.tr();
+        _errorMessage = LocaleKeys.loading_error_connection.tr();
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _retryFocusNode.requestFocus();
@@ -437,7 +438,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = 'loading_error_connection'.tr();
+        _errorMessage = LocaleKeys.loading_error_connection.tr();
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _retryFocusNode.requestFocus();
@@ -641,7 +642,7 @@ class _LoadingScreenState extends State<LoadingScreen>
           ),
           const SizedBox(height: 18),
           Text(
-            'loading_error_title'.tr(),
+            LocaleKeys.loading_error_title.tr(),
             style: MoaiText.display(
               context,
               fontSize: 18,
@@ -650,7 +651,7 @@ class _LoadingScreenState extends State<LoadingScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            _errorMessage ?? 'loading_error_connection'.tr(),
+            _errorMessage ?? LocaleKeys.loading_error_connection.tr(),
             textAlign: TextAlign.center,
             style: MoaiText.body(
               context,
@@ -661,7 +662,7 @@ class _LoadingScreenState extends State<LoadingScreen>
           const SizedBox(height: 24),
           TvDialogButton(
             focusNode: _retryFocusNode,
-            label: 'update_action_retry'.tr(),
+            label: LocaleKeys.update_action_retry.tr(),
             variant: TvDialogButtonVariant.primary,
             icon: MoaiIcons.refreshRounded,
             onPressed: _startVerification,

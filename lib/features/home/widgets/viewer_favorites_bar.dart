@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/features/home/widgets/viewer_favorite_tile.dart';
@@ -69,7 +70,7 @@ class ViewerFavoritesBar extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'home_tv_favorites'.tr(),
+                        LocaleKeys.home_tv_favorites.tr(),
                         style: MoaiText.display(
                           context,
                           color: scheme.onSurface,
@@ -93,7 +94,7 @@ class ViewerFavoritesBar extends StatelessWidget {
                           ),
                           child: Center(
                             child: Text(
-                              'favorites_empty'.tr(),
+                              LocaleKeys.favorites_empty.tr(),
                               textAlign: TextAlign.center,
                               style: MoaiText.body(
                                 context,

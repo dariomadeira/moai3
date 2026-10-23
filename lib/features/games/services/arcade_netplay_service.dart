@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -132,7 +133,7 @@ class ArcadeNetplayService extends ChangeNotifier {
 
     if (accepted) {
       _currentSession!.status = ArcadeNetplayStatus.preparingRoms;
-      _currentSession!.peerStatusText = 'arcade_preparing_game'.tr();
+      _currentSession!.peerStatusText = LocaleKeys.arcade_preparing_game.tr();
       notifyListeners();
       final romManager = _romManager;
       unawaited(() async {
@@ -144,7 +145,7 @@ class ArcadeNetplayService extends ChangeNotifier {
     } else {
       _currentSession!.status = ArcadeNetplayStatus.terminated;
       _currentSession!.exitReason =
-          (busy ? 'arcade_invite_busy' : 'arcade_invite_rejected').tr();
+          (busy ? LocaleKeys.arcade_invite_busy : LocaleKeys.arcade_invite_rejected).tr();
       notifyListeners();
       unawaited(_cleanupSession());
     }
@@ -158,7 +159,7 @@ class ArcadeNetplayService extends ChangeNotifier {
     required ArcadeRomItem rom,
     required ArcadeRomManagerService romManager,
   }) async {
-    await cancelSession(reason: 'arcade_invite_replaced'.tr());
+    await cancelSession(reason: LocaleKeys.arcade_invite_replaced.tr());
 
     if (_globalChannel == null) {
       if (kDebugMode) {
@@ -181,8 +182,8 @@ class ArcadeNetplayService extends ChangeNotifier {
       romName: rom.name.isNotEmpty ? rom.name : rom.filename,
       romUrl: rom.url,
       status: ArcadeNetplayStatus.inviting,
-      myStatusText: 'arcade_verifying_local'.tr(),
-      peerStatusText: 'arcade_waiting_response'.tr(),
+      myStatusText: LocaleKeys.arcade_verifying_local.tr(),
+      peerStatusText: LocaleKeys.arcade_waiting_response.tr(),
     );
     notifyListeners();
 
@@ -207,7 +208,7 @@ class ArcadeNetplayService extends ChangeNotifier {
         if (_currentSession != null &&
             _currentSession!.status == ArcadeNetplayStatus.inviting) {
           _currentSession!.status = ArcadeNetplayStatus.terminated;
-          _currentSession!.exitReason = 'arcade_invite_timeout'.tr();
+          _currentSession!.exitReason = LocaleKeys.arcade_invite_timeout.tr();
           notifyListeners();
           unawaited(_cleanupSession());
         }
@@ -217,7 +218,7 @@ class ArcadeNetplayService extends ChangeNotifier {
     } catch (e) {
       _currentSession?.status = ArcadeNetplayStatus.terminated;
       _currentSession?.exitReason =
-          'arcade_invite_send_error'.tr(namedArgs: {'error': '$e'});
+          LocaleKeys.arcade_invite_send_error.tr(namedArgs: {'error': '$e'});
       notifyListeners();
       await _cleanupSession();
       return false;
@@ -244,8 +245,8 @@ class ArcadeNetplayService extends ChangeNotifier {
       romFilename: invite.romFilename,
       romName: invite.romName,
       romUrl: invite.romUrl,
-      myStatusText: 'arcade_verifying_local'.tr(),
-      peerStatusText: 'arcade_connecting'.tr(),
+      myStatusText: LocaleKeys.arcade_verifying_local.tr(),
+      peerStatusText: LocaleKeys.arcade_connecting.tr(),
     );
     notifyListeners();
 
@@ -256,7 +257,7 @@ class ArcadeNetplayService extends ChangeNotifier {
     } catch (e) {
       _currentSession?.status = ArcadeNetplayStatus.terminated;
       _currentSession?.exitReason =
-          'arcade_invite_accept_error'.tr(namedArgs: {'error': '$e'});
+          LocaleKeys.arcade_invite_accept_error.tr(namedArgs: {'error': '$e'});
       notifyListeners();
       await _cleanupSession();
     }
@@ -322,7 +323,7 @@ class ArcadeNetplayService extends ChangeNotifier {
           final sender = payload['senderDeviceId'] as String?;
           if (sender == session.peerDeviceId) {
             session.peerProgress = 1.0;
-            session.peerStatusText = 'arcade_game_ready'.tr();
+            session.peerStatusText = LocaleKeys.arcade_game_ready.tr();
             unawaited(_checkIfBothReady());
             notifyListeners();
           }
@@ -375,7 +376,7 @@ class ArcadeNetplayService extends ChangeNotifier {
           final sender = payload['senderDeviceId'] as String?;
           if (sender == session.peerDeviceId) {
             final reason =
-                payload['reason'] as String? ?? 'arcade_peer_canceled'.tr();
+                payload['reason'] as String? ?? LocaleKeys.arcade_peer_canceled.tr();
             session.status = ArcadeNetplayStatus.terminated;
             session.exitReason = reason;
             notifyListeners();
@@ -417,10 +418,10 @@ class ArcadeNetplayService extends ChangeNotifier {
 
     session.status = ArcadeNetplayStatus.preparingRoms;
     session.myProgress = 0.0;
-    session.myStatusText = 'arcade_verifying_local'.tr();
+    session.myStatusText = LocaleKeys.arcade_verifying_local.tr();
     notifyListeners();
 
-    await _broadcastPrepStatus(0.0, 'arcade_verifying_local'.tr());
+    await _broadcastPrepStatus(0.0, LocaleKeys.arcade_verifying_local.tr());
 
     await romManager.refreshInstalledRoms();
     final isInstalled = romManager.installedRoms.any(
@@ -430,7 +431,7 @@ class ArcadeNetplayService extends ChangeNotifier {
     if (isInstalled) {
       await romManager.setActiveRom(session.romFilename);
       session.myProgress = 1.0;
-      session.myStatusText = 'arcade_game_ready'.tr();
+      session.myStatusText = LocaleKeys.arcade_game_ready.tr();
       notifyListeners();
       await _broadcastReady();
       await _checkIfBothReady();
@@ -438,11 +439,11 @@ class ArcadeNetplayService extends ChangeNotifier {
     }
 
     session.myStatusText =
-        'arcade_downloading_game'.tr(namedArgs: {'percent': '0'});
+        LocaleKeys.arcade_downloading_game.tr(namedArgs: {'percent': '0'});
     notifyListeners();
     await _broadcastPrepStatus(
       0.0,
-      'arcade_downloading_short'.tr(namedArgs: {'percent': '0'}),
+      LocaleKeys.arcade_downloading_short.tr(namedArgs: {'percent': '0'}),
     );
 
     final item = romManager.catalog.firstWhere(
@@ -461,12 +462,12 @@ class ArcadeNetplayService extends ChangeNotifier {
         onProgress: (progress) {
           session.myProgress = progress;
           final percent = (progress * 100).toInt();
-          session.myStatusText = 'arcade_downloading_game'
+          session.myStatusText = LocaleKeys.arcade_downloading_game
               .tr(namedArgs: {'percent': '$percent'});
           notifyListeners();
           unawaited(_broadcastPrepStatus(
             progress,
-            'arcade_downloading_short'.tr(namedArgs: {'percent': '$percent'}),
+            LocaleKeys.arcade_downloading_short.tr(namedArgs: {'percent': '$percent'}),
           ));
         },
       );
@@ -474,19 +475,19 @@ class ArcadeNetplayService extends ChangeNotifier {
       if (success) {
         await romManager.setActiveRom(session.romFilename);
         session.myProgress = 1.0;
-        session.myStatusText = 'arcade_game_ready'.tr();
+        session.myStatusText = LocaleKeys.arcade_game_ready.tr();
         notifyListeners();
         await _broadcastReady();
         await _checkIfBothReady();
       } else {
-        throw Exception('arcade_rom_download_failed'.tr());
+        throw Exception(LocaleKeys.arcade_rom_download_failed.tr());
       }
     } catch (e) {
       session.status = ArcadeNetplayStatus.terminated;
       session.exitReason =
-          'arcade_netplay_error_rom'.tr(namedArgs: {'error': '$e'});
+          LocaleKeys.arcade_netplay_error_rom.tr(namedArgs: {'error': '$e'});
       notifyListeners();
-      await _broadcastCancel('arcade_netplay_error_rom_broadcast'.tr());
+      await _broadcastCancel(LocaleKeys.arcade_netplay_error_rom_broadcast.tr());
       await _cleanupSession();
     }
   }
@@ -565,8 +566,8 @@ class ArcadeNetplayService extends ChangeNotifier {
     }
 
     session.status = ArcadeNetplayStatus.ready;
-    session.myStatusText = 'arcade_netplay_connecting_p2p'.tr();
-    session.peerStatusText = 'arcade_peer_ready'.tr();
+    session.myStatusText = LocaleKeys.arcade_netplay_connecting_p2p.tr();
+    session.peerStatusText = LocaleKeys.arcade_peer_ready.tr();
     notifyListeners();
 
     await _startWebRtcHandshake();
@@ -595,16 +596,16 @@ class ArcadeNetplayService extends ChangeNotifier {
         _iceTimer?.cancel();
         _iceTimer = null;
         session.status = ArcadeNetplayStatus.inGame;
-        session.myStatusText = 'arcade_netplay_ready_both'.tr();
+        session.myStatusText = LocaleKeys.arcade_netplay_ready_both.tr();
         notifyListeners();
         _startHeartbeat();
         if (session.isHost) {
           transport.sendNetplayStart();
         }
       } else if (state == 'ice_failed') {
-        _failIce('arcade_netplay_ice_failed'.tr());
+        _failIce(LocaleKeys.arcade_netplay_ice_failed.tr());
       } else if (state.startsWith('error:')) {
-        _failIce('arcade_netplay_webrtc_error'
+        _failIce(LocaleKeys.arcade_netplay_webrtc_error
             .tr(namedArgs: {'error': state.substring(6)}));
       }
     });
@@ -613,7 +614,7 @@ class ArcadeNetplayService extends ChangeNotifier {
     _iceTimer = Timer(_iceTimeout, () {
       if (_currentSession?.status == ArcadeNetplayStatus.ready &&
           !(_webrtc?.isConnected ?? false)) {
-        _failIce('arcade_netplay_ice_timeout'.tr());
+        _failIce(LocaleKeys.arcade_netplay_ice_timeout.tr());
       }
     });
 
@@ -625,7 +626,7 @@ class ArcadeNetplayService extends ChangeNotifier {
       }
     } catch (e) {
       _failIce(
-        'arcade_netplay_webrtc_error'.tr(namedArgs: {'error': '$e'}),
+        LocaleKeys.arcade_netplay_webrtc_error.tr(namedArgs: {'error': '$e'}),
       );
     }
   }
@@ -676,7 +677,7 @@ class ArcadeNetplayService extends ChangeNotifier {
   }
 
   Future<void> cancelSession({String? reason}) async {
-    final msg = reason ?? 'arcade_netplay_canceled'.tr();
+    final msg = reason ?? LocaleKeys.arcade_netplay_canceled.tr();
     if (_currentSession != null) {
       await _broadcastCancel(msg);
       _currentSession!.status = ArcadeNetplayStatus.terminated;

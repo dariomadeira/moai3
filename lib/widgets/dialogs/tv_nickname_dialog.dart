@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -80,7 +81,7 @@ class _TvNicknameDialogState extends State<TvNicknameDialog> {
   void _save() {
     final name = _textController.text.trim();
     if (name.isEmpty) {
-      setState(() => _errorText = 'nickname_dialog_error_empty'.tr());
+      setState(() => _errorText = LocaleKeys.nickname_dialog_error_empty.tr());
       _textFieldFocusNode.requestFocus();
       return;
     }
@@ -96,11 +97,11 @@ class _TvNicknameDialogState extends State<TvNicknameDialog> {
     final scheme = Theme.of(context).colorScheme;
 
     final title = widget.isMandatory
-        ? 'nickname_dialog_title_setup'.tr()
-        : 'nickname_dialog_title_edit'.tr();
+        ? LocaleKeys.nickname_dialog_title_setup.tr()
+        : LocaleKeys.nickname_dialog_title_edit.tr();
     final subtitle = widget.isMandatory
-        ? 'nickname_dialog_subtitle_setup'.tr()
-        : 'nickname_dialog_subtitle_edit'.tr();
+        ? LocaleKeys.nickname_dialog_subtitle_setup.tr()
+        : LocaleKeys.nickname_dialog_subtitle_edit.tr();
 
     final dialog = TvDialog(
       width: 640,
@@ -114,8 +115,8 @@ class _TvNicknameDialogState extends State<TvNicknameDialog> {
           TvTextField(
             controller: _textController,
             focusNode: _textFieldFocusNode,
-            label: 'nickname_dialog_label'.tr(),
-            hint: 'nickname_dialog_hint'.tr(),
+            label: LocaleKeys.nickname_dialog_label.tr(),
+            hint: LocaleKeys.nickname_dialog_hint.tr(),
             leadingIcon: MoaiIcons.personOutline,
             maxLength: 30,
             onFocusDown: () => _saveFocusNode.requestFocus(),
@@ -144,14 +145,14 @@ class _TvNicknameDialogState extends State<TvNicknameDialog> {
         if (!widget.isMandatory)
           TvDialogButton(
             focusNode: _cancelFocusNode,
-            label: 'common_cancel'.tr(),
+            label: LocaleKeys.common_cancel.tr(),
             onPressed: () => Navigator.of(context).pop(),
             onKeyRight: () => _saveFocusNode.requestFocus(),
             onKeyUp: () => _textFieldFocusNode.requestFocus(),
           ),
         TvDialogButton(
           focusNode: _saveFocusNode,
-          label: 'nickname_dialog_confirm'.tr(),
+          label: LocaleKeys.nickname_dialog_confirm.tr(),
           variant: TvDialogButtonVariant.primary,
           onKeyLeft: widget.isMandatory ? null : () => _cancelFocusNode.requestFocus(),
           onKeyUp: () => _textFieldFocusNode.requestFocus(),

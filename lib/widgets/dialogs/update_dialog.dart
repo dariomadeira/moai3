@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/services/update_service.dart';
@@ -92,7 +93,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
       if (!success && mounted) {
         setState(() {
           _state = UpdateDialogState.error;
-          _errorMessage = 'update_error_installer'.tr();
+          _errorMessage = LocaleKeys.update_error_installer.tr();
         });
         _retryBtnFocus.requestFocus();
       }
@@ -146,7 +147,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'update_mandatory_notice'.tr(),
+                      LocaleKeys.update_mandatory_notice.tr(),
                       style: MoaiText.body(
                         context,
                         fontSize: 12,
@@ -159,7 +160,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
             ),
           ],
           Text(
-            'update_changelog_title'.tr(),
+            LocaleKeys.update_changelog_title.tr(),
             style: MoaiText.body(
               context,
               fontSize: 13,
@@ -213,7 +214,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
         if (!isMandatory) ...[
           TvDialogButton(
             focusNode: _cancelBtnFocus,
-            label: 'update_action_later'.tr(),
+            label: LocaleKeys.update_action_later.tr(),
             onKeyRight: _updateBtnFocus.requestFocus,
             onPressed: () => Navigator.of(context).pop(),
           ),
@@ -221,7 +222,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
         ],
         TvDialogButton(
           focusNode: _updateBtnFocus,
-          label: 'update_action_update_now'.tr(),
+          label: LocaleKeys.update_action_update_now.tr(),
           variant: TvDialogButtonVariant.primary,
           onKeyLeft: !isMandatory ? _cancelBtnFocus.requestFocus : null,
           onPressed: _startDownload,
@@ -233,7 +234,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'update_downloading'.tr(),
+            LocaleKeys.update_downloading.tr(),
             style: MoaiText.body(
               context,
               fontSize: 13,
@@ -257,7 +258,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
               Text(
                 _progress >= 0
                     ? '${(_progress * 100).toInt()}%'
-                    : 'update_downloading_progress'.tr(),
+                    : LocaleKeys.update_downloading_progress.tr(),
                 style: MoaiText.body(
                   context,
                   fontSize: 12,
@@ -283,7 +284,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
           : [
               TvDialogButton(
                 focusNode: _cancelBtnFocus,
-                label: 'common_cancel'.tr(),
+                label: LocaleKeys.common_cancel.tr(),
                 onPressed: _cancelDownload,
               ),
             ];
@@ -298,7 +299,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
               ),
               const SizedBox(height: 16),
               Text(
-                'update_installing_title'.tr(),
+                LocaleKeys.update_installing_title.tr(),
                 style: MoaiText.body(
                   context,
                   fontSize: 14,
@@ -307,7 +308,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
               ),
               const SizedBox(height: 4),
               Text(
-                'update_installing_desc'.tr(),
+                LocaleKeys.update_installing_desc.tr(),
                 textAlign: TextAlign.center,
                 style: MoaiText.body(
                   context,
@@ -334,7 +335,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
               child: Text(
                 _errorMessage.isNotEmpty
                     ? _errorMessage
-                    : 'update_error_default'.tr(),
+                    : LocaleKeys.update_error_default.tr(),
                 style: MoaiText.body(
                   context,
                   fontSize: 12,
@@ -349,7 +350,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
         if (!isMandatory) ...[
           TvDialogButton(
             focusNode: _cancelBtnFocus,
-            label: 'common_close'.tr(),
+            label: LocaleKeys.common_close.tr(),
             onKeyRight: _retryBtnFocus.requestFocus,
             onPressed: () => Navigator.of(context).pop(),
           ),
@@ -357,7 +358,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
         ],
         TvDialogButton(
           focusNode: _retryBtnFocus,
-          label: 'update_action_retry'.tr(),
+          label: LocaleKeys.update_action_retry.tr(),
           variant: TvDialogButtonVariant.primary,
           onKeyLeft: !isMandatory ? _cancelBtnFocus.requestFocus : null,
           onPressed: _startDownload,
@@ -371,12 +372,12 @@ class _UpdateDialogState extends State<UpdateDialog> {
         width: 520,
         icon: isMandatory ? MoaiIcons.warningAmber : MoaiIcons.browserUpdated,
         title: isMandatory
-            ? 'update_mandatory_title'.tr()
-            : 'update_available_title'.tr(),
+            ? LocaleKeys.update_mandatory_title.tr()
+            : LocaleKeys.update_available_title.tr(),
         subtitleWidget: Row(
           children: [
             Text(
-              'update_available_version'.tr(
+              LocaleKeys.update_available_version.tr(
                 namedArgs: {'version': widget.updateInfo.version},
               ),
               style: MoaiText.body(
@@ -404,7 +405,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  'update_mandatory_badge'.tr(),
+                  LocaleKeys.update_mandatory_badge.tr(),
                   style: MoaiText.body(
                     context,
                     fontSize: 10,

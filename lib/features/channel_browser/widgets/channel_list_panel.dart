@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/widgets/tv_common/panel_list_header.dart';
@@ -104,7 +105,7 @@ class ChannelListPanelState extends State<ChannelListPanel> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PanelListHeader(
-            subtitle: 'browser_channels_showing'.tr(),
+            subtitle: LocaleKeys.browser_channels_showing.tr(),
             showFilterText: widget.channels.length > 1,
           ),
           Expanded(
@@ -112,7 +113,7 @@ class ChannelListPanelState extends State<ChannelListPanel> {
                 ? TvEmptyStateCard(
                     focusNode: _emptyFocusNode,
                     icon: MoaiIcons.tvChannelsEmpty,
-                    message: 'browser_channels_empty'.tr(),
+                    message: LocaleKeys.browser_channels_empty.tr(),
                     onFocusUp: widget.onFocusUp,
                   )
                 : TvFixedWindowViewport(

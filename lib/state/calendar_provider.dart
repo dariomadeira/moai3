@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/services/app_preferences_service.dart';
@@ -22,51 +23,51 @@ class CalendarProvider extends ChangeNotifier {
   static const List<SportSubscription> defaultSubscriptions = [
     SportSubscription(
       id: 'f1',
-      name: 'calendar_sub_f1_name',
+      name: LocaleKeys.calendar_sub_f1_name,
       sport: 'motorsport',
-      description: 'calendar_sub_f1_desc',
+      description: LocaleKeys.calendar_sub_f1_desc,
       icon: MoaiIcons.calendarSubF1,
     ),
     SportSubscription(
       id: 'lpf_ar',
-      name: 'calendar_sub_lpf_name',
+      name: LocaleKeys.calendar_sub_lpf_name,
       sport: 'soccer',
-      description: 'calendar_sub_lpf_desc',
+      description: LocaleKeys.calendar_sub_lpf_desc,
       icon: MoaiIcons.calendarSubLpf,
     ),
     SportSubscription(
       id: 'champions',
-      name: 'calendar_sub_champions_name',
+      name: LocaleKeys.calendar_sub_champions_name,
       sport: 'soccer',
-      description: 'calendar_sub_champions_desc',
+      description: LocaleKeys.calendar_sub_champions_desc,
       icon: MoaiIcons.calendarSubChampions,
     ),
     SportSubscription(
       id: 'premier',
-      name: 'calendar_sub_premier_name',
+      name: LocaleKeys.calendar_sub_premier_name,
       sport: 'soccer',
-      description: 'calendar_sub_premier_desc',
+      description: LocaleKeys.calendar_sub_premier_desc,
       icon: MoaiIcons.calendarSubPremier,
     ),
     SportSubscription(
       id: 'nfl',
-      name: 'calendar_sub_nfl_name',
+      name: LocaleKeys.calendar_sub_nfl_name,
       sport: 'american_football',
-      description: 'calendar_sub_nfl_desc',
+      description: LocaleKeys.calendar_sub_nfl_desc,
       icon: MoaiIcons.calendarSubNfl,
     ),
     SportSubscription(
       id: 'motogp',
-      name: 'calendar_sub_motogp_name',
+      name: LocaleKeys.calendar_sub_motogp_name,
       sport: 'motorsport',
-      description: 'calendar_sub_motogp_desc',
+      description: LocaleKeys.calendar_sub_motogp_desc,
       icon: MoaiIcons.calendarSubMotogp,
     ),
     SportSubscription(
       id: 'nba',
-      name: 'calendar_sub_nba_name',
+      name: LocaleKeys.calendar_sub_nba_name,
       sport: 'basketball',
-      description: 'calendar_sub_nba_desc',
+      description: LocaleKeys.calendar_sub_nba_desc,
       icon: MoaiIcons.calendarSubNba,
     ),
   ];
@@ -411,7 +412,7 @@ class CalendarProvider extends ChangeNotifier {
     if (events.length == 1 &&
         leadMinutes > 0 &&
         events.first.status == CalendarEventStatus.upcoming) {
-      const key = 'calendar_live_notification_soon';
+      const key = LocaleKeys.calendar_live_notification_soon;
       final res = tr(key, namedArgs: {
         'minutes': '$leadMinutes',
         'title': events.first.title,
@@ -420,7 +421,7 @@ class CalendarProvider extends ChangeNotifier {
       return 'En $leadMinutes min: ${events.first.title}';
     }
     if (events.length == 1) {
-      const key = 'calendar_live_notification_single';
+      const key = LocaleKeys.calendar_live_notification_single;
       final res = tr(key, namedArgs: {'title': events.first.title});
       if (res != key) return res;
       return 'Comenzó en vivo: ${events.first.title}';
@@ -431,12 +432,12 @@ class CalendarProvider extends ChangeNotifier {
     final t2 = _shortMatchTitle(events[1]);
 
     if (count == 2) {
-      const key = 'calendar_live_notification_two';
+      const key = LocaleKeys.calendar_live_notification_two;
       final res = tr(key, namedArgs: {'t1': t1, 't2': t2});
       if (res != key) return res;
       return 'Comenzaron 2 eventos: $t1 y $t2';
     } else {
-      const key = 'calendar_live_notification_multiple';
+      const key = LocaleKeys.calendar_live_notification_multiple;
       final res = tr(key, namedArgs: {
         'count': '$count',
         't1': t1,

@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/features/games/models/arcade_netplay_state.dart';
@@ -63,7 +64,7 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
     // Si la sesión terminó o fue cancelada
     if (session == null || session.status == ArcadeNetplayStatus.terminated) {
       final reason =
-          session?.exitReason ?? 'arcade_session_canceled_default'.tr();
+          session?.exitReason ?? LocaleKeys.arcade_session_canceled_default.tr();
       Navigator.of(context, rootNavigator: true).pop();
       MoaiSnackBar.show(context, message: reason);
       return;
@@ -80,7 +81,7 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
   }
 
   void _onCancel() {
-    _netplay.cancelSession(reason: 'arcade_session_canceled_by_user'.tr());
+    _netplay.cancelSession(reason: LocaleKeys.arcade_session_canceled_by_user.tr());
   }
 
   @override
@@ -101,17 +102,17 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
       icon: MoaiIcons.sportsEsportsRounded,
       iconColor: scheme.primary,
       iconBgColor: scheme.primary.withValues(alpha: 0.15),
-      title: 'arcade_prep_title'.tr(namedArgs: {'game': gameTitle}),
+      title: LocaleKeys.arcade_prep_title.tr(namedArgs: {'game': gameTitle}),
       subtitle: isHost
-          ? 'arcade_prep_subtitle_host'.tr(namedArgs: {'friend': friendName})
-          : 'arcade_prep_subtitle_guest'.tr(namedArgs: {'friend': friendName}),
+          ? LocaleKeys.arcade_prep_subtitle_host.tr(namedArgs: {'friend': friendName})
+          : LocaleKeys.arcade_prep_subtitle_guest.tr(namedArgs: {'friend': friendName}),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. Estado local (Tu consola)
           _buildProgressBlock(
-            label: 'arcade_prep_status_local'
+            label: LocaleKeys.arcade_prep_status_local
                 .tr(namedArgs: {'name': session.myNickname}),
             statusText: session.myStatusText,
             progress: session.myProgress,
@@ -124,7 +125,7 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
 
           // 2. Estado del amigo (Consola remota)
           _buildProgressBlock(
-            label: 'arcade_prep_status_remote'
+            label: LocaleKeys.arcade_prep_status_remote
                 .tr(namedArgs: {'friend': friendName}),
             statusText: session.peerStatusText,
             progress: session.peerProgress,
@@ -152,7 +153,7 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'arcade_prep_info'.tr(),
+                    LocaleKeys.arcade_prep_info.tr(),
                     style: MoaiText.body(
                       context,
                       fontSize: 12,
@@ -168,7 +169,7 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
       actions: [
         TvDialogButton(
           focusNode: _cancelFocus,
-          label: 'arcade_prep_cancel'.tr(),
+          label: LocaleKeys.arcade_prep_cancel.tr(),
           onPressed: _onCancel,
         ),
       ],

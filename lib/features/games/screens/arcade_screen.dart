@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/platform/platform_channels.dart';
 import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
@@ -72,13 +73,13 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
         if (assignment.isRemote) {
           icon = MoaiIcons.settingsRemote;
           message = assignment.player == 0
-              ? 'arcade_remote_connected_p1'.tr()
-              : 'arcade_remote_connected_p2'.tr();
+              ? LocaleKeys.arcade_remote_connected_p1.tr()
+              : LocaleKeys.arcade_remote_connected_p2.tr();
         } else {
           icon = MoaiIcons.sportsEsports;
           message = assignment.player == 0
-              ? 'arcade_pad_detected_p1'.tr()
-              : 'arcade_pad_detected_p2'.tr();
+              ? LocaleKeys.arcade_pad_detected_p1.tr()
+              : LocaleKeys.arcade_pad_detected_p2.tr();
         }
         MoaiSnackBar.show(
           context,
@@ -100,7 +101,7 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
         if (mounted) {
           MoaiSnackBar.show(
             context,
-            message: 'arcade_netplay_connected'.tr(namedArgs: {
+            message: LocaleKeys.arcade_netplay_connected.tr(namedArgs: {
               'friend': widget.netplaySession!.peerNickname,
             }),
             icon: MoaiIcons.sportsEsports,
@@ -163,7 +164,7 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
     if (widget.netplaySession != null) {
       unawaited(_emulatorService.netplayEnable(enabled: false));
       unawaited(ArcadeNetplayService.instance.cancelSession(
-        reason: 'arcade_player_left'.tr(),
+        reason: LocaleKeys.arcade_player_left.tr(),
       ));
     }
     _exitSubscription?.cancel();
@@ -347,7 +348,7 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
                         const CircularProgressIndicator(color: Colors.cyanAccent),
                         const SizedBox(height: 16),
                         Text(
-                          'arcade_loading_engine'.tr(),
+                          LocaleKeys.arcade_loading_engine.tr(),
                           style: const TextStyle(color: Colors.white, fontSize: 16),
                         ),
                       ],

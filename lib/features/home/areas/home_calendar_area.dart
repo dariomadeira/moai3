@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/features/calendar/widgets/calendar_events_panel.dart';
@@ -56,8 +57,8 @@ class _HomeCalendarAreaState extends State<HomeCalendarArea> {
       scheme.surface.withValues(alpha: 0.8),
     ];
     final titles = [
-      'calendar_panel_events_title'.tr(),
-      'calendar_panel_subscriptions_title'.tr(),
+      LocaleKeys.calendar_panel_events_title.tr(),
+      LocaleKeys.calendar_panel_subscriptions_title.tr(),
     ];
 
     return TvAccordionRowPreview(

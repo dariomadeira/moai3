@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -352,7 +353,7 @@ Future<T?> showTvGeneralDialog<T>({
   return showGeneralDialog<T>(
     context: context,
     barrierDismissible: barrierDismissible,
-    barrierLabel: barrierLabel ?? 'common_close'.tr(),
+    barrierLabel: barrierLabel ?? LocaleKeys.common_close.tr(),
     barrierColor: barrierColor ?? Colors.black.withValues(alpha: 0.7),
     pageBuilder: (ctx, anim, secAnim) => builder(ctx),
     transitionBuilder: (ctx, anim, secAnim, child) {

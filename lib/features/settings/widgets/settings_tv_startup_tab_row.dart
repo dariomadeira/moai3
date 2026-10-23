@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -27,9 +28,9 @@ class SettingsTvStartupTabRow extends StatelessWidget {
   });
 
   static const _labelKeys = {
-    'explore': 'home_tab_explore',
-    'search': 'home_tab_search',
-    'groups': 'home_tab_groups',
+    'explore': LocaleKeys.home_tab_explore,
+    'search': LocaleKeys.home_tab_search,
+    'groups': LocaleKeys.home_tab_groups,
   };
 
   int get _selectedIndex {
@@ -56,8 +57,8 @@ class SettingsTvStartupTabRow extends StatelessWidget {
 
     return TvTile(
       focusNode: focusNode,
-      label: 'settings_tv_startup_tab'.tr(),
-      description: 'settings_tv_startup_tab_desc'.tr(),
+      label: LocaleKeys.settings_tv_startup_tab.tr(),
+      description: LocaleKeys.settings_tv_startup_tab_desc.tr(),
       icon: MoaiIcons.settingsTvStartupTab,
       onKeyLeft: onKeyLeft,
       onKeyRight: onKeyRight,

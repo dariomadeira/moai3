@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -133,7 +134,7 @@ class _AccentColorScreenState extends State<AccentColorScreen> {
                           panelCount: 1,
                           activeIndex: 0,
                           colors: [scheme.surface.withValues(alpha: 0.8)],
-                          titles: ['settings_general_accent'.tr()],
+                          titles: [LocaleKeys.settings_general_accent.tr()],
                           icons: const [MoaiIcons.paletteOutlined],
                           onPanelTap: (_) {},
                           tabBuilder: (index, isExpanded) {
@@ -148,7 +149,7 @@ class _AccentColorScreenState extends State<AccentColorScreen> {
                                   RotatedBox(
                                     quarterTurns: 3,
                                     child: Text(
-                                      'settings_general_accent'.tr(),
+                                      LocaleKeys.settings_general_accent.tr(),
                                       maxLines: 1,
                                       softWrap: false,
                                       overflow: TextOverflow.fade,
@@ -181,9 +182,9 @@ class _AccentColorScreenState extends State<AccentColorScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   TvPanelHeader(
-                                    title: 'settings_general_accent'.tr(),
+                                    title: LocaleKeys.settings_general_accent.tr(),
                                     subtitle:
-                                        'settings_general_accent_desc'.tr(),
+                                        LocaleKeys.settings_general_accent_desc.tr(),
                                     padding: EdgeInsets.zero,
                                   ),
                                   const SizedBox(height: 14),
@@ -256,10 +257,10 @@ class _AccentColorScreenState extends State<AccentColorScreen> {
                                                           icon: MoaiIcons
                                                               .autoAwesomeOutlined,
                                                           label:
-                                                              'settings_general_auto_accent'
+                                                              LocaleKeys.settings_general_auto_accent
                                                                   .tr(),
                                                           description:
-                                                              'settings_general_auto_accent_desc'
+                                                              LocaleKeys.settings_general_auto_accent_desc
                                                                   .tr(),
                                                           value: isAutoAccent,
                                                           onChanged: theme.setAutoAccent,
@@ -330,10 +331,10 @@ class _AccentColorSelectorTile extends StatelessWidget {
 
     return TvTile(
       focusNode: focusNode,
-      label: 'settings_general_accent'.tr(),
+      label: LocaleKeys.settings_general_accent.tr(),
       description: colorName.isNotEmpty
-          ? '$colorName · ${'settings_general_accent_desc'.tr()}'
-          : 'settings_general_accent_desc'.tr(),
+          ? '$colorName · ${LocaleKeys.settings_general_accent_desc.tr()}'
+          : LocaleKeys.settings_general_accent_desc.tr(),
       icon: MoaiIcons.paletteOutlined,
       onKeyUp: onKeyUp,
       onKeyDown: onKeyDown,

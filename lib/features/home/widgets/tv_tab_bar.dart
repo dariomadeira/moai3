@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -63,7 +64,7 @@ class TvTabBar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               _M3EFloatingTabPill(
-                title: 'home_tab_explore'.tr(),
+                title: LocaleKeys.home_tab_explore.tr(),
                 icon: MoaiIcons.tvTabExplorar,
                 selectedIcon: MoaiIcons.tvTabExplorarSelected,
                 isSelected: selectedTab == 'explore',
@@ -75,7 +76,7 @@ class TvTabBar extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               _M3EFloatingTabPill(
-                title: 'home_tab_search'.tr(),
+                title: LocaleKeys.home_tab_search.tr(),
                 icon: MoaiIcons.tvTabBuscar,
                 selectedIcon: MoaiIcons.tvTabBuscarSelected,
                 isSelected: selectedTab == 'search',
@@ -87,7 +88,7 @@ class TvTabBar extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               _M3EFloatingTabPill(
-                title: 'home_tab_groups'.tr(),
+                title: LocaleKeys.home_tab_groups.tr(),
                 icon: MoaiIcons.tvTabMarcadores,
                 selectedIcon: MoaiIcons.tvTabMarcadoresSelected,
                 isSelected: selectedTab == 'groups',

@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -21,8 +22,8 @@ import 'package:moai3/widgets/tv_input/tv_text_field.dart';
 
 String _formatChannelsCount(int count) {
   final label = count == 1
-      ? 'sources_channel_singular'.tr()
-      : 'sources_channel_plural'.tr();
+      ? LocaleKeys.sources_channel_singular.tr()
+      : LocaleKeys.sources_channel_plural.tr();
   return '$count $label';
 }
 
@@ -71,13 +72,13 @@ class _SourcesScreenState extends State<SourcesScreen> {
 
   static List<_PresetPlugin> get _presetPlugins => [
         _PresetPlugin(
-          name: 'sources_preset_ar_name'.tr(),
-          description: 'sources_preset_ar_desc'.tr(),
+          name: LocaleKeys.sources_preset_ar_name.tr(),
+          description: LocaleKeys.sources_preset_ar_desc.tr(),
           url: _arUrl,
         ),
         _PresetPlugin(
-          name: 'sources_preset_daddylive_name'.tr(),
-          description: 'sources_preset_daddylive_desc'.tr(),
+          name: LocaleKeys.sources_preset_daddylive_name.tr(),
+          description: LocaleKeys.sources_preset_daddylive_desc.tr(),
           url: _daddyliveUrl,
         ),
       ];
@@ -233,7 +234,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                           panelCount: 1,
                           activeIndex: 0,
                           colors: [scheme.surface.withValues(alpha: 0.8)],
-                          titles: ['settings_general_sources'.tr()],
+                          titles: [LocaleKeys.settings_general_sources.tr()],
                           icons: const [MoaiIcons.extensionOutlined],
                           onPanelTap: (_) {},
                           tabBuilder: (index, isExpanded) {
@@ -248,7 +249,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                                   RotatedBox(
                                     quarterTurns: 3,
                                     child: Text(
-                                      'settings_general_sources'.tr(),
+                                      LocaleKeys.settings_general_sources.tr(),
                                       maxLines: 1,
                                       softWrap: false,
                                       overflow: TextOverflow.fade,
@@ -284,8 +285,8 @@ class _SourcesScreenState extends State<SourcesScreen> {
                                     children: [
                                       Expanded(
                                         child: TvPanelHeader(
-                                          title: 'sources_title'.tr(),
-                                          subtitle: 'sources_subtitle'.tr(),
+                                          title: LocaleKeys.sources_title.tr(),
+                                          subtitle: LocaleKeys.sources_subtitle.tr(),
                                           padding: EdgeInsets.zero,
                                         ),
                                       ),
@@ -379,9 +380,9 @@ class _SourcesScreenState extends State<SourcesScreen> {
           child: TvTextField(
             controller: _urlController,
             focusNode: _urlFocus,
-            label: 'sources_url_label'.tr(),
-            hint: 'sources_url_hint'.tr(),
-            doneLabel: 'sources_install'.tr(),
+            label: LocaleKeys.sources_url_label.tr(),
+            hint: LocaleKeys.sources_url_hint.tr(),
+            doneLabel: LocaleKeys.common_install.tr(),
             leadingIcon: MoaiIcons.tvSourcesUrlInput,
             onSubmitted: _install,
             onFocusLeft: _backFocusNode.requestFocus,
@@ -395,7 +396,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
         const SizedBox(width: 10),
         TvFocusButton(
           focusNode: _installFocus,
-          label: 'sources_install'.tr(),
+          label: LocaleKeys.common_install.tr(),
           icon: MoaiIcons.tvSourcesInstallAction,
           height: 60,
           radius: 30,
@@ -407,10 +408,10 @@ class _SourcesScreenState extends State<SourcesScreen> {
                   if (text.isEmpty || text == 'https://' || text == 'http://') {
                     TvTextField.open(
                       context,
-                      title: 'sources_url_label'.tr(),
+                      title: LocaleKeys.sources_url_label.tr(),
                       initialValue: text.isEmpty ? 'https://' : text,
-                      hint: 'sources_url_hint'.tr(),
-                      doneLabel: 'sources_install'.tr(),
+                      hint: LocaleKeys.sources_url_hint.tr(),
+                      doneLabel: LocaleKeys.common_install.tr(),
                     ).then((val) {
                       if (val != null && val.trim().isNotEmpty) {
                         _urlController.text = val;
@@ -455,7 +456,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  'sources_installed_header'.tr(),
+                  LocaleKeys.sources_installed_header.tr(),
                   style: MoaiText.body(
                     context,
                     color: scheme.onSurfaceVariant,
@@ -476,7 +477,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                     ? TvEmptyStateCard(
                         focusNode: _emptyFocusNode,
                         icon: MoaiIcons.extensionOffOutlined,
-                        message: 'sources_empty'.tr(),
+                        message: LocaleKeys.sources_empty.tr(),
                         onFocusLeft: _backFocusNode.requestFocus,
                         onFocusUp: _urlFocus.requestFocus,
                         onFocusRight: _focusPresetList,
@@ -556,7 +557,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  'sources_presets_header'.tr(),
+                  LocaleKeys.sources_presets_header.tr(),
                   style: MoaiText.body(
                     context,
                     color: scheme.onSurfaceVariant,
@@ -735,7 +736,7 @@ class _SourceTileState extends State<_SourceTile> {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                'sources_version_available'.tr(
+                LocaleKeys.sources_version_available.tr(
                   namedArgs: {'version': _availableVersion!},
                 ),
                 style: MoaiText.body(
@@ -752,7 +753,7 @@ class _SourceTileState extends State<_SourceTile> {
           ],
           _IconButtonAction(
             focusNode: widget.updateFocus,
-            tooltip: 'sources_update'.tr(),
+            tooltip: LocaleKeys.common_update.tr(),
             icon: _availableVersion != null
                 ? MoaiIcons.systemUpdateRounded
                 : MoaiIcons.syncRounded,
@@ -769,7 +770,7 @@ class _SourceTileState extends State<_SourceTile> {
           const SizedBox(width: 8),
           _IconButtonAction(
             focusNode: widget.removeFocus,
-            tooltip: 'sources_remove'.tr(),
+            tooltip: LocaleKeys.sources_remove.tr(),
             icon: MoaiIcons.deleteOutlineRounded,
             onPressed: widget.onRemove,
             parentFocused: isFocused,

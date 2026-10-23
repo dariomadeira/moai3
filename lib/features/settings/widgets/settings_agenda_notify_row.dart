@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,10 +24,10 @@ class SettingsAgendaNotifyRow extends StatelessWidget {
   });
 
   static const _labelKeys = {
-    0: 'settings_agenda_notify_now',
-    10: 'settings_agenda_notify_10',
-    15: 'settings_agenda_notify_15',
-    30: 'settings_agenda_notify_30',
+    0: LocaleKeys.settings_agenda_notify_now,
+    10: LocaleKeys.settings_agenda_notify_10,
+    15: LocaleKeys.settings_agenda_notify_15,
+    30: LocaleKeys.settings_agenda_notify_30,
   };
 
   int get _selectedIndex {
@@ -50,8 +51,8 @@ class SettingsAgendaNotifyRow extends StatelessWidget {
 
     return TvTile(
       focusNode: focusNode,
-      label: 'settings_agenda_notify'.tr(),
-      description: 'settings_agenda_notify_desc'.tr(),
+      label: LocaleKeys.settings_agenda_notify.tr(),
+      description: LocaleKeys.settings_agenda_notify_desc.tr(),
       icon: MoaiIcons.notificationsActiveOutlined,
       onKeyUp: onKeyUp,
       onKeyDown: onKeyDown,

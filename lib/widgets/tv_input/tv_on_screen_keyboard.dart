@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -232,7 +233,7 @@ class _TvOnScreenKeyboardState extends State<TvOnScreenKeyboard> {
             Expanded(
               child: _TvActionButton(
                 focusNode: _cancelNode,
-                label: 'keyboard_cancel'.tr(),
+                label: LocaleKeys.common_cancel.tr(),
                 filled: false,
                 onPressed: widget.onCancel,
                 onArrowLeft: () {},
@@ -249,7 +250,7 @@ class _TvOnScreenKeyboardState extends State<TvOnScreenKeyboard> {
               flex: 2,
               child: _TvActionButton(
                 focusNode: _doneNode,
-                label: widget.doneLabel ?? 'keyboard_done'.tr(),
+                label: widget.doneLabel ?? LocaleKeys.keyboard_done.tr(),
                 filled: true,
                 onPressed: widget.onDone,
                 onArrowLeft: _cancelNode.requestFocus,

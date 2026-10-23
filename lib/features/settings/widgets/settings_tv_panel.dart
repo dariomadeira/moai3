@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/features/settings/widgets/settings_tv_startup_tab_row.dart';
@@ -83,8 +84,8 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TvPanelHeader(
-              title: 'settings_tv_title'.tr(),
-              subtitle: 'settings_tv_subtitle'.tr(),
+              title: LocaleKeys.settings_tv_title.tr(),
+              subtitle: LocaleKeys.settings_tv_subtitle.tr(),
             ),
             Expanded(
               child: LayoutBuilder(
@@ -164,8 +165,8 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
         return TvSettingsSwitchRow(
           focusNode: focusNode,
           icon: MoaiIcons.terminalOutlined,
-          label: 'settings_tv_log'.tr(),
-          description: 'settings_tv_log_desc'.tr(),
+          label: LocaleKeys.settings_tv_log.tr(),
+          description: LocaleKeys.settings_tv_log_desc.tr(),
           value: tvSettings.showTvLog,
           onChanged: (v) => tvSettings.setShowTvLog(v),
           onKeyLeft: widget.onKeyLeft,
@@ -177,8 +178,8 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
         return TvSettingsSwitchRow(
           focusNode: focusNode,
           icon: MoaiIcons.labelOutline,
-          label: 'settings_tv_channel_labels'.tr(),
-          description: 'settings_tv_channel_labels_desc'.tr(),
+          label: LocaleKeys.settings_tv_channel_labels.tr(),
+          description: LocaleKeys.settings_tv_channel_labels_desc.tr(),
           value: tvSettings.showChannelLabels,
           onChanged: (v) => tvSettings.setShowChannelLabels(v),
           onKeyLeft: widget.onKeyLeft,
@@ -190,8 +191,8 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
         return TvSettingsSwitchRow(
           focusNode: focusNode,
           icon: tvSettings.isAdultUnlocked ? MoaiIcons.lockOpen : MoaiIcons.lock,
-          label: 'settings_tv_adult_content'.tr(),
-          description: 'settings_tv_adult_content_desc'.tr(),
+          label: LocaleKeys.settings_tv_adult_content.tr(),
+          description: LocaleKeys.settings_tv_adult_content_desc.tr(),
           value: tvSettings.isAdultUnlocked,
           onChanged: (enable) async {
             if (enable) {
@@ -201,7 +202,7 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
               if (context.mounted) {
                 MoaiSnackBar.show(
                   context,
-                  message: 'parental_adult_locked'.tr(),
+                  message: LocaleKeys.parental_adult_locked.tr(),
                   icon: MoaiIcons.lock,
                 );
               }
@@ -216,8 +217,8 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
         return TvSettingsActionRow(
           focusNode: focusNode,
           icon: MoaiIcons.pinOutlined,
-          label: 'settings_tv_change_pin'.tr(),
-          description: 'settings_tv_change_pin_desc'.tr(),
+          label: LocaleKeys.settings_tv_change_pin.tr(),
+          description: LocaleKeys.settings_tv_change_pin_desc.tr(),
           onPressed: () async {
             await TvPinDialog.changePin(context, tvSettings);
           },
@@ -230,8 +231,8 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
         return TvSettingsActionRow(
           focusNode: focusNode,
           icon: MoaiIcons.extension,
-          label: 'settings_general_sources'.tr(),
-          description: 'settings_general_sources_desc'.tr(),
+          label: LocaleKeys.settings_general_sources.tr(),
+          description: LocaleKeys.settings_general_sources_desc.tr(),
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(

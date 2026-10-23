@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/features/settings/screens/accent_color_screen.dart';
@@ -43,13 +44,13 @@ class SettingsAccentColorRow extends StatelessWidget {
         ? MoaiAccentColors.labelKeys[selectedIndex].tr()
         : '';
 
-    final baseLabel = 'settings_general_accent'.tr();
+    final baseLabel = LocaleKeys.settings_general_accent.tr();
     final label = colorName.isNotEmpty ? '$baseLabel - $colorName' : baseLabel;
 
     return TvTile(
       focusNode: focusNode,
       label: label,
-      description: 'settings_general_accent_desc'.tr(),
+      description: LocaleKeys.settings_general_accent_desc.tr(),
       icon: icon ?? MoaiIcons.paletteOutlined,
       onPressed: () => _openScreen(context),
       onKeyLeft: onKeyLeft,

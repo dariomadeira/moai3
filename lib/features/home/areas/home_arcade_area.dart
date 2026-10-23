@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/features/games/screens/arcade_games_screen.dart';
@@ -70,7 +71,7 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
   String _resolveCurrentGameName() {
     final installed = widget.romManager.installedRoms;
     if (installed.isEmpty) {
-      return 'arcade_no_games_installed'.tr();
+      return LocaleKeys.arcade_no_games_installed.tr();
     }
     final active = installed.firstWhere(
       (r) =>
@@ -95,7 +96,7 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
     if (path == null || widget.romManager.installedRoms.isEmpty) {
       MoaiSnackBar.show(
         context,
-        message: 'arcade_no_game_installed_snack'.tr(),
+        message: LocaleKeys.arcade_no_game_installed_snack.tr(),
         icon: MoaiIcons.infoOutline,
       );
       return;
@@ -112,7 +113,7 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
     final myDeviceId = identity.getOrCreateDeviceId();
     final myNickname =
         context.read<WatchPartyProvider?>()?.myNickname ??
-        'arcade_player_default'.tr();
+        LocaleKeys.arcade_player_default.tr();
 
     TvArcadeSelectFriendDialog.show(
       context,
@@ -160,7 +161,7 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
 
     final scheme = Theme.of(context).colorScheme;
     final panelColors = [scheme.surface.withValues(alpha: 0.8)];
-    final titles = ['arcade_panel_title'.tr()];
+    final titles = [LocaleKeys.arcade_panel_title.tr()];
     const icons = [MoaiIcons.sportsEsportsOutlined];
 
     return TvAccordionRowPreview(
@@ -182,15 +183,15 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TvPanelHeader(
-                title: 'arcade_panel_title'.tr(),
-                subtitle: 'arcade_panel_subtitle'.tr(),
+                title: LocaleKeys.arcade_panel_title.tr(),
+                subtitle: LocaleKeys.arcade_panel_subtitle.tr(),
               ),
               const SizedBox(height: 16),
 
               // 1. Seleccionar juego
               TvSettingsActionRow(
                 focusNode: widget.selectGameFocus,
-                label: 'arcade_action_select_game'.tr(),
+                label: LocaleKeys.arcade_action_select_game.tr(),
                 description: _resolveCurrentGameName(),
                 icon: MoaiIcons.arcadeActionSelectGame,
                 onPressed: _onSelectGame,
@@ -202,8 +203,8 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
               // 2. Configurar Gamepad
               TvSettingsActionRow(
                 focusNode: widget.gamepadFocus,
-                label: 'arcade_gamepad_config_title'.tr(),
-                description: 'arcade_gamepad_config_desc'.tr(),
+                label: LocaleKeys.arcade_gamepad_config_title.tr(),
+                description: LocaleKeys.arcade_gamepad_config_desc.tr(),
                 icon: MoaiIcons.arcadeActionConfigGamepad,
                 onPressed: _onConfigGamepad,
                 onKeyLeft: widget.onExitLeft,
@@ -218,8 +219,8 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
                 const SizedBox(height: 10),
                 TvSettingsActionRow(
                   focusNode: widget.startFocus,
-                  label: 'arcade_action_start_game'.tr(),
-                  description: 'arcade_action_start_game_desc'.tr(),
+                  label: LocaleKeys.arcade_action_start_game.tr(),
+                  description: LocaleKeys.arcade_action_start_game_desc.tr(),
                   icon: MoaiIcons.arcadeActionStartGame,
                   onPressed: widget.onStartGame,
                   onKeyLeft: widget.onExitLeft,
@@ -232,8 +233,8 @@ class _HomeArcadeAreaState extends State<HomeArcadeArea> {
                   const SizedBox(height: 10),
                   TvSettingsActionRow(
                     focusNode: widget.playTogetherFocus,
-                    label: 'arcade_action_play_together'.tr(),
-                    description: 'arcade_action_play_together_desc'.tr(),
+                    label: LocaleKeys.arcade_action_play_together.tr(),
+                    description: LocaleKeys.arcade_action_play_together_desc.tr(),
                     icon: MoaiIcons.groupOutlined,
                     onPressed: _onPlayTogether,
                     onKeyLeft: widget.onExitLeft,

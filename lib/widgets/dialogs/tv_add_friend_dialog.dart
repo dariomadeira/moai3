@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -59,11 +60,11 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
   Future<void> _openTvKeyboard() async {
     final res = await TvTextField.open(
       context,
-      title: 'friend_add_dialog_title'.tr(),
+      title: LocaleKeys.friend_add_dialog_title.tr(),
       initialValue: _codeController.text,
       maxLength: 4,
-      hint: 'friend_add_dialog_hint'.tr(),
-      doneLabel: 'friend_add_dialog_submit'.tr(),
+      hint: LocaleKeys.friend_add_dialog_hint.tr(),
+      doneLabel: LocaleKeys.friend_add_dialog_submit.tr(),
     );
     if (res != null) {
       setState(() {
@@ -78,7 +79,7 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
     final rawText = _codeController.text.trim().toUpperCase();
     if (rawText.length < 4) {
       setState(() {
-        _errorMessage = 'friend_add_dialog_error_length'.tr();
+        _errorMessage = LocaleKeys.friend_add_dialog_error_length.tr();
       });
       _inputFocusNode.requestFocus();
       return;
@@ -97,7 +98,7 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
       Navigator.of(context).pop(true);
       MoaiSnackBar.show(
         context,
-        message: 'friend_add_dialog_success'.tr(),
+        message: LocaleKeys.friend_add_dialog_success.tr(),
         icon: MoaiIcons.checkCircleOutline,
       );
     } catch (e) {
@@ -105,7 +106,7 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
       final rawError = e.toString().replaceAll('Exception: ', '').trim();
       final translatedError = (rawError.startsWith('friend_add_') || rawError.startsWith('friends_'))
           ? rawError.tr()
-          : 'friend_add_error_generic'.tr();
+          : LocaleKeys.friend_add_error_generic.tr();
       setState(() {
         _isSubmitting = false;
         _errorMessage = translatedError;
@@ -121,8 +122,8 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
 
     return TvDialog(
       icon: MoaiIcons.personAddAlt1,
-      title: 'friend_add_dialog_title'.tr(),
-      subtitle: 'friend_add_dialog_subtitle'.tr(),
+      title: LocaleKeys.friend_add_dialog_title.tr(),
+      subtitle: LocaleKeys.friend_add_dialog_subtitle.tr(),
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -180,7 +181,7 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
                     Expanded(
                       child: Text(
                         _codeController.text.isEmpty
-                            ? 'friend_add_dialog_hint'.tr()
+                            ? LocaleKeys.friend_add_dialog_hint.tr()
                             : _codeController.text,
                         style: MoaiText.display(
                           context,
@@ -227,14 +228,14 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
       ),
       actions: [
         TvDialogButton(
-          label: 'friend_add_dialog_cancel'.tr(),
+          label: LocaleKeys.common_cancel.tr(),
           focusNode: _cancelFocusNode,
           onPressed: () => Navigator.of(context).pop(false),
           onKeyRight: _addFocusNode.requestFocus,
           onKeyUp: _inputFocusNode.requestFocus,
         ),
         TvDialogButton(
-          label: _isSubmitting ? 'friend_add_dialog_verifying'.tr() : 'friend_add_dialog_submit'.tr(),
+          label: _isSubmitting ? LocaleKeys.friend_add_dialog_verifying.tr() : LocaleKeys.friend_add_dialog_submit.tr(),
           variant: TvDialogButtonVariant.primary,
           focusNode: _addFocusNode,
           onPressed: _isSubmitting ? () {} : _handleSubmit,

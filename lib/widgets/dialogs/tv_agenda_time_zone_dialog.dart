@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -97,8 +98,8 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
     return TvDialog(
       width: 500,
       icon: MoaiIcons.publicOutlined,
-      title: 'settings_agenda_utc_title'.tr(),
-      subtitle: 'settings_agenda_utc_subtitle'.tr(),
+      title: LocaleKeys.settings_agenda_utc_title.tr(),
+      subtitle: LocaleKeys.settings_agenda_utc_subtitle.tr(),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -107,8 +108,8 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
           TvTextField(
             controller: _searchController,
             focusNode: _searchFocusNode,
-            label: 'settings_agenda_utc_search_hint'.tr(),
-            hint: 'search_field_hint'.tr(),
+            label: LocaleKeys.settings_agenda_utc_search_hint.tr(),
+            hint: LocaleKeys.search_field_hint.tr(),
             textInputAction: TvTextInputAction.search,
             dense: true,
             leadingIcon: MoaiIcons.searchOutlined,
@@ -134,7 +135,7 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
       actions: [
         TvDialogButton(
           focusNode: _closeBtnFocus,
-          label: 'common_close'.tr(),
+          label: LocaleKeys.common_close.tr(),
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
           onKeyUp: () {
             if (_filteredZones.isNotEmpty) {
@@ -173,7 +174,7 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
             ),
             const SizedBox(height: 8),
             Text(
-              'settings_agenda_utc_no_results'.tr(),
+              LocaleKeys.settings_agenda_utc_no_results.tr(),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,

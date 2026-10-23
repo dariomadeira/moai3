@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:flutter/material.dart';
 
 /// Semillas M3 para el color primario / de acento.
@@ -19,19 +20,19 @@ abstract final class MoaiAccentColors {
   ];
 
   static const List<String> labelKeys = [
-    'settings_accent_blue',
-    'settings_accent_dark_blue',
-    'settings_accent_teal',
-    'settings_accent_green',
-    'settings_accent_emerald',
-    'settings_accent_cyan',
-    'settings_accent_orange',
-    'settings_accent_coral',
-    'settings_accent_amber',
-    'settings_accent_red',
-    'settings_accent_pink',
-    'settings_accent_indigo',
-    'settings_accent_violet',
+    LocaleKeys.settings_accent_blue,
+    LocaleKeys.settings_accent_dark_blue,
+    LocaleKeys.settings_accent_teal,
+    LocaleKeys.settings_accent_green,
+    LocaleKeys.settings_accent_emerald,
+    LocaleKeys.settings_accent_cyan,
+    LocaleKeys.settings_accent_orange,
+    LocaleKeys.settings_accent_coral,
+    LocaleKeys.settings_accent_amber,
+    LocaleKeys.settings_accent_red,
+    LocaleKeys.settings_accent_pink,
+    LocaleKeys.settings_accent_indigo,
+    LocaleKeys.settings_accent_violet,
   ];
 
   static int clampIndex(int index) => index.clamp(0, seeds.length - 1);

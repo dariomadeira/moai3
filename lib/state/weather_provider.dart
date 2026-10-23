@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/services/app_preferences_service.dart';
@@ -55,9 +56,9 @@ class WeatherProvider extends ChangeNotifier {
     if (isAutoLocation) {
       final detectedCity = _weather?.city;
       if (detectedCity != null && detectedCity.isNotEmpty) {
-        return 'weather_auto_city'.tr(namedArgs: {'city': detectedCity});
+        return LocaleKeys.weather_auto_city.tr(namedArgs: {'city': detectedCity});
       }
-      return 'weather_auto_network'.tr();
+      return LocaleKeys.weather_auto_network.tr();
     }
     return _customName ?? _weather?.city ?? '';
   }

@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -43,7 +44,7 @@ class HomeDashboardAreaState extends State<HomeDashboardArea> {
       panelCount: 1,
       activeIndex: 0,
       colors: [scheme.surface.withValues(alpha: 0.8)],
-      titles: ['home_panel_home_title'.tr()],
+      titles: [LocaleKeys.home_panel_home_title.tr()],
       icons: const [MoaiIcons.tvAccordionHome],
       onPanelTap: (_) {},
       buildExpandedContent: (index, title) {
@@ -68,7 +69,7 @@ class HomeDashboardAreaState extends State<HomeDashboardArea> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TvPanelHeader(
-                  title: 'home_panel_home_title'.tr(),
+                  title: LocaleKeys.home_panel_home_title.tr(),
                   subtitle: '',
                 ),
                 const Expanded(

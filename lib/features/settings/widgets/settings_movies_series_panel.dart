@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/features/settings/widgets/settings_catalog_frequency_row.dart';
@@ -53,7 +54,7 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
   }
 
   String _catalogUpdateLabel() {
-    final title = 'settings_general_skip_catalog'.tr();
+    final title = LocaleKeys.settings_general_skip_catalog.tr();
     final savedAt = _catalogSavedAt;
     if (savedAt == null) return title;
     final local = savedAt.toLocal();
@@ -93,8 +94,8 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TvPanelHeader(
-              title: 'settings_movies_series_title'.tr(),
-              subtitle: 'settings_movies_series_subtitle'.tr(),
+              title: LocaleKeys.settings_movies_series_title.tr(),
+              subtitle: LocaleKeys.settings_movies_series_subtitle.tr(),
             ),
             Expanded(
               child: LayoutBuilder(
@@ -169,7 +170,7 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
               ? MoaiIcons.cloudSyncOutlined
               : MoaiIcons.cloudOffOutlined,
           label: _catalogUpdateLabel(),
-          description: 'settings_general_skip_catalog_desc'.tr(),
+          description: LocaleKeys.settings_general_skip_catalog_desc.tr(),
           value: updateOnLaunch,
           onChanged: (value) {
             context.read<TvSettingsProvider>().setSkipCatalogUpdate(!value);

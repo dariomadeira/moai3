@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -75,7 +76,7 @@ class ArcadePluginService extends ChangeNotifier {
 
     _isDownloading = true;
     _downloadProgress = 0.0;
-    _statusMessage = 'plugins_arcade_downloading_engine'.tr();
+    _statusMessage = LocaleKeys.plugins_arcade_downloading_engine.tr();
     notifyListeners();
 
     try {
@@ -127,14 +128,14 @@ class ArcadePluginService extends ChangeNotifier {
 
       await _prefs.saveString(_keyCorePath, _installedCorePath!);
 
-      _statusMessage = 'plugins_arcade_installed_success'.tr();
+      _statusMessage = LocaleKeys.plugins_arcade_installed_success.tr();
       notifyListeners();
       return true;
     } catch (e) {
       debugPrint('[ArcadePluginService] Error instalando plugin: $e');
       _isDownloading = false;
       _statusMessage =
-          'plugins_arcade_error_download'.tr(namedArgs: {'error': '$e'});
+          LocaleKeys.plugins_arcade_error_download.tr(namedArgs: {'error': '$e'});
       notifyListeners();
       return false;
     }
@@ -151,7 +152,7 @@ class ArcadePluginService extends ChangeNotifier {
       _isInstalled = false;
       _installedCorePath = null;
       _downloadProgress = 0.0;
-      _statusMessage = 'plugins_arcade_uninstalled_success'.tr();
+      _statusMessage = LocaleKeys.plugins_arcade_uninstalled_success.tr();
 
       await _prefs.removePreference(_keyCorePath);
 

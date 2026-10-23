@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:moai3/models/calendar_event.dart';
@@ -50,12 +51,12 @@ class F1CalendarService {
 
     for (final r in races) {
       if (r is! Map<String, dynamic>) continue;
-      final raceName = r['raceName'] as String? ?? 'f1_session_gp'.tr();
+      final raceName = r['raceName'] as String? ?? LocaleKeys.f1_session_gp.tr();
       final circuit = (r['Circuit'] as Map<String, dynamic>?)?['circuitName'] as String? ?? '';
       final round = r['round'] as String? ?? '';
       final compName = circuit.isNotEmpty
-          ? 'f1_comp_circuit'.tr(namedArgs: {'circuit': circuit})
-          : 'f1_comp_formula'.tr();
+          ? LocaleKeys.f1_comp_circuit.tr(namedArgs: {'circuit': circuit})
+          : LocaleKeys.f1_comp_formula.tr();
 
       // Corrección de desfase de 1 día: En el borrador de la API Jolpica/Ergast,
       // las fechas de Azerbaiyán (round 15) vienen cargadas un día antes (Jue-Sáb en vez de Vie-Dom).
@@ -69,9 +70,9 @@ class F1CalendarService {
         events: events,
         sessionMap: r['FirstPractice'] as Map<String, dynamic>?,
         id: 'f1_r_${round}_fp1',
-        title: '$raceName — ${'f1_session_fp1'.tr()}',
+        title: '$raceName — ${LocaleKeys.f1_session_fp1.tr()}',
         competition: compName,
-        sessionType: 'f1_type_p1',
+        sessionType: LocaleKeys.f1_type_p1,
         duration: const Duration(hours: 1),
         offset: sessionOffset,
       );
@@ -82,12 +83,12 @@ class F1CalendarService {
         sessionMap: (r['SprintQualifying'] ?? r['SecondPractice']) as Map<String, dynamic>?,
         id: 'f1_r_${round}_fp2',
         title: r['SprintQualifying'] != null
-            ? '$raceName — ${'f1_session_sprint_qualy'.tr()}'
-            : '$raceName — ${'f1_session_fp2'.tr()}',
+            ? '$raceName — ${LocaleKeys.f1_session_sprint_qualy.tr()}'
+            : '$raceName — ${LocaleKeys.f1_session_fp2.tr()}',
         competition: compName,
         sessionType: r['SprintQualifying'] != null
-            ? 'f1_type_sprint_shootout'
-            : 'f1_type_p2',
+            ? LocaleKeys.f1_type_sprint_shootout
+            : LocaleKeys.f1_type_p2,
         duration: const Duration(minutes: 45),
         offset: sessionOffset,
       );
@@ -97,9 +98,9 @@ class F1CalendarService {
         events: events,
         sessionMap: r['ThirdPractice'] as Map<String, dynamic>?,
         id: 'f1_r_${round}_fp3',
-        title: '$raceName — ${'f1_session_fp3'.tr()}',
+        title: '$raceName — ${LocaleKeys.f1_session_fp3.tr()}',
         competition: compName,
-        sessionType: 'f1_type_p3',
+        sessionType: LocaleKeys.f1_type_p3,
         duration: const Duration(hours: 1),
         offset: sessionOffset,
       );
@@ -109,9 +110,9 @@ class F1CalendarService {
         events: events,
         sessionMap: r['Sprint'] as Map<String, dynamic>?,
         id: 'f1_r_${round}_sprint',
-        title: '$raceName — ${'f1_session_sprint'.tr()}',
+        title: '$raceName — ${LocaleKeys.f1_session_sprint.tr()}',
         competition: compName,
-        sessionType: 'f1_type_sprint',
+        sessionType: LocaleKeys.f1_type_sprint,
         duration: const Duration(minutes: 45),
         offset: sessionOffset,
       );
@@ -121,9 +122,9 @@ class F1CalendarService {
         events: events,
         sessionMap: r['Qualifying'] as Map<String, dynamic>?,
         id: 'f1_r_${round}_qualy',
-        title: '$raceName — ${'f1_session_qualy'.tr()}',
+        title: '$raceName — ${LocaleKeys.f1_session_qualy.tr()}',
         competition: compName,
-        sessionType: 'f1_type_qualy',
+        sessionType: LocaleKeys.f1_type_qualy,
         duration: const Duration(hours: 1),
         offset: sessionOffset,
       );
@@ -140,10 +141,10 @@ class F1CalendarService {
           events.add(CalendarEvent(
             id: 'f1_r_${round}_race',
             subscriptionId: 'f1',
-            title: '$raceName — ${'f1_session_gp'.tr()}',
+            title: '$raceName — ${LocaleKeys.f1_session_gp.tr()}',
             competition: compName,
             startDateTime: dt,
-            sessionType: 'f1_type_race',
+            sessionType: LocaleKeys.f1_type_race,
             broadcaster: 'Fox Sports / Disney+',
             status: _calculateStatus(dt, const Duration(hours: 2)),
           ));
@@ -231,30 +232,30 @@ class F1CalendarService {
       events.add(CalendarEvent(
         id: 'f1_r_${round}_fp1',
         subscriptionId: 'f1',
-        title: '$raceName — ${'f1_session_practices'.tr()}',
-        competition: 'f1_comp_circuit'.tr(namedArgs: {'circuit': circuit}),
+        title: '$raceName — ${LocaleKeys.f1_session_practices.tr()}',
+        competition: LocaleKeys.f1_comp_circuit.tr(namedArgs: {'circuit': circuit}),
         startDateTime: fpDate,
-        sessionType: 'f1_type_practices',
+        sessionType: LocaleKeys.f1_type_practices,
         broadcaster: 'Fox Sports / Disney+',
         status: _calculateStatus(fpDate, const Duration(hours: 2)),
       ));
       events.add(CalendarEvent(
         id: 'f1_r_${round}_qualy',
         subscriptionId: 'f1',
-        title: '$raceName — ${'f1_session_qualy'.tr()}',
-        competition: 'f1_comp_circuit'.tr(namedArgs: {'circuit': circuit}),
+        title: '$raceName — ${LocaleKeys.f1_session_qualy.tr()}',
+        competition: LocaleKeys.f1_comp_circuit.tr(namedArgs: {'circuit': circuit}),
         startDateTime: qualyDate,
-        sessionType: 'f1_type_qualy',
+        sessionType: LocaleKeys.f1_type_qualy,
         broadcaster: 'Fox Sports / Disney+',
         status: _calculateStatus(qualyDate, const Duration(hours: 1)),
       ));
       events.add(CalendarEvent(
         id: 'f1_r_${round}_race',
         subscriptionId: 'f1',
-        title: '$raceName — ${'f1_session_gp'.tr()}',
-        competition: 'f1_comp_circuit'.tr(namedArgs: {'circuit': circuit}),
+        title: '$raceName — ${LocaleKeys.f1_session_gp.tr()}',
+        competition: LocaleKeys.f1_comp_circuit.tr(namedArgs: {'circuit': circuit}),
         startDateTime: raceDate,
-        sessionType: 'f1_type_race',
+        sessionType: LocaleKeys.f1_type_race,
         broadcaster: 'Fox Sports / Disney+',
         status: _calculateStatus(raceDate, const Duration(hours: 2)),
       ));

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:flutter/foundation.dart';
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/services/calendar/argentina_time.dart';
@@ -72,7 +73,7 @@ class SportsScheduleService {
           competition: _cleanCompetitionName(catName, subId),
           startDateTime: dt,
           status: isExplicitLive ? CalendarEventStatus.live : null,
-          sessionType: 'calendar_session_match',
+          sessionType: LocaleKeys.calendar_session_match,
           broadcaster: _suggestBroadcaster(subId, rawTitle),
           channelHints: channelHints,
         ));

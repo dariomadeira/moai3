@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -57,37 +58,37 @@ class _DebugLogPanelState extends State<DebugLogPanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        DebugSectionTitle('debug_section_config'.tr()),
+        DebugSectionTitle(LocaleKeys.debug_section_config.tr()),
         DebugKvRow(
-          label: 'debug_label_debug'.tr(),
+          label: LocaleKeys.debug_label_debug.tr(),
           value: DebugLogFormatters.debugStatusLabel(),
         ),
         DebugKvRow(
-          label: 'debug_label_player'.tr(),
-          value: 'debug_player_engine'.tr(),
+          label: LocaleKeys.debug_label_player.tr(),
+          value: LocaleKeys.debug_player_engine.tr(),
         ),
         DebugKvRow(
-          label: 'debug_label_memory'.tr(),
+          label: LocaleKeys.debug_label_memory.tr(),
           value: DebugLogFormatters.memoryLabel(),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Container(height: 1, color: dividerColor),
         ),
-        DebugSectionTitle('debug_section_playback'.tr()),
+        DebugSectionTitle(LocaleKeys.debug_section_playback.tr()),
         DebugStatusRow(
           status: stats.status,
           color: statusColor,
           label: DebugLogFormatters.healthLabel(stats.status),
         ),
         DebugKvRow(
-          label: 'debug_label_backend'.tr(),
+          label: LocaleKeys.debug_label_backend.tr(),
           value: DebugLogFormatters.backendLabel(stats.backend),
         ),
         if (channel != null) ...[
-          DebugKvRow(label: 'debug_label_channel'.tr(), value: channel.name),
+          DebugKvRow(label: LocaleKeys.debug_label_channel.tr(), value: channel.name),
           DebugKvRow(
-            label: 'debug_label_type'.tr(),
+            label: LocaleKeys.debug_label_type.tr(),
             value: DebugLogFormatters.channelTypeLabel(channel),
           ),
         ],
@@ -117,7 +118,7 @@ class _DebugLogPanelState extends State<DebugLogPanel> {
                 return const SizedBox.shrink();
               }
               return Text(
-                'home_panel_tv_log'.tr(),
+                LocaleKeys.home_panel_tv_log.tr(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: MoaiText.display(
@@ -203,7 +204,7 @@ class _DebugLogPanelState extends State<DebugLogPanel> {
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 16),
                                 child: Text(
-                                  'debug_log_empty'.tr(),
+                                  LocaleKeys.debug_log_empty.tr(),
                                   style: TextStyle(
                                     color:
                                         scheme.onSurface.withValues(alpha: 0.24),

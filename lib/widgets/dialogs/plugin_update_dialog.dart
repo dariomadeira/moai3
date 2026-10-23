@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/services/plugin_host_service.dart';
@@ -69,7 +70,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
     try {
       for (final update in widget.updates) {
         setState(() {
-          _statusText = 'plugin_update_updating_named'.tr(
+          _statusText = LocaleKeys.plugin_update_updating_named.tr(
             namedArgs: {'name': update.source.nombre},
           );
         });
@@ -88,10 +89,10 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
         MoaiSnackBar.showSuccess(
           context,
           message: widget.updates.length == 1
-              ? 'plugin_update_success_single'.tr(
+              ? LocaleKeys.plugin_update_success_single.tr(
                   namedArgs: {'name': widget.updates.first.source.nombre},
                 )
-              : 'plugin_update_success_plural'.tr(
+              : LocaleKeys.plugin_update_success_plural.tr(
                   namedArgs: {'count': widget.updates.length.toString()},
                 ),
         );
@@ -121,7 +122,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'plugin_update_header'.tr(),
+            LocaleKeys.plugin_update_header.tr(),
             style: MoaiText.body(
               context,
               fontSize: 13,
@@ -170,7 +171,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
                             ),
                           ),
                           Text(
-                            'plugin_update_channels_count'.tr(
+                            LocaleKeys.plugin_update_channels_count.tr(
                               namedArgs: {
                                 'count': u.newChannelCount.toString(),
                               },
@@ -213,14 +214,14 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
       actions = [
         TvDialogButton(
           focusNode: _cancelBtnFocus,
-          label: 'update_action_later'.tr(),
+          label: LocaleKeys.update_action_later.tr(),
           onKeyRight: _updateBtnFocus.requestFocus,
           onPressed: () => Navigator.of(context).pop(),
         ),
         const SizedBox(width: 12),
         TvDialogButton(
           focusNode: _updateBtnFocus,
-          label: 'update_action_update_now'.tr(),
+          label: LocaleKeys.update_action_update_now.tr(),
           variant: TvDialogButtonVariant.primary,
           onKeyLeft: _cancelBtnFocus.requestFocus,
           onPressed: _startUpdate,
@@ -248,7 +249,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
             ),
             const SizedBox(height: 4),
             Text(
-              'plugin_update_updating_status'.tr(),
+              LocaleKeys.plugin_update_updating_status.tr(),
               style: MoaiText.body(
                 context,
                 fontSize: 11,
@@ -271,7 +272,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
             ),
             const SizedBox(height: 12),
             Text(
-              'plugin_update_completed'.tr(),
+              LocaleKeys.plugin_update_completed.tr(),
               style: MoaiText.display(
                 context,
                 fontSize: 16,
@@ -299,7 +300,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
               child: Text(
                 _errorMessage.isNotEmpty
                     ? _errorMessage
-                    : 'plugin_update_error_default'.tr(),
+                    : LocaleKeys.plugin_update_error_default.tr(),
                 style: MoaiText.body(
                   context,
                   fontSize: 12,
@@ -313,14 +314,14 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
       actions = [
         TvDialogButton(
           focusNode: _cancelBtnFocus,
-          label: 'common_close'.tr(),
+          label: LocaleKeys.common_close.tr(),
           onKeyRight: _retryBtnFocus.requestFocus,
           onPressed: () => Navigator.of(context).pop(),
         ),
         const SizedBox(width: 12),
         TvDialogButton(
           focusNode: _retryBtnFocus,
-          label: 'update_action_retry'.tr(),
+          label: LocaleKeys.update_action_retry.tr(),
           variant: TvDialogButtonVariant.primary,
           onKeyLeft: _cancelBtnFocus.requestFocus,
           onPressed: _startUpdate,
@@ -331,9 +332,9 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
     return TvDialog(
       icon: MoaiIcons.extension,
       title: widget.updates.length == 1
-          ? 'plugin_update_title_singular'.tr()
-          : 'plugin_update_title_plural'.tr(),
-      subtitle: 'plugin_update_subtitle'.tr(),
+          ? LocaleKeys.plugin_update_title_singular.tr()
+          : LocaleKeys.plugin_update_title_plural.tr(),
+      subtitle: LocaleKeys.plugin_update_subtitle.tr(),
       content: content,
       actions: actions,
     );

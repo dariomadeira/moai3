@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -181,11 +182,11 @@ class HomeMoviesAreaState extends State<HomeMoviesArea> {
 
     final title = widget.panelTitle.isNotEmpty
         ? widget.panelTitle
-        : 'movies_panel_featured_title'.tr();
+        : LocaleKeys.movies_panel_featured_title.tr();
     final icon = widget.accordionIcon ?? MoaiIcons.tvAccordionFeatured;
     final emptyMsg = widget.emptyMessage.isNotEmpty
         ? widget.emptyMessage
-        : 'movies_empty_featured'.tr();
+        : LocaleKeys.movies_empty_featured.tr();
 
     return TvAccordionRowPreview(
       panelCount: 1,
@@ -219,7 +220,7 @@ class HomeMoviesAreaState extends State<HomeMoviesArea> {
                   onPressed: () => context
                       .read<FeaturedMoviesProvider>()
                       .loadSection(widget.section, force: true),
-                  child: Text('update_action_retry'.tr()),
+                  child: Text(LocaleKeys.update_action_retry.tr()),
                 ),
               ],
             ),

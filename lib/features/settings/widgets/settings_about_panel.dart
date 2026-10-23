@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -63,7 +64,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
       unawaited(UpdateDialog.show(context, updateInfo));
     } else {
       setState(() {
-        _statusChip = 'settings_about_up_to_date'.tr();
+        _statusChip = LocaleKeys.settings_about_up_to_date.tr();
       });
       Future.delayed(const Duration(seconds: 4), () {
         if (mounted) setState(() => _statusChip = null);
@@ -80,13 +81,13 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
 
     final String valueText;
     if (channelCount > 0) {
-      valueText = 'home_channels_count'.tr(
+      valueText = LocaleKeys.home_channels_count.tr(
         namedArgs: {'count': '$channelCount'},
       );
     } else if (isLoading) {
-      valueText = 'settings_about_loading'.tr();
+      valueText = LocaleKeys.settings_about_loading.tr();
     } else {
-      valueText = 'settings_about_empty'.tr();
+      valueText = LocaleKeys.settings_about_empty.tr();
     }
 
     const items = _AboutItemType.values;
@@ -108,8 +109,8 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TvPanelHeader(
-              title: 'settings_about_title'.tr(),
-              subtitle: 'settings_about_subtitle'.tr(),
+              title: LocaleKeys.settings_about_title.tr(),
+              subtitle: LocaleKeys.settings_about_subtitle.tr(),
               padding: const EdgeInsets.only(left: 6, top: 4, bottom: 10),
               extraContent: LayoutBuilder(
                 builder: (context, constraints) {
@@ -134,7 +135,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'settings_about_version'.tr(
+                        LocaleKeys.settings_about_version.tr(
                           namedArgs: {'version': AppInfo.version},
                         ),
                         maxLines: 1,
@@ -239,7 +240,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
       case _AboutItemType.channelsLoaded:
         return TvTile(
           focusNode: focusNode,
-          label: 'settings_about_channels_loaded'.tr(),
+          label: LocaleKeys.settings_about_channels_loaded.tr(),
           icon: MoaiIcons.tvGuide,
           onKeyLeft: widget.onKeyLeft,
           onKeyUp: onKeyUp,
@@ -252,8 +253,8 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
         return TvTile(
           focusNode: focusNode,
           icon: MoaiIcons.browserUpdated,
-          label: 'settings_about_check_updates'.tr(),
-          description: 'settings_about_check_updates_desc'.tr(),
+          label: LocaleKeys.settings_about_check_updates.tr(),
+          description: LocaleKeys.settings_about_check_updates_desc.tr(),
           onKeyLeft: widget.onKeyLeft,
           onKeyUp: onKeyUp,
           onKeyDown: onKeyDown,

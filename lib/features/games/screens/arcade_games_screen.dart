@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -185,7 +186,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                           panelCount: 1,
                           activeIndex: 0,
                           colors: [scheme.surface.withValues(alpha: 0.8)],
-                          titles: ['arcade_action_select_game'.tr()],
+                          titles: [LocaleKeys.arcade_action_select_game.tr()],
                           icons: const [MoaiIcons.arcadeRomItem],
                           onPanelTap: (_) {},
                           tabBuilder: (index, isExpanded) {
@@ -200,7 +201,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                                   RotatedBox(
                                     quarterTurns: 3,
                                     child: Text(
-                                      'arcade_action_select_game'.tr(),
+                                      LocaleKeys.arcade_action_select_game.tr(),
                                       maxLines: 1,
                                       softWrap: false,
                                       overflow: TextOverflow.fade,
@@ -236,8 +237,8 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                                     children: [
                                       Expanded(
                                         child: TvPanelHeader(
-                                          title: 'arcade_games_title'.tr(),
-                                          subtitle: 'arcade_games_subtitle'.tr(),
+                                          title: LocaleKeys.arcade_games_title.tr(),
+                                          subtitle: LocaleKeys.arcade_games_subtitle.tr(),
                                           padding: EdgeInsets.zero,
                                         ),
                                       ),
@@ -246,9 +247,9 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                                         TvMetaPill(
                                           icon: MoaiIcons.arcadeRomInstalledBadge,
                                           label: installedCount == 1
-                                              ? 'arcade_installed_count_single'
+                                              ? LocaleKeys.arcade_installed_count_single
                                                   .tr(namedArgs: {'count': '1'})
-                                              : 'arcade_installed_count_plural'
+                                              : LocaleKeys.arcade_installed_count_plural
                                                   .tr(namedArgs: {
                                                   'count': installedCount.toString(),
                                                 }),
@@ -329,9 +330,9 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
           child: TvTextField(
             controller: _urlController,
             focusNode: _urlFocus,
-            label: 'arcade_input_url_label'.tr(),
-            hint: 'arcade_input_url_hint'.tr(),
-            doneLabel: 'arcade_input_url_done'.tr(),
+            label: LocaleKeys.arcade_input_url_label.tr(),
+            hint: LocaleKeys.arcade_input_url_hint.tr(),
+            doneLabel: LocaleKeys.arcade_input_url_done.tr(),
             leadingIcon: MoaiIcons.tvSourcesUrlInput,
             onSubmitted: (val) => _loadData(),
             onFocusLeft: _backFocusNode.requestFocus,
@@ -345,7 +346,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
         const SizedBox(width: 10),
         TvFocusButton(
           focusNode: _refreshFocus,
-          label: 'arcade_btn_refresh'.tr(),
+          label: LocaleKeys.common_update.tr(),
           icon: MoaiIcons.arcadeCatalogRefresh,
           height: 60,
           radius: 30,
@@ -380,7 +381,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  'arcade_installed_column_title'.tr(),
+                  LocaleKeys.arcade_installed_column_title.tr(),
                   style: MoaiText.body(
                     context,
                     color: scheme.onSurfaceVariant,
@@ -394,7 +395,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                     ? TvEmptyStateCard(
                         focusNode: _emptyFocusNode,
                         icon: MoaiIcons.arcadeRomItem,
-                        message: 'arcade_empty_installed_msg'.tr(),
+                        message: LocaleKeys.arcade_empty_installed_msg.tr(),
                         onFocusLeft: _backFocusNode.requestFocus,
                         onFocusUp: _urlFocus.requestFocus,
                         onFocusRight: _focusCatalogList,
@@ -469,7 +470,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  'arcade_available_column_title'.tr(),
+                  LocaleKeys.arcade_available_column_title.tr(),
                   style: MoaiText.body(
                     context,
                     color: scheme.onSurfaceVariant,
@@ -490,7 +491,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                         ? Center(
                             child: Text(
                               widget.romManager.errorMessage?.tr() ??
-                                  'arcade_catalog_empty'.tr(),
+                                  LocaleKeys.arcade_catalog_empty.tr(),
                               style:
                                   MoaiText.body(context, color: scheme.error),
                             ),
@@ -568,9 +569,9 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                                           isInstalled: item.isInstalled,
                                           isFocused: isFocused,
                                           downloadProgress: progress,
-                                          installLabel: 'arcade_btn_install'.tr(),
+                                          installLabel: LocaleKeys.common_install.tr(),
                                           installedLabel:
-                                              'arcade_badge_installed'.tr(),
+                                              LocaleKeys.common_installed.tr(),
                                           onPressed:
                                               item.isInstalled || isDownloading
                                                   ? null
@@ -643,11 +644,11 @@ class _InstalledRomTileState extends State<_InstalledRomTile> {
       minHeight: 0,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       label: widget.item.name,
-      description: '${widget.item.sizeLabel} · ${'arcade_ready_to_play'.tr()}',
+      description: '${widget.item.sizeLabel} · ${LocaleKeys.arcade_ready_to_play.tr()}',
       icon: MoaiIcons.arcadeRomCard,
       trailing: _IconButtonAction(
         focusNode: widget.deleteFocus,
-        tooltip: 'arcade_delete_btn'.tr(),
+        tooltip: LocaleKeys.common_delete.tr(),
         icon: MoaiIcons.arcadeRomDelete,
         onPressed: widget.onDelete,
         parentFocused: isFocused,

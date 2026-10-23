@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -123,7 +124,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
       await _requestPermission();
       if (!_hasPermission) {
         setState(() {
-          _errorMessage = 'mic_test_perm_denied'.tr();
+          _errorMessage = LocaleKeys.mic_test_perm_denied.tr();
         });
         return;
       }
@@ -142,7 +143,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
       _waveController.stop();
       setState(() {
         _isRecording = false;
-        _errorMessage = 'mic_test_err_start'.tr(
+        _errorMessage = LocaleKeys.mic_test_err_start.tr(
           namedArgs: {'error': '${res['error'] ?? ''}'},
         );
       });
@@ -186,7 +187,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
     } else {
       setState(() {
         _isRecording = false;
-        _errorMessage = 'mic_test_err_stop'.tr(
+        _errorMessage = LocaleKeys.mic_test_err_stop.tr(
           namedArgs: {'error': '${res['error'] ?? ''}'},
         );
       });
@@ -210,7 +211,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
         _waveController.stop();
         setState(() {
           _isPlaying = false;
-          _errorMessage = 'mic_test_err_play'.tr(
+          _errorMessage = LocaleKeys.mic_test_err_play.tr(
             namedArgs: {'error': '${res['error'] ?? ''}'},
           );
         });
@@ -235,8 +236,8 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
           : _isPlaying
               ? scheme.onTertiary
               : scheme.onPrimaryContainer,
-      title: 'mic_test_title'.tr(),
-      subtitle: 'mic_test_subtitle'.tr(),
+      title: LocaleKeys.mic_test_title.tr(),
+      subtitle: LocaleKeys.mic_test_subtitle.tr(),
       content: _isLoading
           ? const Padding(
               padding: EdgeInsets.symmetric(vertical: 36),
@@ -285,7 +286,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
       actions: [
         TvDialogButton(
           focusNode: _closeFocus,
-          label: 'common_close'.tr(),
+          label: LocaleKeys.common_close.tr(),
           onKeyUp: () {
             if (_recordedPath != null && !_isRecording) {
               _playFocus.requestFocus();
@@ -316,7 +317,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'mic_test_tip'.tr(),
+              LocaleKeys.mic_test_tip.tr(),
               style: MoaiText.body(
                 context,
                 fontSize: 12,
@@ -382,7 +383,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
         ),
         const SizedBox(height: 12),
         Text(
-          'mic_test_ready_hint'.tr(),
+          LocaleKeys.mic_test_ready_hint.tr(),
           style: MoaiText.body(
             context,
             fontSize: 13,
@@ -394,7 +395,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
         _buildActionButton(
           focusNode: _recordFocus,
           icon: MoaiIcons.fiberManualRecord,
-          label: 'mic_test_btn_record'.tr(),
+          label: LocaleKeys.mic_test_btn_record.tr(),
           isPrimary: true,
           onPressed: _startRecording,
           onKeyDown: _closeFocus.requestFocus,
@@ -432,7 +433,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
         _buildWaveVisualizer(scheme, color: scheme.error),
         const SizedBox(height: 10),
         Text(
-          'mic_test_recording_active'.tr(),
+          LocaleKeys.mic_test_recording_active.tr(),
           style: MoaiText.body(
             context,
             fontSize: 12.5,
@@ -443,7 +444,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
         _buildActionButton(
           focusNode: _recordFocus,
           icon: MoaiIcons.stopCircleOutlined,
-          label: 'mic_test_btn_stop'.tr(
+          label: LocaleKeys.mic_test_btn_stop.tr(
             namedArgs: {'seconds': '$_recordSeconds'},
           ),
           customBg: scheme.error,
@@ -475,7 +476,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  'mic_test_badge_ready'.tr(),
+                  LocaleKeys.mic_test_badge_ready.tr(),
                   style: MoaiText.body(
                     context,
                     fontSize: 11,
@@ -502,7 +503,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'mic_test_badge_amplified'.tr(),
+                      LocaleKeys.mic_test_badge_amplified.tr(),
                       style: MoaiText.body(
                         context,
                         fontSize: 11,
@@ -520,7 +521,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
             _buildWaveVisualizer(scheme, color: scheme.tertiary),
             const SizedBox(height: 8),
             Text(
-              'mic_test_playing_active'.tr(),
+              LocaleKeys.mic_test_playing_active.tr(),
               style: MoaiText.body(
                 context,
                 fontSize: 12,
@@ -530,7 +531,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
             ),
           ] else ...[
             Text(
-              'mic_test_success_desc'.tr(namedArgs: {'kb': kbStr}),
+              LocaleKeys.mic_test_success_desc.tr(namedArgs: {'kb': kbStr}),
               style: MoaiText.body(
                 context,
                 fontSize: 12,
@@ -543,7 +544,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
           Icon(MoaiIcons.warningAmberRounded, size: 36, color: scheme.error),
           const SizedBox(height: 6),
           Text(
-            'mic_test_empty_desc'.tr(
+            LocaleKeys.mic_test_empty_desc.tr(
               namedArgs: {'bytes': '$_recordedBytes'},
             ),
             style: MoaiText.body(
@@ -564,8 +565,8 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
                   focusNode: _playFocus,
                   icon: _isPlaying ? MoaiIcons.stop : MoaiIcons.volumeUpOutlined,
                   label: _isPlaying
-                      ? 'mic_test_btn_stop_play'.tr()
-                      : 'mic_test_btn_play'.tr(),
+                      ? LocaleKeys.mic_test_btn_stop_play.tr()
+                      : LocaleKeys.mic_test_btn_play.tr(),
                   isPrimary: true,
                   customBg: _isPlaying ? scheme.tertiary : null,
                   customFg: _isPlaying ? scheme.onTertiary : null,
@@ -580,7 +581,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
               child: _buildActionButton(
                 focusNode: _rerecordFocus,
                 icon: MoaiIcons.refreshOutlined,
-                label: 'mic_test_btn_rerecord'.tr(),
+                label: LocaleKeys.mic_test_btn_rerecord.tr(),
                 isPrimary: !isAudioValid,
                 onPressed: _startRecording,
                 onKeyLeft: () {
@@ -636,7 +637,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
 
     final infoText = devNames.isNotEmpty
         ? devNames.join(', ')
-        : 'mic_test_no_devices'.tr();
+        : LocaleKeys.mic_test_no_devices.tr();
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -654,7 +655,9 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '${'mic_test_devices_header'.tr()}: $infoText',
+              LocaleKeys.mic_test_devices_header.tr(
+                namedArgs: {'info': infoText},
+              ),
               style: MoaiText.body(
                 context,
                 fontSize: 11,

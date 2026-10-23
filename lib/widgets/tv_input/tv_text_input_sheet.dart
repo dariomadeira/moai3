@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -17,7 +18,7 @@ Future<String?> showTvTextInput(
   // Root navigator: el dialog queda por encima de GoRouter/Home.
   return showGeneralDialog<String>(
     context: context,
-    barrierLabel: 'keyboard_close_barrier'.tr(),
+    barrierLabel: LocaleKeys.keyboard_close_barrier.tr(),
     barrierColor: Colors.black.withValues(alpha: 0.4),
     transitionDuration: const Duration(milliseconds: 180),
     pageBuilder: (context, animation, secondaryAnimation) {
@@ -26,7 +27,7 @@ Future<String?> showTvTextInput(
         initialValue: initialValue,
         keyboardType: keyboardType,
         hint: hint,
-        doneLabel: doneLabel ?? 'keyboard_done'.tr(),
+        doneLabel: doneLabel ?? LocaleKeys.keyboard_done.tr(),
         maxLength: maxLength,
       );
     },

@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:easy_localization/easy_localization.dart'
+    show StringTranslateExtension;
 import 'package:flutter/material.dart';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:flutter/services.dart';
 
 /// Widget de Flutter que integra la vista nativa de Android (SurfaceView)
@@ -30,10 +33,10 @@ class ArcadeViewContainer extends StatelessWidget {
       );
     }
 
-    return const Center(
+    return Center(
       child: Text(
-        'El emulador de Arcade requiere un dispositivo Android.',
-        style: TextStyle(color: Colors.white70),
+        LocaleKeys.arcade_requires_android.tr(),
+        style: const TextStyle(color: Colors.white70),
       ),
     );
   }

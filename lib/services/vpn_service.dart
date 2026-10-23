@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/platform/platform_channels.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -153,7 +154,7 @@ class VpnService {
   }) async {
     await initialize();
     if (_androidVpnPermissionGranted == true) return;
-    onStatusUpdate?.call('loading_permission_required');
+    onStatusUpdate?.call(LocaleKeys.loading_permission_required);
   }
 
   /// Conecta a un nodo de México usando los perfiles dedicados garantizados de Salvavida (Saltamontes).
@@ -183,7 +184,7 @@ class VpnService {
     ];
 
     final targetProfile = profiles[nodeIndex.clamp(0, profiles.length - 1)];
-    onStatusUpdate?.call('loading_init_services');
+    onStatusUpdate?.call(LocaleKeys.loading_init_services);
 
     String? ovpnConfig;
     try {
@@ -225,7 +226,7 @@ class VpnService {
     );
     ovpnConfig = _ensureDataCiphers(ovpnConfig);
 
-    onStatusUpdate?.call('loading_connecting_server');
+    onStatusUpdate?.call(LocaleKeys.loading_connecting_server);
 
     // Escuchar etapas ANTES de connect. El plugin, si necesita permiso, muestra
     // el diálogo y NO completa el Future de connect; al aceptar, MainActivity
@@ -281,7 +282,7 @@ class VpnService {
           connectionAttemptStarted = true;
           attemptStartedAt = DateTime.now();
           permissionDeadline.cancel();
-          onStatusUpdate?.call('loading_connecting_server');
+          onStatusUpdate?.call(LocaleKeys.loading_connecting_server);
           armConnectDeadline();
           debugPrint(
             '🔒 [VPN] Handshake iniciado '
@@ -327,7 +328,7 @@ class VpnService {
     if (_connectCancelled) return false;
 
     if (connected) {
-      onStatusUpdate?.call('loading_verifying_connection');
+      onStatusUpdate?.call(LocaleKeys.loading_verifying_connection);
       final verified = await verifyConnection();
       debugPrint(
         '🔒 [VPN] Verificación México: $verified '

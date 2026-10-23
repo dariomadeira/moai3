@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -81,7 +82,7 @@ class TvPinDialog extends StatefulWidget {
         if (context.mounted) {
           MoaiSnackBar.show(
             context,
-            message: 'parental_adult_unlocked'.tr(),
+            message: LocaleKeys.parental_adult_unlocked.tr(),
             icon: MoaiIcons.lockOpen,
           );
         }
@@ -95,8 +96,8 @@ class TvPinDialog extends StatefulWidget {
       barrierColor: Colors.black.withValues(alpha: 0.75),
       pageBuilder: (context, _, _) => TvPinDialog(
         tvSettings: tvSettings,
-        customTitle: 'parental_pin_title_enter'.tr(),
-        customSubtitle: 'settings_tv_adult_content_desc'.tr(),
+        customTitle: LocaleKeys.parental_pin_title_enter.tr(),
+        customSubtitle: LocaleKeys.settings_tv_adult_content_desc.tr(),
       ),
     );
 
@@ -104,7 +105,7 @@ class TvPinDialog extends StatefulWidget {
       tvSettings.unlockAdultForSession();
       MoaiSnackBar.show(
         context,
-        message: 'parental_adult_unlocked'.tr(),
+        message: LocaleKeys.parental_adult_unlocked.tr(),
         icon: MoaiIcons.lockOpen,
       );
       return true;
@@ -129,7 +130,7 @@ class TvPinDialog extends StatefulWidget {
     if (success == true && context.mounted) {
       MoaiSnackBar.show(
         context,
-        message: 'parental_pin_created_success'.tr(),
+        message: LocaleKeys.parental_pin_created_success.tr(),
         icon: MoaiIcons.checkCircleOutline,
       );
       return true;
@@ -158,7 +159,7 @@ class TvPinDialog extends StatefulWidget {
     if (success == true && context.mounted) {
       MoaiSnackBar.show(
         context,
-        message: 'parental_pin_changed_success'.tr(),
+        message: LocaleKeys.parental_pin_changed_success.tr(),
         icon: MoaiIcons.checkCircleOutline,
       );
       return true;
@@ -246,30 +247,30 @@ class _TvPinDialogState extends State<TvPinDialog>
   String get _currentTitle {
     switch (widget.mode) {
       case TvPinDialogMode.verify:
-        return widget.customTitle ?? 'parental_pin_title_enter'.tr();
+        return widget.customTitle ?? LocaleKeys.parental_pin_title_enter.tr();
       case TvPinDialogMode.create:
         return _currentStep == 1
-            ? 'parental_pin_title_create'.tr()
-            : 'parental_pin_title_confirm'.tr();
+            ? LocaleKeys.parental_pin_title_create.tr()
+            : LocaleKeys.parental_pin_title_confirm.tr();
       case TvPinDialogMode.change:
-        if (_currentStep == 1) return 'parental_pin_title_current'.tr();
-        if (_currentStep == 2) return 'parental_pin_title_create'.tr();
-        return 'parental_pin_title_confirm'.tr();
+        if (_currentStep == 1) return LocaleKeys.parental_pin_title_current.tr();
+        if (_currentStep == 2) return LocaleKeys.parental_pin_title_create.tr();
+        return LocaleKeys.parental_pin_title_confirm.tr();
     }
   }
 
   String get _currentSubtitle {
     switch (widget.mode) {
       case TvPinDialogMode.verify:
-        return widget.customSubtitle ?? 'parental_pin_create_subtitle'.tr();
+        return widget.customSubtitle ?? LocaleKeys.parental_pin_create_subtitle.tr();
       case TvPinDialogMode.create:
         return _currentStep == 1
-            ? 'parental_pin_create_subtitle'.tr()
-            : 'parental_pin_confirm_subtitle'.tr();
+            ? LocaleKeys.parental_pin_create_subtitle.tr()
+            : LocaleKeys.parental_pin_confirm_subtitle.tr();
       case TvPinDialogMode.change:
-        if (_currentStep == 1) return 'parental_pin_current_subtitle'.tr();
-        if (_currentStep == 2) return 'parental_pin_create_subtitle'.tr();
-        return 'parental_pin_confirm_subtitle'.tr();
+        if (_currentStep == 1) return LocaleKeys.parental_pin_current_subtitle.tr();
+        if (_currentStep == 2) return LocaleKeys.parental_pin_create_subtitle.tr();
+        return LocaleKeys.parental_pin_confirm_subtitle.tr();
     }
   }
 
@@ -316,14 +317,14 @@ class _TvPinDialogState extends State<TvPinDialog>
           if (ok) {
             Navigator.of(context).pop(entered);
           } else {
-            _triggerError('parental_pin_error_incorrect'.tr());
+            _triggerError(LocaleKeys.parental_pin_error_incorrect.tr());
           }
         } else if (widget.tvSettings != null) {
           final ok = widget.tvSettings!.verifyPin(entered);
           if (ok) {
             Navigator.of(context).pop(true);
           } else {
-            _triggerError('parental_pin_error_incorrect'.tr());
+            _triggerError(LocaleKeys.parental_pin_error_incorrect.tr());
           }
         } else {
           Navigator.of(context).pop(entered);
@@ -345,7 +346,7 @@ class _TvPinDialogState extends State<TvPinDialog>
             }
             if (mounted) Navigator.of(context).pop(true);
           } else {
-            _triggerError('parental_pin_error_mismatch'.tr());
+            _triggerError(LocaleKeys.parental_pin_error_mismatch.tr());
             setState(() {
               _currentStep = 1;
               _stagedPin = '';
@@ -364,7 +365,7 @@ class _TvPinDialogState extends State<TvPinDialog>
               _errorMessage = null;
             });
           } else {
-            _triggerError('parental_pin_error_incorrect'.tr());
+            _triggerError(LocaleKeys.parental_pin_error_incorrect.tr());
           }
         } else if (_currentStep == 2) {
           setState(() {
@@ -380,7 +381,7 @@ class _TvPinDialogState extends State<TvPinDialog>
             }
             if (mounted) Navigator.of(context).pop(true);
           } else {
-            _triggerError('parental_pin_error_mismatch'.tr());
+            _triggerError(LocaleKeys.parental_pin_error_mismatch.tr());
             setState(() {
               _currentStep = 2;
               _stagedPin = '';
@@ -469,7 +470,7 @@ class _TvPinDialogState extends State<TvPinDialog>
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              'parental_pin_step'.tr(args: ['$_currentStep', '$_totalSteps']),
+              LocaleKeys.parental_pin_step.tr(args: ['$_currentStep', '$_totalSteps']),
               style: MoaiText.body(
                 context,
                 fontSize: 11,
@@ -579,7 +580,7 @@ class _TvPinDialogState extends State<TvPinDialog>
         actions: [
           TvDialogButton(
             focusNode: _cancelBtnFocus,
-            label: 'common_cancel'.tr(),
+            label: LocaleKeys.common_cancel.tr(),
             onKeyUp: () => _focusGrid[3][1].requestFocus(),
             onPressed: () => Navigator.of(context).pop(),
           ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -501,7 +502,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                           padding: const EdgeInsets.only(right: 6),
                           child: _HeaderButton(
                             icon: MoaiIcons.syncOutlined,
-                            tooltip: 'calendar_refresh'.tr(),
+                            tooltip: LocaleKeys.calendar_refresh.tr(),
                             isFocused: isFocused,
                             isLoading: calendar.isLoading,
                             onTap: () {
@@ -516,7 +517,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                           padding: const EdgeInsets.only(right: 6),
                           child: _HeaderButton(
                             icon: MoaiIcons.chevronLeft,
-                            tooltip: 'calendar_week_nav_prev'.tr(),
+                            tooltip: LocaleKeys.calendar_week_nav_prev.tr(),
                             isFocused: isFocused,
                             onTap: () {
                               _headerActionIndex = idx;
@@ -530,7 +531,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                           padding: const EdgeInsets.only(right: 6),
                           child: _HeaderButton(
                             icon: MoaiIcons.todayOutlined,
-                            label: 'calendar_week_current'.tr(),
+                            label: LocaleKeys.calendar_week_current.tr(),
                             isFocused: isFocused,
                             onTap: () {
                               _headerActionIndex = idx;
@@ -542,7 +543,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                       case _HeaderAction.next:
                         return _HeaderButton(
                           icon: MoaiIcons.chevronRight,
-                          tooltip: 'calendar_week_nav_next'.tr(),
+                          tooltip: LocaleKeys.calendar_week_nav_next.tr(),
                           isFocused: isFocused,
                           onTap: () {
                             _headerActionIndex = idx;
@@ -1025,7 +1026,7 @@ class _DayColumn extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'calendar_no_events_day'.tr(),
+              LocaleKeys.calendar_no_events_day.tr(),
               textAlign: TextAlign.center,
               style: MoaiText.body(
                 context,
@@ -1067,7 +1068,7 @@ class _CalendarEventGridCard extends StatelessWidget {
       event.subscriptionId,
     );
 
-    final finishedLabel = 'calendar_status_finished'.tr();
+    final finishedLabel = LocaleKeys.calendar_status_finished.tr();
 
     // Paleta de colores adaptativa según estado y foco con gradiente y borde sutil
     final Color baseColor;
@@ -1194,7 +1195,7 @@ class _CalendarEventGridCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'calendar_status_live'.tr(),
+                            LocaleKeys.calendar_status_live.tr(),
                             style: MoaiText.body(
                               context,
                               fontSize: 8,
@@ -1220,7 +1221,7 @@ class _CalendarEventGridCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'calendar_status_upcoming_short'.tr(),
+                            LocaleKeys.calendar_status_upcoming_short.tr(),
                             style: MoaiText.body(
                               context,
                               fontSize: 8,
@@ -1335,20 +1336,20 @@ class _CalendarEventDialogContentState
       children: [
         TvInfoTile(
           icon: MoaiIcons.calendarDialogTime,
-          label: 'calendar_event_time'.tr(),
+          label: LocaleKeys.calendar_event_time.tr(),
           description: '${event.formattedDate} • ${event.formattedTime} hs',
         ),
         const SizedBox(height: 8),
         TvInfoTile(
           icon: MoaiIcons.calendarDialogSport,
-          label: 'calendar_event_sport'.tr(),
+          label: LocaleKeys.calendar_event_sport.tr(),
           description: event.sessionType?.tr() ?? event.competition,
         ),
         if (event.broadcaster != null && event.broadcaster!.isNotEmpty) ...[
           const SizedBox(height: 8),
           TvInfoTile(
             icon: MoaiIcons.calendarDialogBroadcast,
-            label: 'calendar_event_broadcaster'.tr(),
+            label: LocaleKeys.calendar_event_broadcaster.tr(),
             description: event.broadcaster!,
           ),
         ],
@@ -1429,7 +1430,7 @@ class _CalendarEventDialogContentState
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                'calendar_status_live'.tr(),
+                LocaleKeys.calendar_status_live.tr(),
                 style: MoaiText.body(
                   context,
                   fontSize: 9.5,
@@ -1450,7 +1451,7 @@ class _CalendarEventDialogContentState
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      'calendar_status_finished'.tr(),
+                      LocaleKeys.calendar_status_finished.tr(),
                       style: MoaiText.body(
                         context,
                         fontSize: 9.5,
@@ -1470,7 +1471,7 @@ class _CalendarEventDialogContentState
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      'calendar_status_upcoming_short'.tr(),
+                      LocaleKeys.calendar_status_upcoming_short.tr(),
                       style: MoaiText.body(
                         context,
                         fontSize: 9.5,
@@ -1495,7 +1496,7 @@ class _CalendarEventDialogContentState
           },
           child: TvDialogButton(
             focusNode: _closeFocusNode,
-            label: 'calendar_dialog_close'.tr(),
+            label: LocaleKeys.common_close.tr(),
             autofocus: !widget.isLive || !hasChannels,
             onPressed: () => Navigator.of(context).pop(),
           ),
@@ -1512,7 +1513,7 @@ Future<void> showCalendarEventDetails(
 }) async {
   await showTvGeneralDialog<void>(
     context: context,
-    barrierLabel: 'calendar_dialog_close'.tr(),
+    barrierLabel: LocaleKeys.common_close.tr(),
     builder: (dialogContext) {
       return _CalendarEventDialogContent(
         event: event,

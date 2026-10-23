@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -36,7 +37,7 @@ class ViewerErrorDisplay extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'player_error_retry_hint'.tr(),
+                LocaleKeys.player_error_retry_hint.tr(),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

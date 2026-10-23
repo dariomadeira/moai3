@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:moai3/models/friend_info.dart';
@@ -72,7 +73,7 @@ class WatchPartyService {
           })
           .eq('device_id', deviceId);
     } catch (e) {
-      throw const WatchPartyException('nickname_save_error');
+      throw const WatchPartyException(LocaleKeys.nickname_save_error);
     }
   }
 
@@ -118,7 +119,7 @@ class WatchPartyService {
       return friendsList;
     } catch (e) {
       if (e is WatchPartyException) rethrow;
-      throw const WatchPartyException('friends_load_error');
+      throw const WatchPartyException(LocaleKeys.friends_load_error);
     }
   }
 
@@ -183,7 +184,7 @@ class WatchPartyService {
       return requestsList;
     } catch (e) {
       if (e is WatchPartyException) rethrow;
-      throw const WatchPartyException('friends_requests_load_error');
+      throw const WatchPartyException(LocaleKeys.friends_requests_load_error);
     }
   }
 
@@ -202,7 +203,7 @@ class WatchPartyService {
     // RB-05: Un usuario no puede agregarse a sí mismo
     final myNormalizedCode = myUserCode.trim().toUpperCase();
     if (normalizedCode == myNormalizedCode) {
-      throw const WatchPartyException('friend_add_error_self');
+      throw const WatchPartyException(LocaleKeys.friend_add_error_self);
     }
 
     try {
@@ -216,14 +217,14 @@ class WatchPartyService {
           .maybeSingle();
 
       if (targetDevice == null) {
-        throw const WatchPartyException('friend_add_error_not_found');
+        throw const WatchPartyException(LocaleKeys.friend_add_error_not_found);
       }
 
       final friendDeviceId = targetDevice['device_id'] as String;
 
       // Doble verificación por si deviceId coincide aunque el código fuera alterado
       if (friendDeviceId == deviceId) {
-        throw const WatchPartyException('friend_add_error_self');
+        throw const WatchPartyException(LocaleKeys.friend_add_error_self);
       }
 
       // RB-08: Verificar si ya estaba agregado
@@ -235,7 +236,7 @@ class WatchPartyService {
           .maybeSingle();
 
       if (existingFriendship != null) {
-        throw const WatchPartyException('friend_add_error_already_added');
+        throw const WatchPartyException(LocaleKeys.friend_add_error_already_added);
       }
 
       // Insertar en 'device_friends'
@@ -247,7 +248,7 @@ class WatchPartyService {
       return FriendInfo.fromDeviceJson(targetDevice);
     } catch (e) {
       if (e is WatchPartyException) rethrow;
-      throw const WatchPartyException('friend_add_error_generic');
+      throw const WatchPartyException(LocaleKeys.friend_add_error_generic);
     }
   }
 
@@ -264,7 +265,7 @@ class WatchPartyService {
           .eq('device_id', deviceId)
           .eq('friend_device_id', friendDeviceId);
     } catch (e) {
-      throw const WatchPartyException('friends_delete_error');
+      throw const WatchPartyException(LocaleKeys.friends_delete_error);
     }
   }
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -160,17 +161,17 @@ class _HomeScreenState extends State<HomeScreen> {
           if (!mounted) return;
           MoaiSnackBar.show(
             context,
-            message: 'arcade_invite_received'.tr(
+            message: LocaleKeys.arcade_invite_received.tr(
               namedArgs: {'name': invite.hostNickname, 'game': invite.romName},
             ),
             icon: MoaiIcons.sportsEsports,
-            hint: 'arcade_invite_hint_accept_reject'.tr(),
+            hint: LocaleKeys.arcade_invite_hint_accept_reject.tr(),
             onAction: () async {
               final identity = context.read<DeviceIdentityService>();
               final myDeviceId = identity.getOrCreateDeviceId();
               final myNickname =
                   context.read<WatchPartyProvider?>()?.myNickname ??
-                  'arcade_default_player_2'.tr();
+                  LocaleKeys.arcade_default_player_2.tr();
 
               await ArcadeNetplayService.instance.acceptIncomingInvite(
                 myDeviceId: myDeviceId,
@@ -296,7 +297,7 @@ class _HomeScreenState extends State<HomeScreen> {
         event,
       ], leadMinutes: lead),
       icon: CalendarProvider.getLiveEventsIcon([event]),
-      hint: 'calendar_live_ok_hint'.tr(),
+      hint: LocaleKeys.calendar_live_ok_hint.tr(),
       onAction: () => _openLiveSnackEvent(event),
       duration: context.read<CalendarProvider>().liveSnackDuration,
     );
@@ -629,7 +630,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             MoaiSnackBar.show(
                                               context,
                                               message:
-                                                  'arcade_no_game_installed_snack'
+                                                  LocaleKeys.arcade_no_game_installed_snack
                                                       .tr(),
                                               icon: MoaiIcons.infoOutline,
                                             );
@@ -666,10 +667,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ? HomeMoviesArea(
                                         key: _featuredAreaKey,
                                         panelTitle:
-                                            'movies_panel_featured_title'.tr(),
+                                            LocaleKeys.movies_panel_featured_title.tr(),
                                         accordionIcon:
                                             MoaiIcons.tvAccordionFeatured,
-                                        emptyMessage: 'movies_empty_featured'
+                                        emptyMessage: LocaleKeys.movies_empty_featured
                                             .tr(),
                                         onExitLeft: _focusRail,
                                       )
@@ -678,11 +679,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                         key: _moviesAreaKey,
                                         section: FeaturedMoviesProvider
                                             .sectionMovies,
-                                        panelTitle: 'movies_panel_movies_title'
+                                        panelTitle: LocaleKeys.movies_panel_movies_title
                                             .tr(),
                                         accordionIcon:
                                             MoaiIcons.tvAccordionMovies,
-                                        emptyMessage: 'movies_empty_movies'
+                                        emptyMessage: LocaleKeys.movies_empty_movies
                                             .tr(),
                                         onExitLeft: _focusRail,
                                       )
@@ -691,11 +692,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                         key: _seriesAreaKey,
                                         section: FeaturedMoviesProvider
                                             .sectionSeries,
-                                        panelTitle: 'movies_panel_series_title'
+                                        panelTitle: LocaleKeys.movies_panel_series_title
                                             .tr(),
                                         accordionIcon:
                                             MoaiIcons.tvAccordionSeries,
-                                        emptyMessage: 'movies_empty_series'
+                                        emptyMessage: LocaleKeys.movies_empty_series
                                             .tr(),
                                         onExitLeft: _focusRail,
                                       )

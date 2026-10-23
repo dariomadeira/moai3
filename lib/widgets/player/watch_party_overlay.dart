@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -171,7 +172,7 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
     final scheme = Theme.of(context).colorScheme;
 
     final String? displayNotification = _activeNotificationMessage != null
-        ? 'watch_party_friend_joined'
+        ? LocaleKeys.watch_party_friend_joined
             .tr(namedArgs: {'name': _activeNotificationMessage!})
         : null;
 
@@ -428,9 +429,9 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
             Flexible(
               child: Text(
                 speakerName != null
-                    ? 'watch_party_friend_speaking'
+                    ? LocaleKeys.watch_party_friend_speaking
                         .tr(namedArgs: {'name': speakerName})
-                    : 'watch_party_listening_audio'.tr(),
+                    : LocaleKeys.watch_party_listening_audio.tr(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: MoaiText.body(

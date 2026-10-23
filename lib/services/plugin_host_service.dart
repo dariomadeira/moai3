@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/platform/platform_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -151,7 +152,7 @@ class PluginHostService {
     if (map == null) {
       throw PlatformException(
         code: 'PLUGIN_INSTALL_NULL',
-        message: 'plugins_install_empty',
+        message: LocaleKeys.plugins_install_empty,
       );
     }
     return PluginSource.fromMap(map);
@@ -165,7 +166,7 @@ class PluginHostService {
     if (map == null) {
       throw PlatformException(
         code: 'PLUGIN_UPDATE_NULL',
-        message: 'plugins_update_empty',
+        message: LocaleKeys.plugins_update_empty,
       );
     }
     return PluginSource.fromMap(map);
@@ -191,7 +192,7 @@ class PluginHostService {
     if (map == null) {
       throw PlatformException(
         code: 'PLUGIN_RESOLVE_NULL',
-        message: 'plugins_resolve_empty',
+        message: LocaleKeys.plugins_resolve_empty,
       );
     }
     return PluginResolveResult.fromMap(map);
@@ -266,7 +267,7 @@ class PluginHostController extends ChangeNotifier {
         return;
       }
     }
-    _error = 'plugins_host_error';
+    _error = LocaleKeys.plugins_host_error;
     _errorNamedArgs = {'error': '$error'};
   }
 

@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/services/calendar/argentina_time.dart';
 
 enum CalendarEventStatus {
@@ -31,12 +32,12 @@ class CalendarEvent {
   }) : _explicitStatus = status;
 
   static const _practiceSessions = {
-    'f1_type_p1',
-    'f1_type_p2',
-    'f1_type_p3',
-    'f1_type_practices',
+    LocaleKeys.f1_type_p1,
+    LocaleKeys.f1_type_p2,
+    LocaleKeys.f1_type_p3,
+    LocaleKeys.f1_type_practices,
   };
-  static const _sprintSessions = {'f1_type_sprint', 'f1_type_sprint_shootout'};
+  static const _sprintSessions = {LocaleKeys.f1_type_sprint, LocaleKeys.f1_type_sprint_shootout};
 
   /// Retorna la duración estimada del evento según el deporte y tipo de sesión.
   ///
@@ -53,7 +54,7 @@ class CalendarEvent {
           tit.contains('practice')) {
         return const Duration(minutes: 75); // 60 min de sesión + margen
       }
-      if (sessionType == 'f1_type_qualy' ||
+      if (sessionType == LocaleKeys.f1_type_qualy ||
           tit.contains('clasificación') ||
           tit.contains('qualy')) {
         return const Duration(minutes: 75); // Q1+Q2+Q3 ~60 min + margen

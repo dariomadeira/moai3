@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/platform/platform_channels.dart';
 import 'dart:async';
 import 'dart:io';
@@ -75,7 +76,7 @@ class DoubleBackExitScopeState extends State<DoubleBackExitScope> {
     _lastBackTime = nowAfterIntercept;
     MoaiSnackBar.show(
       context,
-      message: 'home_exit_double_back'.tr(),
+      message: LocaleKeys.home_exit_double_back.tr(),
       icon: MoaiIcons.exitToAppOutlined,
       bottomMargin: _exitSnackBottomMargin,
       duration: widget.exitWindow,

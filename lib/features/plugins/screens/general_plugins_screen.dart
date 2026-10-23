@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -56,8 +57,8 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
   List<_GeneralPluginItem> get _availablePlugins => [
         _GeneralPluginItem(
           id: 'arcade_fbneo',
-          name: 'plugins_arcade_available_name'.tr(),
-          description: 'plugins_arcade_available_desc'.tr(),
+          name: LocaleKeys.plugins_arcade_available_name.tr(),
+          description: LocaleKeys.plugins_arcade_available_desc.tr(),
           isArcade: true,
         ),
       ];
@@ -198,7 +199,7 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                           panelCount: 1,
                           activeIndex: 0,
                           colors: [scheme.surface.withValues(alpha: 0.8)],
-                          titles: ['settings_general_plugins_title'.tr()],
+                          titles: [LocaleKeys.settings_general_plugins_title.tr()],
                           icons: const [MoaiIcons.tvViewerPillPlugin],
                           onPanelTap: (_) {},
                           tabBuilder: (index, isExpanded) {
@@ -213,7 +214,7 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                                   RotatedBox(
                                     quarterTurns: 3,
                                     child: Text(
-                                      'settings_general_plugins_title'.tr(),
+                                      LocaleKeys.settings_general_plugins_title.tr(),
                                       maxLines: 1,
                                       softWrap: false,
                                       overflow: TextOverflow.fade,
@@ -249,8 +250,8 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                                     children: [
                                       Expanded(
                                         child: TvPanelHeader(
-                                          title: 'plugins_admin_title'.tr(),
-                                          subtitle: 'plugins_admin_subtitle'.tr(),
+                                          title: LocaleKeys.plugins_admin_title.tr(),
+                                          subtitle: LocaleKeys.plugins_admin_subtitle.tr(),
                                           padding: EdgeInsets.zero,
                                         ),
                                       ),
@@ -258,7 +259,7 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                                         const SizedBox(width: 12),
                                         TvMetaPill(
                                           icon: MoaiIcons.tvViewerPillPlugin,
-                                          label: 'plugins_count_single'
+                                          label: LocaleKeys.plugins_count_single
                                               .tr(namedArgs: {'count': '1'}),
                                         ),
                                       ],
@@ -305,7 +306,7 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  'plugins_installed_column_title'.tr(),
+                  LocaleKeys.plugins_installed_column_title.tr(),
                   style: MoaiText.body(
                     context,
                     color: scheme.onSurfaceVariant,
@@ -319,7 +320,7 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                     ? TvEmptyStateCard(
                         focusNode: _emptyFocusNode,
                         icon: MoaiIcons.extensionOffOutlined,
-                        message: 'plugins_empty_installed_msg'.tr(),
+                        message: LocaleKeys.plugins_empty_installed_msg.tr(),
                         onFocusLeft: _backFocusNode.requestFocus,
                         onFocusUp: _backFocusNode.requestFocus,
                         onFocusRight: _focusAvailableList,
@@ -337,8 +338,8 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 3),
                               child: _InstalledPluginTile(
-                                title: 'plugins_arcade_name'.tr(),
-                                subtitle: 'plugins_arcade_desc'.tr(
+                                title: LocaleKeys.plugins_arcade_name.tr(),
+                                subtitle: LocaleKeys.plugins_arcade_desc.tr(
                                   namedArgs: {'abi': ArcadePluginService.getDeviceAbi()},
                                 ),
                                 minHeight: tileMinHeight,
@@ -368,7 +369,7 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  'plugins_available_column_title'.tr(),
+                  LocaleKeys.plugins_available_column_title.tr(),
                   style: MoaiText.body(
                     context,
                     color: scheme.onSurfaceVariant,
@@ -446,8 +447,8 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                                 downloadProgress: isItemDownloading
                                     ? _arcadePlugin.downloadProgress
                                     : null,
-                                installLabel: 'sources_install'.tr(),
-                                installedLabel: 'sources_status_installed'.tr(),
+                                installLabel: LocaleKeys.common_install.tr(),
+                                installedLabel: LocaleKeys.common_installed.tr(),
                                 onPressed: () {
                                   if (item.isArcade) {
                                     if (!isItemInstalled && !isItemDownloading) {
@@ -538,7 +539,7 @@ class _InstalledPluginTileState extends State<_InstalledPluginTile> {
         children: [
           _IconButtonAction(
             focusNode: widget.updateFocus,
-            tooltip: 'plugins_reinstall_tooltip'.tr(),
+            tooltip: LocaleKeys.plugins_reinstall_tooltip.tr(),
             icon: MoaiIcons.syncRounded,
             onPressed: widget.onUpdate,
             parentFocused: isFocused,
@@ -549,7 +550,7 @@ class _InstalledPluginTileState extends State<_InstalledPluginTile> {
           const SizedBox(width: 8),
           _IconButtonAction(
             focusNode: widget.removeFocus,
-            tooltip: 'plugins_uninstall_tooltip'.tr(),
+            tooltip: LocaleKeys.plugins_uninstall_tooltip.tr(),
             icon: MoaiIcons.deleteOutlineRounded,
             onPressed: widget.onRemove,
             parentFocused: isFocused,

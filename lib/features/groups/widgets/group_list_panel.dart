@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/widgets/tv_common/panel_list_header.dart';
@@ -96,7 +97,7 @@ class GroupListPanelState extends State<GroupListPanel> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PanelListHeader(
-            subtitle: 'groups_list_subtitle'.tr(),
+            subtitle: LocaleKeys.groups_list_subtitle.tr(),
             showFilterText: widget.groups.isNotEmpty,
           ),
           Expanded(
@@ -104,7 +105,7 @@ class GroupListPanelState extends State<GroupListPanel> {
                 ? TvEmptyStateCard(
                     focusNode: _emptyFocusNode,
                     icon: MoaiIcons.tvTabMarcadores,
-                    message: 'browser_groups_empty'.tr(),
+                    message: LocaleKeys.browser_groups_empty.tr(),
                     onFocusUp: widget.onFocusUp,
                   )
                 : TvFixedWindowViewport(

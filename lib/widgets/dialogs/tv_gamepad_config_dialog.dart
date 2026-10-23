@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -109,42 +110,42 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
 
     if (key == LogicalKeyboardKey.arrowUp || key == LogicalKeyboardKey.gameButton11) {
       bit = ArcadeButtons.up;
-      label = 'gamepad_dpad_up'.tr();
+      label = LocaleKeys.gamepad_dpad_up.tr();
     } else if (key == LogicalKeyboardKey.arrowDown || key == LogicalKeyboardKey.gameButton12) {
       bit = ArcadeButtons.down;
-      label = 'gamepad_dpad_down'.tr();
+      label = LocaleKeys.gamepad_dpad_down.tr();
     } else if (key == LogicalKeyboardKey.arrowLeft || key == LogicalKeyboardKey.gameButton13) {
       bit = ArcadeButtons.left;
-      label = 'gamepad_dpad_left'.tr();
+      label = LocaleKeys.gamepad_dpad_left.tr();
     } else if (key == LogicalKeyboardKey.arrowRight || key == LogicalKeyboardKey.gameButton14) {
       bit = ArcadeButtons.right;
-      label = 'gamepad_dpad_right'.tr();
+      label = LocaleKeys.gamepad_dpad_right.tr();
     } else if (key == LogicalKeyboardKey.gameButtonX || key == LogicalKeyboardKey.keyY || key == LogicalKeyboardKey.keyJ) {
       bit = ArcadeButtons.punchLight;
-      label = 'gamepad_btn_lp'.tr();
+      label = LocaleKeys.gamepad_btn_lp.tr();
     } else if (key == LogicalKeyboardKey.gameButtonY || key == LogicalKeyboardKey.keyX || key == LogicalKeyboardKey.keyI) {
       bit = ArcadeButtons.punchMedium;
-      label = 'gamepad_btn_mp'.tr();
+      label = LocaleKeys.gamepad_btn_mp.tr();
     } else if (key == LogicalKeyboardKey.gameButtonRight1 || key == LogicalKeyboardKey.keyL || key == LogicalKeyboardKey.keyO) {
       bit = ArcadeButtons.punchHeavy;
-      label = 'gamepad_btn_hp'.tr();
+      label = LocaleKeys.gamepad_btn_hp.tr();
     } else if (TvKeyHandler.isActionKey(key) ||
         key == LogicalKeyboardKey.keyB ||
         key == LogicalKeyboardKey.keyK) {
       bit = ArcadeButtons.kickLight;
-      label = 'gamepad_btn_lk'.tr();
+      label = LocaleKeys.gamepad_btn_lk.tr();
     } else if (key == LogicalKeyboardKey.gameButtonB || key == LogicalKeyboardKey.keyA || key == LogicalKeyboardKey.keyM) {
       bit = ArcadeButtons.kickMedium;
-      label = 'gamepad_btn_mk'.tr();
+      label = LocaleKeys.gamepad_btn_mk.tr();
     } else if (key == LogicalKeyboardKey.gameButtonRight2 || key == LogicalKeyboardKey.keyR || key == LogicalKeyboardKey.comma) {
       bit = ArcadeButtons.kickHeavy;
-      label = 'gamepad_btn_hk'.tr();
+      label = LocaleKeys.gamepad_btn_hk.tr();
     } else if (key == LogicalKeyboardKey.gameButtonSelect || key == LogicalKeyboardKey.digit9 || key == LogicalKeyboardKey.digit5) {
       bit = ArcadeButtons.coin;
-      label = 'gamepad_btn_coin'.tr();
+      label = LocaleKeys.gamepad_btn_coin.tr();
     } else if (key == LogicalKeyboardKey.gameButtonStart || key == LogicalKeyboardKey.digit1) {
       bit = ArcadeButtons.start;
-      label = 'gamepad_btn_start'.tr();
+      label = LocaleKeys.gamepad_btn_start.tr();
     }
 
     if (bit != 0) {
@@ -199,8 +200,8 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
           return TvDialog(
             width: 860,
             icon: MoaiIcons.symbolSportsEsports,
-            title: 'gamepad_dialog_title'.tr(),
-            subtitle: 'gamepad_dialog_subtitle'.tr(),
+            title: LocaleKeys.gamepad_dialog_title.tr(),
+            subtitle: LocaleKeys.gamepad_dialog_subtitle.tr(),
             trailingHeader: Material(
               color: isConnected
                   ? scheme.tertiaryContainer
@@ -224,13 +225,13 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                     Text(
                       isConnected
                           ? (connectedList.length == 1
-                              ? 'gamepad_count_single'.tr(namedArgs: {
+                              ? LocaleKeys.gamepad_count_single.tr(namedArgs: {
                                   'count': '${connectedList.length}',
                                 })
-                              : 'gamepad_count_plural'.tr(namedArgs: {
+                              : LocaleKeys.gamepad_count_plural.tr(namedArgs: {
                                   'count': '${connectedList.length}',
                                 }))
-                          : 'gamepad_status_not_connected'.tr(),
+                          : LocaleKeys.gamepad_status_not_connected.tr(),
                       style: MoaiText.body(
                         context,
                         color: isConnected
@@ -261,7 +262,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                             Icon(MoaiIcons.gamepad, size: 14, color: scheme.primary),
                             const SizedBox(width: 6),
                             Text(
-                              'gamepad_detected_section_header'.tr(),
+                              LocaleKeys.gamepad_detected_section_header.tr(),
                               style: MoaiText.body(
                                 context,
                                 color: scheme.onSurfaceVariant,
@@ -293,7 +294,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                'gamepad_device_none'.tr(),
+                                LocaleKeys.gamepad_device_none.tr(),
                                 textAlign: TextAlign.center,
                                 style: MoaiText.body(
                                   context,
@@ -304,7 +305,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'gamepad_device_none_hint'.tr(),
+                                LocaleKeys.gamepad_device_none_hint.tr(),
                                 textAlign: TextAlign.center,
                                 style: MoaiText.body(
                                   context,
@@ -345,7 +346,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'gamepad_support_two_players'.tr(),
+                                LocaleKeys.gamepad_support_two_players.tr(),
                                 style: MoaiText.body(
                                   context,
                                   color: scheme.onSurfaceVariant,
@@ -377,7 +378,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                                 Icon(MoaiIcons.joystick, size: 14, color: scheme.primary),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'gamepad_test_section'.tr().toUpperCase(),
+                                  LocaleKeys.gamepad_test_section.tr().toUpperCase(),
                                   style: MoaiText.body(
                                     context,
                                     color: scheme.onSurfaceVariant,
@@ -494,7 +495,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
-                                      'gamepad_coin_start_header'.tr(),
+                                      LocaleKeys.gamepad_coin_start_header.tr(),
                                       style: MoaiText.body(
                                         context,
                                         color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
@@ -519,7 +520,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  'gamepad_attacks_cps_header'.tr(),
+                                  LocaleKeys.gamepad_attacks_cps_header.tr(),
                                   style: MoaiText.body(
                                     context,
                                     color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
@@ -527,7 +528,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                                   ),
                                 ),
                                 Text(
-                                  'gamepad_levels_weak_med_strong'.tr(),
+                                  LocaleKeys.gamepad_levels_weak_med_strong.tr(),
                                   style: MoaiText.body(
                                     context,
                                     color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
@@ -618,13 +619,13 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
               TvDialogButton(
                 focusNode: _refreshFocus,
                 icon: MoaiIcons.refreshRounded,
-                label: 'gamepad_action_reset'.tr(),
+                label: LocaleKeys.gamepad_action_reset.tr(),
                 onPressed: _clearTest,
               ),
               TvDialogButton(
                 focusNode: _closeFocus,
                 icon: MoaiIcons.checkRounded,
-                label: 'gamepad_action_close'.tr(),
+                label: LocaleKeys.gamepad_action_close.tr(),
                 variant: TvDialogButtonVariant.primary,
                 onPressed: () => Navigator.of(context).pop(),
               ),
@@ -802,7 +803,7 @@ class _GamepadDeviceCard extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      'gamepad_controller_label'.tr(
+                      LocaleKeys.gamepad_controller_label.tr(
                         namedArgs: {'index': '$index'},
                       ),
                       style: MoaiText.body(
@@ -820,7 +821,7 @@ class _GamepadDeviceCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        'Activo',
+                        LocaleKeys.common_active.tr(),
                         style: MoaiText.body(
                           context,
                           color: scheme.onTertiaryContainer,

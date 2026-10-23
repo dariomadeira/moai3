@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -202,7 +203,7 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'overlap_title'.tr(),
+                                        LocaleKeys.overlap_title.tr(),
                                         style: MoaiText.display(
                                           context,
                                           fontSize: 18,
@@ -211,7 +212,7 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        'overlap_subtitle'.tr(),
+                                        LocaleKeys.overlap_subtitle.tr(),
                                         style: MoaiText.body(
                                           context,
                                           fontSize: 13,
@@ -227,7 +228,7 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
                             ),
                             const SizedBox(height: 16),
                             _PaddingAdjuster(
-                              title: 'overlap_horizontal'.tr(),
+                              title: LocaleKeys.overlap_horizontal.tr(),
                               value: _tempX,
                               focusNode: _xFocus,
                               onChanged: (v) => setState(() => _tempX = v),
@@ -235,7 +236,7 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
                             ),
                             const SizedBox(height: 10),
                             _PaddingAdjuster(
-                              title: 'overlap_vertical'.tr(),
+                              title: LocaleKeys.overlap_vertical.tr(),
                               value: _tempY,
                               focusNode: _yFocus,
                               onChanged: (v) => setState(() => _tempY = v),
@@ -245,7 +246,7 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
                             const SizedBox(height: 16),
                             TvFocusButton(
                               focusNode: _buttonFocus,
-                              label: 'overlap_save'.tr(),
+                              label: LocaleKeys.overlap_save.tr(),
                               onPressed: _save,
                               onArrowUp: _yFocus.requestFocus,
                             ),

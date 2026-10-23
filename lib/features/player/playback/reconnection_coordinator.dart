@@ -1,5 +1,6 @@
 ﻿import 'dart:async';
 
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:moai3/features/player/playback/channel_playback_helpers.dart';
 import 'package:moai3/models/channel.dart';
@@ -99,7 +100,7 @@ class ReconnectionCoordinator {
         'Sin URLs reproducibles',
         level: ReconnectLogLevel.error,
       );
-      onGiveUp('player_error_no_urls'.tr());
+      onGiveUp(LocaleKeys.player_error_no_urls.tr());
       return false;
     }
 
@@ -131,7 +132,7 @@ class ReconnectionCoordinator {
         level: ReconnectLogLevel.error,
       );
       onGiveUp(
-        '${'player_error_all_servers'.tr()}$reasonSuffix',
+        '${LocaleKeys.player_error_all_servers.tr()}$reasonSuffix',
       );
       return false;
     }

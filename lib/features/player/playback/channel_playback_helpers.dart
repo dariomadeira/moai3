@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/services/plugin_host_service.dart';
@@ -50,34 +51,34 @@ class ChannelPlaybackHelpers {
         m.contains('geo fencing') ||
         m.contains('geoblock') ||
         m.contains('geo-block')) {
-      return 'playback_error_geo'.tr();
+      return LocaleKeys.playback_error_geo.tr();
     }
     if (m.contains('closed_access') || m.contains('closed access')) {
-      return 'playback_error_closed_access'.tr();
+      return LocaleKeys.playback_error_closed_access.tr();
     }
     if (m.contains('401') ||
         m.contains('403') ||
         m.contains('unauthorized') ||
         m.contains('forbidden')) {
-      return 'playback_error_http_auth'.tr();
+      return LocaleKeys.playback_error_http_auth.tr();
     }
     if (m.contains('drm')) {
-      return 'playback_error_drm'.tr();
+      return LocaleKeys.playback_error_drm.tr();
     }
     if (code == _codeBadHttpStatus) {
-      return 'playback_error_bad_http_status'.tr();
+      return LocaleKeys.playback_error_bad_http_status.tr();
     }
     if (code == _codeCleartextNotPermitted) {
-      return 'playback_error_cleartext'.tr();
+      return LocaleKeys.playback_error_cleartext.tr();
     }
-    if (code == _codeNetworkTimeout) return 'playback_error_timeout'.tr();
-    if (code == _codeNetworkFailure) return 'playback_error_network'.tr();
+    if (code == _codeNetworkTimeout) return LocaleKeys.playback_error_timeout.tr();
+    if (code == _codeNetworkFailure) return LocaleKeys.playback_error_network.tr();
     if (m.isNotEmpty) {
       return m.length > 90 ? '${m.substring(0, 87)}…' : m;
     }
     return code == null
-        ? 'playback_error_unknown'.tr()
-        : 'playback_error_code'.tr(namedArgs: {'code': '$code'});
+        ? LocaleKeys.playback_error_unknown.tr()
+        : LocaleKeys.playback_error_code.tr(namedArgs: {'code': '$code'});
   }
 
   static String shortUrlLabel(String url) {
@@ -123,7 +124,7 @@ class ChannelPlaybackHelpers {
           pluginId.isEmpty ||
           pluginChannelId == null ||
           pluginChannelId.isEmpty) {
-        throw Exception('player_plugin_missing_ids');
+        throw Exception(LocaleKeys.player_plugin_missing_ids);
       }
       final resolved = await service.resolve(
         pluginId,
@@ -131,7 +132,7 @@ class ChannelPlaybackHelpers {
         fallbackIndex: fallbackIndex,
       );
       if (resolved.url.isEmpty) {
-        throw Exception('plugins_resolve_empty');
+        throw Exception(LocaleKeys.plugins_resolve_empty);
       }
       return ResolvedPlayback(
         url: resolved.url,

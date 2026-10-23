@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/features/bootstrap/screens/overlap_config_screen.dart';
@@ -79,8 +80,8 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TvPanelHeader(
-              title: 'settings_general_title'.tr(),
-              subtitle: 'settings_general_subtitle'.tr(),
+              title: LocaleKeys.settings_general_title.tr(),
+              subtitle: LocaleKeys.settings_general_subtitle.tr(),
             ),
             Expanded(
               child: LayoutBuilder(
@@ -154,8 +155,8 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
         return TvSettingsActionRow(
           focusNode: focusNode,
           icon: MoaiIcons.extensionOutlined,
-          label: 'settings_general_plugins_title'.tr(),
-          description: 'settings_general_plugins_desc'.tr(),
+          label: LocaleKeys.settings_general_plugins_title.tr(),
+          description: LocaleKeys.settings_general_plugins_desc.tr(),
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -172,8 +173,8 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
         return TvSettingsActionRow(
           focusNode: focusNode,
           icon: MoaiIcons.aspectRatioOutlined,
-          label: 'settings_general_overscan'.tr(),
-          description: 'settings_general_overscan_desc'.tr(),
+          label: LocaleKeys.settings_general_overscan.tr(),
+          description: LocaleKeys.settings_general_overscan_desc.tr(),
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -192,7 +193,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
         return TvSettingsActionRow(
           focusNode: focusNode,
           icon: MoaiIcons.cloudOutlined,
-          label: 'settings_general_weather_title'.tr(),
+          label: LocaleKeys.settings_general_weather_title.tr(),
           description: weather.locationDisplayName,
           onPressed: () {
             TvWeatherLocationDialog.show(context);
@@ -206,8 +207,8 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
         return TvSettingsSwitchRow(
           focusNode: focusNode,
           icon: MoaiIcons.darkModeOutlined,
-          label: 'settings_general_dark_mode'.tr(),
-          description: 'settings_general_dark_mode_desc'.tr(),
+          label: LocaleKeys.settings_general_dark_mode.tr(),
+          description: LocaleKeys.settings_general_dark_mode_desc.tr(),
           value: theme.themeMode == ThemeMode.dark,
           onChanged: (isDark) {
             theme.setDarkMode(isDark);
@@ -232,8 +233,8 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
         return TvSettingsSwitchRow(
           focusNode: focusNode,
           icon: MoaiIcons.volumeOffOutlined,
-          label: 'settings_general_mute_ui_sounds'.tr(),
-          description: 'settings_general_mute_ui_sounds_desc'.tr(),
+          label: LocaleKeys.settings_general_mute_ui_sounds.tr(),
+          description: LocaleKeys.settings_general_mute_ui_sounds_desc.tr(),
           value: muted,
           onChanged: (value) {
             context.read<TvSettingsProvider>().setUiSoundsDisabled(value);

@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -25,9 +26,9 @@ class SettingsCatalogFrequencyRow extends StatelessWidget {
   });
 
   static const _labelKeys = {
-    CatalogUpdateFrequency.always: 'settings_general_catalog_freq_always',
-    CatalogUpdateFrequency.weekly: 'settings_general_catalog_freq_weekly',
-    CatalogUpdateFrequency.monthly: 'settings_general_catalog_freq_monthly',
+    CatalogUpdateFrequency.always: LocaleKeys.settings_general_catalog_freq_always,
+    CatalogUpdateFrequency.weekly: LocaleKeys.settings_general_catalog_freq_weekly,
+    CatalogUpdateFrequency.monthly: LocaleKeys.settings_general_catalog_freq_monthly,
   };
 
   int get _selectedIndex {
@@ -53,14 +54,14 @@ class SettingsCatalogFrequencyRow extends StatelessWidget {
     const options = CatalogUpdateFrequency.options;
     final selectedIndex = _selectedIndex;
     final description = enabled
-        ? 'settings_general_catalog_frequency_desc'.tr()
-        : 'settings_general_catalog_frequency_disabled_desc'.tr();
+        ? LocaleKeys.settings_general_catalog_frequency_desc.tr()
+        : LocaleKeys.settings_general_catalog_frequency_disabled_desc.tr();
 
     return Opacity(
       opacity: enabled ? 1 : 0.45,
       child: TvTile(
         focusNode: focusNode,
-        label: 'settings_general_catalog_frequency'.tr(),
+        label: LocaleKeys.settings_general_catalog_frequency.tr(),
         description: description,
         icon: MoaiIcons.syncOutlined,
         onKeyUp: onKeyUp,

@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/widgets/tv_common/panel_list_header.dart';
@@ -97,7 +98,7 @@ class CategoryListPanelState extends State<CategoryListPanel> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PanelListHeader(
-            subtitle: 'browser_category_subtitle'.tr(),
+            subtitle: LocaleKeys.browser_category_subtitle.tr(),
             showFilterText: widget.categories.length > 1,
           ),
           Expanded(
@@ -105,7 +106,7 @@ class CategoryListPanelState extends State<CategoryListPanel> {
                 ? TvEmptyStateCard(
                     focusNode: _emptyFocusNode,
                     icon: MoaiIcons.tvAccordionCategorias,
-                    message: 'browser_categories_empty'.tr(),
+                    message: LocaleKeys.browser_categories_empty.tr(),
                     onFocusUp: widget.onFocusUp,
                   )
                 : TvFixedWindowViewport(

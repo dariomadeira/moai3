@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -238,43 +239,43 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
       case sectionHome:
         iconData =
             isSelected ? MoaiIcons.railHomeSelected : MoaiIcons.railHome;
-        labelKey = 'home_rail_home_title';
+        labelKey = LocaleKeys.home_rail_home_title;
         break;
       case sectionTv:
         iconData = isSelected ? MoaiIcons.railTvSelected : MoaiIcons.railTv;
-        labelKey = 'home_rail_tv_title';
+        labelKey = LocaleKeys.home_rail_tv_title;
         break;
       case sectionFeatured:
         iconData = isSelected
             ? MoaiIcons.railFeaturedSelected
             : MoaiIcons.railFeatured;
-        labelKey = 'home_rail_featured_title';
+        labelKey = LocaleKeys.home_rail_featured_title;
         break;
       case sectionMovies:
         iconData =
             isSelected ? MoaiIcons.railMoviesSelected : MoaiIcons.railMovies;
-        labelKey = 'home_rail_movies_title';
+        labelKey = LocaleKeys.home_rail_movies_title;
         break;
       case sectionSeries:
         iconData =
             isSelected ? MoaiIcons.railSeriesSelected : MoaiIcons.railSeries;
-        labelKey = 'home_rail_series_title';
+        labelKey = LocaleKeys.home_rail_series_title;
         break;
       case sectionCalendar:
         iconData =
             isSelected ? MoaiIcons.railCalendarSelected : MoaiIcons.railCalendar;
-        labelKey = 'home_rail_calendar_title';
+        labelKey = LocaleKeys.home_rail_calendar_title;
         break;
       case sectionArcade:
         iconData =
             isSelected ? MoaiIcons.railArcadeSelected : MoaiIcons.railArcade;
-        labelKey = 'home_rail_arcade_title';
+        labelKey = LocaleKeys.home_rail_arcade_title;
         break;
       case sectionSettings:
       default:
         iconData =
             isSelected ? MoaiIcons.railSettingsSelected : MoaiIcons.railSettings;
-        labelKey = 'home_rail_settings_title';
+        labelKey = LocaleKeys.home_rail_settings_title;
         break;
     }
 

@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/widgets/tv_common/tv_tile.dart';
@@ -100,8 +101,8 @@ class _TvArcadeSelectFriendDialogState
       icon: MoaiIcons.personSearchRounded,
       iconColor: scheme.primary,
       iconBgColor: scheme.primary.withValues(alpha: 0.15),
-      title: 'arcade_select_friend_title'.tr(),
-      subtitle: 'arcade_select_friend_subtitle'.tr(),
+      title: LocaleKeys.arcade_select_friend_title.tr(),
+      subtitle: LocaleKeys.arcade_select_friend_subtitle.tr(),
       content: sortedFriends.isEmpty
           ? _EmptyFriends(manageFocus: _manageFocus)
           : _FriendWindow(
@@ -113,7 +114,7 @@ class _TvArcadeSelectFriendDialogState
       actions: [
         TvDialogButton(
           focusNode: _closeFocus,
-          label: 'arcade_select_friend_close'.tr(),
+          label: LocaleKeys.common_close.tr(),
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
           onKeyUp: sortedFriends.isEmpty
               ? _manageFocus.requestFocus
@@ -164,7 +165,7 @@ class _FriendWindow extends StatelessWidget {
               minHeight: 52,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               label: friend.displayName,
-              description: 'friends_status_online'.tr(),
+              description: LocaleKeys.friends_status_online.tr(),
               icon: MoaiIcons.personOutlineRounded,
               onPressed: () => onSelect(friend),
               onKeyUp: onKeyUp,
@@ -209,7 +210,7 @@ class _EmptyFriends extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'arcade_select_friend_empty'.tr(),
+            LocaleKeys.arcade_select_friend_empty.tr(),
             style: MoaiText.body(
               context,
               fontSize: 14,
@@ -219,7 +220,7 @@ class _EmptyFriends extends StatelessWidget {
           const SizedBox(height: 12),
           TvDialogButton(
             focusNode: manageFocus,
-            label: 'arcade_select_friend_manage'.tr(),
+            label: LocaleKeys.arcade_select_friend_manage.tr(),
             variant: TvDialogButtonVariant.primary,
             onPressed: () {
               Navigator.of(context, rootNavigator: true).pop();

@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -49,7 +50,7 @@ class _ClearFavoritesButtonState extends State<ClearFavoritesButton> {
   void _showClearConfirmDialog(BuildContext context) {
     showTvGeneralDialog(
       context: context,
-      barrierLabel: 'common_close'.tr(),
+      barrierLabel: LocaleKeys.common_close.tr(),
       builder: (dialogContext) {
         return _ClearConfirmDialogContent(originContext: context);
       },
@@ -96,7 +97,7 @@ class _ClearFavoritesButtonState extends State<ClearFavoritesButton> {
         return KeyEventResult.ignored;
       },
       child: Tooltip(
-        message: 'favorites_clear_all'.tr(),
+        message: LocaleKeys.favorites_clear_all.tr(),
         child: GestureDetector(
           onTap: () => _showClearConfirmDialog(context),
           child: AnimatedScale(
@@ -163,9 +164,9 @@ class _ClearConfirmDialogContentState
       icon: MoaiIcons.deleteSweepOutlined,
       iconBgColor: scheme.errorContainer,
       iconColor: scheme.onErrorContainer,
-      title: 'favorites_clear_title'.tr(),
+      title: LocaleKeys.favorites_clear_title.tr(),
       content: Text(
-        'favorites_clear_confirm_body'.tr(),
+        LocaleKeys.favorites_clear_confirm_body.tr(),
         style: MoaiText.body(
           context,
           color: scheme.onSurfaceVariant,
@@ -175,21 +176,21 @@ class _ClearConfirmDialogContentState
       actions: [
         TvDialogButton(
           focusNode: _cancelFocusNode,
-          label: 'common_cancel'.tr(),
+          label: LocaleKeys.common_cancel.tr(),
           autofocus: true,
           onPressed: () => Navigator.of(context).pop(),
           onKeyRight: () => _confirmFocusNode.requestFocus(),
         ),
         TvDialogButton(
           focusNode: _confirmFocusNode,
-          label: 'favorites_clear_all'.tr(),
+          label: LocaleKeys.favorites_clear_all.tr(),
           variant: TvDialogButtonVariant.destructive,
           onKeyLeft: () => _cancelFocusNode.requestFocus(),
           onPressed: () {
             Navigator.of(context).pop();
             widget.originContext.read<FavoritesProvider>().clearAllFavorites();
             NotificationHelper.showInfo(
-              'favorites_cleared_snackbar'.tr(),
+              LocaleKeys.favorites_cleared_snackbar.tr(),
             );
           },
         ),

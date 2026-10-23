@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,11 +18,11 @@ import 'package:moai3/theme/moai_icons.dart';
 String _formatFriendsCount(int total, int online) {
   if (total == 0) return '';
   if (total == 1) {
-    return 'settings_tv_friends_count_single'.tr(
+    return LocaleKeys.settings_tv_friends_count_single.tr(
       namedArgs: {'count': '1', 'online': '$online'},
     );
   }
-  return 'settings_tv_friends_count_plural'.tr(
+  return LocaleKeys.settings_tv_friends_count_plural.tr(
     namedArgs: {'count': '$total', 'online': '$online'},
   );
 }
@@ -151,19 +152,19 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
         return TvDialog(
           width: 460,
           icon: MoaiIcons.personRemoveOutlined,
-          title: 'friends_delete_confirm_title'.tr(),
-          subtitle: 'friends_delete_confirm_desc'.tr(
+          title: LocaleKeys.friends_delete_confirm_title.tr(),
+          subtitle: LocaleKeys.friends_delete_confirm_desc.tr(
             namedArgs: {'name': friend.nickname ?? friend.userCode},
           ),
           actions: [
             TvDialogButton(
-              label: 'common_cancel'.tr(),
+              label: LocaleKeys.common_cancel.tr(),
               focusNode: cancelFocus,
               onPressed: () => Navigator.of(dialogContext).pop(false),
               onKeyRight: deleteFocus.requestFocus,
             ),
             TvDialogButton(
-              label: 'friends_delete_button'.tr(),
+              label: LocaleKeys.common_delete.tr(),
               variant: TvDialogButtonVariant.destructive,
               focusNode: deleteFocus,
               onPressed: () => Navigator.of(dialogContext).pop(true),
@@ -195,8 +196,8 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
     return TvDialog(
       width: 800,
       icon: MoaiIcons.peopleAltRounded,
-      title: 'friends_screen_title'.tr(),
-      subtitle: 'friends_screen_subtitle'.tr(),
+      title: LocaleKeys.friends_screen_title.tr(),
+      subtitle: LocaleKeys.friends_screen_subtitle.tr(),
       trailingHeader: totalFriends > 0
           ? Material(
               color: scheme.tertiaryContainer,
@@ -271,7 +272,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
                       context,
                       scheme,
                       icon: MoaiIcons.peopleOutlineRounded,
-                      title: 'friends_section_friends'.tr(),
+                      title: LocaleKeys.friends_section_friends.tr(),
                       badgeCount: totalFriends,
                     ),
                     const SizedBox(height: 6),
@@ -295,7 +296,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
                       context,
                       scheme,
                       icon: MoaiIcons.personAddOutlined,
-                      title: 'friends_section_requests'.tr(),
+                      title: LocaleKeys.friends_section_requests.tr(),
                       badgeCount: requests.length,
                       isHighlighted: requests.isNotEmpty,
                     ),
@@ -317,7 +318,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
       actions: [
         TvDialogButton(
           focusNode: _closeFocus,
-          label: 'common_close'.tr(),
+          label: LocaleKeys.common_close.tr(),
           onPressed: () => Navigator.of(context).pop(),
           onKeyUp: () {
             if (friends.isNotEmpty) {
@@ -401,9 +402,9 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
           child: TvTextField(
             controller: _codeController,
             focusNode: _codeFocus,
-            label: 'friends_input_label'.tr(),
-            hint: 'friends_input_hint'.tr(),
-            doneLabel: 'friends_add_button'.tr(),
+            label: LocaleKeys.friends_input_label.tr(),
+            hint: LocaleKeys.friends_input_hint.tr(),
+            doneLabel: LocaleKeys.friends_add_button.tr(),
             leadingIcon: MoaiIcons.badgeOutlined,
             maxLength: 10,
             onSubmitted: _handleAddFriend,
@@ -422,7 +423,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
         const SizedBox(width: 10),
         TvFocusButton(
           focusNode: _addFocus,
-          label: 'friends_add_button'.tr(),
+          label: LocaleKeys.friends_add_button.tr(),
           icon: MoaiIcons.personAdd,
           height: 60,
           radius: 30,
@@ -499,7 +500,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'friends_empty_title'.tr(),
+                    LocaleKeys.friends_empty_title.tr(),
                     textAlign: TextAlign.center,
                     style: MoaiText.body(
                       context,
@@ -592,7 +593,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'friends_requests_empty'.tr(),
+                    LocaleKeys.friends_requests_empty.tr(),
                     textAlign: TextAlign.center,
                     style: MoaiText.body(
                       context,
@@ -833,8 +834,8 @@ class _FriendTileState extends State<_FriendTile> {
                                 const SizedBox(width: 3.5),
                                 Text(
                                   widget.friend.isOnline
-                                      ? 'friends_status_online'.tr()
-                                      : 'friends_status_offline'.tr(),
+                                      ? LocaleKeys.friends_status_online.tr()
+                                      : LocaleKeys.friends_status_offline.tr(),
                                   style: MoaiText.body(
                                     context,
                                     color: isFocused
@@ -1117,7 +1118,7 @@ class _RequestTileState extends State<_RequestTile> {
                       ),
                       const SizedBox(width: 3),
                       Text(
-                        'friends_accept_button'.tr(),
+                        LocaleKeys.friends_accept_button.tr(),
                         style: MoaiText.body(
                           context,
                           color: isFocused

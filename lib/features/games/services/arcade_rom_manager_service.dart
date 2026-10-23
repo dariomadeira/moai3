@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/platform/platform_channels.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -124,7 +125,7 @@ class ArcadeRomManagerService extends ChangeNotifier {
       final response = await request.close();
 
       if (response.statusCode != 200) {
-        _errorMessage = 'arcade_err_catalog_http'.tr(
+        _errorMessage = LocaleKeys.arcade_err_catalog_http.tr(
           namedArgs: {'code': response.statusCode.toString()},
         );
         _isLoading = false;
@@ -154,7 +155,7 @@ class ArcadeRomManagerService extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = 'arcade_err_repo_connect'.tr(
+      _errorMessage = LocaleKeys.arcade_err_repo_connect.tr(
         namedArgs: {'error': e.toString()},
       );
       _isLoading = false;
@@ -177,7 +178,7 @@ class ArcadeRomManagerService extends ChangeNotifier {
     try {
       final String romDir =
           await _channel.invokeMethod('getRomDirectory') as String? ?? '';
-      if (romDir.isEmpty) throw Exception('arcade_err_internal_dir'.tr());
+      if (romDir.isEmpty) throw Exception(LocaleKeys.arcade_err_internal_dir.tr());
 
       final targetFile = File('$romDir/$filename');
       final tempFile = File('$romDir/$filename.part');
@@ -190,7 +191,7 @@ class ArcadeRomManagerService extends ChangeNotifier {
         _downloadProgress.remove(filename);
         notifyListeners();
         throw Exception(
-          'arcade_err_download_http'.tr(
+          LocaleKeys.arcade_err_download_http.tr(
             namedArgs: {'code': response.statusCode.toString()},
           ),
         );
@@ -259,7 +260,7 @@ class ArcadeRomManagerService extends ChangeNotifier {
         debugPrint('[ArcadeRomManagerService] Error descargando $filename: $e');
       }
       _downloadProgress.remove(filename);
-      _errorMessage = 'arcade_download_error'.tr(
+      _errorMessage = LocaleKeys.arcade_download_error.tr(
         namedArgs: {'filename': filename, 'error': '$e'},
       );
       notifyListeners();

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -145,7 +146,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
             if (!mounted || ModalRouteTracker.instance.hasActiveModal) return;
             MoaiSnackBar.show(
               context,
-              message: 'watch_party_friend_joined'.tr(
+              message: LocaleKeys.watch_party_friend_joined.tr(
                 namedArgs: {'name': friendName},
               ),
               icon: MoaiIcons.person,
@@ -706,12 +707,12 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
 
   List<String> _titles(bool showTvLog) {
     final base = [
-      'home_panel_countries'.tr(),
-      'home_panel_categories'.tr(),
-      'home_panel_channels'.tr(),
+      LocaleKeys.home_panel_countries.tr(),
+      LocaleKeys.home_panel_categories.tr(),
+      LocaleKeys.home_panel_channels.tr(),
     ];
     return TvPanelLayout.hasLogPanel(showTvLog)
-        ? ['home_panel_tv_log'.tr(), ...base]
+        ? [LocaleKeys.home_panel_tv_log.tr(), ...base]
         : base;
   }
 
@@ -855,7 +856,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
         scheme.surface.withValues(alpha: 0.8),
         scheme.surface.withValues(alpha: 0.8),
       ],
-      titles: ['home_panel_groups'.tr(), 'home_panel_channels'.tr()],
+      titles: [LocaleKeys.home_panel_groups.tr(), LocaleKeys.home_panel_channels.tr()],
       icons: const [MoaiIcons.tvTabMarcadores, MoaiIcons.tvAccordionCanales],
       alphabetModePanelIndex: _groups.alphabetModePanelIndex,
       alphabetPanelBuilder: (_) => AlphabetJumpPanel(
@@ -980,7 +981,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     final alphabetActive = _search.isAlphabetMode;
     final searchPanel = SearchPanel(
       key: _searchPanelKey,
-      title: 'home_panel_search'.tr(),
+      title: LocaleKeys.home_panel_search.tr(),
       queryController: _search.queryController,
       searchFocusNode: _search.searchFocusNode,
       clearFocusNode: _search.clearFocusNode,

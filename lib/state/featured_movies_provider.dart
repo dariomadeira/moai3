@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:flutter/foundation.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
@@ -125,7 +126,7 @@ class FeaturedMoviesProvider extends ChangeNotifier {
       state.categories = categories;
       state.loadedOnce = true;
     } catch (e) {
-      state.errorMessage = 'movies_load_error';
+      state.errorMessage = LocaleKeys.movies_load_error;
       state.errorDetail = '$e';
       state.items = [];
       state.categories = [];

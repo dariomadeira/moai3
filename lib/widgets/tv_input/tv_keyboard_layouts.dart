@@ -1,4 +1,5 @@
 ﻿import 'package:easy_localization/easy_localization.dart';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
 
 enum TvKeyAction {
@@ -78,12 +79,12 @@ abstract final class TvKeyboardLayouts {
           flex: 1.4,
         ),
         TvKeyDef(
-          label: 'keyboard_space'.tr(),
+          label: LocaleKeys.keyboard_space.tr(),
           action: TvKeyAction.space,
           flex: 4,
         ),
         TvKeyDef(
-          label: 'keyboard_clear'.tr(),
+          label: LocaleKeys.keyboard_clear.tr(),
           action: TvKeyAction.clear,
           flex: 1.6,
         ),
@@ -106,12 +107,12 @@ abstract final class TvKeyboardLayouts {
           flex: 1.4,
         ),
         TvKeyDef(
-          label: 'keyboard_space'.tr(),
+          label: LocaleKeys.keyboard_space.tr(),
           action: TvKeyAction.space,
           flex: 4,
         ),
         TvKeyDef(
-          label: 'keyboard_clear'.tr(),
+          label: LocaleKeys.keyboard_clear.tr(),
           action: TvKeyAction.clear,
           flex: 1.6,
         ),
@@ -129,7 +130,7 @@ abstract final class TvKeyboardLayouts {
           const TvKeyDef(label: '.', character: '.')
         else
           TvKeyDef(
-            label: 'keyboard_clear'.tr(),
+            label: LocaleKeys.keyboard_clear.tr(),
             action: TvKeyAction.clear,
             flex: 1.2,
           ),
@@ -137,7 +138,7 @@ abstract final class TvKeyboardLayouts {
         const TvKeyDef(label: '⌫', action: TvKeyAction.backspace),
         if (includeDot)
           TvKeyDef(
-            label: 'keyboard_clear'.tr(),
+            label: LocaleKeys.keyboard_clear.tr(),
             action: TvKeyAction.clear,
             flex: 1.4,
           ),

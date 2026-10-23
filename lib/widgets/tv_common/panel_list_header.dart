@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header_metrics.dart';
@@ -33,7 +34,7 @@ class PanelListHeader extends StatelessWidget {
         if (showFilterText) ...[
           const SizedBox(height: TvPanelHeaderMetrics.titleSubtitleGap),
           Text(
-            'search_hint_with_filter'.tr(),
+            LocaleKeys.search_hint_with_filter.tr(),
             style: MoaiText.body(
               context,
               color: scheme.onSurfaceVariant,

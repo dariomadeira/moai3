@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/engine/engine_player_view.dart';
@@ -372,7 +373,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
                     Padding(
                       padding: const EdgeInsets.only(top: 16),
                       child: Text(
-                        'player_reconnecting'.tr(
+                        LocaleKeys.player_reconnecting.tr(
                           namedArgs: {
                             'retry': '${_reconnect.retryCount}',
                             'max': '${_reconnect.maxRetries}',

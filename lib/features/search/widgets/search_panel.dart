@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -159,7 +160,7 @@ class SearchPanelState extends State<SearchPanel> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'search_min_chars_prompt'.tr(
+                          LocaleKeys.search_min_chars_prompt.tr(
                             namedArgs: {
                               'n': '${HomeSearchController.minQueryLength}',
                             },
@@ -189,7 +190,7 @@ class SearchPanelState extends State<SearchPanel> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'search_no_results'.tr(),
+                              LocaleKeys.search_no_results.tr(),
                               textAlign: TextAlign.center,
                               style: MoaiText.body(
                                 context,
@@ -293,8 +294,8 @@ class _SearchPanelChrome extends StatelessWidget {
               child: TvTextField(
                 controller: queryController,
                 focusNode: searchFocusNode,
-                label: 'search_field_label'.tr(),
-                hint: 'search_field_hint'.tr(),
+                label: LocaleKeys.search_field_label.tr(),
+                hint: LocaleKeys.search_field_hint.tr(),
                 keyboardType: TvKeyboardType.search,
                 textInputAction: TvTextInputAction.search,
                 dense: true,
@@ -323,10 +324,10 @@ class _SearchPanelChrome extends StatelessWidget {
         const SizedBox(height: 5),
         Text(
           resultsCapped
-              ? 'search_results_capped'.tr()
+              ? LocaleKeys.search_results_capped.tr()
               : showFilterHint
-                  ? 'search_hint_with_filter'.tr()
-                  : 'search_hint_open_keyboard'.tr(),
+                  ? LocaleKeys.search_hint_with_filter.tr()
+                  : LocaleKeys.search_hint_open_keyboard.tr(),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: MoaiText.body(

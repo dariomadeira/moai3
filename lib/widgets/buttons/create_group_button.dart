@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -51,7 +52,7 @@ class _CreateGroupButtonState extends State<CreateGroupButton> {
   void _showCreateDialog(BuildContext context) {
     showTvGeneralDialog(
       context: context,
-      barrierLabel: 'common_close'.tr(),
+      barrierLabel: LocaleKeys.common_close.tr(),
       builder: (dialogContext) {
         return _CreateGroupDialogContent(originContext: context);
       },
@@ -98,7 +99,7 @@ class _CreateGroupButtonState extends State<CreateGroupButton> {
         return KeyEventResult.ignored;
       },
       child: Tooltip(
-        message: 'groups_create_tile'.tr(),
+        message: LocaleKeys.common_create.tr(),
         child: GestureDetector(
           onTap: () => _showCreateDialog(context),
           child: AnimatedScale(
@@ -169,7 +170,7 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
   Future<void> _create() async {
     final name = _textController.text.trim();
     if (name.isEmpty) {
-      setState(() => _errorText = 'groups_name_required'.tr());
+      setState(() => _errorText = LocaleKeys.groups_name_required.tr());
       _textFieldFocusNode.requestFocus();
       return;
     }
@@ -182,7 +183,7 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
       if (widget.originContext.mounted) {
         MoaiSnackBar.show(
           widget.originContext,
-          message: 'groups_created_success'.tr(namedArgs: {'name': name}),
+          message: LocaleKeys.groups_created_success.tr(namedArgs: {'name': name}),
           icon: MoaiIcons.bookmarkAddOutlined,
         );
       }
@@ -190,7 +191,7 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
       if (widget.originContext.mounted) {
         MoaiSnackBar.show(
           widget.originContext,
-          message: 'groups_create_error'.tr(namedArgs: {'error': '$e'}),
+          message: LocaleKeys.groups_create_error.tr(namedArgs: {'error': '$e'}),
           icon: MoaiIcons.errorOutline,
         );
       }
@@ -203,7 +204,7 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
 
     return TvDialog(
       icon: MoaiIcons.tvGroupCreateDialogTitle,
-      title: 'groups_create_title'.tr(),
+      title: LocaleKeys.groups_create_title.tr(),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -211,8 +212,8 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
           TvTextField(
             controller: _textController,
             focusNode: _textFieldFocusNode,
-            label: 'groups_name_label'.tr(),
-            hint: 'groups_name_hint'.tr(),
+            label: LocaleKeys.groups_name_label.tr(),
+            hint: LocaleKeys.groups_name_hint.tr(),
             leadingIcon: MoaiIcons.tvGroupCreateDialogInput,
             onFocusDown: () => _createFocusNode.requestFocus(),
             onSubmitted: (_) => _createFocusNode.requestFocus(),
@@ -239,14 +240,14 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
       actions: [
         TvDialogButton(
           focusNode: _cancelFocusNode,
-          label: 'common_cancel'.tr(),
+          label: LocaleKeys.common_cancel.tr(),
           onPressed: () => Navigator.of(context).pop(),
           onKeyRight: () => _createFocusNode.requestFocus(),
           onKeyUp: () => _textFieldFocusNode.requestFocus(),
         ),
         TvDialogButton(
           focusNode: _createFocusNode,
-          label: 'groups_create_confirm'.tr(),
+          label: LocaleKeys.common_create.tr(),
           variant: TvDialogButtonVariant.primary,
           onKeyLeft: () => _cancelFocusNode.requestFocus(),
           onKeyUp: () => _textFieldFocusNode.requestFocus(),

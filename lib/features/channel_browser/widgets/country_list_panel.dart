@@ -1,3 +1,4 @@
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/widgets/tv_common/panel_list_header.dart';
@@ -103,7 +104,7 @@ class CountryListPanelState extends State<CountryListPanel> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PanelListHeader(
-            subtitle: 'browser_country_subtitle'.tr(),
+            subtitle: LocaleKeys.browser_country_subtitle.tr(),
             showFilterText: widget.countries.length > 1,
           ),
           Expanded(
@@ -111,7 +112,7 @@ class CountryListPanelState extends State<CountryListPanel> {
                 ? TvEmptyStateCard(
                     focusNode: _emptyFocusNode,
                     icon: MoaiIcons.tvAccordionGrupos,
-                    message: widget.emptyMessage ?? 'browser_countries_empty'.tr(),
+                    message: widget.emptyMessage ?? LocaleKeys.browser_countries_empty.tr(),
                     onFocusUp: widget.onFocusUp,
                   )
                 : TvFixedWindowViewport(

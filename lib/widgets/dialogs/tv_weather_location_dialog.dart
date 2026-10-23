@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/widgets/tv_common/tv_tile.dart';
@@ -107,7 +108,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
     Navigator.of(context, rootNavigator: true).pop();
     MoaiSnackBar.show(
       context,
-      message: 'weather_location_configured'.tr(
+      message: LocaleKeys.weather_location_configured.tr(
         namedArgs: {'location': loc.displayName},
       ),
       icon: MoaiIcons.checkCircleRounded,
@@ -122,7 +123,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
     Navigator.of(context, rootNavigator: true).pop();
     MoaiSnackBar.show(
       context,
-      message: 'weather_location_reset_auto'.tr(),
+      message: LocaleKeys.weather_location_reset_auto.tr(),
       icon: MoaiIcons.myLocationRounded,
     );
   }
@@ -138,8 +139,8 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
       icon: MoaiIcons.locationOnOutlined,
       iconColor: scheme.primary,
       iconBgColor: scheme.primary.withValues(alpha: 0.15),
-      title: 'weather_location_dialog_title'.tr(),
-      subtitle: 'weather_location_dialog_subtitle'.tr(),
+      title: LocaleKeys.weather_location_dialog_title.tr(),
+      subtitle: LocaleKeys.weather_location_dialog_subtitle.tr(),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -148,8 +149,8 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
           TvTextField(
             controller: _searchController,
             focusNode: _searchBtnFocus,
-            label: 'weather_location_search_hint'.tr(),
-            hint: 'search_field_hint'.tr(),
+            label: LocaleKeys.weather_location_search_hint.tr(),
+            hint: LocaleKeys.search_field_hint.tr(),
             textInputAction: TvTextInputAction.search,
             dense: true,
             leadingIcon: MoaiIcons.keyboardAltOutlined,
@@ -178,8 +179,8 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
         TvDialogButton(
           focusNode: _autoBtnFocus,
           label: isAuto
-              ? 'weather_location_auto_active'.tr()
-              : 'weather_location_auto_btn'.tr(),
+              ? LocaleKeys.weather_location_auto_active.tr()
+              : LocaleKeys.weather_location_auto_btn.tr(),
           icon: MoaiIcons.myLocationRounded,
           variant: isAuto
               ? TvDialogButtonVariant.primary
@@ -196,7 +197,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
         ),
         TvDialogButton(
           focusNode: _closeBtnFocus,
-          label: 'common_close'.tr(),
+          label: LocaleKeys.common_close.tr(),
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
           onKeyLeft: _autoBtnFocus.requestFocus,
           onKeyUp: () {
@@ -234,7 +235,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
             ),
             const SizedBox(height: 12),
             Text(
-              'weather_location_searching'.tr(),
+              LocaleKeys.weather_location_searching.tr(),
               style: MoaiText.body(
                 context,
                 fontSize: 13,
@@ -265,7 +266,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
             ),
             const SizedBox(height: 8),
             Text(
-              'weather_location_no_results'.tr(),
+              LocaleKeys.weather_location_no_results.tr(),
               textAlign: TextAlign.center,
               style: MoaiText.body(
                 context,
