@@ -65,6 +65,8 @@ Hallazgos que aparecieron al ejecutar (no estaban en el análisis original):
 - El repo tiene finales de línea mezclados (49 archivos CRLF, 5 mixtos en el índice). Pendiente: `.gitattributes` con `* text=auto eol=lf` + renormalizar en un PR aparte.
 - `docs/evidencias/` no está vacía (capturas de películas): se deja.
 - **Miremos Juntos con datos viejos**: cuando un amigo entraba al canal que se mira, el aviso salía pero la lista no se actualizaba y el siguiente sondeo podía repetir el aviso; y `FriendInfo.copyWith` usa `??`, así que un canal `null` (el amigo dejó de mirar) conservaba el anterior hasta el sondeo de 15 s. Corregido en `FriendsRoster`.
+- **Ajustes saltaba un panel al volver**: las listas de los paneles (salvo TV) y de Suscripciones tomaban el foco al montarse y el → del rail avanzaba al panel siguiente. Ya pasaba antes de SPEC-50. Corregido con `focusOnMount: false` + test de regresión; verificado en Chromecast.
+- **Probado en Chromecast (2026-10-23)**: arranque, TV conserva el panel al volver, Agenda (grilla, suscripciones, eventos de F1 con badges), Ajustes recuerda el panel, diálogos de amigos y de micrófono; sin excepciones en el log.
 
 ## 2. Resumen de Fases
 
