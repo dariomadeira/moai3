@@ -58,20 +58,24 @@ void main() async {
     debugPrint('dotenv: no se pudo cargar .env ($e)\n$st');
   }
   await AppConfig.initialize();
-  await AppInfo.initialize();
 
-  await EasyLocalization.ensureInitialized();
+  // Independientes entre sí: en paralelo para acortar el arranque (SPEC-50 §6.2).
+  final prefsFuture = AppPreferences.init();
+  await Future.wait([
+    AppInfo.initialize(),
+    EasyLocalization.ensureInitialized(),
+    prefsFuture,
+    SystemChrome.setPreferredOrientations(
+      AppConfig.tvMode
+          ? DeviceOrientation.values
+          : const [
+              DeviceOrientation.landscapeLeft,
+              DeviceOrientation.landscapeRight,
+            ],
+    ),
+  ]);
 
-  if (!AppConfig.tvMode) {
-    await SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-  } else {
-    await SystemChrome.setPreferredOrientations(DeviceOrientation.values);
-  }
-
-  final appPreferences = await AppPreferences.init();
+  final appPreferences = await prefsFuture;
   await ArcadePluginService.instance.init(appPreferences);
   unawaited(MoaiImageCacheManager.clearLegacyCacheOnce(appPreferences));
   final themeProvider = ThemeProvider(appPreferences);

@@ -104,6 +104,8 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
   List<String> _lastChannelIds = [];
   List<String> _lastFavoriteIds = [];
   List<String> _lastGroupIds = [];
+  List<Channel>? _lastChannelsRef;
+  List<ChannelGroup>? _lastGroupsRef;
   double _lastOverlapX = -1;
   double _lastOverlapY = -1;
   bool _lastIsAdultUnlocked = false;
@@ -203,6 +205,7 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
   }
 
   bool _sameStringList(List<String> a, List<String> b) {
+    if (identical(a, b)) return true;
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {
       if (a[i] != b[i]) return false;
@@ -282,8 +285,17 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
 
     final channels = channelProv.allChannels;
     final favIds = favProv.favoriteChannelIds;
-    final groupIds = channelProv.groups.map((g) => g.id).toList();
-    final channelIds = channels.map((c) => c.id).toList();
+    final groups = channelProv.groups;
+    // Los repositorios crean una lista nueva solo al cambiar los datos: si la
+    // referencia es la misma se evita recorrer todo el catálogo (SPEC-50 §6.1).
+    final channelIds = identical(channels, _lastChannelsRef)
+        ? _lastChannelIds
+        : channels.map((c) => c.id).toList();
+    final groupIds = identical(groups, _lastGroupsRef)
+        ? _lastGroupIds
+        : groups.map((g) => g.id).toList();
+    _lastChannelsRef = channels;
+    _lastGroupsRef = groups;
     final channelsChanged = !_sameStringList(channelIds, _lastChannelIds);
     final favIdsChanged = !_sameStringList(favIds, _lastFavoriteIds);
     final groupsChanged = !_sameStringList(groupIds, _lastGroupIds);

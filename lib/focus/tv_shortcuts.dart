@@ -3,7 +3,8 @@ import 'package:flutter/widgets.dart';
 import 'package:moai3/focus/tv_intents.dart';
 
 abstract final class TvShortcuts {
-  static Map<ShortcutActivator, Intent> get dpad => {
+  /// Instancia única: `Shortcuts` reconstruye su mapa si cambia la identidad.
+  static final Map<ShortcutActivator, Intent> dpad = {
         // Sin repeats: hold de ←/→ no thrash paneles (Actions).
         const SingleActivator(
           LogicalKeyboardKey.arrowLeft,

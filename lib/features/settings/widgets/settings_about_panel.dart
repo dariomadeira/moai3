@@ -75,9 +75,9 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final channelProv = context.watch<ChannelProvider>();
-    final channelCount = channelProv.allChannels.length;
-    final isLoading = channelProv.isLoadingChannels;
+    final (channelCount, isLoading) = context.select(
+      (ChannelProvider p) => (p.allChannels.length, p.isLoadingChannels),
+    );
 
     final String valueText;
     if (channelCount > 0) {

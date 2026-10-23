@@ -136,7 +136,11 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    final watchParty = context.watch<WatchPartyProvider>();
+    // Va encima del video: escuchar solo lo que cambia lo visible (SPEC-50 §6.1).
+    final watchParty = context.read<WatchPartyProvider>();
+    final visible = context.select(
+      (WatchPartyProvider p) => p.enabled && p.hasFriendsInSameChannel,
+    );
     final coordinator = widget.coordinator ??
         (context.watch<WatchPartyVoiceCoordinator?>());
 
@@ -148,7 +152,7 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
     }
 
     // Regla de visibilidad SPEC-37: Si no está habilitado o no hay amigos en este canal, ocultar.
-    if (!watchParty.enabled || !watchParty.hasFriendsInSameChannel) {
+    if (!visible) {
       return const SizedBox.shrink();
     }
 
@@ -176,10 +180,10 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
             .tr(namedArgs: {'name': _activeNotificationMessage!})
         : null;
 
-    final tvSettings = context.watch<TvSettingsProvider?>();
-
-    final overscanY = tvSettings?.overlapPaddingY ?? 20.0;
-    final overscanX = tvSettings?.overlapPaddingX ?? 20.0;
+    final (overscanX, overscanY) = context.select(
+      (TvSettingsProvider? s) =>
+          (s?.overlapPaddingX ?? 20.0, s?.overlapPaddingY ?? 20.0),
+    );
 
     final topOffset = overscanY + 12.0;
     final leftOffset = overscanX + 16.0;

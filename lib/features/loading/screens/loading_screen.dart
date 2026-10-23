@@ -452,12 +452,12 @@ class _LoadingScreenState extends State<LoadingScreen>
 
     return Scaffold(
       backgroundColor: scheme.surface,
+      // Solo el gradiente y el logo dependen de la animación; el resto se
+      // construye una vez y se pasa como child (SPEC-50 §6.1).
       body: AnimatedBuilder(
         animation: _pulseController,
-        builder: (context, _) {
-          return Container(
-            width: double.infinity,
-            height: double.infinity,
+        builder: (context, content) {
+          return DecoratedBox(
             decoration: BoxDecoration(
               color: scheme.surface,
               gradient: RadialGradient(
@@ -470,43 +470,46 @@ class _LoadingScreenState extends State<LoadingScreen>
                 stops: const [0.0, 0.55, 1.0],
               ),
             ),
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: Image.asset(
-                      'assets/images/fondo.png',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                    child: _isLoading
-                        ? _buildLoadingState(context, scheme)
-                        : _buildErrorState(context, scheme),
-                  ),
-                ),
-                Positioned(
-                  bottom: 24,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Text(
-                      'v${AppInfo.version}',
-                      style: MoaiText.body(
-                        context,
-                        fontSize: 12,
-                        color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            child: content,
           );
         },
+        child: SizedBox.expand(
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Image.asset(
+                    'assets/images/fondo.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                  child: _isLoading
+                      ? _buildLoadingState(context, scheme)
+                      : _buildErrorState(context, scheme),
+                ),
+              ),
+              Positioned(
+                bottom: 24,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Text(
+                    'v${AppInfo.version}',
+                    style: MoaiText.body(
+                      context,
+                      fontSize: 12,
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -516,47 +519,51 @@ class _LoadingScreenState extends State<LoadingScreen>
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Transform.scale(
-          scale: _scaleAnimation.value,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Aura de luz ambiental circular difuminada
-              Container(
-                width: 140,
-                height: 140,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: scheme.primary.withValues(
-                        alpha: _glowAnimation.value,
+        AnimatedBuilder(
+          animation: _pulseController,
+          builder: (context, logo) => Transform.scale(
+            scale: _scaleAnimation.value,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Aura de luz ambiental circular difuminada
+                Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: scheme.primary.withValues(
+                          alpha: _glowAnimation.value,
+                        ),
+                        blurRadius: 48,
+                        spreadRadius: 8,
                       ),
-                      blurRadius: 48,
-                      spreadRadius: 8,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                logo!,
+              ],
+            ),
+          ),
+          // Mascota e Isotipo de Moai
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                'assets/images/moaiAbout.png',
+                height: 112,
+                fit: BoxFit.contain,
               ),
-              // Mascota e Isotipo de Moai
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset(
-                    'assets/images/moaiAbout.png',
-                    height: 112,
-                    fit: BoxFit.contain,
-                  ),
-                  const SizedBox(height: 14),
-                  SvgPicture.asset(
-                    'assets/svgs/appLogo.svg',
-                    height: 24,
-                    colorFilter: ColorFilter.mode(
-                      scheme.onSurface,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 14),
+              SvgPicture.asset(
+                'assets/svgs/appLogo.svg',
+                height: 24,
+                colorFilter: ColorFilter.mode(
+                  scheme.onSurface,
+                  BlendMode.srcIn,
+                ),
               ),
             ],
           ),

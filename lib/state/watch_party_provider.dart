@@ -235,6 +235,7 @@ class WatchPartyProvider extends ChangeNotifier {
       notifyListeners();
     }
 
+    final before = _visibleState();
     try {
       final updatedFriends = await service.getFriends(_deviceId);
       _friends = updatedFriends;
@@ -253,8 +254,20 @@ class WatchPartyProvider extends ChangeNotifier {
     if (showLoading) {
       _isLoading = false;
     }
-    notifyListeners();
+    // El sondeo corre cada 15 s: notificar solo si cambió algo visible, para no
+    // reconstruir el overlay sobre el video (SPEC-50 §6.1).
+    if (showLoading || _visibleState() != before) notifyListeners();
   }
+
+  /// Lo que la UI muestra de amigos y solicitudes; `isOnline` depende de la hora.
+  String _visibleState() => [
+        for (final f in _friends)
+          '${f.deviceId}|${f.displayName}|${f.isOnline}|'
+              '${f.currentChannelId}|${f.currentChannelName}',
+        '#',
+        for (final r in _friendRequests) r.deviceId,
+        '#${_errorMessage ?? ''}',
+      ].join(';');
 
   /// Agrega un nuevo amigo usando su código (ej. "7421" o "MOAI-7421").
   Future<void> addFriend(String friendCodeInput) async {

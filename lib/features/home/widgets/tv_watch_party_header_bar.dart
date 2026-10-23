@@ -71,13 +71,13 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
 
   @override
   Widget build(BuildContext context) {
-    final watchPartyProvider = context.watch<WatchPartyProvider?>();
+    final (watchPartyEnabled, friendsInChannel) = context.select(
+      (WatchPartyProvider? p) =>
+          (p?.enabled ?? false, p?.hasFriendsInSameChannel ?? false),
+    );
     final coordinator = context.watch<WatchPartyVoiceCoordinator?>();
 
-    final watchPartyEnabled = watchPartyProvider?.enabled ?? false;
-
-    final hasFriendsInChannel = watchPartyEnabled &&
-        (watchPartyProvider?.hasFriendsInSameChannel ?? false);
+    final hasFriendsInChannel = watchPartyEnabled && friendsInChannel;
     final isRecording = watchPartyEnabled &&
         (coordinator?.isRecording ?? false);
     final isPlaying = watchPartyEnabled &&
