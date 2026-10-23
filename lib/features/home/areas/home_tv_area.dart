@@ -142,9 +142,15 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
     _favorites.addListener(_rebuild);
     _playerOverlay.addListener(_onPlayerOverlayChanged);
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _requestInitialPlayerFocus();
-    });
+    if (_session.isPopulated) {
+      // Volver a TV desde el rail: el foco queda en el rail, como en las demás
+      // secciones (→ entra al panel). Solo el arranque enfoca el reproductor.
+      _playerOverlay.markInitialFocusDone();
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _requestInitialPlayerFocus();
+      });
+    }
   }
 
   @override
