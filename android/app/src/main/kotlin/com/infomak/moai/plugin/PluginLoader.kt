@@ -11,6 +11,7 @@ import com.infomak.moai.contract.PluginChannel
 import com.infomak.moai.contract.PluginManifest
 import com.infomak.moai.contract.ResolveRequest
 import com.infomak.moai.contract.ResolveResult
+import com.infomak.moai.net.StrictTls
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -26,7 +27,6 @@ import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import javax.net.ssl.HttpsURLConnection
-import javax.net.ssl.SSLContext
 
 /**
  * Host de plugins `.dex`: descarga, verifica (SHA-256), cachea en
@@ -214,10 +214,8 @@ class PluginLoader(private val context: Context) {
                 throw IOException("Conexión no HTTP: $currentUrl")
             }
             val conn = raw as HttpURLConnection
-            if (conn is HttpsURLConnection) {
-                conn.sslSocketFactory = SSLContext.getDefault().socketFactory
-                conn.hostnameVerifier = HttpsURLConnection.getDefaultHostnameVerifier()
-            }
+            // El .dex se ejecuta: TLS estricto del sistema, no el permisivo global.
+            if (conn is HttpsURLConnection) StrictTls.apply(conn)
             conn.connectTimeout = DOWNLOAD_TIMEOUT_MS
             conn.readTimeout = DOWNLOAD_TIMEOUT_MS
             conn.instanceFollowRedirects = true

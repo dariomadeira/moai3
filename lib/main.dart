@@ -40,11 +40,8 @@ class BadCertHttpOverrides extends HttpOverrides {
   HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
       ..badCertificateCallback = (X509Certificate cert, String host, int port) {
-        final hostLower = host.toLowerCase();
-        if (kStrictSslHosts.any(hostLower.contains)) {
-          return false; // Validación estricta SSL
-        }
-        return true; // Permitir fallback de certificado para otros (ej: scrapers, trackers)
+        // Estricto en hosts críticos; permisivo en streams, logos y scrapers.
+        return !isStrictSslHost(host);
       };
   }
 }

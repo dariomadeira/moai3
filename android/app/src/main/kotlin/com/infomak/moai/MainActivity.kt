@@ -50,6 +50,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.view.TextureRegistry
+import com.infomak.moai.net.StrictTls
 
 /** App Moai. */
 class MainActivity : FlutterActivity() {
@@ -61,6 +62,8 @@ class MainActivity : FlutterActivity() {
 
         @JvmStatic
         fun configurePermissiveSsl() {
+            // Guardar la validación del sistema antes de pisarla (descargas de código).
+            StrictTls.captureSystemDefaults()
             try {
                 val trustAllCerts = arrayOf<TrustManager>(
                     object : X509TrustManager {
@@ -100,7 +103,6 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        configurePermissiveSsl()
         FlutterActivityHolder.current = this
         pluginLoader = PluginLoader(this)
         voiceManager = RemoteVoiceManager(this)

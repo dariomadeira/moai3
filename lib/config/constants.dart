@@ -7,12 +7,30 @@ const String kAppName = 'Moai';
 const int kImageCacheMaximumSize = 100;
 const int kImageCacheMaximumSizeBytes = 30 * 1024 * 1024; // 30 MB máx RAM
 
-// Hosts con validación estricta SSL
+// Hosts con validación TLS estricta (SPEC-50 §2.2). El resto (streams, logos,
+// scrapers de plugins) acepta certificados inválidos. Se compara el dominio
+// exacto o un subdominio.
 const List<String> kStrictSslHosts = [
+  // Identidad, presencia y amigos.
+  'supabase.co',
+  // APK de actualización, manifiestos de plugins, ROMs y core de Arcade.
+  'github.com',
+  'githubusercontent.com',
+  'weatherapi.com',
+  'jolpi.ca',
   'themoviedb.org',
-  'google',
-  'torbox',
+  'google.com',
+  'googleapis.com',
+  'googlevideo.com',
+  'gstatic.com',
+  'torbox.app',
 ];
+
+/// `true` si [host] es uno de [kStrictSslHosts] o un subdominio.
+bool isStrictSslHost(String host) {
+  final h = host.toLowerCase();
+  return kStrictSslHosts.any((d) => h == d || h.endsWith('.$d'));
+}
 
 // Configuración de Localización
 const String kTranslationsPath = 'assets/translations';

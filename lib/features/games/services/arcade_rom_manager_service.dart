@@ -119,8 +119,7 @@ class ArcadeRomManagerService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final client = HttpClient()
-        ..badCertificateCallback = ((cert, host, port) => true);
+      final client = HttpClient();
       final request = await client.getUrl(Uri.parse(url));
       final response = await request.close();
 
@@ -183,8 +182,7 @@ class ArcadeRomManagerService extends ChangeNotifier {
       final targetFile = File('$romDir/$filename');
       final tempFile = File('$romDir/$filename.part');
 
-      final client = HttpClient()
-        ..badCertificateCallback = ((cert, host, port) => true);
+      final client = HttpClient();
       final request = await client.getUrl(Uri.parse(item.url));
       final response = await request.close();
 
