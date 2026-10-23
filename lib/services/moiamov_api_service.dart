@@ -12,6 +12,7 @@ import 'package:pointycastle/pointycastle.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/constants.dart';
 import '../models/movie_models.dart';
+import 'titan_ranger_service.dart';
 
 /// Servicio de sincronización del catálogo de películas y series Moiamov
 /// con cifrado nativo Triple DES (3DES) y autenticación automática.
@@ -94,7 +95,8 @@ class MoiamovApiService {
   }
 
   static Uint8List _customBase64Decode(String str) {
-    const pem = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    const pem =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
     final pemMap = List<int>.filled(256, -1);
     for (int i = 0; i < pem.length; i++) {
       pemMap[pem.codeUnitAt(i)] = i;
@@ -161,10 +163,13 @@ class MoiamovApiService {
       PKCS7Padding(),
       ECBBlockCipher(DESedeEngine()),
     );
-    cipher.init(false, PaddedBlockCipherParameters<CipherParameters, CipherParameters>(
-      KeyParameter(keyBytes),
-      null,
-    ));
+    cipher.init(
+      false,
+      PaddedBlockCipherParameters<CipherParameters, CipherParameters>(
+        KeyParameter(keyBytes),
+        null,
+      ),
+    );
 
     final inputBytes = _customBase64Decode(base64Str);
     final decryptedBytes = cipher.process(inputBytes);
@@ -205,10 +210,13 @@ class MoiamovApiService {
       PKCS7Padding(),
       ECBBlockCipher(DESedeEngine()),
     );
-    cipher.init(true, PaddedBlockCipherParameters<CipherParameters, CipherParameters>(
-      KeyParameter(keyBytes),
-      null,
-    ));
+    cipher.init(
+      true,
+      PaddedBlockCipherParameters<CipherParameters, CipherParameters>(
+        KeyParameter(keyBytes),
+        null,
+      ),
+    );
 
     final inputBytes = utf8.encode(plainJson);
     final encryptedBytes = cipher.process(Uint8List.fromList(inputBytes));
@@ -237,7 +245,10 @@ class MoiamovApiService {
     req.headers.set('spkgVer', spkgVer);
     req.headers.set('PORTAL_KEY', portalKey);
     req.headers.set('ProcessResult', 'false');
-    req.headers.set('User-Agent', 'Mozilla/5.0 (Linux; Android 10; TV) Mobile Safari/537.36');
+    req.headers.set(
+      'User-Agent',
+      'Mozilla/5.0 (Linux; Android 10; TV) Mobile Safari/537.36',
+    );
     if (_currentUserId.isNotEmpty) {
       req.headers.set('userId', _currentUserId);
     }
@@ -270,8 +281,9 @@ class MoiamovApiService {
     }
   }
 
-  static const MethodChannel _deviceChannel =
-      MethodChannel('com.infomak.moai.tv/device');
+  static const MethodChannel _deviceChannel = MethodChannel(
+    'com.infomak.moai.tv/device',
+  );
 
   /// Recolecta la huella de dispositivo real (mismo concepto que C1446c0 del
   /// APK) para registrarla en v3/snToken. Sin esto el server no emite token.
@@ -300,7 +312,9 @@ class MoiamovApiService {
 
   static Future<Map<String, String>> _deviceFingerprint() async {
     try {
-      final res = await _deviceChannel.invokeMethod<Object>('getDeviceFingerprint');
+      final res = await _deviceChannel.invokeMethod<Object>(
+        'getDeviceFingerprint',
+      );
       if (res is Map && res.isNotEmpty) {
         return res.map((k, v) => MapEntry(k.toString(), v?.toString() ?? ''));
       }
@@ -332,7 +346,9 @@ class MoiamovApiService {
         'diskInfo': fp['diskInfo'],
         'ramSize': fp['ramSize'],
         'romSize': fp['romSize'],
-        'gatewayMac': (fp['gatewayMac'] ?? '').isEmpty ? _deviceMac : fp['gatewayMac'],
+        'gatewayMac': (fp['gatewayMac'] ?? '').isEmpty
+            ? _deviceMac
+            : fp['gatewayMac'],
         'cpuId': fp['cpuId'],
         'display': fp['display'],
         'brand': fp['brand'],
@@ -353,12 +369,16 @@ class MoiamovApiService {
     final decoded = jsonDecode(body);
     if (decoded is! Map<String, dynamic>) return null;
     if (decoded['returnCode']?.toString() != '0') {
-      logLine('snToken rechazado: ${decoded['returnCode']} (${decoded['errorMessage']})');
+      logLine(
+        'snToken rechazado: ${decoded['returnCode']} (${decoded['errorMessage']})',
+      );
       return null;
     }
     final data = _decodeData(decoded['data']);
     if (data is! Map<String, dynamic>) {
-      logLine('snToken sin data (crudo=${_short(decoded['data']?.toString() ?? 'null')})');
+      logLine(
+        'snToken sin data (crudo=${_short(decoded['data']?.toString() ?? 'null')})',
+      );
       return null;
     }
     final snToken = data['snToken']?.toString() ?? '';
@@ -394,10 +414,13 @@ class MoiamovApiService {
       PKCS7Padding(),
       ECBBlockCipher(DESedeEngine()),
     );
-    cipher.init(true, PaddedBlockCipherParameters<CipherParameters, CipherParameters>(
-      KeyParameter(keyBytes),
-      null,
-    ));
+    cipher.init(
+      true,
+      PaddedBlockCipherParameters<CipherParameters, CipherParameters>(
+        KeyParameter(keyBytes),
+        null,
+      ),
+    );
     final enc = cipher.process(Uint8List.fromList(utf8.encode(plain)));
     return _toHexString(base64.encode(enc));
   }
@@ -423,19 +446,26 @@ class MoiamovApiService {
     final data = _decodeData(actDecoded['data']);
     if (data is! Map<String, dynamic>) return false;
     if (data['userId'] != null) _currentUserId = data['userId'].toString();
-    if (data['userToken'] != null) _currentUserToken = data['userToken'].toString();
+    if (data['userToken'] != null) {
+      _currentUserToken = data['userToken'].toString();
+    }
     if (data['userIdentity'] != null) {
       _currentUserIdentity = data['userIdentity'].toString();
     } else if (data['identity'] != null) {
       _currentUserIdentity = data['identity'].toString();
     }
     final pcl = data['portalCodeList'];
-    if (pcl is List && pcl.isNotEmpty && pcl[0] is Map && pcl[0]['portalCode'] != null) {
+    if (pcl is List &&
+        pcl.isNotEmpty &&
+        pcl[0] is Map &&
+        pcl[0]['portalCode'] != null) {
       _currentPortalCode = pcl[0]['portalCode'].toString();
     } else if (data['portalCode'] != null) {
       _currentPortalCode = data['portalCode'].toString();
     }
-    logLine('✅ Sesión activada: userId=$_currentUserId portal=$_currentPortalCode identity=$_currentUserIdentity mac=$_deviceMac');
+    logLine(
+      '✅ Sesión activada: userId=$_currentUserId portal=$_currentPortalCode identity=$_currentUserIdentity mac=$_deviceMac',
+    );
     try {
       SharedPreferences.getInstance().then((prefs) {
         prefs.setString('moiamov_user_id', _currentUserId);
@@ -458,7 +488,8 @@ class MoiamovApiService {
       if (token != null && token.isNotEmpty) {
         _currentUserToken = token;
         _currentUserId = prefs.getString('moiamov_user_id') ?? _currentUserId;
-        _currentPortalCode = prefs.getString('moiamov_portal_code') ?? _currentPortalCode;
+        _currentPortalCode =
+            prefs.getString('moiamov_portal_code') ?? _currentPortalCode;
         _currentUserIdentity = prefs.getString('moiamov_user_identity') ?? '';
         final savedMac = prefs.getString('moiamov_device_mac');
         if (savedMac != null && savedMac.isNotEmpty) {
@@ -470,13 +501,17 @@ class MoiamovApiService {
           _activeSnField = savedSn;
         }
         _currentB29 = prefs.getString('moiamov_b29') ?? '';
-        logLine('🔑 Sesión activa restaurada: userId=$_currentUserId portal=$_currentPortalCode mac=$_deviceMac sn=${_currentSnField.isNotEmpty ? "OK" : "vacío"}');
+        logLine(
+          '🔑 Sesión activa restaurada: userId=$_currentUserId portal=$_currentPortalCode mac=$_deviceMac sn=${_currentSnField.isNotEmpty ? "OK" : "vacío"}',
+        );
       }
 
       // Si la MAC sigue siendo la default, consultar fingerprint nativo de inmediato
       if (_deviceMac == deviceMac) {
         final fp = await _deviceFingerprint();
-        final realMac = (fp['wifiMac'] ?? '').isEmpty || fp['wifiMac'] == '02:00:00:00:00:00'
+        final realMac =
+            (fp['wifiMac'] ?? '').isEmpty ||
+                fp['wifiMac'] == '02:00:00:00:00:00'
             ? (fp['etheMac'] ?? deviceMac)
             : (fp['wifiMac'] ?? deviceMac);
         if (realMac.isNotEmpty && realMac != '02:00:00:00:00:00') {
@@ -497,8 +532,11 @@ class MoiamovApiService {
     Duration timeout = const Duration(seconds: 8),
   }) async {
     final fp = await _deviceFingerprint();
-    logLine('Dispositivo: androidId=${fp['androidId']} brand=${fp['brand']} device=${fp['device']}');
-    _deviceMac = (fp['wifiMac'] ?? '').isEmpty || fp['wifiMac'] == '02:00:00:00:00:00'
+    logLine(
+      'Dispositivo: androidId=${fp['androidId']} brand=${fp['brand']} device=${fp['device']}',
+    );
+    _deviceMac =
+        (fp['wifiMac'] ?? '').isEmpty || fp['wifiMac'] == '02:00:00:00:00:00'
         ? (fp['etheMac'] ?? deviceMac)
         : (fp['wifiMac'] ?? deviceMac);
 
@@ -529,11 +567,15 @@ class MoiamovApiService {
         _activeSnField = snField;
         final localMac = _deviceMac.replaceAll(':', '');
         final reserve1 = _encryptWithKey(
-            localMac.isEmpty ? '000000000000' : localMac,
-            kMoiamovDeviceCipherKey);
+          localMac.isEmpty ? '000000000000' : localMac,
+          kMoiamovDeviceCipherKey,
+        );
         final b29 = _encryptWithKey(
-            (fp['serialNumber'] ?? '').isEmpty ? '000000000000' : fp['serialNumber']!,
-            kMoiamovDeviceCipherKey);
+          (fp['serialNumber'] ?? '').isEmpty
+              ? '000000000000'
+              : fp['serialNumber']!,
+          kMoiamovDeviceCipherKey,
+        );
         _currentB29 = b29;
 
         logLine('Sesión: v8/active → $baseUrl');
@@ -566,8 +608,11 @@ class MoiamovApiService {
         final rc = actDecoded['returnCode']?.toString() ?? '';
         final em = actDecoded['errorMessage']?.toString() ?? '';
         if (rc == 'portal100024' || em.contains('黑名单') || em.contains('区域')) {
-          logLine('🚫 La salida de red fue rechazada. Reintentá con otro nodo.');
-          lastResolutionError = 'Región no permitida por el servidor. Conecta el túnel seguro.';
+          logLine(
+            '🚫 La salida de red fue rechazada. Reintentá con otro nodo.',
+          );
+          lastResolutionError =
+              'Región no permitida por el servidor. Conecta el túnel seguro.';
           return false;
         }
         if (_applyActiveResult(actDecoded)) {
@@ -603,7 +648,8 @@ class MoiamovApiService {
           final decryptedJson = decryptDocument(rawHex, key: localDocumentKey);
           final decoded = jsonDecode(decryptedJson);
 
-          if (decoded is Map<String, dynamic> && decoded['recommendList'] is List) {
+          if (decoded is Map<String, dynamic> &&
+              decoded['recommendList'] is List) {
             final list = (decoded['recommendList'] as List)
                 .whereType<Map<String, dynamic>>()
                 .map((e) => CategoryColumn.fromJson(e))
@@ -617,7 +663,8 @@ class MoiamovApiService {
                 categories: list,
                 isFromNetwork: true,
                 source: CatalogSource.localDocument,
-                statusMessage: '$sectionLabel desde cache local del TV ($total títulos en ${list.length} categorías)',
+                statusMessage:
+                    '$sectionLabel desde cache local del TV ($total títulos en ${list.length} categorías)',
               );
               _cachedCatalog = result;
               return result;
@@ -682,7 +729,10 @@ class MoiamovApiService {
           final request = await ioClient.postUrl(endpointUri).timeout(timeout);
           request.headers.set('Content-Type', 'application/json;charset=utf-8');
           request.headers.set('ProcessResult', 'false');
-          request.headers.set('User-Agent', 'Mozilla/5.0 (Linux; Android 10; TV) Mobile Safari/537.36');
+          request.headers.set(
+            'User-Agent',
+            'Mozilla/5.0 (Linux; Android 10; TV) Mobile Safari/537.36',
+          );
           request.headers.set('apk', apkPackage);
           request.headers.set('apkVer', apkVer);
           request.headers.set('spkgVer', spkgVer);
@@ -702,7 +752,10 @@ class MoiamovApiService {
           request.write(encryptedBody);
 
           final response = await request.close().timeout(timeout);
-          final responseBody = await response.transform(utf8.decoder).join().timeout(timeout);
+          final responseBody = await response
+              .transform(utf8.decoder)
+              .join()
+              .timeout(timeout);
 
           if (response.statusCode != 200) {
             logLine('⚠️ HTTP ${response.statusCode} ($host / $code)');
@@ -713,9 +766,13 @@ class MoiamovApiService {
           if (decoded is! Map<String, dynamic>) continue;
           final returnCode = decoded['returnCode']?.toString();
           final errMsg = decoded['errorMessage'];
-          logLine('↳ returnCode=$returnCode${errMsg != null ? ' ($errMsg)' : ''}');
+          logLine(
+            '↳ returnCode=$returnCode${errMsg != null ? ' ($errMsg)' : ''}',
+          );
 
-          if (returnCode == '0' || returnCode == '0000' || returnCode == '200') {
+          if (returnCode == '0' ||
+              returnCode == '0000' ||
+              returnCode == '200') {
             final innerData = _decodeData(decoded['data']);
             List? rawList;
             if (innerData is Map<String, dynamic> &&
@@ -734,7 +791,9 @@ class MoiamovApiService {
 
               if (list.isNotEmpty) {
                 final total = list.fold(0, (sum, c) => sum + c.movies.length);
-                logLine('✅ EN VIVO: $total títulos en ${list.length} categorías ($sectionLabel)');
+                logLine(
+                  '✅ EN VIVO: $total títulos en ${list.length} categorías ($sectionLabel)',
+                );
                 final result = CatalogResult(
                   categories: list,
                   isFromNetwork: true,
@@ -746,7 +805,9 @@ class MoiamovApiService {
                 await _persistLiveCatalog(section, rawList);
                 return result;
               }
-              logLine('⚠️ Respuesta OK pero sin títulos ($sectionLabel / $code).');
+              logLine(
+                '⚠️ Respuesta OK pero sin títulos ($sectionLabel / $code).',
+              );
             }
           } else if (returnCode == 'aaa100028') {
             logLine('⚠️ Sesión no válida (aaa100028) en $host');
@@ -758,7 +819,11 @@ class MoiamovApiService {
                 timeout: const Duration(seconds: 6),
               );
               if (activated) {
-                return await syncCatalog(section: section, serverUrl: host, timeout: timeout);
+                return await syncCatalog(
+                  section: section,
+                  serverUrl: host,
+                  timeout: timeout,
+                );
               }
             }
           }
@@ -777,7 +842,9 @@ class MoiamovApiService {
     }
 
     // 2. Última descarga que esta app guardó
-    logLine('ℹ️ API en vivo no devolvió $sectionLabel. Probando la última copia guardada...');
+    logLine(
+      'ℹ️ API en vivo no devolvió $sectionLabel. Probando la última copia guardada...',
+    );
     final saved = await loadPersistedCatalog(section);
     if (saved != null) {
       return saved;
@@ -797,7 +864,9 @@ class MoiamovApiService {
 
   /// Sincroniza todas las secciones clave al abrir la app (Películas, Destacados y Series)
   Future<void> syncAll({Duration timeout = const Duration(seconds: 10)}) async {
-    debugPrint('🚀 [SYNC ALL] Iniciando sincronización integral de catálogo...');
+    debugPrint(
+      '🚀 [SYNC ALL] Iniciando sincronización integral de catálogo...',
+    );
     await syncCatalog(section: 'masnew_movies', timeout: timeout);
     await syncCatalog(section: 'masnew_featured', timeout: timeout);
     await syncCatalog(section: 'masnew_series', timeout: timeout);
@@ -886,7 +955,9 @@ class MoiamovApiService {
         statusMessage: _savedStatusMessage(section),
       );
       if (result == null) return null;
-      logLine('Última descarga guardada: ${result.totalMovies} títulos ($section).');
+      logLine(
+        'Última descarga guardada: ${result.totalMovies} títulos ($section).',
+      );
       _cachedCatalog = result;
       return result;
     } catch (e) {
@@ -952,8 +1023,9 @@ class MoiamovApiService {
         : (section == 'masnew_series' ? 'Series' : 'Películas');
 
     try {
-      final jsonString =
-          await rootBundle.loadString('assets/data/$section.json');
+      final jsonString = await rootBundle.loadString(
+        'assets/data/$section.json',
+      );
       final data = jsonDecode(jsonString);
 
       if (data is Map<String, dynamic> && data['recommendList'] is List) {
@@ -1039,14 +1111,19 @@ class MoiamovApiService {
           if (data is Map<String, dynamic>) {
             logLine('📦 startPlayVOD data completa: ${jsonEncode(data)}');
             final info = VodPlayInfo.fromJson(data);
-            logLine('✅ startPlayVOD éxito: "${info.name}" (${info.qualities.length} calidades, ${info.subtitles.length} subs)');
+            logLine(
+              '✅ startPlayVOD éxito: "${info.name}" (${info.qualities.length} calidades, ${info.subtitles.length} subs)',
+            );
             return info;
           }
         } else {
-          logLine('⚠️ startPlayVOD returnCode=$returnCode (${decoded['errorMessage']})');
+          logLine(
+            '⚠️ startPlayVOD returnCode=$returnCode (${decoded['errorMessage']})',
+          );
           if (returnCode == 'aaa100028') {
             lastResolutionError = 'Sesión expirada o no autenticada.';
-          } else if (decoded['errorMessage'] != null && decoded['errorMessage'].toString().isNotEmpty) {
+          } else if (decoded['errorMessage'] != null &&
+              decoded['errorMessage'].toString().isNotEmpty) {
             lastResolutionError = decoded['errorMessage'].toString();
           }
         }
@@ -1085,7 +1162,9 @@ class MoiamovApiService {
       _trackClient(ioClient);
 
       try {
-        logLine('getSlbInfo ($mediaContentId) → $baseUrl (mac: $_deviceMac, sn: ${_currentSnField.isNotEmpty ? "OK" : "vacío"})');
+        logLine(
+          'getSlbInfo ($mediaContentId) → $baseUrl (mac: $_deviceMac, sn: ${_currentSnField.isNotEmpty ? "OK" : "vacío"})',
+        );
         final candidateLiveCodes = <String>[
           '15406_live',
           'default_live',
@@ -1127,51 +1206,151 @@ class MoiamovApiService {
               if (decoded is! Map<String, dynamic>) continue;
 
               final returnCode = decoded['returnCode']?.toString();
-              if (returnCode == '0' || returnCode == '0000' || returnCode == '200') {
+              if (returnCode == '0' ||
+                  returnCode == '0000' ||
+                  returnCode == '200') {
                 final data = _decodeData(decoded['data']);
-                logLine('📦 getSlbInfo data completa ($version, $typeVal, $liveCode): ${jsonEncode(data)}');
+                logLine(
+                  '📦 getSlbInfo data completa ($version, $typeVal, $liveCode): ${jsonEncode(data)}',
+                );
                 if (data is Map<String, dynamic> && data['cdn_list'] is List) {
-                  final cdnList = (data['cdn_list'] as List).whereType<Map>().toList();
+                  final cdnList = (data['cdn_list'] as List)
+                      .whereType<Map>()
+                      .toList();
                   // Priorizar CDNs con tag="vod"
                   cdnList.sort((a, b) {
-                    final aVod = a['tag']?.toString().toLowerCase() == 'vod' ? 0 : 1;
-                    final bVod = b['tag']?.toString().toLowerCase() == 'vod' ? 0 : 1;
+                    final aVod = a['tag']?.toString().toLowerCase() == 'vod'
+                        ? 0
+                        : 1;
+                    final bVod = b['tag']?.toString().toLowerCase() == 'vod'
+                        ? 0
+                        : 1;
                     return aVod.compareTo(bVod);
                   });
 
                   for (final cdn in cdnList) {
                     if (cdn['url_list'] is List) {
-                      var host = (cdn['main_addr'] ?? cdn['spared_addr'])?.toString().trim() ?? '';
-                      if (host.startsWith('http://') || host.startsWith('https://')) {
-                        host = host.replaceFirst(RegExp(r'^https?://'), '');
-                      }
                       for (final u in cdn['url_list'] as List) {
                         if (u is Map && u['url'] != null) {
                           final urlStr = u['url'].toString().trim();
-                          if (urlStr.startsWith('http://') || urlStr.startsWith('https://')) {
-                            logLine('✅ getSlbInfo stream URL resuelta ($version, $typeVal): ${_short(urlStr, 80)}');
+                          // Solo aceptamos URLs completas. `url_list[].url` suele
+                          // ser únicamente el query firmado (`link=...&sign_type=...`)
+                          // y `main_addr` es un SLB: armar
+                          // `http://SLB/{id}.m3u8?{query}` siempre da 403.
+                          if (urlStr.startsWith('http://') ||
+                              urlStr.startsWith('https://')) {
+                            logLine(
+                              '✅ getSlbInfo stream URL directa ($version, $typeVal): ${_short(urlStr, 80)}',
+                            );
                             return urlStr;
-                          } else if (host.isNotEmpty) {
-                            final fullAuth = (license != null && license.isNotEmpty && !urlStr.contains('media_code'))
-                                ? '$urlStr&$license'
-                                : urlStr;
-                            final streamUrl = 'http://$host/$mediaContentId.m3u8?$fullAuth';
-                            logLine('✅ getSlbInfo stream URL armada ($version, $typeVal, tag=${cdn['tag']}): ${_short(streamUrl, 80)}');
-                            return streamUrl;
                           }
                         }
                       }
                     }
                   }
+
+                  logLine(
+                    '⚠️ getSlbInfo: el CDN solo entregó tokens firmados '
+                    '(tag=${cdnList.isNotEmpty ? cdnList.first['tag'] : '-'}); '
+                    'se requiere Titan Ranger para resolver el play_url.',
+                  );
                 }
               } else {
-                logLine('⚠️ getSlbInfo $version ($typeVal, $liveCode) returnCode=$returnCode (${decoded['errorMessage']})');
+                logLine(
+                  '⚠️ getSlbInfo $version ($typeVal, $liveCode) returnCode=$returnCode (${decoded['errorMessage']})',
+                );
               }
             }
           }
         }
       } catch (e) {
         logLine('⚠️ Error en getSlbInfo ($host): $e');
+      } finally {
+        _releaseClient(ioClient);
+      }
+    }
+    return null;
+  }
+
+  /// Obtiene la respuesta de datos completa (cdn_list, play_params) de getSlbInfo (v14/v15).
+  Future<Map<String, dynamic>?> getSlbInfoRaw({
+    required String mediaContentId,
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    final localMac = _deviceMac.replaceAll(':', '');
+    final reserve1 = _encryptWithKey(
+      localMac.isEmpty ? '000000000000' : localMac,
+      kMoiamovDeviceCipherKey,
+    );
+
+    final candidateHosts = <String>{
+      defaultBaseUrl,
+      'https://ftmrmy.jdfey0cd.com',
+      'https://fuxok.nguvmqhpk.com',
+    }.toList();
+
+    for (final host in candidateHosts) {
+      final baseUrl = _cleanUrl(host);
+      final ioClient = HttpClient()
+        ..badCertificateCallback = ((cert, h, p) => true)
+        ..connectionTimeout = timeout;
+      _trackClient(ioClient);
+
+      try {
+        final candidateLiveCodes = <String>[
+          '15406_live',
+          'default_live',
+          '${_currentPortalCode}_live',
+          mediaContentId,
+        ];
+
+        for (final liveCode in candidateLiveCodes) {
+          for (final typeVal in ['vod', 'merge']) {
+            final payload = <String, dynamic>{
+              'userToken': _currentUserToken,
+              'userId': _currentUserId,
+              'hasPay': '0',
+              'userIdentity': _currentUserIdentity,
+              'portalCode': _currentPortalCode,
+              'type': typeVal,
+              'appVer': apkVer,
+              'lang': 'es',
+              'encMediaSupported': 1,
+              'liveCodeList': [liveCode],
+              'appParams': '',
+              'reserve1': reserve1,
+              'pipFlag': '0',
+            };
+            if (_currentSnField.isNotEmpty) {
+              payload['sn'] = _currentSnField;
+            }
+
+            for (final version in ['v14', 'v15']) {
+              final body = await _postEncrypted(
+                ioClient,
+                '$baseUrl/api/portalCore/$version/getSlbInfo',
+                payload,
+                timeout,
+              );
+
+              if (body == null) continue;
+              final decoded = jsonDecode(body);
+              if (decoded is! Map<String, dynamic>) continue;
+
+              final returnCode = decoded['returnCode']?.toString();
+              if (returnCode == '0' ||
+                  returnCode == '0000' ||
+                  returnCode == '200') {
+                final data = _decodeData(decoded['data']);
+                if (data is Map<String, dynamic>) {
+                  return data;
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        logLine('⚠️ Error en getSlbInfoRaw ($host): $e');
       } finally {
         _releaseClient(ioClient);
       }
@@ -1190,7 +1369,9 @@ class MoiamovApiService {
     Duration timeout = const Duration(seconds: 14),
   }) async {
     lastResolutionError = null;
-    logLine('🎬 Iniciando resolución de stream para: "${movie.name}" (ID: ${movie.contentId})');
+    logLine(
+      '🎬 Iniciando resolución de stream para: "${movie.name}" (ID: ${movie.contentId})',
+    );
 
     // Restaurar tokens de sesión activos si existen en almacenamiento
     await restoreSessionFromStorage();
@@ -1199,10 +1380,16 @@ class MoiamovApiService {
     if (_currentSnField.isEmpty) {
       logLine('↻ Obteniendo snToken para asociar dispositivo...');
       final fp = await _deviceFingerprint();
-      final ioClient = HttpClient()..badCertificateCallback = ((c, h, p) => true);
+      final ioClient = HttpClient()
+        ..badCertificateCallback = ((c, h, p) => true);
       _trackClient(ioClient);
       try {
-        final sn = await _fetchSnToken(ioClient, defaultBaseUrl, fp, const Duration(seconds: 4));
+        final sn = await _fetchSnToken(
+          ioClient,
+          defaultBaseUrl,
+          fp,
+          const Duration(seconds: 4),
+        );
         if (sn != null && sn['_token'] != null) {
           final snToken = sn['_token'].toString();
           _currentSnField = _md5Hex('$snToken$kMoiamovSnSalt');
@@ -1210,7 +1397,9 @@ class MoiamovApiService {
           final prefs = await SharedPreferences.getInstance();
           prefs.setString('moiamov_sn_field', _currentSnField);
           prefs.setString('moiamov_device_mac', _deviceMac);
-          logLine('✅ snField vinculado con MAC ($_deviceMac): ${_short(_currentSnField, 16)}');
+          logLine(
+            '✅ snField vinculado con MAC ($_deviceMac): ${_short(_currentSnField, 16)}',
+          );
         }
       } catch (e) {
         logLine('⚠️ Error obteniendo snToken: $e');
@@ -1220,20 +1409,31 @@ class MoiamovApiService {
     }
 
     // 1. startPlayVOD
-    var playInfo = await startPlayVOD(contentId: movie.contentId, timeout: timeout);
+    var playInfo = await startPlayVOD(
+      contentId: movie.contentId,
+      timeout: timeout,
+    );
 
     // Si falló por sesión no inicializada o expirada, intentamos reactivar una sola vez
     if (playInfo == null || playInfo.qualities.isEmpty) {
       logLine('↻ Intentando reactivación de sesión para VOD...');
-      final activated = await activateDeviceSession(timeout: const Duration(seconds: 6));
+      final activated = await activateDeviceSession(
+        timeout: const Duration(seconds: 6),
+      );
       if (activated) {
-        playInfo = await startPlayVOD(contentId: movie.contentId, timeout: timeout);
+        playInfo = await startPlayVOD(
+          contentId: movie.contentId,
+          timeout: timeout,
+        );
       }
     }
 
     if (playInfo == null || playInfo.qualities.isEmpty) {
-      logLine('❌ No se encontraron calidades de reproducción para "${movie.name}"');
-      lastResolutionError ??= 'No se encontraron opciones de reproducción para este título.';
+      logLine(
+        '❌ No se encontraron calidades de reproducción para "${movie.name}"',
+      );
+      lastResolutionError ??=
+          'No se encontraron opciones de reproducción para este título.';
       return null;
     }
 
@@ -1246,7 +1446,9 @@ class MoiamovApiService {
       );
     } else {
       selectedQuality = playInfo.qualities.firstWhere(
-        (q) => q.quality.toUpperCase().contains('1080') || q.quality.toUpperCase().contains('4K'),
+        (q) =>
+            q.quality.toUpperCase().contains('1080') ||
+            q.quality.toUpperCase().contains('4K'),
         orElse: () => playInfo!.qualities.first,
       );
     }
@@ -1254,33 +1456,169 @@ class MoiamovApiService {
     // 3. Selección de Audio (PLAN §3.Paso 2.B)
     final selectedSource = selectedQuality.bestAudioSource;
     if (selectedSource == null) {
-      logLine('❌ La calidad ${selectedQuality.quality} no tiene pistas de audio válidas');
-      lastResolutionError ??= 'No hay pistas de audio disponibles para esta película.';
+      logLine(
+        '❌ La calidad ${selectedQuality.quality} no tiene pistas de audio válidas',
+      );
+      lastResolutionError ??=
+          'No hay pistas de audio disponibles para esta película.';
       return null;
     }
 
     // 4. Selección de Subtítulos (PLAN §3.Paso 2.A)
     final bestSub = playInfo.bestSpanishSubtitle;
-    logLine('🔊 Pista elegida: ${selectedQuality.quality} - ${selectedSource.audioInfo} (Media ID: ${selectedSource.mediaContentId})');
+    logLine(
+      '🔊 Pista elegida: ${selectedQuality.quality} - ${selectedSource.audioInfo} (Media ID: ${selectedSource.mediaContentId})',
+    );
     if (bestSub != null) {
-      logLine('💬 Subtítulo en español elegido: "${bestSub.name}" (${bestSub.language}) [URL: ${bestSub.url}]');
+      logLine(
+        '💬 Subtítulo en español elegido: "${bestSub.name}" (${bestSub.language}) [URL: ${bestSub.url}]',
+      );
     }
 
-    // 5. URL directa de startPlayVOD o getSlbInfo (PLAN §3.Paso 3)
+    // 5. Resolución con Titan Ranger (Alternativa B) o getSlbInfo
     String? streamUrl = selectedSource.directUrl;
     if (streamUrl != null && streamUrl.isNotEmpty) {
-      logLine('✅ URL directa encontrada en startPlayVOD: ${_short(streamUrl, 80)}');
-    } else {
-      streamUrl = await getSlbInfo(
-        mediaContentId: selectedSource.mediaContentId,
-        license: selectedSource.license,
-        timeout: timeout,
+      logLine(
+        '✅ URL directa encontrada en startPlayVOD: ${_short(streamUrl, 80)}',
       );
+    } else {
+      // Intento A: Titan Ranger con libranger-jni.so en Android
+      if (TitanRangerService.isSupported) {
+        logLine(
+          '🛡️ [Titan Ranger] Iniciando resolución con libranger-jni.so...',
+        );
+        try {
+          final slbData = await getSlbInfoRaw(
+            mediaContentId: selectedSource.mediaContentId,
+            timeout: timeout,
+          );
+
+          if (slbData != null && slbData['cdn_list'] is List) {
+            final cdnList = slbData['cdn_list'] as List;
+            final entries = TitanRangerService.mapSlbEntries(cdnList);
+            final readyEntries = entries
+                .where(
+                  (e) =>
+                      (e['tag'] as String).isNotEmpty &&
+                      (e['sign_type'] as String).isNotEmpty,
+                )
+                .length;
+
+            await TitanRangerService.init();
+
+            // `android_id` real (Settings.System). El snField NO es el android_id.
+            final androidId = await TitanRangerService.getAndroidId();
+            final rawPlayParams = slbData['play_params'];
+            final playParams = rawPlayParams is String
+                ? rawPlayParams
+                : (rawPlayParams == null ? '' : jsonEncode(rawPlayParams));
+            final effectivePortalKey = portalKey.isNotEmpty
+                ? portalKey
+                : '2b494e53756c664c2f44465245733572';
+
+            logLine(
+              '🛡️ [Titan Ranger] ${entries.length} entries ($readyEntries con link/sign_type), '
+              'androidId=${androidId.isNotEmpty ? "OK" : "vacío"}, portalKey=${portalKey.isNotEmpty ? "OK" : "default"}',
+            );
+
+            await TitanRangerService.setEnv(
+              app: apkPackage.isNotEmpty ? apkPackage : 'com.android.msandroid',
+              appVer: apkVer.isNotEmpty ? apkVer : '50503',
+              userId: _currentUserId,
+              devId: _deviceMac.isNotEmpty ? _deviceMac : '02:00:00:00:00:00',
+              communicationKey: effectivePortalKey,
+              params: playParams,
+              androidId: androidId,
+              titanPort: -1,
+            );
+
+            await TitanRangerService.setEntries(entries);
+            // Deja que Ranger procese SetEntries antes de iniciar PrepareProgram.
+            // La app oficial encola ambas llamadas en el mismo handler nativo.
+            await Future<void>.delayed(const Duration(milliseconds: 400));
+
+            final programPayload = {
+              'name': movie.contentId,
+              'buss': 'vod',
+              'title': movie.name,
+              'episode': '1',
+              'from': 'detail',
+              'cause': 'user',
+              'media': selectedSource.mediaContentId,
+              'medias': [
+                {
+                  'name': selectedSource.mediaContentId,
+                  'license': selectedSource.license ?? '',
+                  'lang': selectedSource.audioInfo,
+                  'quality': selectedQuality.quality,
+                  'vcodec': selectedSource.encodeFormat ?? 'h265',
+                  'format':
+                      selectedSource.videoFormat ??
+                      selectedSource.videoType ??
+                      'ts',
+                },
+              ],
+              'start': 0,
+            };
+
+            logLine(
+              '🛡️ [Titan Ranger] Despachando PrepareProgram para: "${movie.name}"...',
+            );
+            final statusResult = await TitanRangerService.prepareProgram(
+              instanceId: 0,
+              // La app oficial pasa program.getName() (ID del programa) como
+              // "name" y program.getBuss() ("vod") como "extra".
+              name: programPayload['name']!.toString(),
+              program: programPayload,
+              extra: 'vod',
+            );
+
+            if (statusResult != null && statusResult['play_url'] != null) {
+              final resolvedPlayUrl = statusResult['play_url']
+                  .toString()
+                  .trim();
+              if (resolvedPlayUrl.startsWith('mem://') ||
+                  resolvedPlayUrl.startsWith('ijkhttphook:')) {
+                // Ranger resolvió, pero ese esquema requiere el proxy/datasource
+                // nativo de IJK (servidor /playinfo + titan_port), no ExoPlayer.
+                logLine(
+                  '⚠️ [Titan Ranger] play_url con esquema no reproducible por ExoPlayer: $resolvedPlayUrl',
+                );
+                lastResolutionError =
+                    'El servidor entregó un stream interno (${resolvedPlayUrl.split(':').first}://) '
+                    'que requiere el motor nativo de Titan.';
+              } else if (resolvedPlayUrl.isNotEmpty) {
+                logLine(
+                  '🎉 [Titan Ranger] Stream URL resuelta por libranger-jni: $resolvedPlayUrl',
+                );
+                streamUrl = resolvedPlayUrl;
+              }
+            } else {
+              logLine(
+                '⚠️ [Titan Ranger] No se obtuvo play_url nativo de Ranger',
+              );
+            }
+          }
+        } catch (e) {
+          logLine('⚠️ [Titan Ranger] Excepción durante resolución nativa: $e');
+        }
+      }
+
+      // Intento B (Fallback): getSlbInfo tradicional
+      if (streamUrl == null || streamUrl.isEmpty) {
+        streamUrl = await getSlbInfo(
+          mediaContentId: selectedSource.mediaContentId,
+          license: selectedSource.license,
+          timeout: timeout,
+        );
+      }
     }
 
     if (streamUrl == null) {
       logLine('❌ No se pudo obtener la URL de streaming');
-      lastResolutionError ??= 'El servidor de streaming no devolvió un enlace válido.';
+      lastResolutionError ??=
+          'Titan Ranger no pudo resolver el stream y el CDN no entregó una URL '
+          'completa (solo tokens firmados).';
       return null;
     }
 
@@ -1291,7 +1629,15 @@ class MoiamovApiService {
       subtitleUrl: bestSub?.url,
       subtitleName: bestSub?.name,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 10; TV) Mobile Safari/537.36',
+        'User-Agent':
+            'Mozilla/5.0 (Linux; Android 10; TV) Mobile Safari/537.36',
+        'PORTAL_KEY': portalKey,
+        'apk': apkPackage,
+        'apkVer': apkVer,
+        'spkgVer': spkgVer,
+        if (_currentUserId.isNotEmpty) 'userId': _currentUserId,
+        if (_currentUserIdentity.isNotEmpty)
+          'userIdentity': _currentUserIdentity,
       },
     );
   }

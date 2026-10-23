@@ -372,6 +372,7 @@ class VodMediaSource {
   final String audioInfo;
   final String? audioType;
   final String? videoType;
+  final String? videoFormat;
   final String? encodeFormat;
   final String? directUrl;
   final String? license;
@@ -381,6 +382,7 @@ class VodMediaSource {
     required this.audioInfo,
     this.audioType,
     this.videoType,
+    this.videoFormat,
     this.encodeFormat,
     this.directUrl,
     this.license,
@@ -388,7 +390,8 @@ class VodMediaSource {
 
   factory VodMediaSource.fromJson(Map<String, dynamic> json) {
     String? foundLicense;
-    if (json['licenseList'] is List && (json['licenseList'] as List).isNotEmpty) {
+    if (json['licenseList'] is List &&
+        (json['licenseList'] as List).isNotEmpty) {
       final l0 = (json['licenseList'] as List).first;
       if (l0 is Map) {
         foundLicense = l0['license']?.toString();
@@ -399,8 +402,10 @@ class VodMediaSource {
       audioInfo: json['audioInfo']?.toString() ?? 'Español',
       audioType: json['audioType']?.toString(),
       videoType: json['videoType']?.toString(),
+      videoFormat: json['videoFormat']?.toString(),
       encodeFormat: json['encodeFormat']?.toString(),
-      directUrl: json['url']?.toString() ??
+      directUrl:
+          json['url']?.toString() ??
           json['playUrl']?.toString() ??
           json['streamUrl']?.toString() ??
           json['main_addr']?.toString() ??
@@ -428,10 +433,7 @@ class VodQualityOption {
   final String quality;
   final List<VodMediaSource> sources;
 
-  const VodQualityOption({
-    required this.quality,
-    required this.sources,
-  });
+  const VodQualityOption({required this.quality, required this.sources});
 
   factory VodQualityOption.fromJson(Map<String, dynamic> json) {
     final list = (json['movieList'] as List? ?? [])
@@ -450,10 +452,8 @@ class VodQualityOption {
     if (sources.isEmpty) return null;
     return sources.firstWhere(
       (s) => s.isLatino,
-      orElse: () => sources.firstWhere(
-        (s) => s.isSpanish,
-        orElse: () => sources.first,
-      ),
+      orElse: () =>
+          sources.firstWhere((s) => s.isSpanish, orElse: () => sources.first),
     );
   }
 }
@@ -471,15 +471,19 @@ class VodSubtitleOption {
   });
 
   factory VodSubtitleOption.fromJson(Map<String, dynamic> json) {
-    String url = json['url']?.toString() ?? json['subTitleUrl']?.toString() ?? '';
-    if (url.isEmpty && json['file'] is List && (json['file'] as List).isNotEmpty) {
+    String url =
+        json['url']?.toString() ?? json['subTitleUrl']?.toString() ?? '';
+    if (url.isEmpty &&
+        json['file'] is List &&
+        (json['file'] as List).isNotEmpty) {
       final f0 = (json['file'] as List).first;
       if (f0 is Map) {
         url = f0['url']?.toString() ?? '';
       }
     }
     return VodSubtitleOption(
-      name: json['name']?.toString() ??
+      name:
+          json['name']?.toString() ??
           json['subTitleName']?.toString() ??
           (json['language']?.toString() ?? 'Subtítulo'),
       language: json['language']?.toString() ?? '',

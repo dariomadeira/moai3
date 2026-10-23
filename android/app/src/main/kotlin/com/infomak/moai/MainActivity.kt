@@ -96,6 +96,7 @@ class MainActivity : FlutterActivity() {
     private var uiDpadSounds: UiDpadSounds? = null
 
     private var arcadeManager: com.infomak.moai.games.ArcadeEmulatorManager? = null
+    private var titanRangerManager: com.infomak.moai.titan.TitanRangerManager? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -109,6 +110,9 @@ class MainActivity : FlutterActivity() {
             "com.infomak.moai/arcade_view",
             com.infomak.moai.games.ArcadePlatformViewFactory(arcadeManager!!)
         )
+        titanRangerManager = com.infomak.moai.titan.TitanRangerManager(this).also {
+            it.registerChannel(flutterEngine.dartExecutor.binaryMessenger)
+        }
         setupDeviceChannel(flutterEngine)
         setupVoiceTestChannel(flutterEngine)
         engine.attach(flutterEngine)
