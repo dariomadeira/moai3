@@ -16,6 +16,7 @@ import 'package:moai3/features/home/areas/home_movies_area.dart';
 import 'package:moai3/features/home/areas/home_settings_area.dart';
 import 'package:moai3/features/home/areas/home_tv_area.dart';
 import 'package:moai3/features/home/coordinators/presence_coordinator.dart';
+import 'package:moai3/features/home/home_section.dart';
 import 'package:moai3/features/home/widgets/double_back_exit_scope.dart';
 import 'package:moai3/features/home/widgets/tv_vertical_nav_rail.dart';
 import 'package:moai3/focus/tv_intents.dart';
@@ -51,15 +52,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const int _sectionHome = 0;
-  static const int _sectionTv = 1;
-  static const int _sectionFeatured = 2;
-  static const int _sectionMovies = 3;
-  static const int _sectionSeries = 4;
-  static const int _sectionCalendar = 5;
-  static const int _sectionArcade = 6;
-  static const int _sectionSettings = 7;
-
   final FocusNode _arcadeSelectGameFocus = FocusNode(
     debugLabel: 'arcade_select_game',
   );
@@ -114,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
   );
   final FocusNode _settingsAboutFocus = FocusNode(debugLabel: 'settings_about');
 
-  int _selectedIndex = _sectionTv;
+  HomeSection _section = HomeSection.tv;
   int _activeSettingsPanelIndex = SettingsPanelLayout.configTvPanelIndex;
   StreamSubscription<List<CalendarEvent>>? _liveEventsSub;
   final List<CalendarEvent> _liveSnackQueue = [];
@@ -142,16 +134,16 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAutoUpdate();
       _listenToLiveEvents();
-      _updatePresenceForSection(_selectedIndex);
+      _updatePresenceForSection(_section);
       _listenToArcadeInvites();
     });
   }
 
   void _onArcadePluginChanged() {
     if (!mounted) return;
-    if (_selectedIndex == _sectionArcade &&
+    if (_section == HomeSection.arcade &&
         !ArcadePluginService.instance.isInstalled) {
-      _switchSection(_sectionTv);
+      _switchSection(HomeSection.tv);
     }
   }
 
@@ -208,17 +200,17 @@ class _HomeScreenState extends State<HomeScreen> {
         });
   }
 
-  void _updatePresenceForSection(int index) {
+  void _updatePresenceForSection(HomeSection index) {
     _presence.setMode(switch (index) {
-      _sectionTv => PresenceMode.watching,
-      _sectionArcade => PresenceMode.available,
+      HomeSection.tv => PresenceMode.watching,
+      HomeSection.arcade => PresenceMode.available,
       _ => PresenceMode.offline,
     });
   }
 
-  void _switchSection(int index) {
-    if (_selectedIndex == index) return;
-    setState(() => _selectedIndex = index);
+  void _switchSection(HomeSection index) {
+    if (_section == index) return;
+    setState(() => _section = index);
     _updatePresenceForSection(index);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -333,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
       event,
       onTuneChannel: (channel) {
         context.read<ChannelProvider>().selectChannel(channel);
-        _switchSection(_sectionTv);
+        _switchSection(HomeSection.tv);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           _tvAreaKey.currentState?.selectChannel(channel);
@@ -451,31 +443,31 @@ class _HomeScreenState extends State<HomeScreen> {
   /// → del rail — idéntico a Smart `_returnFocusToSettingsPanel`.
   void _onRailFocusRight() {
     _railFocusNode.unfocus();
-    if (_selectedIndex == _sectionHome) {
+    if (_section == HomeSection.home) {
       _homeAreaKey.currentState?.requestEntryFocus();
       return;
     }
-    if (_selectedIndex == _sectionSettings) {
+    if (_section == HomeSection.settings) {
       _focusSettingsPanelByIndex(_activeSettingsPanelIndex);
       return;
     }
-    if (_selectedIndex == _sectionCalendar) {
+    if (_section == HomeSection.calendar) {
       _focusCalendarPanelByIndex(_activeCalendarPanelIndex);
       return;
     }
-    if (_selectedIndex == _sectionArcade) {
+    if (_section == HomeSection.arcade) {
       _requestFocusWithRetry(_arcadeSelectGameFocus);
       return;
     }
-    if (_selectedIndex == _sectionFeatured) {
+    if (_section == HomeSection.featured) {
       _featuredAreaKey.currentState?.requestEntryFocus();
       return;
     }
-    if (_selectedIndex == _sectionMovies) {
+    if (_section == HomeSection.movies) {
       _moviesAreaKey.currentState?.requestEntryFocus();
       return;
     }
-    if (_selectedIndex == _sectionSeries) {
+    if (_section == HomeSection.series) {
       _seriesAreaKey.currentState?.requestEntryFocus();
       return;
     }
@@ -488,24 +480,131 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   bool _interceptBack() {
-    if (_selectedIndex == _sectionTv) {
+    if (_section == HomeSection.tv) {
       return _tvAreaKey.currentState?.handleBack() ?? false;
     }
-    if (_selectedIndex == _sectionHome ||
-        _selectedIndex == _sectionFeatured ||
-        _selectedIndex == _sectionMovies ||
-        _selectedIndex == _sectionSeries ||
-        _selectedIndex == _sectionCalendar ||
-        _selectedIndex == _sectionArcade ||
-        _selectedIndex == _sectionSettings) {
-      if (_railFocusNode.hasFocus) {
-        _switchSection(_sectionTv);
-        return true;
-      }
+    // Fuera de TV: back desde el rail vuelve a TV; desde el contenido, al rail.
+    if (_railFocusNode.hasFocus) {
+      _switchSection(HomeSection.tv);
+    } else {
       _focusRail();
-      return true;
     }
-    return false;
+    return true;
+  }
+
+  Widget _buildArea() {
+    return switch (_section) {
+      HomeSection.home => HomeDashboardArea(
+          key: _homeAreaKey,
+          onExitLeft: _focusRail,
+        ),
+      HomeSection.settings => HomeSettingsArea(
+          activePanelIndex:
+              _activeSettingsPanelIndex,
+          tvPanelFocus: _settingsTvFocus,
+          moviesSeriesPanelFocus:
+              _settingsMoviesSeriesFocus,
+          agendaPanelFocus: _settingsAgendaFocus,
+          watchPartyPanelFocus:
+              _settingsWatchPartyFocus,
+          generalPanelFocus:
+              _settingsGeneralFocus,
+          aboutPanelFocus: _settingsAboutFocus,
+          onPanelIndexChanged:
+              _onSettingsPanelIndexChanged,
+          onExitLeft: _focusRail,
+        ),
+      HomeSection.arcade => HomeArcadeArea(
+          selectGameFocus: _arcadeSelectGameFocus,
+          gamepadFocus: _arcadeGamepadFocus,
+          startFocus: _arcadeStartFocus,
+          playTogetherFocus:
+              _arcadePlayTogetherFocus,
+          onExitLeft: _focusRail,
+          romManager: _romManager,
+          onStartGame: () {
+            final path = _romManager
+                .getActiveRomPath();
+            if (path != null) {
+              context.push(
+                '/arcade/game',
+                extra: path,
+              );
+            } else {
+              MoaiSnackBar.show(
+                context,
+                message:
+                    LocaleKeys.arcade_no_game_installed_snack
+                        .tr(),
+                icon: MoaiIcons.infoOutline,
+              );
+            }
+          },
+        ),
+      HomeSection.calendar => HomeCalendarArea(
+          activePanelIndex:
+              _activeCalendarPanelIndex,
+          eventsPanelFocus: _calendarEventsFocus,
+          subscriptionsPanelFocus:
+              _calendarSubscriptionsFocus,
+          onPanelIndexChanged:
+              _onCalendarPanelIndexChanged,
+          onExitLeft: _focusRail,
+          onTuneChannel: (channel) {
+            context
+                .read<ChannelProvider>()
+                .selectChannel(channel);
+            _switchSection(HomeSection.tv);
+            WidgetsBinding.instance
+                .addPostFrameCallback((_) {
+                  if (mounted) {
+                    _tvAreaKey.currentState
+                        ?.selectChannel(channel);
+                    _tvAreaKey.currentState
+                        ?.requestViewerFocus();
+                  }
+                });
+          },
+        ),
+      HomeSection.featured => HomeMoviesArea(
+          key: _featuredAreaKey,
+          panelTitle:
+              LocaleKeys.movies_panel_featured_title.tr(),
+          accordionIcon:
+              MoaiIcons.tvAccordionFeatured,
+          emptyMessage: LocaleKeys.movies_empty_featured
+              .tr(),
+          onExitLeft: _focusRail,
+        ),
+      HomeSection.movies => HomeMoviesArea(
+          key: _moviesAreaKey,
+          section: FeaturedMoviesProvider
+              .sectionMovies,
+          panelTitle: LocaleKeys.movies_panel_movies_title
+              .tr(),
+          accordionIcon:
+              MoaiIcons.tvAccordionMovies,
+          emptyMessage: LocaleKeys.movies_empty_movies
+              .tr(),
+          onExitLeft: _focusRail,
+        ),
+      HomeSection.series => HomeMoviesArea(
+          key: _seriesAreaKey,
+          section: FeaturedMoviesProvider
+              .sectionSeries,
+          panelTitle: LocaleKeys.movies_panel_series_title
+              .tr(),
+          accordionIcon:
+              MoaiIcons.tvAccordionSeries,
+          emptyMessage: LocaleKeys.movies_empty_series
+              .tr(),
+          onExitLeft: _focusRail,
+        ),
+      HomeSection.tv => HomeTvArea(
+          key: _tvAreaKey,
+          onExitLeft: _focusRail,
+        ),
+    };
   }
 
   @override
@@ -576,10 +675,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           RepaintBoundary(
                             child: TvVerticalNavRail(
-                              selectedIndex: _selectedIndex,
+                              selected: _section,
                               railScopeNode: _railScopeNode,
                               railFocusNode: _railFocusNode,
-                              onIndexChanged: _switchSection,
+                              onSelected: _switchSection,
                               onFocusRight: _onRailFocusRight,
                             ),
                           ),
@@ -587,123 +686,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: RepaintBoundary(
                               child: Padding(
                                 padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
-                                child: _selectedIndex == _sectionHome
-                                    ? HomeDashboardArea(
-                                        key: _homeAreaKey,
-                                        onExitLeft: _focusRail,
-                                      )
-                                    : _selectedIndex == _sectionSettings
-                                    ? HomeSettingsArea(
-                                        activePanelIndex:
-                                            _activeSettingsPanelIndex,
-                                        tvPanelFocus: _settingsTvFocus,
-                                        moviesSeriesPanelFocus:
-                                            _settingsMoviesSeriesFocus,
-                                        agendaPanelFocus: _settingsAgendaFocus,
-                                        watchPartyPanelFocus:
-                                            _settingsWatchPartyFocus,
-                                        generalPanelFocus:
-                                            _settingsGeneralFocus,
-                                        aboutPanelFocus: _settingsAboutFocus,
-                                        onPanelIndexChanged:
-                                            _onSettingsPanelIndexChanged,
-                                        onExitLeft: _focusRail,
-                                      )
-                                    : _selectedIndex == _sectionArcade
-                                    ? HomeArcadeArea(
-                                        selectGameFocus: _arcadeSelectGameFocus,
-                                        gamepadFocus: _arcadeGamepadFocus,
-                                        startFocus: _arcadeStartFocus,
-                                        playTogetherFocus:
-                                            _arcadePlayTogetherFocus,
-                                        onExitLeft: _focusRail,
-                                        romManager: _romManager,
-                                        onStartGame: () {
-                                          final path = _romManager
-                                              .getActiveRomPath();
-                                          if (path != null) {
-                                            context.push(
-                                              '/arcade/game',
-                                              extra: path,
-                                            );
-                                          } else {
-                                            MoaiSnackBar.show(
-                                              context,
-                                              message:
-                                                  LocaleKeys.arcade_no_game_installed_snack
-                                                      .tr(),
-                                              icon: MoaiIcons.infoOutline,
-                                            );
-                                          }
-                                        },
-                                      )
-                                    : _selectedIndex == _sectionCalendar
-                                    ? HomeCalendarArea(
-                                        activePanelIndex:
-                                            _activeCalendarPanelIndex,
-                                        eventsPanelFocus: _calendarEventsFocus,
-                                        subscriptionsPanelFocus:
-                                            _calendarSubscriptionsFocus,
-                                        onPanelIndexChanged:
-                                            _onCalendarPanelIndexChanged,
-                                        onExitLeft: _focusRail,
-                                        onTuneChannel: (channel) {
-                                          context
-                                              .read<ChannelProvider>()
-                                              .selectChannel(channel);
-                                          _switchSection(_sectionTv);
-                                          WidgetsBinding.instance
-                                              .addPostFrameCallback((_) {
-                                                if (mounted) {
-                                                  _tvAreaKey.currentState
-                                                      ?.selectChannel(channel);
-                                                  _tvAreaKey.currentState
-                                                      ?.requestViewerFocus();
-                                                }
-                                              });
-                                        },
-                                      )
-                                    : _selectedIndex == _sectionFeatured
-                                    ? HomeMoviesArea(
-                                        key: _featuredAreaKey,
-                                        panelTitle:
-                                            LocaleKeys.movies_panel_featured_title.tr(),
-                                        accordionIcon:
-                                            MoaiIcons.tvAccordionFeatured,
-                                        emptyMessage: LocaleKeys.movies_empty_featured
-                                            .tr(),
-                                        onExitLeft: _focusRail,
-                                      )
-                                    : _selectedIndex == _sectionMovies
-                                    ? HomeMoviesArea(
-                                        key: _moviesAreaKey,
-                                        section: FeaturedMoviesProvider
-                                            .sectionMovies,
-                                        panelTitle: LocaleKeys.movies_panel_movies_title
-                                            .tr(),
-                                        accordionIcon:
-                                            MoaiIcons.tvAccordionMovies,
-                                        emptyMessage: LocaleKeys.movies_empty_movies
-                                            .tr(),
-                                        onExitLeft: _focusRail,
-                                      )
-                                    : _selectedIndex == _sectionSeries
-                                    ? HomeMoviesArea(
-                                        key: _seriesAreaKey,
-                                        section: FeaturedMoviesProvider
-                                            .sectionSeries,
-                                        panelTitle: LocaleKeys.movies_panel_series_title
-                                            .tr(),
-                                        accordionIcon:
-                                            MoaiIcons.tvAccordionSeries,
-                                        emptyMessage: LocaleKeys.movies_empty_series
-                                            .tr(),
-                                        onExitLeft: _focusRail,
-                                      )
-                                    : HomeTvArea(
-                                        key: _tvAreaKey,
-                                        onExitLeft: _focusRail,
-                                      ),
+                                child: _buildArea(),
                               ),
                             ),
                           ),

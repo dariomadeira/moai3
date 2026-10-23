@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/services/arcade_plugin_service.dart';
 import 'package:moai3/state/calendar_provider.dart';
+import 'package:moai3/features/home/home_section.dart';
 import 'package:moai3/features/home/widgets/tv_bottom_weather_pill.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -14,18 +15,18 @@ import 'package:moai3/theme/moai_text.dart';
 /// - Cápsula flotante continua centrada verticalmente.
 /// - Destinos circulares con navegación D-Pad adaptada para Android TV.
 class TvVerticalNavRail extends StatefulWidget {
-  final int selectedIndex;
+  final HomeSection selected;
   final FocusScopeNode railScopeNode;
   final FocusNode railFocusNode;
-  final ValueChanged<int> onIndexChanged;
+  final ValueChanged<HomeSection> onSelected;
   final VoidCallback onFocusRight;
 
   const TvVerticalNavRail({
     super.key,
-    required this.selectedIndex,
+    required this.selected,
     required this.railScopeNode,
     required this.railFocusNode,
-    required this.onIndexChanged,
+    required this.onSelected,
     required this.onFocusRight,
   });
 
@@ -34,23 +35,14 @@ class TvVerticalNavRail extends StatefulWidget {
 }
 
 class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
-  static const int sectionHome = 0;
-  static const int sectionTv = 1;
-  static const int sectionFeatured = 2;
-  static const int sectionMovies = 3;
-  static const int sectionSeries = 4;
-  static const int sectionCalendar = 5;
-  static const int sectionArcade = 6;
-  static const int sectionSettings = 7;
-
   bool _isFocused = false;
-  late int _focusedIndex;
+  late HomeSection _focused;
   final ArcadePluginService _arcadePlugin = ArcadePluginService.instance;
 
   @override
   void initState() {
     super.initState();
-    _focusedIndex = widget.selectedIndex;
+    _focused = widget.selected;
     _arcadePlugin.addListener(_onPluginStateChanged);
   }
 
@@ -68,47 +60,47 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
   void didUpdateWidget(covariant TvVerticalNavRail oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!_isFocused) {
-      _focusedIndex = widget.selectedIndex;
+      _focused = widget.selected;
     }
   }
 
-  List<int> _getAvailableSections(bool isArcadeInstalled) {
+  List<HomeSection> _getAvailableSections(bool isArcadeInstalled) {
     if (isArcadeInstalled) {
       return const [
-        sectionHome,
-        sectionTv,
-        sectionFeatured,
-        sectionMovies,
-        sectionSeries,
-        sectionCalendar,
-        sectionArcade,
-        sectionSettings,
+        HomeSection.home,
+        HomeSection.tv,
+        HomeSection.featured,
+        HomeSection.movies,
+        HomeSection.series,
+        HomeSection.calendar,
+        HomeSection.arcade,
+        HomeSection.settings,
       ];
     }
     return const [
-      sectionHome,
-      sectionTv,
-      sectionFeatured,
-      sectionMovies,
-      sectionSeries,
-      sectionCalendar,
-      sectionSettings,
+      HomeSection.home,
+      HomeSection.tv,
+      HomeSection.featured,
+      HomeSection.movies,
+      HomeSection.series,
+      HomeSection.calendar,
+      HomeSection.settings,
     ];
   }
 
   void _moveFocusDown(bool isArcadeInstalled) {
     final available = _getAvailableSections(isArcadeInstalled);
-    final currentIndex = available.indexOf(_focusedIndex);
+    final currentIndex = available.indexOf(_focused);
     if (currentIndex != -1 && currentIndex < available.length - 1) {
-      setState(() => _focusedIndex = available[currentIndex + 1]);
+      setState(() => _focused = available[currentIndex + 1]);
     }
   }
 
   void _moveFocusUp(bool isArcadeInstalled) {
     final available = _getAvailableSections(isArcadeInstalled);
-    final currentIndex = available.indexOf(_focusedIndex);
+    final currentIndex = available.indexOf(_focused);
     if (currentIndex > 0) {
-      setState(() => _focusedIndex = available[currentIndex - 1]);
+      setState(() => _focused = available[currentIndex - 1]);
     }
   }
 
@@ -133,7 +125,7 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
           setState(() {
             _isFocused = focused;
             if (!focused) {
-              _focusedIndex = widget.selectedIndex;
+              _focused = widget.selected;
             }
           });
         },
@@ -142,8 +134,8 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
           final key = event.logicalKey;
 
           if (key == LogicalKeyboardKey.arrowRight) {
-            if (_focusedIndex != widget.selectedIndex) {
-              widget.onIndexChanged(_focusedIndex);
+            if (_focused != widget.selected) {
+              widget.onSelected(_focused);
             }
             widget.onFocusRight();
             return KeyEventResult.handled;
@@ -160,8 +152,8 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
           }
 
           if (TvKeyHandler.isActionKey(key)) {
-            if (_focusedIndex != widget.selectedIndex) {
-              widget.onIndexChanged(_focusedIndex);
+            if (_focused != widget.selected) {
+              widget.onSelected(_focused);
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted && !widget.railFocusNode.hasFocus) {
                   widget.railFocusNode.requestFocus();
@@ -225,54 +217,53 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
   }
 
   Widget _buildRailDestination(
-    int section,
+    HomeSection section,
     ColorScheme scheme,
     int todayEvents,
   ) {
-    final isSelected = widget.selectedIndex == section;
-    final isHovered = _isFocused && _focusedIndex == section;
+    final isSelected = widget.selected == section;
+    final isHovered = _isFocused && _focused == section;
 
     final IconData iconData;
     final String labelKey;
 
     switch (section) {
-      case sectionHome:
+      case HomeSection.home:
         iconData =
             isSelected ? MoaiIcons.railHomeSelected : MoaiIcons.railHome;
         labelKey = LocaleKeys.home_rail_home_title;
         break;
-      case sectionTv:
+      case HomeSection.tv:
         iconData = isSelected ? MoaiIcons.railTvSelected : MoaiIcons.railTv;
         labelKey = LocaleKeys.home_rail_tv_title;
         break;
-      case sectionFeatured:
+      case HomeSection.featured:
         iconData = isSelected
             ? MoaiIcons.railFeaturedSelected
             : MoaiIcons.railFeatured;
         labelKey = LocaleKeys.home_rail_featured_title;
         break;
-      case sectionMovies:
+      case HomeSection.movies:
         iconData =
             isSelected ? MoaiIcons.railMoviesSelected : MoaiIcons.railMovies;
         labelKey = LocaleKeys.home_rail_movies_title;
         break;
-      case sectionSeries:
+      case HomeSection.series:
         iconData =
             isSelected ? MoaiIcons.railSeriesSelected : MoaiIcons.railSeries;
         labelKey = LocaleKeys.home_rail_series_title;
         break;
-      case sectionCalendar:
+      case HomeSection.calendar:
         iconData =
             isSelected ? MoaiIcons.railCalendarSelected : MoaiIcons.railCalendar;
         labelKey = LocaleKeys.home_rail_calendar_title;
         break;
-      case sectionArcade:
+      case HomeSection.arcade:
         iconData =
             isSelected ? MoaiIcons.railArcadeSelected : MoaiIcons.railArcade;
         labelKey = LocaleKeys.home_rail_arcade_title;
         break;
-      case sectionSettings:
-      default:
+      case HomeSection.settings:
         iconData =
             isSelected ? MoaiIcons.railSettingsSelected : MoaiIcons.railSettings;
         labelKey = LocaleKeys.home_rail_settings_title;
@@ -299,7 +290,7 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
       color: iconColor,
     );
 
-    if (section == sectionCalendar && todayEvents > 0) {
+    if (section == HomeSection.calendar && todayEvents > 0) {
       iconWidget = Badge(
         backgroundColor: scheme.tertiaryContainer,
         textColor: scheme.onTertiaryContainer,
@@ -320,8 +311,8 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
       selected: isSelected,
       child: InkWell(
         onTap: () {
-          setState(() => _focusedIndex = section);
-          widget.onIndexChanged(section);
+          setState(() => _focused = section);
+          widget.onSelected(section);
           widget.railFocusNode.requestFocus();
         },
         borderRadius: BorderRadius.circular(20),

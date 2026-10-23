@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/features/home/widgets/tv_bottom_weather_pill.dart';
+import 'package:moai3/features/home/home_section.dart';
 import 'package:moai3/features/home/widgets/tv_vertical_nav_rail.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
@@ -35,10 +36,10 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           TvVerticalNavRail(
-            selectedIndex: 0,
+            selected: HomeSection.home,
             railScopeNode: scopeNode,
             railFocusNode: focusNode,
-            onIndexChanged: (_) {},
+            onSelected: (_) {},
             onFocusRight: () {},
           ),
         ),
@@ -76,10 +77,10 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           TvVerticalNavRail(
-            selectedIndex: 0,
+            selected: HomeSection.home,
             railScopeNode: scopeNode,
             railFocusNode: focusNode,
-            onIndexChanged: (_) {},
+            onSelected: (_) {},
             onFocusRight: () {},
           ),
         ),
@@ -103,7 +104,7 @@ void main() {
     testWidgets(
         'D-pad sin Arcade recorre Inicio -> TV -> Destacados -> Películas -> Series -> Agenda -> Ajustes',
         (tester) async {
-      var selected = 0;
+      var selected = HomeSection.home;
       final scopeNode = FocusScopeNode();
       final focusNode = FocusNode();
 
@@ -112,10 +113,10 @@ void main() {
           StatefulBuilder(
             builder: (context, setState) {
               return TvVerticalNavRail(
-                selectedIndex: selected,
+                selected: selected,
                 railScopeNode: scopeNode,
                 railFocusNode: focusNode,
-                onIndexChanged: (i) => setState(() => selected = i),
+                onSelected: (i) => setState(() => selected = i),
                 onFocusRight: () {},
               );
             },
@@ -132,42 +133,42 @@ void main() {
       await tester.pumpAndSettle();
       await tester.sendKeyEvent(LogicalKeyboardKey.select);
       await tester.pumpAndSettle();
-      expect(selected, 1);
+      expect(selected, HomeSection.values[1]);
 
       // TV -> Destacados (2)
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pumpAndSettle();
       await tester.sendKeyEvent(LogicalKeyboardKey.select);
       await tester.pumpAndSettle();
-      expect(selected, 2);
+      expect(selected, HomeSection.values[2]);
 
       // Destacados -> Películas (3)
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pumpAndSettle();
       await tester.sendKeyEvent(LogicalKeyboardKey.select);
       await tester.pumpAndSettle();
-      expect(selected, 3);
+      expect(selected, HomeSection.values[3]);
 
       // Películas -> Series (4)
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pumpAndSettle();
       await tester.sendKeyEvent(LogicalKeyboardKey.select);
       await tester.pumpAndSettle();
-      expect(selected, 4);
+      expect(selected, HomeSection.values[4]);
 
       // Series -> Agenda (5)
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pumpAndSettle();
       await tester.sendKeyEvent(LogicalKeyboardKey.select);
       await tester.pumpAndSettle();
-      expect(selected, 5);
+      expect(selected, HomeSection.values[5]);
 
       // Agenda -> Ajustes (7)
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pumpAndSettle();
       await tester.sendKeyEvent(LogicalKeyboardKey.select);
       await tester.pumpAndSettle();
-      expect(selected, 7);
+      expect(selected, HomeSection.values[7]);
 
       scopeNode.dispose();
       focusNode.dispose();
