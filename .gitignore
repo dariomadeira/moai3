@@ -54,3 +54,4 @@ android/app/build/
 
 # Widget Preview related
 .widget_preview/
+/dist/
