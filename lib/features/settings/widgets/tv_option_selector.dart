@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 
 /// Selector segmentado tipo píldora para menús TV.
@@ -6,12 +7,15 @@ import 'package:moai3/theme/moai_text.dart';
 /// En reposo usa el color del tema ([ColorScheme.primary]).
 /// Con la fila enfocada (fondo `primary` del [TvTile]), invierte a
 /// [ColorScheme.onPrimary] para mantener contraste legible.
+/// En modo edición ([isEditing]) el riel se marca con borde y flechas: ← →
+/// cambian la opción.
 class TvOptionSelector<T> extends StatefulWidget {
   final List<T> options;
   final T selectedValue;
   final ValueChanged<T> onSelect;
   final String Function(T item) labelBuilder;
   final bool isFocused;
+  final bool isEditing;
   final Color? accentColor;
 
   const TvOptionSelector({
@@ -21,6 +25,7 @@ class TvOptionSelector<T> extends StatefulWidget {
     required this.onSelect,
     required this.labelBuilder,
     this.isFocused = false,
+    this.isEditing = false,
     this.accentColor,
   });
 
@@ -44,6 +49,10 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
       trackDecoration = BoxDecoration(
         color: scheme.onPrimary.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: widget.isEditing ? scheme.onPrimary : Colors.transparent,
+          width: 2,
+        ),
       );
     } else {
       final baseColor = scheme.surface;
@@ -57,7 +66,7 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
       );
     }
 
-    return Container(
+    final track = Container(
       padding: const EdgeInsets.all(3),
       decoration: trackDecoration,
       child: Row(
@@ -135,6 +144,19 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
           );
         }).toList(),
       ),
+    );
+
+    if (!widget.isEditing) return track;
+    final arrowColor = scheme.onPrimary;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(MoaiIcons.chevronLeft, size: MoaiIconSizes.sm, color: arrowColor),
+        const SizedBox(width: 4),
+        track,
+        const SizedBox(width: 4),
+        Icon(MoaiIcons.chevronRight, size: MoaiIconSizes.sm, color: arrowColor),
+      ],
     );
   }
 }

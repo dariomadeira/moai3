@@ -47,9 +47,12 @@ void main() {
   });
 
   group('SettingsTvStartupTabRow Widget', () {
-    testWidgets('renders row and changes option with D-pad left/right',
+    testWidgets(
+        'sin editar ← → cambian de panel; OK entra a editar y ← → cambian la opción',
         (tester) async {
       var currentTab = TvTab.explore;
+      var panelLeft = 0;
+      var panelRight = 0;
       final focusNode = FocusNode();
 
       await tester.pumpWidget(
@@ -61,7 +64,8 @@ void main() {
                   focusNode: focusNode,
                   selectedTab: currentTab,
                   onChanged: (tab) => setState(() => currentTab = tab),
-                  onKeyLeft: () {},
+                  onKeyLeft: () => panelLeft++,
+                  onKeyRight: () => panelRight++,
                 );
               },
             ),
@@ -76,19 +80,41 @@ void main() {
       focusNode.requestFocus();
       await tester.pump();
 
-      // D-Pad Right: explore -> search
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
-      await tester.pump();
+      Future<void> press(LogicalKeyboardKey key) async {
+        await tester.sendKeyEvent(key);
+        await tester.pump();
+      }
+
+      // Sin editar: ← → navegan entre paneles y no tocan la opción.
+      await press(LogicalKeyboardKey.arrowRight);
+      await press(LogicalKeyboardKey.arrowLeft);
+      expect(panelRight, 1);
+      expect(panelLeft, 1);
+      expect(currentTab, TvTab.explore);
+
+      // OK entra a editar: ← → cambian la opción.
+      await press(LogicalKeyboardKey.select);
+      await press(LogicalKeyboardKey.arrowRight);
+      expect(currentTab, TvTab.search);
+      await press(LogicalKeyboardKey.arrowRight);
+      expect(currentTab, TvTab.groups);
+      await press(LogicalKeyboardKey.arrowRight);
+      expect(currentTab, TvTab.groups);
+      await press(LogicalKeyboardKey.arrowLeft);
+      expect(currentTab, TvTab.search);
+      expect(panelRight, 1);
+
+      // OK sale de editar: → vuelve a cambiar de panel.
+      await press(LogicalKeyboardKey.select);
+      await press(LogicalKeyboardKey.arrowRight);
+      expect(panelRight, 2);
       expect(currentTab, TvTab.search);
 
-      // D-Pad Right: search -> groups
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
-      await tester.pump();
-      expect(currentTab, TvTab.groups);
-
-      // D-Pad Left: groups -> search
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
-      await tester.pump();
+      // Atrás (Escape en el test) también sale de editar.
+      await press(LogicalKeyboardKey.select);
+      await press(LogicalKeyboardKey.escape);
+      await press(LogicalKeyboardKey.arrowLeft);
+      expect(panelLeft, 2);
       expect(currentTab, TvTab.search);
 
       focusNode.dispose();

@@ -131,6 +131,8 @@ class SettingsAgendaPanelState extends State<SettingsAgendaPanel> {
                                     focusNode: focusNode,
                                     selectedMinutes: calendar.notifyLeadMinutes,
                                     onChanged: calendar.setNotifyLeadMinutes,
+                                    onKeyLeft: widget.onKeyLeft,
+                                    onKeyRight: widget.onKeyRight,
                                     onKeyUp: onKeyUp,
                                     onKeyDown: onKeyDown,
                                   ),
@@ -140,6 +142,8 @@ class SettingsAgendaPanelState extends State<SettingsAgendaPanel> {
                                     selectedSeconds:
                                         calendar.snackDurationSeconds,
                                     onChanged: calendar.setSnackDurationSeconds,
+                                    onKeyLeft: widget.onKeyLeft,
+                                    onKeyRight: widget.onKeyRight,
                                     onKeyUp: onKeyUp,
                                     onKeyDown: onKeyDown,
                                   ),
