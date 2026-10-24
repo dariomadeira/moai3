@@ -143,7 +143,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
               ),
               child: Row(
                 children: [
-                  Icon(MoaiIcons.warningFilled, color: scheme.error, size: 20),
+                  Icon(MoaiIcons.warningFilled, color: scheme.error, size: MoaiIconSizes.md),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -329,7 +329,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
         ),
         child: Row(
           children: [
-            Icon(MoaiIcons.errorFilled, color: scheme.error, size: 22),
+            Icon(MoaiIcons.errorFilled, color: scheme.error, size: MoaiIconSizes.lg),
             const SizedBox(width: 12),
             Expanded(
               child: Text(

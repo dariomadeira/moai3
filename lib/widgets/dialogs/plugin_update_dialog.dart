@@ -154,7 +154,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
                   children: [
                     Icon(
                       MoaiIcons.plugin,
-                      size: 18,
+                      size: MoaiIconSizes.md,
                       color: scheme.primary,
                     ),
                     const SizedBox(width: 10),
@@ -268,7 +268,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
             Icon(
               MoaiIcons.checkCircle,
               color: scheme.primary,
-              size: 44,
+              size: MoaiIconSizes.hero,
             ),
             const SizedBox(height: 12),
             Text(
@@ -294,7 +294,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
         ),
         child: Row(
           children: [
-            Icon(MoaiIcons.errorFilled, color: scheme.error, size: 22),
+            Icon(MoaiIcons.errorFilled, color: scheme.error, size: MoaiIconSizes.lg),
             const SizedBox(width: 10),
             Expanded(
               child: Text(

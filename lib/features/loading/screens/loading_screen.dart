@@ -642,7 +642,7 @@ class _LoadingScreenState extends State<LoadingScreen>
               color: scheme.errorContainer.withValues(alpha: 0.25),
               shape: BoxShape.circle,
             ),
-            child: Icon(MoaiIcons.offline, size: 38, color: scheme.error),
+            child: Icon(MoaiIcons.offline, size: MoaiIconSizes.xxl, color: scheme.error),
           ),
           const SizedBox(height: 18),
           Text(

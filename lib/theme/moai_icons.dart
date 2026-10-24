@@ -25,6 +25,8 @@ import 'package:moai3/utils/text_normalize.dart';
 /// 13. Flechas
 /// 14. Películas y series (VOD)
 /// 15. Teclado en pantalla y PIN
+///
+/// Tamaños: usar siempre [MoaiIconSizes], nunca un número suelto.
 abstract final class MoaiIcons {
   MoaiIcons._();
 
@@ -866,4 +868,36 @@ abstract final class MoaiIcons {
 
   /// Cerrar el teclado de PIN.
   static const pinClose = ReiconIcons.x;
+}
+
+/// Escala única de tamaños de íconos (SPEC-50 §4.4).
+///
+/// Todo `Icon(size: …)` e `iconSize:` de la app usa uno de estos escalones;
+/// `test/icons_usage_test.dart` no deja usar números sueltos.
+abstract final class MoaiIconSizes {
+  MoaiIconSizes._();
+
+  /// Dentro de textos chicos, insignias y etiquetas.
+  static const double xs = 12;
+
+  /// Botones chicos, píldoras y filas compactas.
+  static const double sm = 16;
+
+  /// Filas de listas y ajustes, botones de acción.
+  static const double md = 20;
+
+  /// Botones normales y cabeceras de paneles.
+  static const double lg = 24;
+
+  /// Íconos destacados en tarjetas y cabeceras de diálogos.
+  static const double xl = 32;
+
+  /// Estados vacíos dentro de paneles.
+  static const double xxl = 40;
+
+  /// Estados vacíos y resultados de pantalla completa.
+  static const double hero = 48;
+
+  /// Pantallas de bloqueo / error a pantalla completa.
+  static const double jumbo = 64;
 }

@@ -195,7 +195,7 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
                     ),
                     Icon(
                       MoaiIcons.keyboard,
-                      size: 20,
+                      size: MoaiIconSizes.md,
                       color: _inputFocusNode.hasFocus
                           ? scheme.primary
                           : scheme.onSurfaceVariant.withValues(alpha: 0.6),
@@ -209,7 +209,7 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
             const SizedBox(height: 10),
             Row(
               children: [
-                Icon(MoaiIcons.error, size: 16, color: scheme.error),
+                Icon(MoaiIcons.error, size: MoaiIconSizes.sm, color: scheme.error),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(

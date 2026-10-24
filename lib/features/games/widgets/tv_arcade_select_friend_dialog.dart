@@ -173,7 +173,7 @@ class _FriendWindow extends StatelessWidget {
               trailingBuilder: (context, isFocused) {
                 return Icon(
                   MoaiIcons.gamepad,
-                  size: 20,
+                  size: MoaiIconSizes.md,
                   color: isFocused
                       ? scheme.onPrimary
                       : scheme.onSurfaceVariant.withValues(alpha: 0.7),
@@ -205,7 +205,7 @@ class _EmptyFriends extends StatelessWidget {
         children: [
           Icon(
             MoaiIcons.friendsEmpty,
-            size: 36,
+            size: MoaiIconSizes.xxl,
             color: scheme.onSurfaceVariant,
           ),
           const SizedBox(height: 12),

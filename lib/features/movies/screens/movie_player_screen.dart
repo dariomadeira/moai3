@@ -341,7 +341,7 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
                                 ? MoaiIcons.vodSkipForward
                                 : MoaiIcons.vodSkipBack,
                             color: scheme.primary,
-                            size: 26,
+                            size: MoaiIconSizes.lg,
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -475,7 +475,7 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
                                       _isPlaying
                                           ? MoaiIcons.vodPlay
                                           : MoaiIcons.vodPause,
-                                      size: 16,
+                                      size: MoaiIconSizes.sm,
                                       color: scheme.primary,
                                     ),
                                     const SizedBox(width: 8),

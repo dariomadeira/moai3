@@ -21,7 +21,7 @@ extension _GamepadConfigColumns on _TvGamepadConfigDialogState {
             padding: const EdgeInsets.only(left: 4, bottom: 8),
             child: Row(
               children: [
-                Icon(MoaiIcons.gamepad, size: 14, color: scheme.primary),
+                Icon(MoaiIcons.gamepad, size: MoaiIconSizes.sm, color: scheme.primary),
                 const SizedBox(width: 6),
                 Text(
                   LocaleKeys.gamepad_detected_section_header.tr(),
@@ -52,7 +52,7 @@ extension _GamepadConfigColumns on _TvGamepadConfigDialogState {
                     ),
                     child: Icon(
                       MoaiIcons.gamepad,
-                      size: 28,
+                      size: MoaiIconSizes.xl,
                       color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
                     ),
                   ),
@@ -104,7 +104,7 @@ extension _GamepadConfigColumns on _TvGamepadConfigDialogState {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(MoaiIcons.infoCircle, size: 14, color: scheme.primary),
+                Icon(MoaiIcons.infoCircle, size: MoaiIconSizes.sm, color: scheme.primary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -144,7 +144,7 @@ extension _GamepadConfigColumns on _TvGamepadConfigDialogState {
               children: [
                 Row(
                   children: [
-                    Icon(MoaiIcons.gamepad, size: 14, color: scheme.primary),
+                    Icon(MoaiIcons.gamepad, size: MoaiIconSizes.sm, color: scheme.primary),
                     const SizedBox(width: 6),
                     Text(
                       LocaleKeys.gamepad_test_section.tr().toUpperCase(),

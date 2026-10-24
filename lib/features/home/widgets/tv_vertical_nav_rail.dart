@@ -286,7 +286,7 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
 
     Widget iconWidget = Icon(
       iconData,
-      size: 20,
+      size: MoaiIconSizes.md,
       color: iconColor,
     );
 

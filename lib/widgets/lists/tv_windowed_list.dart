@@ -440,7 +440,7 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
       ),
       child: Icon(
         isUp ? MoaiIcons.chevronUp : MoaiIcons.chevronDown,
-        size: 16,
+        size: MoaiIconSizes.sm,
         color: scheme.onTertiaryContainer,
       ),
     );

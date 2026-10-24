@@ -274,7 +274,7 @@ class _TvTextFieldState extends State<TvTextField> {
                     padding: EdgeInsets.all(widget.dense ? 8 : 10),
                     child: Icon(
                       leading,
-                      size: widget.dense ? 20 : 22,
+                      size: widget.dense ? MoaiIconSizes.md : MoaiIconSizes.lg,
                       color: iconColor,
                     ),
                   ),

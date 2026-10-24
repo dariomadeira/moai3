@@ -347,13 +347,13 @@ class _TvKeyButtonState extends State<_TvKeyButton> {
     if (widget.action == TvKeyAction.shift) {
       childContent = Icon(
         MoaiIcons.keyboardShift,
-        size: 16,
+        size: MoaiIconSizes.sm,
         color: fg,
       );
     } else if (widget.action == TvKeyAction.backspace) {
       childContent = Icon(
         MoaiIcons.keyboardBackspace,
-        size: 16,
+        size: MoaiIconSizes.sm,
         color: fg,
       );
     } else {

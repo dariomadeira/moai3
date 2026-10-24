@@ -51,7 +51,7 @@ class _GamepadDeviceCard extends StatelessWidget {
             ),
             child: Icon(
               MoaiIcons.gamepad,
-              size: 20,
+              size: MoaiIconSizes.md,
               color: scheme.onPrimaryContainer,
             ),
           ),

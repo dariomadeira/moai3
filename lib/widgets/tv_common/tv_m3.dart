@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Variante visual alineada al teclado TV (fills, sin bordes).
 enum TvButtonVariant {
@@ -219,7 +220,7 @@ class _TvFocusButtonState extends State<TvFocusButton> {
                       ),
                     )
                   else if (widget.icon != null)
-                    Icon(widget.icon, size: 20, color: fg),
+                    Icon(widget.icon, size: MoaiIconSizes.md, color: fg),
                   if (widget.loading || widget.icon != null)
                     const SizedBox(width: 10),
                   Text(

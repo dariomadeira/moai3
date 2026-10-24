@@ -118,7 +118,7 @@ class _CreateGroupButtonState extends State<CreateGroupButton> {
                 child: Icon(
                   MoaiIcons.tvFavoritesAdd,
                   color: iconColor,
-                  size: 16,
+                  size: MoaiIconSizes.sm,
                 ),
               ),
             ),

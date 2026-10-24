@@ -135,7 +135,7 @@ class _TvMovieCardState extends State<TvMovieCard> {
                             color: scheme.surfaceContainerLowest,
                             child: Icon(
                               cardIcon,
-                              size: 40,
+                              size: MoaiIconSizes.xxl,
                               color: scheme.outline,
                             ),
                           ),
@@ -143,7 +143,7 @@ class _TvMovieCardState extends State<TvMovieCard> {
                             color: scheme.surfaceContainerLowest,
                             child: Icon(
                               cardIcon,
-                              size: 40,
+                              size: MoaiIconSizes.xxl,
                               color: scheme.outline,
                             ),
                           ),
@@ -153,7 +153,7 @@ class _TvMovieCardState extends State<TvMovieCard> {
                           color: scheme.surfaceContainerLowest,
                           child: Icon(
                             cardIcon,
-                            size: 40,
+                            size: MoaiIconSizes.xxl,
                             color: scheme.outline,
                           ),
                         ),

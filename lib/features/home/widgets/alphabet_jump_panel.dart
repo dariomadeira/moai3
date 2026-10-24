@@ -86,7 +86,7 @@ class _AlphabetDeleteCardState extends State<AlphabetDeleteCard> {
               alignment: Alignment.center,
               child: Icon(
                 MoaiIcons.delete,
-                size: 15,
+                size: MoaiIconSizes.sm,
                 color: _isFocused ? scheme.onErrorContainer : scheme.error,
               ),
             ),

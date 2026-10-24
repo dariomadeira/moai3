@@ -14,7 +14,7 @@ extension _TvFriendsSections on _TvFriendsDialogState {
       children: [
         Icon(
           icon,
-          size: 15,
+          size: MoaiIconSizes.sm,
           color: isHighlighted ? scheme.primary : scheme.onSurfaceVariant,
         ),
         const SizedBox(width: 6),
@@ -159,7 +159,7 @@ extension _TvFriendsSections on _TvFriendsDialogState {
                 children: [
                   Icon(
                     MoaiIcons.friendsEmpty,
-                    size: 24,
+                    size: MoaiIconSizes.lg,
                     color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),
                   const SizedBox(height: 6),
@@ -252,7 +252,7 @@ extension _TvFriendsSections on _TvFriendsDialogState {
                 children: [
                   Icon(
                     MoaiIcons.friendRequests,
-                    size: 24,
+                    size: MoaiIconSizes.lg,
                     color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),
                   const SizedBox(height: 6),

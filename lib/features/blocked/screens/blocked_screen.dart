@@ -38,7 +38,7 @@ class BlockedScreen extends StatelessWidget {
                 children: [
                   Icon(
                     MoaiIcons.blocked,
-                    size: 64,
+                    size: MoaiIconSizes.jumbo,
                     color: colorScheme.error,
                   ),
                   const SizedBox(height: 24),

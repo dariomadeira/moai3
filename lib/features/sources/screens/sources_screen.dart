@@ -266,7 +266,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                                   const SizedBox(height: 6),
                                   Icon(
                                     MoaiIcons.extension,
-                                    size: 20,
+                                    size: MoaiIconSizes.md,
                                     color: scheme.onSurfaceVariant.withValues(
                                       alpha: 0.85,
                                     ),
@@ -318,7 +318,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                                             Icon(
                                               MoaiIcons.error,
                                               color: scheme.onErrorContainer,
-                                              size: 18,
+                                              size: MoaiIconSizes.md,
                                             ),
                                             const SizedBox(width: 10),
                                             Expanded(

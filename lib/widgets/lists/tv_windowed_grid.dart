@@ -512,7 +512,7 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
       ),
       child: Icon(
         isUp ? MoaiIcons.chevronUp : MoaiIcons.chevronDown,
-        size: 16,
+        size: MoaiIconSizes.sm,
         color: scheme.onTertiaryContainer,
       ),
     );

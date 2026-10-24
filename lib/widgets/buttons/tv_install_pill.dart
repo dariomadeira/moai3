@@ -93,7 +93,7 @@ class TvInstallPill extends StatelessWidget {
           : Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(iconData, size: 16, color: fg),
+                Icon(iconData, size: MoaiIconSizes.sm, color: fg),
                 const SizedBox(width: 6),
                 Text(
                   label,

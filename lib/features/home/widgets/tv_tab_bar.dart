@@ -202,7 +202,7 @@ class _M3EFloatingTabPillState extends State<_M3EFloatingTabPill> {
               Icon(
                 widget.isSelected ? widget.selectedIcon : widget.icon,
                 color: fg,
-                size: 18,
+                size: MoaiIconSizes.md,
               ),
               AnimatedSize(
                 duration: const Duration(milliseconds: 200),

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/moai_background_image.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Variante semántica para los botones de acción en modales de Android TV.
 enum TvDialogButtonVariant {
@@ -112,7 +113,7 @@ class TvDialog extends StatelessWidget {
                       Icon(
                         icon,
                         color: iconColor ?? scheme.primary,
-                        size: 30,
+                        size: MoaiIconSizes.xl,
                       ),
                     if (icon != null || iconWidget != null)
                       const SizedBox(width: 14),
@@ -320,7 +321,7 @@ class _TvDialogButtonState extends State<TvDialogButton> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (widget.icon != null) ...[
-                Icon(widget.icon, size: 18, color: fgColor),
+                Icon(widget.icon, size: MoaiIconSizes.md, color: fgColor),
                 const SizedBox(width: 8),
               ],
               Text(

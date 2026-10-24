@@ -261,7 +261,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
           children: [
             Icon(
               MoaiIcons.locationEmpty,
-              size: 30,
+              size: MoaiIconSizes.xl,
               color: scheme.onSurfaceVariant,
             ),
             const SizedBox(height: 8),

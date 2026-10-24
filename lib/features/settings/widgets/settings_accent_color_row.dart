@@ -61,7 +61,7 @@ class SettingsAccentColorRow extends StatelessWidget {
         final scheme = context.scheme;
         return Icon(
           MoaiIcons.chevronRight,
-          size: 26,
+          size: MoaiIconSizes.lg,
           color: isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
         );
       },

@@ -225,7 +225,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                   const SizedBox(height: 6),
                                   Icon(
                                     MoaiIcons.vodPoster,
-                                    size: 20,
+                                    size: MoaiIconSizes.md,
                                     color: scheme.onSurfaceVariant.withValues(
                                       alpha: 0.85,
                                     ),

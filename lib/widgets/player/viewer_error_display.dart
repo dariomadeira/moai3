@@ -22,7 +22,7 @@ class ViewerErrorDisplay extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(MoaiIcons.error, size: 36, color: scheme.error),
+              Icon(MoaiIcons.error, size: MoaiIconSizes.xxl, color: scheme.error),
               const SizedBox(height: 8),
               Text(
                 errorMessage,

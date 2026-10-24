@@ -32,7 +32,7 @@ class TvBackPill extends StatefulWidget {
     this.onKeyUp,
     this.onKeyLeft,
     this.size = 36.0,
-    this.iconSize = 18.0,
+    this.iconSize = MoaiIconSizes.md,
     this.borderRadius,
     this.tooltip,
     this.icon = MoaiIcons.arrowBack,

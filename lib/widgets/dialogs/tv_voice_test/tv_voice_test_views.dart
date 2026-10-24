@@ -13,7 +13,7 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
         children: [
           Icon(
             MoaiIcons.tip,
-            size: 18,
+            size: MoaiIconSizes.md,
             color: scheme.onTertiaryContainer,
           ),
           const SizedBox(width: 10),
@@ -79,7 +79,7 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
           ),
           child: Icon(
             MoaiIcons.mic,
-            size: 32,
+            size: MoaiIconSizes.xl,
             color: scheme.onPrimaryContainer,
           ),
         ),
@@ -200,7 +200,7 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
                   children: [
                     Icon(
                       MoaiIcons.volume,
-                      size: 14,
+                      size: MoaiIconSizes.sm,
                       color: scheme.onTertiaryContainer,
                     ),
                     const SizedBox(width: 4),
@@ -243,7 +243,7 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
             ),
           ],
         ] else ...[
-          Icon(MoaiIcons.warning, size: 36, color: scheme.error),
+          Icon(MoaiIcons.warning, size: MoaiIconSizes.xxl, color: scheme.error),
           const SizedBox(height: 6),
           Text(
             LocaleKeys.mic_test_empty_desc.tr(
@@ -351,7 +351,7 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
         children: [
           Icon(
             MoaiIcons.tv,
-            size: 15,
+            size: MoaiIconSizes.sm,
             color: scheme.onSurfaceVariant,
           ),
           const SizedBox(width: 8),
@@ -457,7 +457,7 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, size: 18, color: fg),
+                  Icon(icon, size: MoaiIconSizes.md, color: fg),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(

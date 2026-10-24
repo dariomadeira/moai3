@@ -253,7 +253,7 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
             Icon(
               MoaiIcons.person,
               color: fg,
-              size: 16,
+              size: MoaiIconSizes.sm,
             ),
             const SizedBox(width: 6),
             Flexible(
@@ -309,7 +309,7 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
         child: Icon(
           isRecording ? MoaiIcons.stop : MoaiIcons.mic,
           color: iconColor,
-          size: 18,
+          size: MoaiIconSizes.md,
         ),
       ),
     );
@@ -427,7 +427,7 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
             Icon(
               MoaiIcons.voice,
               color: fg,
-              size: 16,
+              size: MoaiIconSizes.sm,
             ),
             const SizedBox(width: 6),
             Flexible(

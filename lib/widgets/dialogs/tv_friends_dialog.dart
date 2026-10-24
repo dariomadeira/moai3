@@ -243,7 +243,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
                     Icon(
                       MoaiIcons.error,
                       color: scheme.onErrorContainer,
-                      size: 16,
+                      size: MoaiIconSizes.sm,
                     ),
                     const SizedBox(width: 8),
                     Expanded(

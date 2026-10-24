@@ -169,7 +169,7 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
           children: [
             Icon(
               MoaiIcons.locationEmpty,
-              size: 28,
+              size: MoaiIconSizes.xl,
               color: scheme.onSurfaceVariant,
             ),
             const SizedBox(height: 8),
@@ -234,7 +234,7 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
                 }
                 return Icon(
                   MoaiIcons.check,
-                  size: 20,
+                  size: MoaiIconSizes.md,
                   color: isFocused ? scheme.onPrimary : scheme.primary,
                 );
               },

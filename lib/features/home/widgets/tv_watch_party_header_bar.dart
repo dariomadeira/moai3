@@ -132,7 +132,7 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
                         Icon(
                           MoaiIcons.voice,
                           color: scheme.onPrimary,
-                          size: 16,
+                          size: MoaiIconSizes.sm,
                         ),
                         const SizedBox(width: 6),
                         Flexible(
@@ -279,7 +279,7 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
               Icon(
                 isRecording ? MoaiIcons.stop : MoaiIcons.mic,
                 color: foregroundColor,
-                size: 18,
+                size: MoaiIconSizes.md,
               ),
               if (isRecording) ...[
                 const SizedBox(width: 6),

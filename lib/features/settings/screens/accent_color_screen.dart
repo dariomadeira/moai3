@@ -164,7 +164,7 @@ class _AccentColorScreenState extends State<AccentColorScreen> {
                                   const SizedBox(height: 6),
                                   Icon(
                                     MoaiIcons.palette,
-                                    size: 20,
+                                    size: MoaiIconSizes.md,
                                     color: scheme.onSurfaceVariant.withValues(
                                       alpha: 0.85,
                                     ),
@@ -390,7 +390,7 @@ class _AccentColorSelectorTile extends StatelessWidget {
                       ? Center(
                           child: Icon(
                             MoaiIcons.check,
-                            size: 11,
+                            size: MoaiIconSizes.xs,
                             color: ThemeData.estimateBrightnessForColor(
                                         MoaiAccentColors.seeds[i]) ==
                                     Brightness.dark

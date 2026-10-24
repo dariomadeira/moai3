@@ -220,7 +220,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                       isConnected
                           ? MoaiIcons.checkCircle
                           : MoaiIcons.gamepad,
-                      size: 15,
+                      size: MoaiIconSizes.sm,
                       color: isConnected
                           ? scheme.onTertiaryContainer
                           : scheme.onSurfaceVariant,

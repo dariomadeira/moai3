@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Tarjeta reutilizable de estado vacío para listas en pantallas TV.
 ///
@@ -89,7 +90,7 @@ class TvEmptyStateCard extends StatelessWidget {
                 children: [
                   Icon(
                     icon,
-                    size: 48,
+                    size: MoaiIconSizes.hero,
                     color: isFocused
                         ? scheme.primary
                         : scheme.onSurfaceVariant,

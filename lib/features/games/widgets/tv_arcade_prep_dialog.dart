@@ -147,7 +147,7 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
               children: [
                 Icon(
                   MoaiIcons.infoCircle,
-                  size: 18,
+                  size: MoaiIconSizes.md,
                   color: scheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 10),
@@ -214,7 +214,7 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
               Row(
                 children: [
                   if (isDone)
-                    Icon(MoaiIcons.checkCircleFilled, size: 16, color: activeColor)
+                    Icon(MoaiIcons.checkCircleFilled, size: MoaiIconSizes.sm, color: activeColor)
                   else if (progress > 0.0 && progress < 1.0)
                     SizedBox(
                       width: 12,

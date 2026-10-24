@@ -88,7 +88,7 @@ class _ServerSkipButtonState extends State<ServerSkipButton> {
               Icon(
                 MoaiIcons.serverSkip,
                 color: _isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
-                size: 20,
+                size: MoaiIconSizes.md,
               ),
               const SizedBox(width: 8),
               Text(

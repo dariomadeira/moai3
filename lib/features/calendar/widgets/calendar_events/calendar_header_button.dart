@@ -56,7 +56,7 @@ class _HeaderButton extends StatelessWidget {
                   ),
                 )
               else
-                Icon(icon, size: 17, color: fgColor),
+                Icon(icon, size: MoaiIconSizes.sm, color: fgColor),
               if (label != null) ...[
                 const SizedBox(width: 6),
                 Text(

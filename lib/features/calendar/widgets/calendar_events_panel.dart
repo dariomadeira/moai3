@@ -179,7 +179,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                     children: [
                       Icon(
                         MoaiIcons.calendarEvents,
-                        size: 20,
+                        size: MoaiIconSizes.md,
                         color: scheme.primary,
                       ),
                       const SizedBox(width: 8),

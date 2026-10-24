@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Tab vertical del acordeón (título rotado + icono).
 class CollapsedPanelTabPreview extends StatelessWidget {
@@ -44,7 +45,7 @@ class CollapsedPanelTabPreview extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Icon(icon, size: 20, color: iconColor),
+          Icon(icon, size: MoaiIconSizes.md, color: iconColor),
         ],
       ),
     );

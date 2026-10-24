@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Pill de metadatos utilizado para información contextual en TV
 /// (ej. visor de canal, conteos de cabecera en paneles).
@@ -45,7 +46,7 @@ class TvMetaPill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 18, color: fg),
+            Icon(icon, size: MoaiIconSizes.md, color: fg),
             const SizedBox(width: 6),
           ],
           Text(label, style: effectiveTextStyle),

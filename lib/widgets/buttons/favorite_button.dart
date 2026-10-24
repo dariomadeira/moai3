@@ -134,7 +134,7 @@ class _FavoriteButtonState extends State<FavoriteButton> {
                     ? MoaiIcons.tvFavoritesHeartSelected
                     : MoaiIcons.tvFavoritesHeart,
                 color: iconColor,
-                size: 15,
+                size: MoaiIconSizes.sm,
               ),
             ),
           ),

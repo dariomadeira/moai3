@@ -158,7 +158,7 @@ class SearchPanelState extends State<SearchPanel>
                       children: [
                         Icon(
                           MoaiIcons.tvTabBuscar,
-                          size: 36,
+                          size: MoaiIconSizes.xxl,
                           color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
                         ),
                         const SizedBox(height: 8),
@@ -187,7 +187,7 @@ class SearchPanelState extends State<SearchPanel>
                           children: [
                             Icon(
                               MoaiIcons.clear,
-                              size: 36,
+                              size: MoaiIconSizes.xxl,
                               color: scheme.onSurfaceVariant
                                   .withValues(alpha: 0.7),
                             ),
@@ -421,7 +421,7 @@ class _SearchClearButtonState extends State<_SearchClearButton> {
             child: Icon(
               MoaiIcons.close,
               color: _isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
-              size: 20,
+              size: MoaiIconSizes.md,
             ),
           ),
         ),

@@ -369,7 +369,7 @@ class _TvPinDialogState extends State<TvPinDialog>
                       children: [
                         Icon(
                           MoaiIcons.error,
-                          size: 13,
+                          size: MoaiIconSizes.xs,
                           color: scheme.error,
                         ),
                         const SizedBox(width: 5),

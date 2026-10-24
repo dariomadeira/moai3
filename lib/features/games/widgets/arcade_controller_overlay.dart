@@ -113,7 +113,7 @@ class _ArcadeControllerOverlayState extends State<ArcadeControllerOverlay> {
         child: Icon(
           icon,
           color: isPressed ? Colors.cyanAccent : Colors.white,
-          size: 28,
+          size: MoaiIconSizes.xl,
         ),
       ),
     );

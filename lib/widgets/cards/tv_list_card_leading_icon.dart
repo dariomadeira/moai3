@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Leading idéntico a [SettingsActionRow] / [TvTile]:
 /// `Material` + `Padding(10)` + `Icon(22)` → cuadrado ~42, no pastilla.
@@ -29,7 +30,7 @@ class TvListCardLeadingIcon extends StatelessWidget {
 
     // Settings: padding 10 + icon 22. Compact: 6 + 18 para caber en itemExtent 56.
     final pad = compact ? 8.0 : 10.0;
-    final iconSize = compact ? 20.0 : 22.0;
+    final iconSize = compact ? MoaiIconSizes.md : MoaiIconSizes.lg;
     final radius = compact ? 8.0 : 10.0;
 
     final side = (pad * 2) + iconSize;

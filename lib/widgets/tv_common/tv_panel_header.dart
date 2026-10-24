@@ -144,7 +144,7 @@ class _HeaderBackButtonState extends State<_HeaderBackButton> {
             child: Icon(
               MoaiIcons.panelBack,
               color: fg,
-              size: 22,
+              size: MoaiIconSizes.lg,
             ),
           ),
         ),

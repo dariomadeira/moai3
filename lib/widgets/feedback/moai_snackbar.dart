@@ -276,7 +276,7 @@ class _MoaiSnackBarBodyState extends State<_MoaiSnackBarBody> {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (widget.icon != null) ...[
-              Icon(widget.icon, color: widget.iconColor, size: 22),
+              Icon(widget.icon, color: widget.iconColor, size: MoaiIconSizes.lg),
               const SizedBox(width: 10),
             ],
             Flexible(

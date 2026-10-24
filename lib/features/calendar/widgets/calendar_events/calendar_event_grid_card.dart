@@ -100,7 +100,7 @@ class _CalendarEventGridCard extends StatelessWidget {
                     children: [
                       Icon(
                         sportIcon,
-                        size: 11.5,
+                        size: MoaiIconSizes.xs,
                         color: isFinished ? fgColor : subColor,
                       ),
                       const SizedBox(width: 3.5),

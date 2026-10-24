@@ -67,7 +67,7 @@ class _SquircleButton extends StatelessWidget {
         child: icon != null
             ? Icon(
                 icon,
-                size: (size != null ? size! * 0.52 : 18.0),
+                size: (size != null ? size! * 0.52 : MoaiIconSizes.md),
                 color: fg,
               )
             : Row(

@@ -308,7 +308,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
             return Icon(
               MoaiIcons.chevronRight,
               color: isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
-              size: 22,
+              size: MoaiIconSizes.lg,
             );
           },
         );

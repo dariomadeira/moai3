@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Botón de ícono redondo de las filas de listas TV (actualizar, borrar…).
 ///
@@ -119,7 +120,7 @@ class _TvIconActionButtonState extends State<TvIconActionButton> {
             child: SizedBox(
               width: 36,
               height: 36,
-              child: Icon(widget.icon, color: fg, size: 18),
+              child: Icon(widget.icon, color: fg, size: MoaiIconSizes.md),
             ),
           ),
         ),

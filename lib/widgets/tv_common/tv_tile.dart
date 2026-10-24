@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 /// Misma ficha que [TvTile]: diseño idéntico, puede usarse para tiles de solo lectura
 /// o tiles compuestos que gestionan sus propios focos internos (ej. botones de acción).
@@ -212,7 +213,7 @@ class _TvTileChrome extends StatelessWidget {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(10),
-                    child: Icon(icon, size: 22, color: iconColor),
+                    child: Icon(icon, size: MoaiIconSizes.lg, color: iconColor),
                   ),
                 ),
                 const SizedBox(width: 14),

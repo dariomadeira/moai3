@@ -21,6 +21,30 @@ void main() {
     expect(offenders, isEmpty);
   });
 
+  test('los tamaños de íconos salen de MoaiIconSizes', () {
+    final literal = RegExp(r'\b(size|iconSize)\s*[:=]\s*[0-9]');
+    final offenders = <String>[];
+    for (final e in Directory('lib').listSync(recursive: true)) {
+      if (e is! File || !e.path.endsWith('.dart')) continue;
+      final source = e.readAsStringSync();
+      // `iconSize` en cualquier lado; `size:` solo dentro de `Icon(...)`.
+      for (final m in RegExp(r'\biconSize\s*[:=]\s*[0-9]').allMatches(source)) {
+        offenders.add('${e.path}: ${m[0]}');
+      }
+      for (final m in RegExp(r'\bIcon\(').allMatches(source)) {
+        var depth = 0;
+        var end = m.end - 1;
+        for (; end < source.length; end++) {
+          if (source[end] == '(') depth++;
+          if (source[end] == ')' && --depth == 0) break;
+        }
+        final call = source.substring(m.start, end);
+        if (literal.hasMatch(call)) offenders.add('${e.path}: $call');
+      }
+    }
+    expect(offenders, isEmpty);
+  });
+
   test('MoaiIcons usa solo Reicon (sin Material Icons ni Symbols)', () {
     final source = File('lib/theme/moai_icons.dart').readAsStringSync();
     final values = RegExp(r'static const \w+ = (\w+)\.')

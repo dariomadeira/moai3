@@ -227,7 +227,7 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
                           ] else ...[
                             Icon(
                               MoaiIcons.vodPlay,
-                              size: 15,
+                              size: MoaiIconSizes.sm,
                               color: _isFocused ? scheme.onPrimary : Colors.white,
                             ),
                             const SizedBox(width: 6),
@@ -262,7 +262,7 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
         child: Center(
           child: Icon(
             MoaiIcons.vodMovie,
-            size: 48,
+            size: MoaiIconSizes.hero,
             color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
           ),
         ),
@@ -286,7 +286,7 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
           child: Center(
             child: Icon(
               MoaiIcons.vodMovie,
-              size: 48,
+              size: MoaiIconSizes.hero,
               color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
             ),
           ),
@@ -296,7 +296,7 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
           child: Center(
             child: Icon(
               MoaiIcons.vodMovie,
-              size: 48,
+              size: MoaiIconSizes.hero,
               color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
             ),
           ),

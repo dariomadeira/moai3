@@ -240,7 +240,7 @@ extension _TvPinDialogViews on _TvPinDialogState {
                       : Icon(
                           icon,
                           color: fg,
-                          size: 18,
+                          size: MoaiIconSizes.md,
                         ),
                 ),
               ),
