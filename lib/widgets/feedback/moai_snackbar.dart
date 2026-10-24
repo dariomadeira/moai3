@@ -126,7 +126,7 @@ class MoaiSnackBar {
     show(
       context,
       message: message,
-      icon: MoaiIcons.checkCircleOutline,
+      icon: MoaiIcons.checkCircle,
       bottomMargin: bottomMargin,
       duration: duration,
     );
@@ -142,7 +142,7 @@ class MoaiSnackBar {
     show(
       context,
       message: message,
-      icon: MoaiIcons.errorOutline,
+      icon: MoaiIcons.error,
       bottomMargin: bottomMargin,
       duration: duration,
     );
@@ -158,7 +158,7 @@ class MoaiSnackBar {
     show(
       context,
       message: message,
-      icon: MoaiIcons.infoOutline,
+      icon: MoaiIcons.info,
       bottomMargin: bottomMargin,
       duration: duration,
     );
@@ -174,7 +174,7 @@ class MoaiSnackBar {
     show(
       context,
       message: message,
-      icon: MoaiIcons.warningAmberOutlined,
+      icon: MoaiIcons.warning,
       bottomMargin: bottomMargin,
       duration: duration,
     );

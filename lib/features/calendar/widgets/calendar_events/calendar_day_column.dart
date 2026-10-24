@@ -216,7 +216,7 @@ class _DayColumn extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
-                          MoaiIcons.keyboardArrowUp,
+                          MoaiIcons.chevronUp,
                           size: 12,
                           color: scheme.onTertiaryContainer,
                         ),
@@ -258,7 +258,7 @@ class _DayColumn extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
-                          MoaiIcons.keyboardArrowDown,
+                          MoaiIcons.chevronDown,
                           size: 12,
                           color: scheme.onTertiaryContainer,
                         ),
@@ -299,7 +299,7 @@ class _DayColumn extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              MoaiIcons.eventBusyOutlined,
+              MoaiIcons.calendarEmptyDay,
               size: 24,
               color: isFocused ? scheme.onSecondaryContainer : scheme.outline,
             ),

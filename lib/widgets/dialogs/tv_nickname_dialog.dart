@@ -105,7 +105,7 @@ class _TvNicknameDialogState extends State<TvNicknameDialog> {
 
     final dialog = TvDialog(
       width: 640,
-      icon: MoaiIcons.badgeOutlined,
+      icon: MoaiIcons.nickname,
       title: title,
       subtitle: subtitle,
       content: Column(
@@ -117,7 +117,7 @@ class _TvNicknameDialogState extends State<TvNicknameDialog> {
             focusNode: _textFieldFocusNode,
             label: LocaleKeys.nickname_dialog_label.tr(),
             hint: LocaleKeys.nickname_dialog_hint.tr(),
-            leadingIcon: MoaiIcons.personOutline,
+            leadingIcon: MoaiIcons.profile,
             maxLength: 30,
             onFocusDown: () => _saveFocusNode.requestFocus(),
             onSubmitted: (_) => _saveFocusNode.requestFocus(),

@@ -53,7 +53,7 @@ class SettingsAgendaNotifyRow extends StatelessWidget {
       focusNode: focusNode,
       label: LocaleKeys.settings_agenda_notify.tr(),
       description: LocaleKeys.settings_agenda_notify_desc.tr(),
-      icon: MoaiIcons.notificationsActiveOutlined,
+      icon: MoaiIcons.notifications,
       onKeyUp: onKeyUp,
       onKeyDown: onKeyDown,
       onKeyEvent: (node, event) {

@@ -140,7 +140,7 @@ class CountryListPanelState extends State<CountryListPanel>
                         return TvIconListCard(
                           key: ValueKey('country-$country'),
                           label: country,
-                          icon: MoaiIcons.tvDisplays,
+                          icon: MoaiIcons.tvCountryItem,
                           leading: CountryFlagAssets.leadingFor(
                             country,
                             flagUrl: widget.countryFlags[country],

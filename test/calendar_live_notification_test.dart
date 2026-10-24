@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'helpers/spanish_translations.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 void main() {
   setUp(() {
@@ -112,7 +112,7 @@ void main() {
       );
 
       final icon = CalendarProvider.getLiveEventsIcon([ev1, ev2]);
-      expect(icon, Icons.live_tv_outlined);
+      expect(icon, MoaiIcons.calendarLive);
     });
 
     test('CalendarProvider emite en onLiveEventsStarted y deduplica avisos posteriores', () async {

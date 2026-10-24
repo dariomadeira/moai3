@@ -130,7 +130,7 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          MoaiIcons.voiceSelection,
+                          MoaiIcons.voice,
                           color: scheme.onPrimary,
                           size: 16,
                         ),
@@ -277,7 +277,7 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                isRecording ? MoaiIcons.stopRounded : MoaiIcons.mic,
+                isRecording ? MoaiIcons.stop : MoaiIcons.mic,
                 color: foregroundColor,
                 size: 18,
               ),

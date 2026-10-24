@@ -164,7 +164,7 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
       case _SettingsTvItemType.debugLog:
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: MoaiIcons.terminalOutlined,
+          icon: MoaiIcons.debugPanel,
           label: LocaleKeys.settings_tv_log.tr(),
           description: LocaleKeys.settings_tv_log_desc.tr(),
           value: tvSettings.showTvLog,
@@ -177,7 +177,7 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
       case _SettingsTvItemType.channelLabels:
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: MoaiIcons.labelOutline,
+          icon: MoaiIcons.channelLabels,
           label: LocaleKeys.settings_tv_channel_labels.tr(),
           description: LocaleKeys.settings_tv_channel_labels_desc.tr(),
           value: tvSettings.showChannelLabels,
@@ -216,7 +216,7 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
       case _SettingsTvItemType.changePin:
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: MoaiIcons.pinOutlined,
+          icon: MoaiIcons.pin,
           label: LocaleKeys.settings_tv_change_pin.tr(),
           description: LocaleKeys.settings_tv_change_pin_desc.tr(),
           onPressed: () async {

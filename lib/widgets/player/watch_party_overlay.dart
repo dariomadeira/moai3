@@ -307,7 +307,7 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
       ),
       child: Center(
         child: Icon(
-          isRecording ? MoaiIcons.stopRounded : MoaiIcons.mic,
+          isRecording ? MoaiIcons.stop : MoaiIcons.mic,
           color: iconColor,
           size: 18,
         ),
@@ -425,7 +425,7 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              MoaiIcons.voiceSelection,
+              MoaiIcons.voice,
               color: fg,
               size: 16,
             ),

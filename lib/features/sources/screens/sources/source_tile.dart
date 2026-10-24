@@ -75,7 +75,7 @@ class _SourceTileState extends State<_SourceTile> {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       label: widget.source.nombre,
       description: 'v${widget.source.version} · ${_formatChannelsCount(widget.source.canales.length)}',
-      icon: MoaiIcons.electricalServices,
+      icon: MoaiIcons.plugin,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -111,8 +111,8 @@ class _SourceTileState extends State<_SourceTile> {
             focusNode: widget.updateFocus,
             tooltip: LocaleKeys.common_update.tr(),
             icon: _availableVersion != null
-                ? MoaiIcons.systemUpdateRounded
-                : MoaiIcons.syncRounded,
+                ? MoaiIcons.pluginUpdate
+                : MoaiIcons.sync,
             onPressed: () {
               widget.onUpdate();
               setState(() => _availableVersion = null);
@@ -127,7 +127,7 @@ class _SourceTileState extends State<_SourceTile> {
           TvIconActionButton(
             focusNode: widget.removeFocus,
             tooltip: LocaleKeys.sources_remove.tr(),
-            icon: MoaiIcons.deleteOutlineRounded,
+            icon: MoaiIcons.delete,
             onPressed: widget.onRemove,
             parentFocused: isFocused,
             onKeyLeft: () => widget.updateFocus.requestFocus(),

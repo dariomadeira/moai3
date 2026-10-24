@@ -133,7 +133,7 @@ class _AccentColorScreenState extends State<AccentColorScreen> {
                           activeIndex: 0,
                           colors: [scheme.surface.withValues(alpha: 0.8)],
                           titles: [LocaleKeys.settings_general_accent.tr()],
-                          icons: const [MoaiIcons.paletteOutlined],
+                          icons: const [MoaiIcons.palette],
                           onPanelTap: (_) {},
                           tabBuilder: (index, isExpanded) {
                             return Padding(
@@ -163,7 +163,7 @@ class _AccentColorScreenState extends State<AccentColorScreen> {
                                   ),
                                   const SizedBox(height: 6),
                                   Icon(
-                                    MoaiIcons.paletteOutlined,
+                                    MoaiIcons.palette,
                                     size: 20,
                                     color: scheme.onSurfaceVariant.withValues(
                                       alpha: 0.85,
@@ -252,8 +252,7 @@ class _AccentColorScreenState extends State<AccentColorScreen> {
                                                         child:
                                                             TvSettingsSwitchRow(
                                                           focusNode: focusNode,
-                                                          icon: MoaiIcons
-                                                              .autoAwesomeOutlined,
+                                                          icon: MoaiIcons.autoAccent,
                                                           label:
                                                               LocaleKeys.settings_general_auto_accent
                                                                   .tr(),
@@ -333,7 +332,7 @@ class _AccentColorSelectorTile extends StatelessWidget {
       description: colorName.isNotEmpty
           ? '$colorName · ${LocaleKeys.settings_general_accent_desc.tr()}'
           : LocaleKeys.settings_general_accent_desc.tr(),
-      icon: MoaiIcons.paletteOutlined,
+      icon: MoaiIcons.palette,
       onKeyUp: onKeyUp,
       onKeyDown: onKeyDown,
       onKeyEvent: (node, event) {
@@ -390,7 +389,7 @@ class _AccentColorSelectorTile extends StatelessWidget {
                   child: isSelected
                       ? Center(
                           child: Icon(
-                            MoaiIcons.checkOutlined,
+                            MoaiIcons.check,
                             size: 11,
                             color: ThemeData.estimateBrightnessForColor(
                                         MoaiAccentColors.seeds[i]) ==

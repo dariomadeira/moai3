@@ -374,7 +374,7 @@ class CalendarProvider extends ChangeNotifier {
 
   /// Obtiene el ícono representativo para la notificación en vivo.
   static IconData getLiveEventsIcon(List<CalendarEvent> events) {
-    if (events.isEmpty) return MoaiIcons.liveTvOutlined;
+    if (events.isEmpty) return MoaiIcons.calendarLive;
     if (events.length == 1) {
       return getSubscriptionIcon(events.first.subscriptionId);
     }
@@ -382,6 +382,6 @@ class CalendarProvider extends ChangeNotifier {
     if (events.every((e) => e.subscriptionId == firstSub)) {
       return getSubscriptionIcon(firstSub);
     }
-    return MoaiIcons.liveTvOutlined;
+    return MoaiIcons.calendarLive;
   }
 }

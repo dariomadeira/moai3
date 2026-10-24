@@ -511,7 +511,7 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Icon(
-        isUp ? MoaiIcons.keyboardArrowUp : MoaiIcons.keyboardArrowDown,
+        isUp ? MoaiIcons.chevronUp : MoaiIcons.chevronDown,
         size: 16,
         color: scheme.onTertiaryContainer,
       ),

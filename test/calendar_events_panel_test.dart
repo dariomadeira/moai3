@@ -126,7 +126,7 @@ void main() {
     await tester.pump();
 
     // Initially on current week: return button is not needed
-    expect(find.byIcon(MoaiIcons.todayOutlined), findsNothing);
+    expect(find.byIcon(MoaiIcons.calendarToday), findsNothing);
 
     // Tap Next week
     final nextBtn = find.byIcon(MoaiIcons.chevronRight);
@@ -134,11 +134,11 @@ void main() {
     await tester.pump();
 
     // In week +1, the "Semana actual" button appears in header actions
-    expect(find.byIcon(MoaiIcons.todayOutlined), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.calendarToday), findsOneWidget);
     expect(find.text('calendar_week_current'), findsOneWidget);
 
     // Tap "Semana actual" to return
-    await tester.tap(find.byIcon(MoaiIcons.todayOutlined));
+    await tester.tap(find.byIcon(MoaiIcons.calendarToday));
     await tester.pump();
 
     // Now tap Prev week to go to -1
@@ -326,7 +326,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // On Sunday, there are 5 events (> 4), so pill arrow is rendered
-    expect(find.byIcon(MoaiIcons.keyboardArrowDown), findsWidgets);
+    expect(find.byIcon(MoaiIcons.chevronDown), findsWidgets);
 
     focusNode.dispose();
   });

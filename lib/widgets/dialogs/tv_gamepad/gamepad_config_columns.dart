@@ -51,7 +51,7 @@ extension _GamepadConfigColumns on _TvGamepadConfigDialogState {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
-                      MoaiIcons.videogameAssetOff,
+                      MoaiIcons.gamepad,
                       size: 28,
                       color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
                     ),
@@ -104,7 +104,7 @@ extension _GamepadConfigColumns on _TvGamepadConfigDialogState {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(MoaiIcons.info, size: 14, color: scheme.primary),
+                Icon(MoaiIcons.infoCircle, size: 14, color: scheme.primary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -144,7 +144,7 @@ extension _GamepadConfigColumns on _TvGamepadConfigDialogState {
               children: [
                 Row(
                   children: [
-                    Icon(MoaiIcons.joystick, size: 14, color: scheme.primary),
+                    Icon(MoaiIcons.gamepad, size: 14, color: scheme.primary),
                     const SizedBox(width: 6),
                     Text(
                       LocaleKeys.gamepad_test_section.tr().toUpperCase(),
@@ -194,7 +194,7 @@ extension _GamepadConfigColumns on _TvGamepadConfigDialogState {
                           Positioned(
                             top: 0,
                             child: _SquircleButton(
-                              icon: MoaiIcons.arrowUpwardRounded,
+                              icon: MoaiIcons.arrowUp,
                               isPressed:
                                   (_activeTestMask & ArcadeButtons.up) != 0,
                               size: 34,
@@ -204,7 +204,7 @@ extension _GamepadConfigColumns on _TvGamepadConfigDialogState {
                           Positioned(
                             left: 0,
                             child: _SquircleButton(
-                              icon: MoaiIcons.arrowBackRounded,
+                              icon: MoaiIcons.arrowBack,
                               isPressed:
                                   (_activeTestMask & ArcadeButtons.left) != 0,
                               size: 34,
@@ -225,7 +225,7 @@ extension _GamepadConfigColumns on _TvGamepadConfigDialogState {
                           Positioned(
                             right: 0,
                             child: _SquircleButton(
-                              icon: MoaiIcons.arrowForwardRounded,
+                              icon: MoaiIcons.arrowForward,
                               isPressed:
                                   (_activeTestMask & ArcadeButtons.right) != 0,
                               size: 34,
@@ -235,7 +235,7 @@ extension _GamepadConfigColumns on _TvGamepadConfigDialogState {
                           Positioned(
                             bottom: 0,
                             child: _SquircleButton(
-                              icon: MoaiIcons.arrowDownwardRounded,
+                              icon: MoaiIcons.arrowDown,
                               isPressed:
                                   (_activeTestMask & ArcadeButtons.down) != 0,
                               size: 34,

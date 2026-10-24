@@ -1,77 +1,90 @@
-import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:flutter/widgets.dart';
 import 'package:reicons/reicons.dart';
 import 'package:moai3/utils/text_normalize.dart';
 
-/// Catálogo único de iconos de Moai.
+/// Catálogo único de íconos de Moai (SPEC-50 §4).
 ///
-/// Cada constante apunta a un [IconData] concreto. El comentario describe
-/// en qué zona de la UI se usa (y la ruta del archivo). Cambiar el valor
-/// aquí actualiza todos los lugares que referencian la constante.
+/// Toda la app usa estas constantes; nadie más importa paquetes de íconos
+/// (`test/icons_usage_test.dart`). Familia única: Reicon
+/// (https://reicon.dev/icons): contorno [ReiconIcons], relleno
+/// [ReiconFilledIcons]. Cambiar un valor acá cambia todos sus usos.
 ///
-/// Rail: usa [ReiconIcons] / [ReiconFilledIcons] (paquete `reicons`).
-/// El resto de la app sigue en Material / Material Symbols salvo que se migre.
+/// Secciones:
+/// 1. Navegación — rail lateral
+/// 2. TV — acordeón de paneles y pestañas
+/// 3. TV — visor, canales y extensiones
+/// 4. TV — favoritos y grupos (marcadores)
+/// 5. TV — categorías de canales
+/// 6. Agenda
+/// 7. Arcade
+/// 8. Amigos y Miremos juntos
+/// 9. Ajustes
+/// 10. Clima y ubicación
+/// 11. Calibración de pantalla
+/// 12. Acciones y estados comunes
+/// 13. Flechas
+/// 14. Películas y series (VOD)
+/// 15. Teclado en pantalla y PIN
 abstract final class MoaiIcons {
   MoaiIcons._();
 
   // ---------------------------------------------------------------------------
-  // Rail de navegacion (Reicon — outline idle / filled selected)
-  // Buscador: https://reicon.dev/icons
+  // Navegación — rail lateral
+  // Consumidor: `features/home/widgets/tv_vertical_nav_rail.dart`.
+  // Idle = contorno, seleccionado = relleno.
   // ---------------------------------------------------------------------------
 
-  /// Rail Inicio (idle). Origen: `ReiconIcons.home6`
+  /// Rail «Inicio» (sin seleccionar).
   static const railHome = ReiconIcons.home6;
 
-  /// Rail Inicio (selected). Origen: `ReiconFilledIcons.home6`
+  /// Rail «Inicio» (seleccionado).
   static const railHomeSelected = ReiconFilledIcons.home6;
 
-  /// Rail TV (idle). Origen: `ReiconIcons.tv`
+  /// Rail «TV» (sin seleccionar).
   static const railTv = ReiconIcons.tv;
 
-  /// Rail TV (selected). Origen: `ReiconFilledIcons.tv`
+  /// Rail «TV» (seleccionado).
   static const railTvSelected = ReiconFilledIcons.tv;
 
-  /// Rail Destacados (idle). Origen: `ReiconIcons.videoPlayH`
+  /// Rail «Destacados» (sin seleccionar).
   static const railFeatured = ReiconIcons.videoPlayH;
 
-  /// Rail Destacados (selected). Origen: `ReiconFilledIcons.videoPlayH`
+  /// Rail «Destacados» (seleccionado).
   static const railFeaturedSelected = ReiconFilledIcons.videoPlayH;
 
-  /// Rail Películas (idle). Origen: `ReiconIcons.clapperboardOpen`
+  /// Rail «Películas» (sin seleccionar).
   static const railMovies = ReiconIcons.clapperboardOpen;
 
-  /// Rail Películas (selected). Origen: `ReiconFilledIcons.clapperboardOpen`
+  /// Rail «Películas» (seleccionado).
   static const railMoviesSelected = ReiconFilledIcons.clapperboardOpen;
 
-  /// Rail Series (idle). Origen: `ReiconIcons.videoFrame2`
+  /// Rail «Series» (sin seleccionar).
   static const railSeries = ReiconIcons.videoFrame2;
 
-  /// Rail Series (selected). Origen: `ReiconFilledIcons.videoFrame2`
+  /// Rail «Series» (seleccionado).
   static const railSeriesSelected = ReiconFilledIcons.videoFrame2;
 
-  /// Rail Agenda (idle). Origen: `ReiconIcons.calendar`
+  /// Rail «Agenda» (sin seleccionar).
   static const railCalendar = ReiconIcons.calendar;
 
-  /// Rail Agenda (selected). Origen: `ReiconFilledIcons.calendar`
+  /// Rail «Agenda» (seleccionado).
   static const railCalendarSelected = ReiconFilledIcons.calendar;
 
-  /// Rail Arcade (idle). Origen: `ReiconIcons.gamepad`
+  /// Rail «Arcade» (sin seleccionar).
   static const railArcade = ReiconIcons.gamepad;
 
-  /// Rail Arcade (selected). Origen: `ReiconFilledIcons.gamepad`
+  /// Rail «Arcade» (seleccionado).
   static const railArcadeSelected = ReiconFilledIcons.gamepad;
 
-  /// Rail Ajustes (idle). Origen: `ReiconIcons.settings`
+  /// Rail «Ajustes» (sin seleccionar).
   static const railSettings = ReiconIcons.gear;
 
-  /// Rail Ajustes (selected). Origen: `ReiconFilledIcons.settings`
+  /// Rail «Ajustes» (seleccionado).
   static const railSettingsSelected = ReiconFilledIcons.gear;
 
   // ---------------------------------------------------------------------------
-  // Acordeón Explorar TV (paneles verticales: Grupos / Categorías / Canales)
-  // Usado en `_icons()` de `features/home/areas/home_tv_area.dart`.
-  // Cambiá solo estas constantes para retocar el acordeón sin afectar empty
-  // states ni cabeceras que siguen usando gridViewOutlined / etc.
+  // TV — acordeón de paneles y pestañas
+  // Consumidores: `features/home/areas/`, `features/home/widgets/tv_tab_bar.dart`.
   // ---------------------------------------------------------------------------
 
   /// Acordeón «Grupos» (`home_panel_countries` → texto UI "Grupos").
@@ -96,18 +109,6 @@ abstract final class MoaiIcons {
   /// Acordeón «Series» (`movies_panel_series_title`).
   static const tvAccordionSeries = ReiconIcons.videoFrame2;
 
-  /// Estado vacío del catálogo de películas (`movies_empty_featured`).
-  static const tvMoviesEmpty = ReiconIcons.cloudDownload;
-
-  /// Opción «Pestaña de arranque» en configuración de TV (`settings_tv_startup_tab`).
-  static const settingsTvStartupTab = ReiconIcons.flag2;
-
-  // ---------------------------------------------------------------------------
-  // Pestañas flotantes TV (Explorar / Buscar / Marcadores)
-  // Usado en `features/home/widgets/tv_tab_bar.dart`.
-  // Idle = outlined; selected = filled. Cambiá el par sin tocar otros usos.
-  // ---------------------------------------------------------------------------
-
   /// Pestaña «Explorar» idle (`home_tab_explore`). Brújula / compass.
   static const tvTabExplorar = ReiconIcons.compass;
 
@@ -127,9 +128,7 @@ abstract final class MoaiIcons {
   static const tvTabMarcadoresSelected = ReiconFilledIcons.bookmarks;
 
   // ---------------------------------------------------------------------------
-  // Meta pills del visor de canal (país / categoría / plugin)
-  // Usado en `features/home/widgets/tv_viewer_panel.dart`.
-  // Ej. UI: [Argentina] [Aire] [ar]
+  // TV — visor, canales y extensiones
   // ---------------------------------------------------------------------------
 
   /// Pill país/grupo del canal (ej. "Argentina"). Grilla 2×2.
@@ -141,6 +140,16 @@ abstract final class MoaiIcons {
   /// Pill extensión/plugin del canal (ej. "ar"). Pieza de puzzle.
   static const tvViewerPillPlugin = ReiconIcons.puzzle;
 
+  /// Visor vacío de TV sin canal seleccionado o sin canales (`empty_viewer_panel.dart`).
+  static const tvEmptyViewer = ReiconIcons.tv;
+
+  /// Sin logo / logo fallido en la grilla o lista de canales.
+  static const tvChannelLogoFallback = ReiconIcons.display;
+
+  /// Estado vacío sin canales (`browser_channels_empty`).
+  /// Consumidor: `features/channel_browser/widgets/channel_list_panel.dart`
+  static const tvChannelsEmpty = ReiconIcons.magnifierFaceWorried;
+
   /// Pill canales totales / fuentes en cabecera de extensiones. Enchufe plug2.
   static const tvSourcesTotalChannels = ReiconIcons.plug2;
 
@@ -150,37 +159,17 @@ abstract final class MoaiIcons {
   /// Icono botón instalar en barra superior de extensiones. Bandeja de entrada (inboxIn).
   static const tvSourcesInstallAction = ReiconIcons.inboxIn;
 
-  // ---------------------------------------------------------------------------
-  // Centro de emulación / Arcade en Home
-  // ---------------------------------------------------------------------------
+  /// Ítem de país/grupo en el panel Grupos (`country_list_panel.dart`).
+  static const tvCountryItem = ReiconIcons.page;
 
-  /// 1. Seleccionar juego Arcade (fantasma sonriente)
-  static const arcadeActionSelectGame = ReiconIcons.ghostSmile;
+  /// Servidor actual del canal en el visor (`tv_viewer_panel.dart`).
+  static const server = ReiconIcons.server;
 
-  /// 2. Configurar Gamepad Arcade (botones gamepad)
-  static const arcadeActionConfigGamepad = ReiconIcons.gamepadButtons;
-
-  /// 3. Iniciar juego Arcade (play3)
-  static const arcadeActionStartGame = ReiconIcons.play3;
-
-  /// Refrescar catálogo de ROMs (refreshSquare22 / refreshSquare2)
-  static const arcadeCatalogRefresh = ReiconIcons.refreshSquare22;
-
-  /// Ícono de ROM / Juego en catálogo
-  static const arcadeRomItem = ReiconIcons.ghostSmile;
-
-  /// Ícono del badge/pill de instalados en cabecera de Arcade (gameboy3)
-  static const arcadeRomInstalledBadge = ReiconIcons.gameboy3;
-
-  /// Ícono de la tarjeta de juego instalado (gamepad4)
-  static const arcadeRomCard = ReiconIcons.gamepad4;
-
-  /// Eliminar ROM instalada (papelera trash4)
-  static const arcadeRomDelete = ReiconIcons.trash4;
+  /// Botón «saltar servidor» (`server_skip_button.dart`).
+  static const serverSkip = ReiconIcons.serverUpdate;
 
   // ---------------------------------------------------------------------------
-  // Acciones de favoritos (barra bajo el visor: + / borrar / corazón)
-  // create_group_button · clear_favorites_button · favorite_button
+  // TV — favoritos y grupos (marcadores)
   // ---------------------------------------------------------------------------
 
   /// Crear grupo de marcadores (`CreateGroupButton`). Plus / +.
@@ -188,6 +177,12 @@ abstract final class MoaiIcons {
 
   /// Vaciar favoritos (`ClearFavoritesButton`). Papelera.
   static const tvFavoritesClear = ReiconIcons.trash4;
+
+  /// Toggle favorito idle — no está en favoritos (`FavoriteButton`).
+  static const tvFavoritesHeart = ReiconIcons.heart;
+
+  /// Toggle favorito active — canal en favoritos (`FavoriteButton`).
+  static const tvFavoritesHeartSelected = ReiconFilledIcons.heart;
 
   /// Icono cabecera modal crear grupo de marcadores (`CreateGroupButton`).
   static const tvGroupCreateDialogTitle = ReiconIcons.bookmark;
@@ -198,51 +193,57 @@ abstract final class MoaiIcons {
   /// Icono por defecto de un grupo de marcadores.
   static const tvBookmarkGroupLeading = ReiconIcons.shareCircle;
 
-  /// Clave `ChannelGroup.icon` → icono del grupo.
-  static final Map<String, IconData> _groupIcons = {
+  /// Botón «crear grupo» (`create_group_button.dart`).
+  static const groupCreate = ReiconIcons.bookmarkAdd;
+
+  /// Ícono de grupo «Favoritos» (clave guardada `'favorite'`).
+  static const groupIconFavorite = ReiconIcons.heart;
+
+  /// Ícono de grupo «Sin adultos (+18)» (clave guardada `'no_adults'`).
+  static const groupIconAdults = ReiconIcons.explicit;
+
+  /// Ícono de grupo «Fútbol» (clave guardada `'sports_soccer'`).
+  static const groupIconSoccer = ReiconIcons.football;
+
+  /// Ícono de grupo «Películas» (clave guardada `'movie'`).
+  static const groupIconMovies = ReiconIcons.clapperboardOpen;
+
+  /// Ícono de grupo «Infantil» (clave guardada `'child_hat'`).
+  static const groupIconKids = ReiconIcons.balloon;
+
+  /// Ícono de grupo «Noticias» (clave guardada `'newspaper'`).
+  static const groupIconNews = ReiconIcons.memo;
+
+  /// Ícono de grupo «TV general» (clave guardada `'tv_gen'`).
+  static const groupIconTv = ReiconIcons.tv;
+
+  /// Ícono de grupo «Idioma» (clave guardada `'language'`).
+  static const groupIconLanguage = ReiconIcons.language;
+
+  /// Clave de ícono guardada en el grupo → ícono (ver [groupIconFor]).
+  static const Map<String, IconData> _groupIcons = {
     'bookmark': tvBookmarkGroupLeading,
-    'favorite': favoriteOutline,
-    'no_adults': explicitOutlined,
-    'sports_soccer': sportsSoccerOutlined,
-    'movie': movieOutlined,
-    'child_hat': childCareOutlined,
-    'newspaper': newspaperOutlined,
-    'tv_gen': tvOutlined,
-    'language': languageOutlined,
+    'favorite': groupIconFavorite,
+    'no_adults': groupIconAdults,
+    'sports_soccer': groupIconSoccer,
+    'movie': groupIconMovies,
+    'child_hat': groupIconKids,
+    'newspaper': groupIconNews,
+    'tv_gen': groupIconTv,
+    'language': groupIconLanguage,
   };
 
+  /// Ícono de un grupo por su clave (o [tvBookmarkGroupLeading]).
   static IconData groupIconFor(String iconKey) =>
       _groupIcons[iconKey] ?? tvBookmarkGroupLeading;
 
-  /// Toggle favorito idle — no está en favoritos (`FavoriteButton`).
-  static const tvFavoritesHeart = ReiconIcons.heart;
-
-  /// Toggle favorito active — canal en favoritos (`FavoriteButton`).
-  static const tvFavoritesHeartSelected = ReiconFilledIcons.heart;
-
-  /// Visor vacío de TV sin canal seleccionado o sin canales (`empty_viewer_panel.dart`).
-  static const tvEmptyViewer = ReiconIcons.tv;
-
   // ---------------------------------------------------------------------------
-  // Tarjeta de canal — placeholder sin logo
-  // Consumidor: `widgets/cards/tv_list_card_leading_logo.dart`
-  // ---------------------------------------------------------------------------
-
-  /// Sin logo / logo fallido en la grilla o lista de canales.
-  static const tvChannelLogoFallback = ReiconIcons.display;
-
-  /// Estado vacío sin canales (`browser_channels_empty`).
-  /// Consumidor: `features/channel_browser/widgets/channel_list_panel.dart`
-  static const tvChannelsEmpty = ReiconIcons.magnifierFaceWorried;
-
-  // ---------------------------------------------------------------------------
-  // Categorías de canales (panel Categorías)
-  // Mapa por nombre exacto del canal. Cambiá el IconData de cada constante.
-  // Consumidor: `widgets/cards/category_card.dart` → [tvCategoryIconFor].
+  // TV — categorías de canales
+  // Mapa por nombre de categoría. Consumidor: `widgets/cards/category_card.dart` → [tvCategoryIconFor].
   // ---------------------------------------------------------------------------
 
   /// «Aire» — ondas / aire.
-  static const tvCategoryAire = Symbols.airware;
+  static const tvCategoryAire = ReiconIcons.signalStream;
 
   /// «Interior» / «Provinciales» — ciudad.
   static const tvCategoryInterior = ReiconIcons.city;
@@ -251,22 +252,22 @@ abstract final class MoaiIcons {
   static const tvCategoryDeportes = ReiconIcons.football;
 
   /// «Noticias» — periódico.
-  static const tvCategoryNoticias = Icons.newspaper_outlined;
+  static const tvCategoryNoticias = ReiconIcons.memo;
 
   /// «Infantiles» / «Infantil» — gorro niño.
-  static const tvCategoryInfantiles = Symbols.child_hat;
+  static const tvCategoryInfantiles = ReiconIcons.balloon;
 
   /// «Entretenimiento» / «Teleshows» — ticket.
-  static const tvCategoryEntretenimiento = Symbols.confirmation_number;
+  static const tvCategoryEntretenimiento = ReiconIcons.ticket;
 
   /// «Comedia» — máscaras teatro.
-  static const tvCategoryComedia = Icons.theater_comedy_outlined;
+  static const tvCategoryComedia = ReiconIcons.masks;
 
   /// «Reality» — ojo.
-  static const tvCategoryReality = Symbols.visibility;
+  static const tvCategoryReality = ReiconIcons.eye;
 
   /// «Anime» — animación.
-  static const tvCategoryAnime = Symbols.animation;
+  static const tvCategoryAnime = ReiconIcons.sparkles;
 
   /// «Cocina» — menú / cubiertos.
   static const tvCategoryCocina = ReiconIcons.chefHat;
@@ -275,25 +276,25 @@ abstract final class MoaiIcons {
   static const tvCategoryRadios = ReiconIcons.radio;
 
   /// «Series» — TV.
-  static const tvCategorySeries = Symbols.tv;
+  static const tvCategorySeries = ReiconIcons.videoFrame2;
 
   /// «Películas» / «Cine» / «Cine y Series» — claqueta / movie.
   static const tvCategoryCine = ReiconIcons.clapperboardOpen;
 
   /// «Documentales» — libros.
-  static const tvCategoryDocumentales = Symbols.library_books;
+  static const tvCategoryDocumentales = ReiconIcons.book;
 
   /// «Música» / «Conciertos» — nota musical.
   static const tvCategoryMusica = ReiconIcons.musicNote;
 
   /// «Niños» — child care.
-  static const tvCategoryNinos = Symbols.child_care;
+  static const tvCategoryNinos = ReiconIcons.faceSmile;
 
   /// «Educación» — escuela.
-  static const tvCategoryEducacion = Symbols.school;
+  static const tvCategoryEducacion = ReiconIcons.graduationCap;
 
   /// «Religión» / «Religioso» — iglesia.
-  static const tvCategoryReligion = Symbols.church;
+  static const tvCategoryReligion = ReiconIcons.candle2;
 
   /// «Telenovelas» / «Novelas» — corazón.
   static const tvCategoryNovelas = ReiconIcons.heart2;
@@ -305,22 +306,22 @@ abstract final class MoaiIcons {
   static const tvCategoryGeneral = ReiconIcons.remote;
 
   /// «Otros» — more.
-  static const tvCategoryOtros = Symbols.more;
+  static const tvCategoryOtros = ReiconIcons.moreCircle;
 
   /// «Internacional» — globo.
-  static const tvCategoryInternacional = Symbols.globe;
+  static const tvCategoryInternacional = ReiconIcons.globe;
 
   /// «Comunitarios» — grupos.
-  static const tvCategoryComunitarios = Symbols.groups;
+  static const tvCategoryComunitarios = ReiconIcons.users;
 
   /// «Culturales» — teatros.
-  static const tvCategoryCulturales = Symbols.theaters;
+  static const tvCategoryCulturales = ReiconIcons.film;
 
   /// «Adultos» — candado.
-  static const tvCategoryAdultos = Symbols.lock;
+  static const tvCategoryAdultos = ReiconIcons.lock;
 
   /// Fallback si la categoría no está en el mapa.
-  static const tvCategoryFallback = Icons.tv_outlined;
+  static const tvCategoryFallback = ReiconIcons.tv;
 
   /// Nombre de categoría (exacto) → icono. Alias y sinónimos incluidos.
   static const Map<String, IconData> tvCategoryIcons = {
@@ -371,15 +372,28 @@ abstract final class MoaiIcons {
       _tvCategoryIconsNormalized[normalizeText(category)] ?? tvCategoryFallback;
 
   // ---------------------------------------------------------------------------
-  // Agenda — suscripciones deportivas + acordeón «Suscripciones»
-  // Consumidores: `state/calendar_provider.dart`, `features/home/areas/home_calendar_area.dart`.
+  // Agenda
+  // Consumidores: `features/calendar/`, `features/home/areas/home_calendar_area.dart`,
+  // `state/calendar_provider.dart`.
   // ---------------------------------------------------------------------------
 
-  /// Acordeón Agenda: panel «Suscripciones» (calendario +).
-  static const calendarAccordionSuscripciones = ReiconIcons.calendarAdd;
+  /// Panel «Eventos» de la Agenda y su acceso en Ajustes.
+  static const calendarEvents = ReiconIcons.calendarDay;
 
-  /// Suscripción F1 — casco motorsport.
-  static const calendarSubF1 = Icons.sports_motorsports_outlined;
+  /// Panel «Suscripciones» de la Agenda.
+  static const calendarSubscriptions = ReiconIcons.calendarAdd;
+
+  /// Botón «ir a hoy» (`calendar_events_panel.dart`).
+  static const calendarToday = ReiconIcons.calendarDate;
+
+  /// Día sin eventos (`calendar_day_column.dart`).
+  static const calendarEmptyDay = ReiconIcons.calendarX;
+
+  /// Aviso de evento en vivo (`calendar_provider.dart`).
+  static const calendarLive = ReiconIcons.playStream;
+
+  /// Suscripción F1 — bandera de carrera.
+  static const calendarSubF1 = ReiconIcons.flag;
 
   /// Suscripción LPF AR — fútbol.
   static const calendarSubLpf = ReiconIcons.football;
@@ -393,14 +407,14 @@ abstract final class MoaiIcons {
   /// Suscripción NFL — fútbol americano (pelota oval / rugby en Reicon).
   static const calendarSubNfl = ReiconIcons.rugby;
 
-  /// Suscripción MotoGP — moto.
-  static const calendarSubMotogp = Icons.two_wheeler_outlined;
+  /// Suscripción MotoGP — bandera de carrera.
+  static const calendarSubMotogp = ReiconIcons.flag;
 
   /// Suscripción NBA — básquet.
   static const calendarSubNba = ReiconIcons.basketball;
 
-  /// Fallback genérico de deporte / evento sin match.
-  static const calendarSubFallback = Icons.sports_outlined;
+  /// Deporte sin ícono propio — trofeo.
+  static const calendarSubFallback = ReiconIcons.cupTrophy;
 
   /// Mapa id de suscripción → icono (alineado con [CalendarProvider.defaultSubscriptions]).
   static const Map<String, IconData> calendarSubIcons = {
@@ -435,11 +449,6 @@ abstract final class MoaiIcons {
     return calendarSubFallback;
   }
 
-  // ---------------------------------------------------------------------------
-  // Agenda — modal de detalle de evento (`_CalendarEventDialogContent`)
-  // Consumidor: `features/calendar/widgets/calendar_events_panel.dart`.
-  // ---------------------------------------------------------------------------
-
   /// Cabecera del modal (título del evento).
   static const calendarDialogTitle = ReiconIcons.calendar;
 
@@ -453,350 +462,408 @@ abstract final class MoaiIcons {
   static const calendarDialogBroadcast = ReiconIcons.tv;
 
   // ---------------------------------------------------------------------------
-  // Material / Symbols (resto de la UI)
+  // Arcade
+  // Consumidores: `features/games/`, `features/home/areas/home_arcade_area.dart`.
   // ---------------------------------------------------------------------------
 
-  static const tv = Icons.tv;
+  /// 1. Seleccionar juego Arcade (fantasma sonriente)
+  static const arcadeActionSelectGame = ReiconIcons.ghostSmile;
 
-  static const tvOutlined = Icons.tv_outlined;
+  /// 2. Configurar Gamepad Arcade (botones gamepad)
+  static const arcadeActionConfigGamepad = ReiconIcons.gamepadButtons;
 
-  static const calendarMonthOutlined = ReiconIcons.calendarDay;
+  /// 3. Iniciar juego Arcade (play3)
+  static const arcadeActionStartGame = ReiconIcons.play3;
 
-  static const sportsEsports = Icons.sports_esports;
+  /// Refrescar catálogo de ROMs (refreshSquare22 / refreshSquare2)
+  static const arcadeCatalogRefresh = ReiconIcons.refreshSquare22;
 
-  static const sportsEsportsOutlined = Icons.sports_esports_outlined;
+  /// Ícono de ROM / Juego en catálogo
+  static const arcadeRomItem = ReiconIcons.ghostSmile;
 
-  static const settings = Icons.settings;
+  /// Ícono del badge/pill de instalados en cabecera de Arcade (gameboy3)
+  static const arcadeRomInstalledBadge = ReiconIcons.gameboy3;
 
-  static const adaptiveAudioMic = ReiconIcons.msgBubbleUser;
+  /// Ícono de la tarjeta de juego instalado (gamepad4)
+  static const arcadeRomCard = ReiconIcons.gamepad4;
 
-  static const airware = Symbols.airware;
+  /// Eliminar ROM instalada (papelera trash4)
+  static const arcadeRomDelete = ReiconIcons.trash4;
 
-  static const animation = Symbols.animation;
-
-  static const arrowBack = Icons.arrow_back;
-
-  static const arrowBackOutlined = ReiconIcons.arrowLeft2;
-
-  static const arrowBackRounded = ReiconIcons.arrowLeft;
-
-  static const arrowDownwardRounded = ReiconIcons.arrowDown;
-
-  static const arrowDropDown = Icons.arrow_drop_down;
-
-  static const arrowDropUp = Icons.arrow_drop_up;
-
-  static const arrowForwardRounded = ReiconIcons.arrowRight;
-
-  static const arrowLeft = Icons.arrow_left;
-
-  static const arrowRight = Icons.arrow_right;
-
-  static const arrowUpwardRounded = ReiconIcons.arrowUp;
-
-  static const aspectRatioOutlined = ReiconIcons.fullscreenSquare;
-
-  static const autoAwesomeOutlined = ReiconIcons.sparkles;
-
-  static const badgeOutlined = ReiconIcons.userId;
-
-  static const block = Icons.block;
-
-  static const bookmarkAddOutlined = Icons.bookmark_add_outlined;
-
-  static const bookmarks = Icons.bookmarks;
-
-  static const browserUpdated = ReiconIcons.desktopDownload;
-
-  static const bugReportOutlined = ReiconIcons.bug;
-
-  static const calendarAddOn = ReiconIcons.calendarAdd;
-
-  static const cancelOutlined = Icons.cancel_outlined;
-
-  static const check = Icons.check;
-
-  static const checkCircle = Symbols.check_circle;
-
-  static const checkCircleOutline = Icons.check_circle_outline;
-
-  static const checkCircleOutlineRounded = ReiconIcons.checkCircle;
-
-  static const checkCircleRounded = Icons.check_circle_rounded;
-
-  static const checkOutlined = ReiconIcons.check;
-
-  static const checkRounded = ReiconIcons.check;
-
-  static const pinBackspace = ReiconIcons.tagCross2;
-
-  static const pinClose = ReiconIcons.x;
-
-  static const installPending = ReiconIcons.squareArrowDown;
-
-  static const chevronLeft = ReiconIcons.chevronLeft;
-
-  static const chevronRight = ReiconIcons.arrowRight2;
-
-  static const childCareOutlined = Icons.child_care_outlined;
-
-  static const church = Symbols.church;
-
-  static const closeOutlined = Icons.close_outlined;
-
-  static const cloudOffOutlined = Icons.cloud_off_outlined;
-
-  static const cloudOutlined = ReiconIcons.cloudSun2;
-
-  static const cloudSyncOutlined = ReiconIcons.globalRefresh2;
-
-  static const darkModeOutlined = ReiconIcons.darkLight;
-
-  static const delete = ReiconIcons.trash4;
-
-  static const deleteOutlineRounded = ReiconIcons.trash4;
-
-  static const deleteSweepOutlined = ReiconIcons.trash4;
-
-  static const dnsOutlined = ReiconIcons.server;
-
-  static const download = Symbols.download;
-
-  static const electricalServices = ReiconIcons.plugCircle;
-
-  static const error = Symbols.error;
-
-  static const errorOutline = Icons.error_outline;
-
-  static const errorOutlineRounded = ReiconIcons.alertCircle;
-
-  static const eventBusyOutlined = Icons.event_busy_outlined;
-
-  static const exitToAppOutlined = ReiconIcons.logout;
-
-  static const explicitOutlined = Icons.explicit_outlined;
-
-  static const explore = Icons.explore;
-
-  static const extension = ReiconIcons.puzzle;
-
-  static const extensionOffOutlined = ReiconIcons.lightbulb3;
-
-  static const extensionOutlined = ReiconIcons.puzzle;
-
-  static const favorite = Icons.favorite;
-
-  static const favoriteOutline = Icons.favorite_outline;
-
-  static const fiberManualRecord = ReiconIcons.record;
-
+  /// Control de juego (configuración, invitaciones, controles conectados).
   static const gamepad = ReiconIcons.gamepad;
 
-  static const globe = Symbols.globe;
+  /// Control de juego relleno (pantalla de juego, acordeón Arcade).
+  static const gamepadFilled = ReiconFilledIcons.gamepad;
 
-  static const gridViewOutlined = Icons.grid_view_outlined;
+  /// Control remoto del TV como mando (`arcade_screen.dart`).
+  static const remote = ReiconIcons.remote;
 
-  static const groupOffOutlined = ReiconIcons.userX;
+  /// Cruceta del control en pantalla (`arcade_controller_overlay.dart`).
+  static const dpadUp = ReiconIcons.chevronUp;
 
-  static const groupOutlined = Icons.group_outlined;
+  /// Cruceta del control en pantalla (`arcade_controller_overlay.dart`).
+  static const dpadDown = ReiconIcons.chevronDown;
 
-  static const groups = Symbols.groups;
+  /// Cruceta del control en pantalla (`arcade_controller_overlay.dart`).
+  static const dpadLeft = ReiconIcons.chevronLeft;
 
-  static const host = ReiconIcons.serverUpdate;
+  /// Cruceta del control en pantalla (`arcade_controller_overlay.dart`).
+  static const dpadRight = ReiconIcons.chevronRight;
 
-  static const info = ReiconIcons.infoCircle;
+  // ---------------------------------------------------------------------------
+  // Amigos y Miremos juntos
+  // Consumidores: `widgets/dialogs/tv_friends*`, `widgets/player/watch_party_overlay.dart`, ajustes.
+  // ---------------------------------------------------------------------------
 
-  static const infoOutline = ReiconIcons.circleInfo;
+  /// Amigos / jugar con un amigo.
+  static const friends = ReiconIcons.users;
 
-  static const infoOutlineRounded = Icons.info_outline_rounded;
+  /// Resumen de amigos en Ajustes › Miremos juntos.
+  static const watchPartyFriends = ReiconIcons.people2;
 
-  static const joystick = ReiconIcons.gamepad;
+  /// Sin amigos todavía.
+  static const friendsEmpty = ReiconIcons.userX;
 
-  static const keyboard = ReiconIcons.keyboard;
+  /// Solicitudes de amistad recibidas.
+  static const friendRequests = ReiconIcons.deviceMessage2;
 
-  static const keyboardAltOutlined = ReiconIcons.keyboard;
-
-  static const keyboardArrowDown = Icons.keyboard_arrow_down;
-
-  static const keyboardArrowUp = Icons.keyboard_arrow_up;
-
-  static const labelOutline = ReiconIcons.tag2;
-
-  static const languageOutlined = Icons.language_outlined;
-
-  static const lightbulbOutline = ReiconIcons.bulb;
-
-  static const liveTvOutlined = Icons.live_tv_outlined;
-
-  static const locationOffOutlined = Icons.location_off_outlined;
-
-  static const locationOnOutlined = ReiconIcons.pinSearch;
-
-  static const weatherLocationItem = ReiconIcons.mapPoint;
-
-  static const lock = ReiconIcons.lockPassword;
-
-  static const lockOpen = ReiconIcons.lockPasswordOpen;
-
-  static const markEmailReadOutlined = ReiconIcons.deviceMessage2;
-
-  static const mic = ReiconIcons.microphone;
-
-  static const micGear = ReiconIcons.tuning3;
-
-  static const micNoneOutlined = ReiconIcons.microphone;
-
-  static const more = Symbols.more;
-
-  static const movie = Symbols.movie;
-
-  static const movieOutlined = ReiconIcons.clapperboardOpen;
-
-  static const musicNote = Symbols.music_note;
-
-  static const myLocationRounded = ReiconIcons.location2;
-
-  static const newspaperOutlined = Icons.newspaper_outlined;
-
-  static const northEast = ReiconIcons.arrowRightUp;
-
-  static const northWest = ReiconIcons.arrowLeftUp;
-
-  static const notificationsActiveOutlined = ReiconIcons.bell;
-
-  static const paletteOutlined = ReiconIcons.palette2;
-
-  static const peopleAltRounded = ReiconIcons.users;
-
-  static const peopleOutline = ReiconIcons.people2;
-
-  static const peopleOutlineRounded = ReiconIcons.users;
-
+  /// Persona / amigo en listas.
   static const person = ReiconIcons.user;
 
+  /// Perfil propio (apodo y código).
+  static const profile = ReiconIcons.userSquare;
+
+  /// Apodo / código de amigo.
+  static const nickname = ReiconIcons.userId;
+
+  /// Agregar amigo.
   static const personAdd = ReiconIcons.userAdd;
 
-  static const personAddAlt1 = Icons.person_add_alt_1;
+  /// Quitar amigo.
+  static const personRemove = ReiconIcons.userMinus;
 
-  static const personAddOutlined = ReiconIcons.userAdd;
+  /// Buscar amigo para invitar.
+  static const personSearch = ReiconIcons.userSearch;
 
-  static const personAddRounded = ReiconIcons.userAdd;
+  /// Sección «Miremos juntos» en Ajustes.
+  static const watchParty = ReiconIcons.msgBubbleUser;
 
-  static const personOutline = ReiconIcons.userSquare;
+  /// Micrófono (mensajes de voz).
+  static const mic = ReiconIcons.microphone;
 
-  static const personOutlineRounded = Icons.person_outline_rounded;
+  /// Prueba / ajustes de micrófono.
+  static const micSettings = ReiconIcons.tuning3;
 
-  static const personRemoveOutlined = ReiconIcons.userMinus;
+  /// Mensajes de voz.
+  static const voice = ReiconIcons.userSpeak;
 
-  static const personRounded = ReiconIcons.user;
+  /// Grabando.
+  static const record = ReiconIcons.record;
 
-  static const personSearchRounded = Icons.person_search_rounded;
-
-  static const pinOutlined = Icons.pin_outlined;
-
-  static const publicOutlined = ReiconIcons.globe2;
-
-  static const radio = Symbols.radio;
-
-  static const refreshOutlined = ReiconIcons.refresh;
-
-  static const refreshRounded = ReiconIcons.refresh;
-
-  static const school = Symbols.school;
-
-  static const search = Icons.search;
-
-  static const searchOutlined = Icons.search_outlined;
-
-  static const settingsRemote = Icons.settings_remote;
-
-  static const settingsRemoteOutlined = ReiconIcons.tv;
-
-  static const southEast = ReiconIcons.arrowRightDown;
-
-  static const southWest = ReiconIcons.arrowLeftDown;
-
-  static const sportsEsportsRounded = Icons.sports_esports_rounded;
-
-  static const sportsSoccerOutlined = Icons.sports_soccer_outlined;
-
+  /// Detener.
   static const stop = ReiconIcons.stop;
 
-  static const stopCircleOutlined = ReiconIcons.stopCircle;
+  /// Detener (circular).
+  static const stopCircle = ReiconIcons.stopCircle;
 
-  static const stopRounded = ReiconIcons.stop;
+  /// Volumen / reproducir audio.
+  static const volume = ReiconIcons.volumeUp;
 
-  static const symbolSportsEsports = ReiconIcons.gamepad;
+  /// Consejo / sugerencia.
+  static const tip = ReiconIcons.bulb;
 
-  static const syncOutlined = ReiconIcons.refresh;
+  // ---------------------------------------------------------------------------
+  // Ajustes
+  // Consumidores: `features/home/areas/home_settings_area.dart`, `features/settings/`.
+  // ---------------------------------------------------------------------------
 
-  static const syncRounded = Icons.sync_rounded;
+  /// Opción «Pestaña de arranque» en configuración de TV (`settings_tv_startup_tab`).
+  static const settingsTvStartupTab = ReiconIcons.flag2;
 
-  static const systemUpdateRounded = Symbols.system_update_rounded;
+  /// Sección «Generales».
+  static const settingsGeneral = ReiconIcons.tuning;
 
-  static const terminalOutlined = ReiconIcons.searchBug;
+  /// Sección «Películas y series».
+  static const settingsMovies = ReiconIcons.clapperboardOpen;
 
-  static const theaters = Symbols.theaters;
+  /// TV (sección de TV en Ajustes, amigo mirando un canal).
+  static const tv = ReiconIcons.tv;
 
-  static const timerOutlined = ReiconIcons.timer2;
+  /// Color de acento.
+  static const palette = ReiconIcons.palette2;
 
-  static const todayOutlined = ReiconIcons.calendarDate;
+  /// Color de acento automático (`accent_color_screen.dart`).
+  static const autoAccent = ReiconIcons.sparkles;
 
-  static const tuneOutlined = ReiconIcons.tuning;
+  /// Tema claro/oscuro.
+  static const darkMode = ReiconIcons.darkLight;
 
-  static const tvDisplays = ReiconIcons.page;
+  /// Ajuste de clima.
+  static const weather = ReiconIcons.cloudSun2;
 
-  static const tvGuide = ReiconIcons.videoLib;
+  /// Calibración de pantalla (overscan).
+  static const screenCalibration = ReiconIcons.fullscreenSquare;
 
-  static const tvRounded = ReiconIcons.tv;
+  /// Sonidos de navegación apagados.
+  static const volumeOff = ReiconIcons.volumeX;
 
-  static const videogameAssetOff = ReiconIcons.gamepad;
+  /// Extensiones (plugins).
+  static const extension = ReiconIcons.puzzle;
 
-  static const videogameAssetOffOutlined = ReiconIcons.gamepad;
+  /// Sin extensiones instaladas.
+  static const extensionEmpty = ReiconIcons.lightbulb3;
 
-  static const visibility = Symbols.visibility;
+  /// Extensión instalada / fuente de canales.
+  static const plugin = ReiconIcons.plugCircle;
 
-  static const voiceSelection = ReiconIcons.userSpeak;
+  /// Actualizar extensión.
+  static const pluginUpdate = ReiconIcons.phoneUpdate;
 
-  static const volumeUp = ReiconIcons.volumeUp;
+  /// Mostrar etiquetas de canales.
+  static const channelLabels = ReiconIcons.tag2;
 
-  static const volumeUpOutlined = ReiconIcons.volumeUp;
+  /// Mostrar panel de depuración.
+  static const debugPanel = ReiconIcons.searchBug;
 
-  ///   (`features/settings/widgets/settings_general_panel.dart`)
-  static const volumeOffOutlined = ReiconIcons.volumeX;
+  /// Panel de depuración en TV.
+  static const debug = ReiconIcons.bug;
 
-  static const warning = Symbols.warning;
+  /// Contenido para adultos bloqueado.
+  static const lock = ReiconIcons.lockPassword;
 
-  static const warningAmber = Symbols.warning_amber;
+  /// Contenido para adultos desbloqueado.
+  static const lockOpen = ReiconIcons.lockPasswordOpen;
 
-  static const warningAmberOutlined = Icons.warning_amber_outlined;
+  /// PIN parental.
+  static const pin = ReiconIcons.password;
 
-  static const warningAmberRounded = ReiconIcons.alertTriangle;
+  /// Avisos de la Agenda.
+  static const notifications = ReiconIcons.bell;
 
-  static const wbSunnyOutlined = Icons.wb_sunny_outlined;
+  /// Duración de los avisos.
+  static const timer = ReiconIcons.timer2;
 
-  static const wifiOffRounded = Icons.wifi_off_rounded;
+  /// Zona horaria.
+  static const timeZone = ReiconIcons.globe2;
 
-  // VOD (películas y series).
+  /// Actualizar catálogo de películas.
+  static const catalogSync = ReiconIcons.globalRefresh2;
+
+  /// Sin catálogo descargado.
+  static const catalogEmpty = ReiconIcons.cloudCross2;
+
+  /// Actualización de la app.
+  static const appUpdate = ReiconIcons.desktopDownload;
+
+  /// Instalación pendiente.
+  static const installPending = ReiconIcons.squareArrowDown;
+
+  /// Acerca de: canales disponibles.
+  static const channelGuide = ReiconIcons.videoLib;
+
+  /// Salir de la app.
+  static const exitApp = ReiconIcons.logout;
+
+  /// Dispositivo bloqueado (`blocked_screen.dart`).
+  static const blocked = ReiconIcons.ban;
+
+  // ---------------------------------------------------------------------------
+  // Clima y ubicación
+  // Consumidores: `widgets/dialogs/tv_weather_location_dialog.dart`, clima del rail.
+  // ---------------------------------------------------------------------------
+
+  /// Clima sin animación disponible.
+  static const weatherFallback = ReiconIcons.sun;
+
+  /// Resultado de búsqueda de ubicación.
+  static const weatherLocationItem = ReiconIcons.mapPoint;
+
+  /// Buscar ubicación.
+  static const locationSearch = ReiconIcons.pinSearch;
+
+  /// Usar mi ubicación.
+  static const myLocation = ReiconIcons.location2;
+
+  /// Sin resultados de ubicación / zona.
+  static const locationEmpty = ReiconIcons.locationSlash2;
+
+  // ---------------------------------------------------------------------------
+  // Calibración de pantalla
+  // Consumidor: `features/bootstrap/screens/overlap_config_screen.dart`.
+  // ---------------------------------------------------------------------------
+
+  /// Esquina superior derecha.
+  static const northEast = ReiconIcons.arrowRightUp;
+
+  /// Esquina superior izquierda.
+  static const northWest = ReiconIcons.arrowLeftUp;
+
+  /// Esquina inferior derecha.
+  static const southEast = ReiconIcons.arrowRightDown;
+
+  /// Esquina inferior izquierda.
+  static const southWest = ReiconIcons.arrowLeftDown;
+
+  // ---------------------------------------------------------------------------
+  // Acciones y estados comunes
+  // ---------------------------------------------------------------------------
+
+  /// Confirmado / seleccionado.
+  static const check = ReiconIcons.check;
+
+  /// Éxito.
+  static const checkCircle = ReiconIcons.checkCircle;
+
+  /// Éxito (relleno).
+  static const checkCircleFilled = ReiconFilledIcons.checkCircle;
+
+  /// Error.
+  static const error = ReiconIcons.alertCircle;
+
+  /// Error (relleno).
+  static const errorFilled = ReiconFilledIcons.alertCircle;
+
+  /// Advertencia.
+  static const warning = ReiconIcons.alertTriangle;
+
+  /// Advertencia (relleno).
+  static const warningFilled = ReiconFilledIcons.alertTriangle;
+
+  /// Información.
+  static const info = ReiconIcons.circleInfo;
+
+  /// Información (variante circular).
+  static const infoCircle = ReiconIcons.infoCircle;
+
+  /// Sin conexión.
+  static const offline = ReiconIcons.wifiOff;
+
+  /// Borrar.
+  static const delete = ReiconIcons.trash4;
+
+  /// Reintentar / recargar.
+  static const refresh = ReiconIcons.refresh;
+
+  /// Sincronizar extensión.
+  static const sync = ReiconIcons.refresh2;
+
+  /// Cerrar.
+  static const close = ReiconIcons.x;
+
+  /// Limpiar texto.
+  static const clear = ReiconIcons.xCircle;
+
+  /// Buscar.
+  static const search = ReiconIcons.search;
+
+  /// Escribir con el teclado en pantalla.
+  static const keyboard = ReiconIcons.keyboard;
+
+  // ---------------------------------------------------------------------------
+  // Flechas
+  // ---------------------------------------------------------------------------
+
+  /// Volver.
+  static const arrowBack = ReiconIcons.arrowLeft;
+
+  /// Avanzar.
+  static const arrowForward = ReiconIcons.arrowRight;
+
+  /// Arriba.
+  static const arrowUp = ReiconIcons.arrowUp;
+
+  /// Abajo.
+  static const arrowDown = ReiconIcons.arrowDown;
+
+  /// Volver en la cabecera de un panel (`tv_panel_header.dart`).
+  static const panelBack = ReiconIcons.arrowLeft2;
+
+  /// Semana anterior / ir a la izquierda.
+  static const chevronLeft = ReiconIcons.chevronLeft;
+
+  /// Semana siguiente / abrir detalle.
+  static const chevronRight = ReiconIcons.arrowRight2;
+
+  /// Hay más contenido arriba en listas y grillas.
+  static const chevronUp = ReiconIcons.chevronUp;
+
+  /// Hay más contenido abajo en listas y grillas.
+  static const chevronDown = ReiconIcons.chevronDown;
+
+  // ---------------------------------------------------------------------------
+  // Películas y series (VOD)
+  // Consumidores: `features/movies/`, `features/home/areas/home_movies_area.dart`.
+  // ---------------------------------------------------------------------------
+
+  /// Estado vacío del catálogo de películas (`movies_empty_featured`).
+  static const tvMoviesEmpty = ReiconIcons.cloudDownload;
+
+  /// Tarjeta: película.
   static const vodMovie = ReiconIcons.videoFrame2;
+
+  /// Tarjeta: serie.
   static const vodSeries = ReiconIcons.clapperboardText;
+
+  /// Tarjeta: tráiler.
   static const vodTrailer = ReiconIcons.reel;
+
+  /// Pestaña del detalle de la película.
   static const vodPoster = ReiconIcons.clapperboardOpen;
+
+  /// Favorito (no marcado).
   static const vodRating = ReiconIcons.star;
+
+  /// Favorito (marcado).
   static const vodRatingFilled = ReiconFilledIcons.star;
+
+  /// Fecha de estreno.
   static const vodReleaseDate = ReiconIcons.calendar;
+
+  /// Duración.
   static const vodDuration = ReiconIcons.clockCircle;
+
+  /// Calidad de video.
   static const vodQuality = ReiconIcons.hd;
+
+  /// Vista completa.
   static const vodWatched = ReiconFilledIcons.checkCircle;
+
+  /// Continuar viendo.
   static const vodResume = ReiconIcons.history;
-  static const vodSkipForward = Icons.forward_10_rounded;
-  static const vodSkipBack = Icons.replay_10_rounded;
+
+  /// Adelantar 10 s.
+  static const vodSkipForward = ReiconIcons.forward10S;
+
+  /// Retroceder 10 s.
+  static const vodSkipBack = ReiconIcons.rewind10S;
+
+  /// Pista de audio.
   static const vodAudio = ReiconIcons.volumeUp;
+
+  /// Subtítulos.
   static const vodSubtitles = ReiconIcons.text;
+
+  /// Reproducir.
   static const vodPlay = ReiconFilledIcons.play;
+
+  /// Pausa.
   static const vodPause = ReiconFilledIcons.pause;
 
-  // Teclado en pantalla.
+  // ---------------------------------------------------------------------------
+  // Teclado en pantalla y PIN
+  // Consumidores: `widgets/tv_input/`, `widgets/dialogs/tv_pin/`.
+  // ---------------------------------------------------------------------------
+
+  /// Tecla mayúsculas.
   static const keyboardShift = ReiconIcons.arrowUp;
+
+  /// Tecla borrar.
   static const keyboardBackspace = ReiconIcons.tagCross2;
+
+  /// Borrar dígito del PIN.
+  static const pinBackspace = ReiconIcons.tagCross2;
+
+  /// Cerrar el teclado de PIN.
+  static const pinClose = ReiconIcons.x;
 }

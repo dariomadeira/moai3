@@ -111,7 +111,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
       message: LocaleKeys.weather_location_configured.tr(
         namedArgs: {'location': loc.displayName},
       ),
-      icon: MoaiIcons.checkCircleRounded,
+      icon: MoaiIcons.checkCircleFilled,
     );
   }
 
@@ -124,7 +124,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
     MoaiSnackBar.show(
       context,
       message: LocaleKeys.weather_location_reset_auto.tr(),
-      icon: MoaiIcons.myLocationRounded,
+      icon: MoaiIcons.myLocation,
     );
   }
 
@@ -136,7 +136,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
 
     return TvDialog(
       width: 580,
-      icon: MoaiIcons.locationOnOutlined,
+      icon: MoaiIcons.locationSearch,
       iconColor: scheme.primary,
       iconBgColor: scheme.primary.withValues(alpha: 0.15),
       title: LocaleKeys.weather_location_dialog_title.tr(),
@@ -153,7 +153,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
             hint: LocaleKeys.search_field_hint.tr(),
             textInputAction: TvTextInputAction.search,
             dense: true,
-            leadingIcon: MoaiIcons.keyboardAltOutlined,
+            leadingIcon: MoaiIcons.keyboard,
             onChanged: _performSearch,
             onSubmitted: (val) {
               _performSearch(val);
@@ -181,7 +181,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
           label: isAuto
               ? LocaleKeys.weather_location_auto_active.tr()
               : LocaleKeys.weather_location_auto_btn.tr(),
-          icon: MoaiIcons.myLocationRounded,
+          icon: MoaiIcons.myLocation,
           variant: isAuto
               ? TvDialogButtonVariant.primary
               : TvDialogButtonVariant.neutral,
@@ -260,7 +260,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              MoaiIcons.locationOffOutlined,
+              MoaiIcons.locationEmpty,
               size: 30,
               color: scheme.onSurfaceVariant,
             ),

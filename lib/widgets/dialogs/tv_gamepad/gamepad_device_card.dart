@@ -50,7 +50,7 @@ class _GamepadDeviceCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
-              MoaiIcons.symbolSportsEsports,
+              MoaiIcons.gamepad,
               size: 20,
               color: scheme.onPrimaryContainer,
             ),

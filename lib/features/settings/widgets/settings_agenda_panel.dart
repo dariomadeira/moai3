@@ -110,7 +110,7 @@ class SettingsAgendaPanelState extends State<SettingsAgendaPanel> {
                                 _SettingsAgendaItemType.utcOffset =>
                                   TvSettingsActionRow(
                                     focusNode: focusNode,
-                                    icon: MoaiIcons.publicOutlined,
+                                    icon: MoaiIcons.timeZone,
                                     label: LocaleKeys.settings_agenda_utc.tr(),
                                     description: LocaleKeys.settings_agenda_utc_desc.tr(
                                       namedArgs: {

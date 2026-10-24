@@ -99,7 +99,7 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
 
     return TvDialog(
       width: 560,
-      icon: MoaiIcons.sportsEsportsRounded,
+      icon: MoaiIcons.gamepad,
       iconColor: scheme.primary,
       iconBgColor: scheme.primary.withValues(alpha: 0.15),
       title: LocaleKeys.arcade_prep_title.tr(namedArgs: {'game': gameTitle}),
@@ -146,7 +146,7 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
             child: Row(
               children: [
                 Icon(
-                  MoaiIcons.infoOutlineRounded,
+                  MoaiIcons.infoCircle,
                   size: 18,
                   color: scheme.onSurfaceVariant,
                 ),
@@ -214,7 +214,7 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
               Row(
                 children: [
                   if (isDone)
-                    Icon(MoaiIcons.checkCircleRounded, size: 16, color: activeColor)
+                    Icon(MoaiIcons.checkCircleFilled, size: 16, color: activeColor)
                   else if (progress > 0.0 && progress < 1.0)
                     SizedBox(
                       width: 12,

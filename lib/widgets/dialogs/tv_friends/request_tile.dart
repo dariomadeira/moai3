@@ -128,7 +128,7 @@ class _RequestTileState extends State<_RequestTile> {
                   child: Padding(
                     padding: const EdgeInsets.all(7),
                     child: Icon(
-                      MoaiIcons.personAddRounded,
+                      MoaiIcons.personAdd,
                       size: 18,
                       color: iconColor,
                     ),
@@ -180,7 +180,7 @@ class _RequestTileState extends State<_RequestTile> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        MoaiIcons.checkRounded,
+                        MoaiIcons.check,
                         size: 12,
                         color: isFocused
                             ? scheme.onPrimaryContainer

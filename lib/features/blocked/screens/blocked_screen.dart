@@ -37,7 +37,7 @@ class BlockedScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    MoaiIcons.block,
+                    MoaiIcons.blocked,
                     size: 64,
                     color: colorScheme.error,
                   ),

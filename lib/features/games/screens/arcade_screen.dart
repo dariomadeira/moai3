@@ -71,12 +71,12 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
         final String message;
         final IconData icon;
         if (assignment.isRemote) {
-          icon = MoaiIcons.settingsRemote;
+          icon = MoaiIcons.remote;
           message = assignment.player == 0
               ? LocaleKeys.arcade_remote_connected_p1.tr()
               : LocaleKeys.arcade_remote_connected_p2.tr();
         } else {
-          icon = MoaiIcons.sportsEsports;
+          icon = MoaiIcons.gamepadFilled;
           message = assignment.player == 0
               ? LocaleKeys.arcade_pad_detected_p1.tr()
               : LocaleKeys.arcade_pad_detected_p2.tr();
@@ -104,7 +104,7 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
             message: LocaleKeys.arcade_netplay_connected.tr(namedArgs: {
               'friend': widget.netplaySession!.peerNickname,
             }),
-            icon: MoaiIcons.sportsEsports,
+            icon: MoaiIcons.gamepadFilled,
           );
         }
       });

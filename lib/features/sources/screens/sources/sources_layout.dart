@@ -111,7 +111,7 @@ extension _SourcesLayout on _SourcesScreenState {
                     : totalSources == 0
                     ? TvEmptyStateCard(
                         focusNode: _emptyFocusNode,
-                        icon: MoaiIcons.extensionOffOutlined,
+                        icon: MoaiIcons.extensionEmpty,
                         message: LocaleKeys.sources_empty.tr(),
                         onFocusLeft: _backFocusNode.requestFocus,
                         onFocusUp: _urlFocus.requestFocus,
@@ -245,7 +245,7 @@ extension _SourcesLayout on _SourcesScreenState {
                               ),
                               label: preset.name,
                               description: preset.description,
-                              icon: MoaiIcons.electricalServices,
+                              icon: MoaiIcons.plugin,
                               onPressed: () => _install(preset.url),
                               onKeyLeft: () {
                                 if (totalSources > 0) {

@@ -126,7 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
             message: LocaleKeys.arcade_invite_received.tr(
               namedArgs: {'name': invite.hostNickname, 'game': invite.romName},
             ),
-            icon: MoaiIcons.sportsEsports,
+            icon: MoaiIcons.gamepadFilled,
             hint: LocaleKeys.arcade_invite_hint_accept_reject.tr(),
             onAction: () async {
               final identity = context.read<DeviceIdentityService>();

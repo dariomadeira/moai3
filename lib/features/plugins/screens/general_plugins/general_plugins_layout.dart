@@ -31,7 +31,7 @@ extension _GeneralPluginsLayout on _GeneralPluginsScreenState {
                 child: !isInstalled
                     ? TvEmptyStateCard(
                         focusNode: _emptyFocusNode,
-                        icon: MoaiIcons.extensionOffOutlined,
+                        icon: MoaiIcons.extensionEmpty,
                         message: LocaleKeys.plugins_empty_installed_msg.tr(),
                         onFocusLeft: _backFocusNode.requestFocus,
                         onFocusUp: _backFocusNode.requestFocus,

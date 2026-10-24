@@ -123,16 +123,16 @@ class _ArcadeControllerOverlayState extends State<ArcadeControllerOverlay> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildDPadButton('UP', ArcadeButtons.up, MoaiIcons.arrowDropUp),
+        _buildDPadButton('UP', ArcadeButtons.up, MoaiIcons.dpadUp),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildDPadButton('LEFT', ArcadeButtons.left, MoaiIcons.arrowLeft),
+            _buildDPadButton('LEFT', ArcadeButtons.left, MoaiIcons.dpadLeft),
             const SizedBox(width: 44, height: 44),
-            _buildDPadButton('RIGHT', ArcadeButtons.right, MoaiIcons.arrowRight),
+            _buildDPadButton('RIGHT', ArcadeButtons.right, MoaiIcons.dpadRight),
           ],
         ),
-        _buildDPadButton('DOWN', ArcadeButtons.down, MoaiIcons.arrowDropDown),
+        _buildDPadButton('DOWN', ArcadeButtons.down, MoaiIcons.dpadDown),
       ],
     );
   }

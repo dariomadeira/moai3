@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 void main() {
   testWidgets('TvWindowedList default showScrollDots is false and does not render dots', (tester) async {
@@ -111,8 +112,8 @@ void main() {
     expect(state.canScrollDown, isTrue);
 
     // At top: only down arrow is rendered
-    expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
-    expect(find.byIcon(Icons.keyboard_arrow_up), findsNothing);
+    expect(find.byIcon(MoaiIcons.chevronDown), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.chevronUp), findsNothing);
 
     // Move to item 2 (middle/anchor): scroll down
     state.ensureVisible(2);
@@ -126,8 +127,8 @@ void main() {
     expect(state.canScrollDown, isFalse);
 
     // At bottom: only up arrow is rendered
-    expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
-    expect(find.byIcon(Icons.keyboard_arrow_down), findsNothing);
+    expect(find.byIcon(MoaiIcons.chevronUp), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.chevronDown), findsNothing);
   });
 
   testWidgets('row state stays with the item when the window shifts', (tester) async {

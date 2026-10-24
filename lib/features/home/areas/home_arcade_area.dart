@@ -68,7 +68,7 @@ class _HomeArcadeAreaState extends HomeAreaState<HomeArcadeArea> {
       MoaiSnackBar.show(
         context,
         message: LocaleKeys.arcade_no_game_installed_snack.tr(),
-        icon: MoaiIcons.infoOutline,
+        icon: MoaiIcons.info,
       );
     }
   }
@@ -114,7 +114,7 @@ class _HomeArcadeAreaState extends HomeAreaState<HomeArcadeArea> {
       MoaiSnackBar.show(
         context,
         message: LocaleKeys.arcade_no_game_installed_snack.tr(),
-        icon: MoaiIcons.infoOutline,
+        icon: MoaiIcons.info,
       );
       return;
     }
@@ -166,7 +166,7 @@ class _HomeArcadeAreaState extends HomeAreaState<HomeArcadeArea> {
     final scheme = Theme.of(context).colorScheme;
     final panelColors = [scheme.surface.withValues(alpha: 0.8)];
     final titles = [LocaleKeys.arcade_panel_title.tr()];
-    const icons = [MoaiIcons.sportsEsportsOutlined];
+    const icons = [MoaiIcons.gamepad];
 
     return TvAccordionRowPreview(
       panelCount: 1,
@@ -239,7 +239,7 @@ class _HomeArcadeAreaState extends HomeAreaState<HomeArcadeArea> {
                     focusNode: _playTogetherFocus,
                     label: LocaleKeys.arcade_action_play_together.tr(),
                     description: LocaleKeys.arcade_action_play_together_desc.tr(),
-                    icon: MoaiIcons.groupOutlined,
+                    icon: MoaiIcons.friends,
                     onPressed: _onPlayTogether,
                     onKeyLeft: widget.onExitLeft,
                     onKeyUp: _startFocus.requestFocus,

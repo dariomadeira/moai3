@@ -67,7 +67,7 @@ class _InstalledPluginTileState extends State<_InstalledPluginTile> {
           TvIconActionButton(
             focusNode: widget.updateFocus,
             tooltip: LocaleKeys.plugins_reinstall_tooltip.tr(),
-            icon: MoaiIcons.syncRounded,
+            icon: MoaiIcons.sync,
             onPressed: widget.onUpdate,
             parentFocused: isFocused,
             onKeyLeft: widget.onUpdateKeyLeft,
@@ -78,7 +78,7 @@ class _InstalledPluginTileState extends State<_InstalledPluginTile> {
           TvIconActionButton(
             focusNode: widget.removeFocus,
             tooltip: LocaleKeys.plugins_uninstall_tooltip.tr(),
-            icon: MoaiIcons.deleteOutlineRounded,
+            icon: MoaiIcons.delete,
             onPressed: widget.onRemove,
             parentFocused: isFocused,
             onKeyLeft: () => widget.updateFocus.requestFocus(),

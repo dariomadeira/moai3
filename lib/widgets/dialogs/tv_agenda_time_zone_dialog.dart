@@ -97,7 +97,7 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
 
     return TvDialog(
       width: 500,
-      icon: MoaiIcons.publicOutlined,
+      icon: MoaiIcons.timeZone,
       title: LocaleKeys.settings_agenda_utc_title.tr(),
       subtitle: LocaleKeys.settings_agenda_utc_subtitle.tr(),
       content: Column(
@@ -112,7 +112,7 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
             hint: LocaleKeys.search_field_hint.tr(),
             textInputAction: TvTextInputAction.search,
             dense: true,
-            leadingIcon: MoaiIcons.searchOutlined,
+            leadingIcon: MoaiIcons.search,
             onChanged: _onSearchChanged,
             onSubmitted: (val) {
               _onSearchChanged(val);
@@ -168,7 +168,7 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              MoaiIcons.locationOffOutlined,
+              MoaiIcons.locationEmpty,
               size: 28,
               color: scheme.onSurfaceVariant,
             ),
@@ -224,7 +224,7 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
               ),
               label: zone.nameKey.tr(),
               description: ArgentinaTime.formatOffset(zone.offsetHours),
-              icon: MoaiIcons.publicOutlined,
+              icon: MoaiIcons.timeZone,
               onPressed: () => _selectZone(zone),
               onKeyUp: onKeyUp,
               onKeyDown: onKeyDown,
@@ -233,7 +233,7 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
                   return const SizedBox(width: 22);
                 }
                 return Icon(
-                  MoaiIcons.checkOutlined,
+                  MoaiIcons.check,
                   size: 20,
                   color: isFocused ? scheme.onPrimary : scheme.primary,
                 );

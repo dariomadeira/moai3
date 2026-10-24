@@ -69,7 +69,7 @@ extension _TvFriendsSections on _TvFriendsDialogState {
             label: LocaleKeys.friends_input_label.tr(),
             hint: LocaleKeys.friends_input_hint.tr(),
             doneLabel: LocaleKeys.friends_add_button.tr(),
-            leadingIcon: MoaiIcons.badgeOutlined,
+            leadingIcon: MoaiIcons.nickname,
             maxLength: 10,
             onSubmitted: _handleAddFriend,
             onFocusRight: _addFocus.requestFocus,
@@ -158,7 +158,7 @@ extension _TvFriendsSections on _TvFriendsDialogState {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    MoaiIcons.groupOffOutlined,
+                    MoaiIcons.friendsEmpty,
                     size: 24,
                     color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),
@@ -251,7 +251,7 @@ extension _TvFriendsSections on _TvFriendsDialogState {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    MoaiIcons.markEmailReadOutlined,
+                    MoaiIcons.friendRequests,
                     size: 24,
                     color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),

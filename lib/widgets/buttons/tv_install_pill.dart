@@ -8,7 +8,7 @@ import 'package:moai3/theme/moai_text.dart';
 ///
 /// Iconografía:
 /// - [MoaiIcons.installPending] para descarga / instalación pendiente.
-/// - [MoaiIcons.checkCircleOutlineRounded] para estado descargado / instalado.
+/// - [MoaiIcons.checkCircle] para estado descargado / instalado.
 class TvInstallPill extends StatelessWidget {
   final bool isInstalled;
   final bool isFocused;
@@ -56,7 +56,7 @@ class TvInstallPill extends StatelessWidget {
     final isDownloading = downloadProgress != null;
 
     final iconData = isInstalled
-        ? MoaiIcons.checkCircleOutlineRounded
+        ? MoaiIcons.checkCircle
         : MoaiIcons.installPending;
 
     final label = isInstalled

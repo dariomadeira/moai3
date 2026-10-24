@@ -85,7 +85,7 @@ class _TvWeatherAnimatedIconState extends State<TvWeatherAnimatedIcon>
           }
         },
         errorBuilder: (context, error, stackTrace) => Icon(
-          MoaiIcons.wbSunnyOutlined,
+          MoaiIcons.weatherFallback,
           size: widget.size * 0.6,
           color: scheme.onSurfaceVariant,
         ),

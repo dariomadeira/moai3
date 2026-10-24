@@ -122,7 +122,7 @@ class _FriendTileState extends State<_FriendTile> {
                   child: Padding(
                     padding: const EdgeInsets.all(7),
                     child: Icon(
-                      MoaiIcons.personRounded,
+                      MoaiIcons.person,
                       size: 18,
                       color: iconColor,
                     ),
@@ -220,7 +220,7 @@ class _FriendTileState extends State<_FriendTile> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
-                                      MoaiIcons.tvRounded,
+                                      MoaiIcons.tv,
                                       size: 8.5,
                                       color: isFocused
                                           ? scheme.onPrimary
@@ -266,7 +266,7 @@ class _FriendTileState extends State<_FriendTile> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Icon(
-                    MoaiIcons.deleteOutlineRounded,
+                    MoaiIcons.delete,
                     size: 15,
                     color: isFocused
                         ? scheme.onPrimaryContainer

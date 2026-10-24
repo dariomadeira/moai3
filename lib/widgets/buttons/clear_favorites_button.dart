@@ -161,7 +161,7 @@ class _ClearConfirmDialogContentState
     final scheme = context.scheme;
 
     return TvDialog(
-      icon: MoaiIcons.deleteSweepOutlined,
+      icon: MoaiIcons.delete,
       iconBgColor: scheme.errorContainer,
       iconColor: scheme.onErrorContainer,
       title: LocaleKeys.favorites_clear_title.tr(),

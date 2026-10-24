@@ -173,7 +173,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
       case _SettingsWatchPartyItemType.watchPartySwitch:
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: MoaiIcons.voiceSelection,
+          icon: MoaiIcons.voice,
           label: LocaleKeys.settings_tv_watch_party.tr(),
           description: LocaleKeys.settings_tv_watch_party_desc.tr(),
           value: watchParty?.enabled ?? false,
@@ -189,7 +189,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
             currentNickname != null && currentNickname.trim().isNotEmpty;
         return TvTile(
           focusNode: focusNode,
-          icon: MoaiIcons.personOutline,
+          icon: MoaiIcons.profile,
           label: LocaleKeys.settings_watch_party_nickname.tr(),
           description: LocaleKeys.settings_watch_party_nickname_desc.tr(),
           onPressed: () => _openEditNicknameDialog(context, watchParty),
@@ -209,7 +209,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
       case _SettingsWatchPartyItemType.watchPartyCodeCard:
         return TvTile(
           focusNode: focusNode,
-          icon: MoaiIcons.badgeOutlined,
+          icon: MoaiIcons.nickname,
           label: LocaleKeys.settings_tv_watch_party_code.tr(),
           description: LocaleKeys.settings_tv_watch_party_code_desc.tr(),
           onKeyLeft: widget.onKeyLeft,
@@ -240,7 +240,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
         }
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: MoaiIcons.peopleOutline,
+          icon: MoaiIcons.watchPartyFriends,
           label: LocaleKeys.settings_tv_manage_friends.tr(),
           description: statusDesc,
           onPressed: () {
@@ -254,7 +254,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
       case _SettingsWatchPartyItemType.micTest:
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: MoaiIcons.micGear,
+          icon: MoaiIcons.micSettings,
           label: LocaleKeys.settings_tv_mic_test.tr(),
           description: LocaleKeys.settings_tv_mic_test_desc.tr(),
           onPressed: () {
@@ -327,7 +327,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
           MoaiSnackBar.show(
             context,
             message: LocaleKeys.nickname_dialog_saved_success.tr(),
-            icon: MoaiIcons.checkCircleOutline,
+            icon: MoaiIcons.checkCircle,
           );
         }
       } catch (e) {
@@ -335,7 +335,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
           MoaiSnackBar.show(
             context,
             message: LocaleKeys.nickname_dialog_saved_error.tr(),
-            icon: MoaiIcons.errorOutline,
+            icon: MoaiIcons.error,
           );
         }
       }

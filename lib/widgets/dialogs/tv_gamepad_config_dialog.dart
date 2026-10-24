@@ -203,7 +203,7 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
 
           return TvDialog(
             width: 860,
-            icon: MoaiIcons.symbolSportsEsports,
+            icon: MoaiIcons.gamepad,
             title: LocaleKeys.gamepad_dialog_title.tr(),
             subtitle: LocaleKeys.gamepad_dialog_subtitle.tr(),
             trailingHeader: Material(
@@ -218,8 +218,8 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
                   children: [
                     Icon(
                       isConnected
-                          ? MoaiIcons.checkCircleOutlineRounded
-                          : MoaiIcons.videogameAssetOffOutlined,
+                          ? MoaiIcons.checkCircle
+                          : MoaiIcons.gamepad,
                       size: 15,
                       color: isConnected
                           ? scheme.onTertiaryContainer
@@ -268,13 +268,13 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
             actions: [
               TvDialogButton(
                 focusNode: _refreshFocus,
-                icon: MoaiIcons.refreshRounded,
+                icon: MoaiIcons.refresh,
                 label: LocaleKeys.gamepad_action_reset.tr(),
                 onPressed: _clearTest,
               ),
               TvDialogButton(
                 focusNode: _closeFocus,
-                icon: MoaiIcons.checkRounded,
+                icon: MoaiIcons.check,
                 label: LocaleKeys.gamepad_action_close.tr(),
                 variant: TvDialogButtonVariant.primary,
                 onPressed: () => Navigator.of(context).pop(),

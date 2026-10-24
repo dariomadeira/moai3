@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
+import 'package:moai3/theme/moai_icons.dart';
 
 void main() {
   testWidgets('MoaiSnackBar construye un snackbar estilo pill con sombra',
@@ -9,7 +10,7 @@ void main() {
     final snackBar = MoaiSnackBar.buildSnackBar(
       context: null,
       message: 'Test message',
-      icon: Icons.check_circle_outline,
+      icon: MoaiIcons.checkCircle,
     );
 
     expect(snackBar.elevation, equals(0));
@@ -41,7 +42,7 @@ void main() {
 
     expect(find.byType(SnackBar), findsOneWidget);
     expect(find.text('Operación exitosa'), findsOneWidget);
-    expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.checkCircle), findsOneWidget);
   });
 
   testWidgets(
@@ -70,7 +71,7 @@ void main() {
     await tester.pump();
 
     final iconWidget =
-        tester.widget<Icon>(find.byIcon(Icons.check_circle_outline));
+        tester.widget<Icon>(find.byIcon(MoaiIcons.checkCircle));
     expect(iconWidget.color, equals(customOnPrimary));
   });
 

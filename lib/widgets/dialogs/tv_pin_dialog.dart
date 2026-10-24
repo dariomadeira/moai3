@@ -135,7 +135,7 @@ class TvPinDialog extends StatefulWidget {
       MoaiSnackBar.show(
         context,
         message: LocaleKeys.parental_pin_created_success.tr(),
-        icon: MoaiIcons.checkCircleOutline,
+        icon: MoaiIcons.checkCircle,
       );
       return true;
     }
@@ -164,7 +164,7 @@ class TvPinDialog extends StatefulWidget {
       MoaiSnackBar.show(
         context,
         message: LocaleKeys.parental_pin_changed_success.tr(),
-        icon: MoaiIcons.checkCircleOutline,
+        icon: MoaiIcons.checkCircle,
       );
       return true;
     }
@@ -368,7 +368,7 @@ class _TvPinDialogState extends State<TvPinDialog>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          MoaiIcons.errorOutline,
+                          MoaiIcons.error,
                           size: 13,
                           color: scheme.error,
                         ),

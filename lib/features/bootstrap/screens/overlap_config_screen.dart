@@ -191,7 +191,7 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
                             Row(
                               children: [
                                 Icon(
-                                  MoaiIcons.aspectRatioOutlined,
+                                  MoaiIcons.screenCalibration,
                                   color: scheme.primary,
                                   size: 30,
                                 ),
@@ -389,13 +389,13 @@ class _PaddingAdjusterState extends State<_PaddingAdjuster> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    MoaiIcons.arrowBackRounded,
+                    MoaiIcons.arrowBack,
                     size: 16,
                     color: labelColor,
                   ),
                   const SizedBox(width: 4),
                   Icon(
-                    MoaiIcons.arrowForwardRounded,
+                    MoaiIcons.arrowForward,
                     size: 16,
                     color: labelColor,
                   ),

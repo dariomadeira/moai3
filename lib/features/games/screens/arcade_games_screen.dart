@@ -272,7 +272,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                                         child: Row(
                                           children: [
                                             Icon(
-                                              MoaiIcons.errorOutlineRounded,
+                                              MoaiIcons.error,
                                               color: scheme.onErrorContainer,
                                               size: 18,
                                             ),

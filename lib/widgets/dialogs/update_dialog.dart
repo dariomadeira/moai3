@@ -143,7 +143,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
               ),
               child: Row(
                 children: [
-                  Icon(MoaiIcons.warning, color: scheme.error, size: 20),
+                  Icon(MoaiIcons.warningFilled, color: scheme.error, size: 20),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -329,7 +329,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
         ),
         child: Row(
           children: [
-            Icon(MoaiIcons.error, color: scheme.error, size: 22),
+            Icon(MoaiIcons.errorFilled, color: scheme.error, size: 22),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -370,7 +370,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
       canPop: !isMandatory,
       child: TvDialog(
         width: 520,
-        icon: isMandatory ? MoaiIcons.warningAmber : MoaiIcons.browserUpdated,
+        icon: isMandatory ? MoaiIcons.warning : MoaiIcons.appUpdate,
         title: isMandatory
             ? LocaleKeys.update_mandatory_title.tr()
             : LocaleKeys.update_available_title.tr(),

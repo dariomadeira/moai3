@@ -56,7 +56,7 @@ class NotificationHelper {
   static void showError(String message) {
     show(
       message: message,
-      icon: MoaiIcons.errorOutline,
+      icon: MoaiIcons.error,
       duration: const Duration(seconds: 3),
     );
   }
@@ -65,7 +65,7 @@ class NotificationHelper {
   static void showSuccess(String message) {
     show(
       message: message,
-      icon: MoaiIcons.checkCircleOutline,
+      icon: MoaiIcons.checkCircle,
     );
   }
 
@@ -73,7 +73,7 @@ class NotificationHelper {
   static void showInfo(String message) {
     show(
       message: message,
-      icon: MoaiIcons.infoOutline,
+      icon: MoaiIcons.info,
     );
   }
 
@@ -81,7 +81,7 @@ class NotificationHelper {
   static void showWarning(String message) {
     show(
       message: message,
-      icon: MoaiIcons.warningAmberOutlined,
+      icon: MoaiIcons.warning,
       duration: const Duration(seconds: 3),
     );
   }

@@ -110,7 +110,7 @@ class TvViewerPanel extends StatelessWidget {
             TvMetaPill(
               color: scheme.tertiaryContainer,
               foreground: scheme.onTertiaryContainer,
-              icon: MoaiIcons.dnsOutlined,
+              icon: MoaiIcons.server,
               label: LocaleKeys.player_server_n.tr(
                 namedArgs: {'n': '$displayServerNumber'},
               ),

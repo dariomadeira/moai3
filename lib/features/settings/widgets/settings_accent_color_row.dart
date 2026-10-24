@@ -51,7 +51,7 @@ class SettingsAccentColorRow extends StatelessWidget {
       focusNode: focusNode,
       label: label,
       description: LocaleKeys.settings_general_accent_desc.tr(),
-      icon: icon ?? MoaiIcons.paletteOutlined,
+      icon: icon ?? MoaiIcons.palette,
       onPressed: () => _openScreen(context),
       onKeyLeft: onKeyLeft,
       onKeyRight: onKeyRight,

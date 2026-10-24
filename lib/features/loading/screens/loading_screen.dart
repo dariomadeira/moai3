@@ -642,7 +642,7 @@ class _LoadingScreenState extends State<LoadingScreen>
               color: scheme.errorContainer.withValues(alpha: 0.25),
               shape: BoxShape.circle,
             ),
-            child: Icon(MoaiIcons.wifiOffRounded, size: 38, color: scheme.error),
+            child: Icon(MoaiIcons.offline, size: 38, color: scheme.error),
           ),
           const SizedBox(height: 18),
           Text(
@@ -668,7 +668,7 @@ class _LoadingScreenState extends State<LoadingScreen>
             focusNode: _retryFocusNode,
             label: LocaleKeys.update_action_retry.tr(),
             variant: TvDialogButtonVariant.primary,
-            icon: MoaiIcons.refreshRounded,
+            icon: MoaiIcons.refresh,
             onPressed: _startVerification,
           ),
         ],

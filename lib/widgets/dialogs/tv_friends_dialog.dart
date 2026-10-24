@@ -155,7 +155,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
         final deleteFocus = FocusNode(debugLabel: 'delete_confirm');
         return TvDialog(
           width: 460,
-          icon: MoaiIcons.personRemoveOutlined,
+          icon: MoaiIcons.personRemove,
           title: LocaleKeys.friends_delete_confirm_title.tr(),
           subtitle: LocaleKeys.friends_delete_confirm_desc.tr(
             namedArgs: {'name': friend.nickname ?? friend.userCode},
@@ -199,7 +199,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
 
     return TvDialog(
       width: 800,
-      icon: MoaiIcons.peopleAltRounded,
+      icon: MoaiIcons.friends,
       title: LocaleKeys.friends_screen_title.tr(),
       subtitle: LocaleKeys.friends_screen_subtitle.tr(),
       trailingHeader: totalFriends > 0
@@ -241,7 +241,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
                 child: Row(
                   children: [
                     Icon(
-                      MoaiIcons.errorOutlineRounded,
+                      MoaiIcons.error,
                       color: scheme.onErrorContainer,
                       size: 16,
                     ),
@@ -275,7 +275,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
                     _sectionHeader(
                       context,
                       scheme,
-                      icon: MoaiIcons.peopleOutlineRounded,
+                      icon: MoaiIcons.friends,
                       title: LocaleKeys.friends_section_friends.tr(),
                       badgeCount: totalFriends,
                     ),
@@ -299,7 +299,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
                     _sectionHeader(
                       context,
                       scheme,
-                      icon: MoaiIcons.personAddOutlined,
+                      icon: MoaiIcons.personAdd,
                       title: LocaleKeys.friends_section_requests.tr(),
                       badgeCount: requests.length,
                       isHighlighted: requests.isNotEmpty,

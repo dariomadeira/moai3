@@ -156,7 +156,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       case _SettingsGeneralItemType.plugins:
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: MoaiIcons.extensionOutlined,
+          icon: MoaiIcons.extension,
           label: LocaleKeys.settings_general_plugins_title.tr(),
           description: LocaleKeys.settings_general_plugins_desc.tr(),
           onPressed: () {
@@ -174,7 +174,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       case _SettingsGeneralItemType.overscan:
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: MoaiIcons.aspectRatioOutlined,
+          icon: MoaiIcons.screenCalibration,
           label: LocaleKeys.settings_general_overscan.tr(),
           description: LocaleKeys.settings_general_overscan_desc.tr(),
           onPressed: () {
@@ -194,7 +194,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
         final weather = context.watch<WeatherProvider>();
         return TvSettingsActionRow(
           focusNode: focusNode,
-          icon: MoaiIcons.cloudOutlined,
+          icon: MoaiIcons.weather,
           label: LocaleKeys.settings_general_weather_title.tr(),
           description: weather.locationDisplayName,
           onPressed: () {
@@ -208,7 +208,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       case _SettingsGeneralItemType.darkMode:
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: MoaiIcons.darkModeOutlined,
+          icon: MoaiIcons.darkMode,
           label: LocaleKeys.settings_general_dark_mode.tr(),
           description: LocaleKeys.settings_general_dark_mode_desc.tr(),
           value: theme.themeMode == ThemeMode.dark,
@@ -223,7 +223,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       case _SettingsGeneralItemType.accentColor:
         return SettingsAccentColorRow(
           focusNode: focusNode,
-          icon: MoaiIcons.paletteOutlined,
+          icon: MoaiIcons.palette,
           selectedIndex: theme.accentColorIndex,
           onKeyLeft: widget.onKeyLeft,
           onKeyRight: widget.onKeyRight,
@@ -234,7 +234,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
         final muted = context.watch<TvSettingsProvider>().uiSoundsDisabled;
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: MoaiIcons.volumeOffOutlined,
+          icon: MoaiIcons.volumeOff,
           label: LocaleKeys.settings_general_mute_ui_sounds.tr(),
           description: LocaleKeys.settings_general_mute_ui_sounds_desc.tr(),
           value: muted,

@@ -246,7 +246,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
         return TvTile(
           focusNode: focusNode,
           label: LocaleKeys.settings_about_channels_loaded.tr(),
-          icon: MoaiIcons.tvGuide,
+          icon: MoaiIcons.channelGuide,
           onKeyLeft: widget.onKeyLeft,
           onKeyUp: onKeyUp,
           onKeyDown: onKeyDown,
@@ -257,7 +257,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
       case _AboutItemType.checkUpdates:
         return TvTile(
           focusNode: focusNode,
-          icon: MoaiIcons.browserUpdated,
+          icon: MoaiIcons.appUpdate,
           label: LocaleKeys.settings_about_check_updates.tr(),
           description: LocaleKeys.settings_about_check_updates_desc.tr(),
           onKeyLeft: widget.onKeyLeft,

@@ -63,7 +63,7 @@ class SettingsCatalogFrequencyRow extends StatelessWidget {
         focusNode: focusNode,
         label: LocaleKeys.settings_general_catalog_frequency.tr(),
         description: description,
-        icon: MoaiIcons.syncOutlined,
+        icon: MoaiIcons.refresh,
         onKeyUp: onKeyUp,
         onKeyDown: onKeyDown,
         onKeyEvent: (node, event) {

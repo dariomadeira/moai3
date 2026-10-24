@@ -91,10 +91,10 @@ void main() {
     await tester.pump();
 
     // Now in recording state, should find stop button
-    expect(find.byIcon(MoaiIcons.stopCircleOutlined), findsOneWidget);
+    expect(find.byIcon(MoaiIcons.stopCircle), findsOneWidget);
 
     // Tap stop
-    await tester.tap(find.byIcon(MoaiIcons.stopCircleOutlined));
+    await tester.tap(find.byIcon(MoaiIcons.stopCircle));
     await tester.pumpAndSettle();
 
     // Now should find play button and amplified badge

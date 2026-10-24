@@ -227,7 +227,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
 
     return TvDialog(
       width: 580,
-      icon: MoaiIcons.micGear,
+      icon: MoaiIcons.micSettings,
       iconBgColor: _isRecording
           ? scheme.error
           : _isPlaying

@@ -55,7 +55,7 @@ class SettingsAgendaSnackDurationRow extends StatelessWidget {
       focusNode: focusNode,
       label: LocaleKeys.settings_agenda_snack_duration.tr(),
       description: LocaleKeys.settings_agenda_snack_duration_desc.tr(),
-      icon: MoaiIcons.timerOutlined,
+      icon: MoaiIcons.timer,
       onKeyUp: onKeyUp,
       onKeyDown: onKeyDown,
       onKeyEvent: (node, event) {

@@ -12,7 +12,7 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
       child: Row(
         children: [
           Icon(
-            MoaiIcons.lightbulbOutline,
+            MoaiIcons.tip,
             size: 18,
             color: scheme.onTertiaryContainer,
           ),
@@ -78,7 +78,7 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
             shape: BoxShape.circle,
           ),
           child: Icon(
-            MoaiIcons.micNoneOutlined,
+            MoaiIcons.mic,
             size: 32,
             color: scheme.onPrimaryContainer,
           ),
@@ -96,7 +96,7 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
         const SizedBox(height: 16),
         _buildActionButton(
           focusNode: _recordFocus,
-          icon: MoaiIcons.fiberManualRecord,
+          icon: MoaiIcons.record,
           label: LocaleKeys.mic_test_btn_record.tr(),
           isPrimary: true,
           onPressed: _startRecording,
@@ -145,7 +145,7 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
         const SizedBox(height: 16),
         _buildActionButton(
           focusNode: _recordFocus,
-          icon: MoaiIcons.stopCircleOutlined,
+          icon: MoaiIcons.stopCircle,
           label: LocaleKeys.mic_test_btn_stop.tr(
             namedArgs: {'seconds': '$_recordSeconds'},
           ),
@@ -199,7 +199,7 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      MoaiIcons.volumeUp,
+                      MoaiIcons.volume,
                       size: 14,
                       color: scheme.onTertiaryContainer,
                     ),
@@ -243,7 +243,7 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
             ),
           ],
         ] else ...[
-          Icon(MoaiIcons.warningAmberRounded, size: 36, color: scheme.error),
+          Icon(MoaiIcons.warning, size: 36, color: scheme.error),
           const SizedBox(height: 6),
           Text(
             LocaleKeys.mic_test_empty_desc.tr(
@@ -265,7 +265,7 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
               Expanded(
                 child: _buildActionButton(
                   focusNode: _playFocus,
-                  icon: _isPlaying ? MoaiIcons.stop : MoaiIcons.volumeUpOutlined,
+                  icon: _isPlaying ? MoaiIcons.stop : MoaiIcons.volume,
                   label: _isPlaying
                       ? LocaleKeys.mic_test_btn_stop_play.tr()
                       : LocaleKeys.mic_test_btn_play.tr(),
@@ -282,7 +282,7 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
             Expanded(
               child: _buildActionButton(
                 focusNode: _rerecordFocus,
-                icon: MoaiIcons.refreshOutlined,
+                icon: MoaiIcons.refresh,
                 label: LocaleKeys.mic_test_btn_rerecord.tr(),
                 isPrimary: !isAudioValid,
                 onPressed: _startRecording,
@@ -350,7 +350,7 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
       child: Row(
         children: [
           Icon(
-            MoaiIcons.settingsRemoteOutlined,
+            MoaiIcons.tv,
             size: 15,
             color: scheme.onSurfaceVariant,
           ),

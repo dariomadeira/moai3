@@ -233,7 +233,7 @@ class _TvTextFieldState extends State<TvTextField> {
         : scheme.primaryContainer;
     final iconColor = _focused ? scheme.onPrimary : scheme.onPrimaryContainer;
 
-    final leading = widget.leadingIcon ?? MoaiIcons.keyboardAltOutlined;
+    final leading = widget.leadingIcon ?? MoaiIcons.keyboard;
 
     final borderColor = _focused
         ? scheme.primary

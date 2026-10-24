@@ -20,7 +20,7 @@ extension _TvAreaExplore on HomeTvAreaState {
       MoaiIcons.tvAccordionCanales,
     ];
     return TvPanelLayout.hasLogPanel(showTvLog)
-        ? [MoaiIcons.bugReportOutlined, ...base]
+        ? [MoaiIcons.debug, ...base]
         : base;
   }
 

@@ -167,8 +167,8 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
         return TvSettingsSwitchRow(
           focusNode: focusNode,
           icon: updateOnLaunch
-              ? MoaiIcons.cloudSyncOutlined
-              : MoaiIcons.cloudOffOutlined,
+              ? MoaiIcons.catalogSync
+              : MoaiIcons.catalogEmpty,
           label: _catalogUpdateLabel(),
           description: LocaleKeys.settings_general_skip_catalog_desc.tr(),
           value: updateOnLaunch,

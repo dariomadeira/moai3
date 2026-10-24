@@ -77,7 +77,7 @@ class DoubleBackExitScopeState extends State<DoubleBackExitScope> {
     MoaiSnackBar.show(
       context,
       message: LocaleKeys.home_exit_double_back.tr(),
-      icon: MoaiIcons.exitToAppOutlined,
+      icon: MoaiIcons.exitApp,
       bottomMargin: _exitSnackBottomMargin,
       duration: widget.exitWindow,
     );

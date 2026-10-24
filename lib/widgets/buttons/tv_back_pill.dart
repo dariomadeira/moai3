@@ -35,7 +35,7 @@ class TvBackPill extends StatefulWidget {
     this.iconSize = 18.0,
     this.borderRadius,
     this.tooltip,
-    this.icon = MoaiIcons.arrowBackRounded,
+    this.icon = MoaiIcons.arrowBack,
   });
 
   @override

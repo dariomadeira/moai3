@@ -153,7 +153,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
                 return Row(
                   children: [
                     Icon(
-                      MoaiIcons.electricalServices,
+                      MoaiIcons.plugin,
                       size: 18,
                       color: scheme.primary,
                     ),
@@ -294,7 +294,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
         ),
         child: Row(
           children: [
-            Icon(MoaiIcons.error, color: scheme.error, size: 22),
+            Icon(MoaiIcons.errorFilled, color: scheme.error, size: 22),
             const SizedBox(width: 10),
             Expanded(
               child: Text(

@@ -184,7 +184,7 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
         MoaiSnackBar.show(
           widget.originContext,
           message: LocaleKeys.groups_created_success.tr(namedArgs: {'name': name}),
-          icon: MoaiIcons.bookmarkAddOutlined,
+          icon: MoaiIcons.groupCreate,
         );
       }
     } catch (e) {
@@ -192,7 +192,7 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
         MoaiSnackBar.show(
           widget.originContext,
           message: LocaleKeys.groups_create_error.tr(namedArgs: {'error': '$e'}),
-          icon: MoaiIcons.errorOutline,
+          icon: MoaiIcons.error,
         );
       }
     }

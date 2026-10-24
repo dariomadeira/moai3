@@ -186,7 +186,7 @@ class SearchPanelState extends State<SearchPanel>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              MoaiIcons.cancelOutlined,
+                              MoaiIcons.clear,
                               size: 36,
                               color: scheme.onSurfaceVariant
                                   .withValues(alpha: 0.7),
@@ -302,7 +302,7 @@ class _SearchPanelChrome extends StatelessWidget {
                 keyboardType: TvKeyboardType.search,
                 textInputAction: TvTextInputAction.search,
                 dense: true,
-                leadingIcon: MoaiIcons.keyboardAltOutlined,
+                leadingIcon: MoaiIcons.keyboard,
                 onFocusUp: onFocusUp,
                 onFocusDown: onFocusDown,
                 // Con X visible: → va al clear, no al panel Países.
@@ -419,7 +419,7 @@ class _SearchClearButtonState extends State<_SearchClearButton> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Icon(
-              MoaiIcons.closeOutlined,
+              MoaiIcons.close,
               color: _isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
               size: 20,
             ),

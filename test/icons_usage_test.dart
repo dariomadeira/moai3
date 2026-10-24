@@ -20,4 +20,14 @@ void main() {
     ];
     expect(offenders, isEmpty);
   });
+
+  test('MoaiIcons usa solo Reicon (sin Material Icons ni Symbols)', () {
+    final source = File('lib/theme/moai_icons.dart').readAsStringSync();
+    final values = RegExp(r'static const \w+ = (\w+)\.')
+        .allMatches(source)
+        .map((m) => m[1])
+        .toSet();
+    expect(values, {'ReiconIcons', 'ReiconFilledIcons'});
+    expect(source, isNot(contains('package:material_symbols_icons')));
+  });
 }

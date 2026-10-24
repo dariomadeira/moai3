@@ -98,7 +98,7 @@ class _TvArcadeSelectFriendDialogState
 
     return TvDialog(
       width: 580,
-      icon: MoaiIcons.personSearchRounded,
+      icon: MoaiIcons.personSearch,
       iconColor: scheme.primary,
       iconBgColor: scheme.primary.withValues(alpha: 0.15),
       title: LocaleKeys.arcade_select_friend_title.tr(),
@@ -166,13 +166,13 @@ class _FriendWindow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               label: friend.displayName,
               description: LocaleKeys.friends_status_online.tr(),
-              icon: MoaiIcons.personOutlineRounded,
+              icon: MoaiIcons.person,
               onPressed: () => onSelect(friend),
               onKeyUp: onKeyUp,
               onKeyDown: onKeyDown,
               trailingBuilder: (context, isFocused) {
                 return Icon(
-                  MoaiIcons.sportsEsportsRounded,
+                  MoaiIcons.gamepad,
                   size: 20,
                   color: isFocused
                       ? scheme.onPrimary
@@ -204,7 +204,7 @@ class _EmptyFriends extends StatelessWidget {
       child: Column(
         children: [
           Icon(
-            MoaiIcons.groupOffOutlined,
+            MoaiIcons.friendsEmpty,
             size: 36,
             color: scheme.onSurfaceVariant,
           ),

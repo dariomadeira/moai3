@@ -29,12 +29,12 @@ class HomeSettingsArea extends StatefulWidget {
   });
 
   static const icons = [
-    MoaiIcons.settingsRemoteOutlined,
-    MoaiIcons.movieOutlined,
-    MoaiIcons.calendarMonthOutlined,
-    MoaiIcons.adaptiveAudioMic,
-    MoaiIcons.tuneOutlined,
-    MoaiIcons.infoOutline,
+    MoaiIcons.tv,
+    MoaiIcons.settingsMovies,
+    MoaiIcons.calendarEvents,
+    MoaiIcons.watchParty,
+    MoaiIcons.settingsGeneral,
+    MoaiIcons.info,
   ];
 
   @override

@@ -28,8 +28,8 @@ class HomeCalendarArea extends StatefulWidget {
   });
 
   static const icons = [
-    MoaiIcons.calendarMonthOutlined,
-    MoaiIcons.calendarAddOn,
+    MoaiIcons.calendarEvents,
+    MoaiIcons.calendarSubscriptions,
   ];
 
   @override

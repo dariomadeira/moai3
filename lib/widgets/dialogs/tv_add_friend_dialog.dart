@@ -99,7 +99,7 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
       MoaiSnackBar.show(
         context,
         message: LocaleKeys.friend_add_dialog_success.tr(),
-        icon: MoaiIcons.checkCircleOutline,
+        icon: MoaiIcons.checkCircle,
       );
     } catch (e) {
       if (!mounted) return;
@@ -121,7 +121,7 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
     final scheme = theme.colorScheme;
 
     return TvDialog(
-      icon: MoaiIcons.personAddAlt1,
+      icon: MoaiIcons.personAdd,
       title: LocaleKeys.friend_add_dialog_title.tr(),
       subtitle: LocaleKeys.friend_add_dialog_subtitle.tr(),
       content: Column(
@@ -209,7 +209,7 @@ class _TvAddFriendDialogState extends State<TvAddFriendDialog> {
             const SizedBox(height: 10),
             Row(
               children: [
-                Icon(MoaiIcons.errorOutline, size: 16, color: scheme.error),
+                Icon(MoaiIcons.error, size: 16, color: scheme.error),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(

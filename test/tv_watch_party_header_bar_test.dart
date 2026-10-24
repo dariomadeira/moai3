@@ -57,7 +57,7 @@ void main() {
 
       expect(find.byType(TvWatchPartyHeaderBar), findsOneWidget);
       expect(find.byIcon(MoaiIcons.mic), findsNothing);
-      expect(find.byIcon(MoaiIcons.voiceSelection), findsNothing);
+      expect(find.byIcon(MoaiIcons.voice), findsNothing);
     });
 
     testWidgets('muestra el micrófono si un amigo mira el mismo canal', (tester) async {

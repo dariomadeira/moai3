@@ -210,7 +210,7 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(MoaiIcons.errorOutline, size: 48, color: scheme.error),
+                Icon(MoaiIcons.error, size: 48, color: scheme.error),
                 const SizedBox(height: 12),
                 Text(
                   errorMessage.tr(namedArgs: {

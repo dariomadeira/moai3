@@ -178,7 +178,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                   child: Row(
                     children: [
                       Icon(
-                        MoaiIcons.calendarMonthOutlined,
+                        MoaiIcons.calendarEvents,
                         size: 20,
                         color: scheme.primary,
                       ),
@@ -214,7 +214,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                         return Padding(
                           padding: const EdgeInsets.only(right: 6),
                           child: _HeaderButton(
-                            icon: MoaiIcons.syncOutlined,
+                            icon: MoaiIcons.refresh,
                             tooltip: LocaleKeys.calendar_refresh.tr(),
                             isFocused: isFocused,
                             isLoading: calendar.isLoading,
@@ -243,7 +243,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                         return Padding(
                           padding: const EdgeInsets.only(right: 6),
                           child: _HeaderButton(
-                            icon: MoaiIcons.todayOutlined,
+                            icon: MoaiIcons.calendarToday,
                             label: LocaleKeys.calendar_week_current.tr(),
                             isFocused: isFocused,
                             onTap: () {

@@ -235,7 +235,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                           activeIndex: 0,
                           colors: [scheme.surface.withValues(alpha: 0.8)],
                           titles: [LocaleKeys.settings_general_sources.tr()],
-                          icons: const [MoaiIcons.extensionOutlined],
+                          icons: const [MoaiIcons.extension],
                           onPanelTap: (_) {},
                           tabBuilder: (index, isExpanded) {
                             return Padding(
@@ -265,7 +265,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                                   ),
                                   const SizedBox(height: 6),
                                   Icon(
-                                    MoaiIcons.extensionOutlined,
+                                    MoaiIcons.extension,
                                     size: 20,
                                     color: scheme.onSurfaceVariant.withValues(
                                       alpha: 0.85,
@@ -316,7 +316,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                                         child: Row(
                                           children: [
                                             Icon(
-                                              MoaiIcons.errorOutlineRounded,
+                                              MoaiIcons.error,
                                               color: scheme.onErrorContainer,
                                               size: 18,
                                             ),
