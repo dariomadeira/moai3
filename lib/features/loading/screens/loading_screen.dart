@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:moai3/config/app_info.dart';
 import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/supabase_presence_service.dart';
+import 'package:moai3/services/vpn_nodes.dart';
 import 'package:moai3/services/vpn_service.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/state/featured_movies_provider.dart';
@@ -248,29 +249,45 @@ class _LoadingScreenState extends State<LoadingScreen>
       _catalogCancelRequested = false;
       final downloaded = <String>{};
 
-      // El permiso VPN se pide dentro de connectMexico (el plugin guarda la
+      // Los nodos van en el orden del ranking (SPEC-39 §4.1); los
+      // resultados se anotan al final.
+      final ranking = VpnNodeRanking();
+      final nodes =
+          (await ranking.orderedNodes()).take(_maxAttempts).toList();
+      final results = <({VpnNode node, bool success, Duration? elapsed})>[];
+      var anyTunnel = false;
+
+      // El permiso VPN se pide dentro de connect (el plugin guarda la
       // config, muestra el aviso del SO y al OK arranca el túnel). No usar
       // requestPermissionAndroid aparte: devuelve false al mostrar el diálogo.
-      for (var attempt = 0; attempt < _maxAttempts && mounted; attempt++) {
+      for (var attempt = 0; attempt < nodes.length && mounted; attempt++) {
+        final node = nodes[attempt];
+        final attemptStart = DateTime.now();
         _setStatus(LocaleKeys.loading_secure_connecting);
-        MoiamovApiService.logLine('Intento ${attempt + 1}/$_maxAttempts');
+        MoiamovApiService.logLine(
+          'Intento ${attempt + 1}/${nodes.length}: ${node.id}',
+        );
 
-        final vpnOk = await vpn.connectMexico(
-          nodeIndex: attempt,
+        final connection = await vpn.connect(
+          node,
           onStatusUpdate: _setStatus,
         );
-        if (vpn.permissionDenied) {
+        if (connection == VpnConnectResult.permissionDenied) {
           MoiamovApiService.logLine('Permiso VPN rechazado por el usuario.');
           break;
         }
-        if (!vpnOk) {
+        if (connection == VpnConnectResult.cancelled) break;
+        if (connection != VpnConnectResult.connected) {
+          if (connection == VpnConnectResult.wrongCountry) anyTunnel = true;
+          results.add((node: node, success: false, elapsed: null));
           MoiamovApiService.logLine(
-            'Nodo ${attempt + 1}: conexión no verificada.',
+            '${node.id}: conexión no verificada ($connection).',
           );
           await vpn.disconnect();
           await _pause(const Duration(milliseconds: 1500));
           continue;
         }
+        anyTunnel = true;
 
         _setStatus(LocaleKeys.loading_secure_verified);
         MoiamovApiService.logLine(
@@ -284,28 +301,46 @@ class _LoadingScreenState extends State<LoadingScreen>
           'Solicitando sesión de dispositivo (sin credenciales)...',
         );
         if (!await api.ensureSession()) {
+          results.add((node: node, success: false, elapsed: null));
           MoiamovApiService.logLine(
-            'Nodo ${attempt + 1}: sesión rechazada; rotando nodo...',
+            '${node.id}: sesión rechazada; rotando nodo...',
           );
           await vpn.disconnect();
           await _pause(const Duration(milliseconds: 1500));
           continue;
         }
         sessionOk = true;
+        final sessionTime = DateTime.now().difference(attemptStart);
         MoiamovApiService.logLine('✅ Sesión de dispositivo obtenida.');
 
-        if (!needsUpdate) break;
-        await _downloadMissingSections(downloaded, showCancel: hasCatalog);
-        if (_catalogCancelRequested ||
-            downloaded.length == _catalogSections.length) {
+        if (!needsUpdate) {
+          results.add((node: node, success: true, elapsed: sessionTime));
           break;
         }
+        await _downloadMissingSections(downloaded, showCancel: hasCatalog);
+        // Si el usuario cortó la descarga, este nodo no se anota.
+        if (_catalogCancelRequested) break;
+        final complete = downloaded.length == _catalogSections.length;
+        results.add((node: node, success: complete, elapsed: sessionTime));
+        if (complete) break;
         MoiamovApiService.logLine(
           'Faltan secciones (${downloaded.length}/${_catalogSections.length}); '
           'rotando nodo...',
         );
         await vpn.disconnect();
         await _pause(const Duration(milliseconds: 1500));
+      }
+
+      // Si ningún túnel conectó, lo más probable es que no haya internet:
+      // no es culpa de los nodos y no se anota.
+      if (anyTunnel) {
+        for (final r in results) {
+          await ranking.record(r.node, success: r.success, elapsed: r.elapsed);
+        }
+      } else if (results.isNotEmpty) {
+        MoiamovApiService.logLine(
+          'Ningún túnel conectó: el ranking no se modifica.',
+        );
       }
 
       _setStatus(LocaleKeys.loading_secure_disconnecting);

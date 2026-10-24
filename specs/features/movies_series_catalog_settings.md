@@ -13,6 +13,7 @@
 > - `lib/features/loading/screens/loading_screen.dart`  
 > - `lib/services/moiamov_api_service.dart`  
 > - `lib/services/vpn_service.dart`  
+> - `lib/services/vpn_nodes.dart` (nodos y ranking)  
 > - `android/app/src/main/kotlin/com/infomak/moai/MainActivity.kt` (permiso VPN)  
 > - `android/app/build.gradle.kts` (`jniLibs.useLegacyPackaging`)  
 > - `assets/vpn/mexico_0{1..4}.ovpn`  
@@ -32,7 +33,7 @@ Formalizar:
 ### Non-Goals
 - Sustituir el motor de plugins de TV en vivo.  
 - Documentar credenciales Moiamov/VPN (solo `.env`).  
-- Elegir el mejor nodo VPN según la ubicación (pendiente).
+- Medir latencia para elegir nodo en el primer arranque (pendiente; hoy se usa el orden por defecto).
 
 ---
 
@@ -87,10 +88,10 @@ Verificación del dispositivo en Supabase
     │
     ├─ actualizar = sin catálogo || frecuencia vencida
     │
-    ├─ Hasta 3 intentos, uno por nodo (mexico_01..03):
-    │     1. connectMexico (permiso del SO sin límite de tiempo)
+    ├─ Hasta 3 intentos: los 3 primeros nodos del ranking (§4.1)
+    │     1. VpnService.connect(node) (permiso del SO sin límite de tiempo)
     │        · permiso rechazado → cortar intentos
-    │        · salida no MX o túnel caído → siguiente nodo
+    │        · salida por otro país o túnel caído → siguiente nodo
     │     2. ensureSession (v3/snToken → v8/active); guarda datos de sesión
     │        · rechazado → siguiente nodo
     │     3. si no hay que actualizar → listo
@@ -112,6 +113,18 @@ Verificación del dispositivo en Supabase
 - **Falla de descarga con login OK**: se sigue con el catálogo viejo; estado «No se actualizó el catálogo».  
 - **Sin login**: estado «Películas y series no disponibles».
 
+### 4.1 Ranking de nodos
+
+`kVpnNodes` (`vpn_nodes.dart`) lista los perfiles con su proveedor y país de salida esperado: `mx_01..04` (Proton, MX) y `jp_01..02` (VPN Gate, JP). El servicio de catálogo acepta ambas salidas.
+
+`VpnNodeRanking` guarda por nodo, en preferencias (`vpn_node_ranking`), una nota 0–1, el tiempo promedio hasta la sesión lista y el último uso.
+
+- **Nota:** `0,7 × anterior + 0,3 × resultado` (1 sirvió / 0 falló). Nodo nuevo: 0,5.
+- **Sirvió:** conectó, salida del país esperado, login OK y, si tocaba, bajaron las secciones que faltaban.
+- **Orden:** por nota; con diferencia < 0,05 gana el más rápido.
+- **Exploración:** ~10 % de los arranques, el nodo usado hace más tiempo (o nunca) va primero.
+- **No se anota:** si ningún túnel conectó (probablemente sin internet), si el usuario rechazó el permiso, o el nodo cuya descarga cortó el botón "OK".
+
 ### Cancelación
 - El botón aparece solo durante la descarga y solo si ya hay catálogo guardado (nunca en el primer arranque).  
 - Corta solo la descarga (`cancelActiveRequests`); el login ya terminó y no se puede cortar.  
@@ -120,8 +133,8 @@ Verificación del dispositivo en Supabase
 ### VPN (OpenVPN México)
 - Dependencia: `openvpn_flutter` rama git `android_16kb` (ELF 16 KB).  
 - Empaquetado: `android.packaging.jniLibs.useLegacyPackaging = true` (AGP; no poner `extractNativeLibs` en el manifest).  
-- Perfiles: `assets/vpn/mexico_01.ovpn` … `mexico_04.ovpn`.  
-- Usuario OpenVPN: se fuerza sufijo Proton **`+b:0`** (`VpnService._ensureMexicoExitUsername`) para salida México; sin eso `verifyConnection` falla.  
+- Perfiles: `assets/vpn/mexico_01..04.ovpn` (Proton, UDP) y `japan_01..02.ovpn` (VPN Gate, TCP 443, autentican con el certificado del archivo: `certIsRequired: true`, sin usuario).  
+- Usuario OpenVPN (solo Proton): se fuerza sufijo **`+b:0`** (`VpnService._ensureMexicoExitUsername`) para salida México; sin eso `verifyConnection` falla.  
 - Credenciales: `TUNNEL_USER` / `TUNNEL_PASS` (dotenv), con fallback al bloque inline del `.ovpn`.  
 - `data-ciphers` se inyecta si falta (compat android_16kb).  
 - `disconnect()` espera 600 ms después de `disconnected`: el proceso de OpenVPN tarda ~150 ms en cerrarse y un `connect` anterior se pierde sin emitir etapas.

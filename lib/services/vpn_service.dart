@@ -7,6 +7,25 @@ import 'package:flutter/services.dart' show MethodChannel, rootBundle;
 import 'package:http/http.dart' as http;
 import 'package:openvpn_flutter/openvpn_flutter.dart';
 import '../config/constants.dart';
+import 'vpn_nodes.dart';
+
+/// Resultado de [VpnService.connect].
+enum VpnConnectResult {
+  /// Túnel arriba y salida por el país esperado.
+  connected,
+
+  /// El túnel no llegó a conectar.
+  tunnelFailed,
+
+  /// Conectó, pero la salida no es del país del nodo.
+  wrongCountry,
+
+  /// El usuario rechazó el permiso VPN del sistema.
+  permissionDenied,
+
+  /// Cortado desde la app.
+  cancelled,
+}
 
 /// Servicio centralizado de VPN open source integrado en Moai TV
 class VpnService {
@@ -174,9 +193,9 @@ class VpnService {
     onStatusUpdate?.call(LocaleKeys.loading_permission_required);
   }
 
-  /// Conecta a un nodo de México usando los perfiles dedicados garantizados de Salvavida (Saltamontes).
-  Future<bool> connectMexico({
-    int nodeIndex = 0,
+  /// Conecta [node] y verifica que salga por su país.
+  Future<VpnConnectResult> connect(
+    VpnNode node, {
     Duration timeout = const Duration(seconds: 14),
     void Function(String message)? onStatusUpdate,
   }) async {
@@ -184,61 +203,57 @@ class VpnService {
     await initialize();
     if (_androidVpnPermissionGranted == false) {
       debugPrint('⚠️ [VPN] Permiso ya denegado en esta sesión.');
-      return false;
+      return VpnConnectResult.permissionDenied;
     }
-    if (_connectCancelled) return false;
+    if (_connectCancelled) return VpnConnectResult.cancelled;
 
     await prepareAndroidVpnPermissionUi(onStatusUpdate: onStatusUpdate);
-    if (_connectCancelled) return false;
+    if (_connectCancelled) return VpnConnectResult.cancelled;
 
-    final profiles = [
-      'assets/vpn/mexico_01.ovpn',
-      'assets/vpn/mexico_02.ovpn',
-      'assets/vpn/mexico_03.ovpn',
-      'assets/vpn/mexico_04.ovpn',
-    ];
-
-    final targetProfile = profiles[nodeIndex.clamp(0, profiles.length - 1)];
     onStatusUpdate?.call(LocaleKeys.loading_init_services);
+    debugPrint('🔒 [VPN] Nodo ${node.id} (${node.asset})');
 
-    String? ovpnConfig;
+    String ovpnConfig;
     try {
-      ovpnConfig = await rootBundle.loadString(targetProfile);
+      ovpnConfig = await rootBundle.loadString(node.asset);
     } catch (e) {
-      debugPrint('❌ [VPN] Error al cargar $targetProfile: $e');
-      ovpnConfig = await rootBundle.loadString('assets/vpn/mexico_01.ovpn');
+      debugPrint('❌ [VPN] Error al cargar ${node.asset}: $e');
+      return VpnConnectResult.tunnelFailed;
     }
-
     if (ovpnConfig.isEmpty) {
       debugPrint('❌ [VPN] Configuración vacía.');
-      return false;
+      return VpnConnectResult.tunnelFailed;
     }
 
-    // Credenciales: .env, o las del bloque inline del .ovpn si faltan.
-    var username = kTunnelUsername.trim();
-    var password = kTunnelPassword.trim();
-    final inlineAuth = RegExp(
-      r'<auth-user-pass>\s*([^\s<]+)\s+([^\s<]+)\s*</auth-user-pass>',
-    ).firstMatch(ovpnConfig);
-    if (username.isEmpty && inlineAuth != null) {
-      username = inlineAuth.group(1)!.trim();
-    }
-    if (password.isEmpty && inlineAuth != null) {
-      password = inlineAuth.group(2)!.trim();
-    }
-    if (username.isEmpty || password.isEmpty) {
-      debugPrint('❌ [VPN] Credenciales de túnel vacías.');
-      return false;
-    }
+    String? username;
+    String? password;
+    if (node.provider == VpnProvider.proton) {
+      // Credenciales: .env, o las del bloque inline del .ovpn si faltan.
+      var user = kTunnelUsername.trim();
+      var pass = kTunnelPassword.trim();
+      final inlineAuth = RegExp(
+        r'<auth-user-pass>\s*([^\s<]+)\s+([^\s<]+)\s*</auth-user-pass>',
+      ).firstMatch(ovpnConfig);
+      if (user.isEmpty && inlineAuth != null) {
+        user = inlineAuth.group(1)!.trim();
+      }
+      if (pass.isEmpty && inlineAuth != null) {
+        pass = inlineAuth.group(2)!.trim();
+      }
+      if (user.isEmpty || pass.isEmpty) {
+        debugPrint('❌ [VPN] Credenciales de túnel vacías.');
+        return VpnConnectResult.tunnelFailed;
+      }
+      // Proton: sin +b:N la salida NO es México y verifyConnection falla.
+      username = _ensureMexicoExitUsername(user);
+      password = pass;
+      debugPrint('🔒 [VPN] Usuario de salida MX aplicado (sufijo +b).');
 
-    // Proton: sin +b:N la salida NO es México y verifyConnection falla.
-    username = _ensureMexicoExitUsername(username);
-    debugPrint('🔒 [VPN] Usuario de salida MX aplicado (sufijo +b).');
-
-    ovpnConfig = ovpnConfig.replaceAll(
-      RegExp(r'<auth-user-pass>[\s\S]*?</auth-user-pass>'),
-      'auth-user-pass',
-    );
+      ovpnConfig = ovpnConfig.replaceAll(
+        RegExp(r'<auth-user-pass>[\s\S]*?</auth-user-pass>'),
+        'auth-user-pass',
+      );
+    }
     ovpnConfig = _ensureDataCiphers(ovpnConfig);
 
     onStatusUpdate?.call(LocaleKeys.loading_connecting_server);
@@ -316,14 +331,16 @@ class VpnService {
     });
 
     try {
-      // Proton/MX: setenv CLIENT_CERT 0 — sin certificado de cliente.
+      // Proton: setenv CLIENT_CERT 0 — sin certificado de cliente. VPN Gate
+      // autentica con el certificado del .ovpn (certIsRequired).
       // Si hace falta permiso, el plugin guarda config y abre el diálogo del SO.
       unawaited(_engine!
           .connect(
             ovpnConfig,
             'Moai',
-            username: username,
-            password: password,
+            username: username ?? '',
+            password: password ?? '',
+            certIsRequired: node.provider == VpnProvider.vpnGate,
           )
           .catchError((e) {
             debugPrint('❌ [VPN] Excepción en invocación connect: $e');
@@ -332,7 +349,7 @@ class VpnService {
       debugPrint('❌ [VPN] Excepción sincrónica al invocar connect: $e');
       permissionDeadline?.cancel();
       await sub.cancel();
-      return false;
+      return VpnConnectResult.tunnelFailed;
     }
 
     final cancelWatch = Timer.periodic(const Duration(milliseconds: 200), (_) {
@@ -344,43 +361,47 @@ class VpnService {
     connectDeadline?.cancel();
     cancelWatch.cancel();
     await sub.cancel();
-    if (_connectCancelled) return false;
-
-    if (connected) {
-      onStatusUpdate?.call(LocaleKeys.loading_verifying_connection);
-      final verified = await verifyConnection();
-      debugPrint(
-        '🔒 [VPN] Verificación México: $verified '
-        '(ip=$_lastExitIp cc=$_lastExitCountry)',
-      );
-      if (verified) return true;
-      // Túnel arriba pero salida incorrecta: soltar antes de rotar nodo.
-      await disconnect();
+    if (_androidVpnPermissionGranted == false) {
+      return VpnConnectResult.permissionDenied;
     }
+    if (_connectCancelled) return VpnConnectResult.cancelled;
+    if (!connected) return VpnConnectResult.tunnelFailed;
 
-    return false;
+    onStatusUpdate?.call(LocaleKeys.loading_verifying_connection);
+    final verified = await verifyConnection(country: node.country);
+    debugPrint(
+      '🔒 [VPN] Verificación ${node.country}: $verified '
+      '(ip=$_lastExitIp cc=$_lastExitCountry)',
+    );
+    if (verified) return VpnConnectResult.connected;
+    // Túnel arriba pero salida incorrecta: soltar antes de rotar nodo.
+    await disconnect();
+    return VpnConnectResult.wrongCountry;
   }
 
-  /// Verifica salida pública por México (obligatorio para Moiamov).
-  Future<bool> verifyConnection({Duration timeout = const Duration(seconds: 5)}) async {
+  /// Verifica que la salida pública sea de [country] (el servicio de catálogo
+  /// solo acepta ciertos países).
+  Future<bool> verifyConnection({
+    required String country,
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
     try {
       final res =
           await http.get(Uri.parse('http://ip-api.com/json')).timeout(timeout);
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
-        final country = data['country'] ?? '';
+        final countryName = data['country'] ?? '';
         final countryCode =
             data['countryCode']?.toString().toUpperCase() ?? '';
         final query = data['query'] ?? '';
         _lastExitIp = query.toString();
         _lastExitCountry = countryCode;
         debugPrint(
-          '🌐 [VPN IP Check] IP pública: $query ($country, $countryCode)',
+          '🌐 [VPN IP Check] IP pública: $query ($countryName, $countryCode)',
         );
-        if (countryCode == 'MX') return true;
+        if (countryCode == country) return true;
         debugPrint(
-          '⚠️ [VPN IP Check] Salida no es México ($countryCode). '
-          'Revisá sufijo +b:0 en el usuario OpenVPN.',
+          '⚠️ [VPN IP Check] Salida no es $country ($countryCode).',
         );
       }
     } catch (e) {
@@ -399,8 +420,8 @@ class VpnService {
         if (ip.isNotEmpty) _lastExitIp = ip;
         if (loc.isNotEmpty) _lastExitCountry = loc;
         debugPrint('🌐 [VPN CF Check] ip=$ip loc=$loc');
-        if (loc == 'MX') return true;
-        debugPrint('⚠️ [VPN CF Check] Salida no es México ($loc).');
+        if (loc == country) return true;
+        debugPrint('⚠️ [VPN CF Check] Salida no es $country ($loc).');
       }
     } catch (e) {
       debugPrint('⚠️ [VPN CF Check] falló: $e');
