@@ -294,20 +294,24 @@ class PlayerEntry(
         val mediaSourceFactory = DefaultMediaSourceFactory(context)
             .setDataSourceFactory(dsFactory)
             .setDrmSessionManagerProvider(drmProvider)
+            // En vivo un segmento o playlist puede tardar o fallar una vez sin
+            // que el canal esté caído: se reintenta como el player web (6).
             .setLoadErrorHandlingPolicy(object : DefaultLoadErrorHandlingPolicy() {
                 override fun getRetryDelayMsFor(
                     loadErrorInfo: LoadErrorHandlingPolicy.LoadErrorInfo
                 ): Long = 1000L
 
-                override fun getMinimumLoadableRetryCount(dataType: Int): Int = 2
+                override fun getMinimumLoadableRetryCount(dataType: Int): Int = 6
             })
 
+        // Arranque igual de rápido (1 s), pero con hasta 30 s de colchón: con
+        // segmentos de 6 s, 5 s de máximo dejaba cortar ante cualquier demora.
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                2_500,
-                5_000,
+                15_000,
+                30_000,
                 1_000,
-                1_500
+                3_000
             )
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
@@ -366,6 +370,14 @@ class PlayerEntry(
             }
 
             override fun onPlayerError(error: PlaybackException) {
+                // Quedó detrás de la ventana del vivo (p. ej. tras un corte de
+                // red): se vuelve al vivo en vez de cortar el canal.
+                if (error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {
+                    Log.w(PlayerEngine.TAG, "Detrás del vivo: vuelvo al borde handle=$id")
+                    newPlayer.seekToDefaultPosition()
+                    newPlayer.prepare()
+                    return
+                }
                 Log.e(PlayerEngine.TAG,
                     "ERROR code=${error.errorCode} class=${error.javaClass.simpleName} " +
                         "msg=${error.message ?: ""} handle=$id")
