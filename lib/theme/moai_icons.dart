@@ -295,8 +295,8 @@ abstract final class MoaiIcons {
   /// «Educación» — escuela.
   static const tvCategoryEducacion = ReiconIcons.graduationCap;
 
-  /// «Religión» / «Religioso» — iglesia.
-  static const tvCategoryReligion = ReiconIcons.candle2;
+  /// «Religión» / «Religioso» — rayo.
+  static const tvCategoryReligion = ReiconIcons.boltLightning;
 
   /// «Telenovelas» / «Novelas» — corazón.
   static const tvCategoryNovelas = ReiconIcons.heart2;
@@ -394,8 +394,8 @@ abstract final class MoaiIcons {
   /// Aviso de evento en vivo (`calendar_provider.dart`).
   static const calendarLive = ReiconIcons.playStream;
 
-  /// Suscripción F1 — bandera de carrera.
-  static const calendarSubF1 = ReiconIcons.flag;
+  /// Suscripción F1 — rueda.
+  static const calendarSubF1 = ReiconIcons.wheel;
 
   /// Suscripción LPF AR — fútbol.
   static const calendarSubLpf = ReiconIcons.football;

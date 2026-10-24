@@ -213,7 +213,7 @@ class _TvTileChrome extends StatelessWidget {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(10),
-                    child: Icon(icon, size: MoaiIconSizes.lg, color: iconColor),
+                    child: Icon(icon, size: MoaiIconSizes.md, color: iconColor),
                   ),
                 ),
                 const SizedBox(width: 14),
