@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -39,22 +40,16 @@ void main() {
       expect(movie.poster, 'https://example.com/poster.jpg');
     });
 
-    test('loadFallbackCatalog loads bundled assets', () async {
-      final service = MoiamovApiService.instance;
-      final result = await service.loadFallbackCatalog();
-
-      expect(result.categories, isNotEmpty);
-      expect(result.totalMovies, greaterThan(0));
-      expect(result.isFromNetwork, isFalse);
-      expect(result.statusMessage, contains('títulos'));
-    });
-
-    test('loadSavedOrBundled prefiere la última descarga guardada', () async {
+    test('el catálogo guardado y su fecha', () async {
+      SharedPreferences.setMockInitialValues({});
       final dir = await Directory.systemTemp.createTemp('moai_catalog_');
       final service = MoiamovApiService.instance;
       service.debugSetCatalogDirectory(dir);
       try {
         expect(await service.lastSavedCatalogAt(), isNull);
+        expect(await service.savedSections(), isEmpty);
+        expect(await service.loadPersistedCatalog('masnew_movies'), isNull);
+
         final payload = {
           'recommendList': [
             {
@@ -71,23 +66,17 @@ void main() {
           jsonEncode(payload),
         );
 
-        final saved = await service.loadSavedOrBundled(section: 'masnew_movies');
-        expect(saved.source, CatalogSource.savedCatalog);
-        expect(saved.isHardcoded, isFalse);
+        final saved = await service.loadPersistedCatalog('masnew_movies');
+        expect(saved, isNotNull);
+        expect(saved!.source, CatalogSource.savedCatalog);
         expect(saved.categories.first.movies.first.name, 'Desde disco');
+        expect(await service.savedSections(), {'masnew_movies'});
 
-        final missing = await service.loadSavedOrBundled(section: 'masnew_series');
-        expect(missing.source, CatalogSource.assetBundle);
-        expect(missing.isHardcoded, isTrue);
-
+        // La fecha no sale de los archivos: solo se guarda explícitamente.
+        expect(await service.lastSavedCatalogAt(), isNull);
         final stamp = DateTime(2026, 10, 12, 18, 40);
-        await File('${dir.path}/masnew_movies.json').setLastModified(stamp);
-        final savedAt = await service.lastSavedCatalogAt();
-        expect(savedAt, isNotNull);
-        final local = savedAt!.toLocal();
-        expect(local.year, 2026);
-        expect(local.month, 10);
-        expect(local.day, 12);
+        await service.saveCatalogDate(stamp);
+        expect(await service.lastSavedCatalogAt(), stamp);
       } finally {
         service.debugSetCatalogDirectory(null);
         await dir.delete(recursive: true);

@@ -91,7 +91,6 @@ flutter:
     - assets/translations/
     - assets/svgs/
     - assets/images/
-    - assets/data/
     - assets/vpn/
     - assets/music/
     - .env

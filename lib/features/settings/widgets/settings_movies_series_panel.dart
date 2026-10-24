@@ -2,17 +2,14 @@ import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/features/settings/widgets/settings_catalog_frequency_row.dart';
-import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 import 'package:provider/provider.dart';
-import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/utils/moai_formats.dart';
 
 enum _SettingsMoviesSeriesItemType {
-  skipCatalog,
   catalogFrequency,
 }
 
@@ -54,8 +51,8 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
     setState(() => _catalogSavedAt = savedAt);
   }
 
-  String _catalogUpdateLabel() {
-    final title = LocaleKeys.settings_general_skip_catalog.tr();
+  String _catalogFrequencyLabel() {
+    final title = LocaleKeys.settings_general_catalog_frequency.tr();
     final savedAt = _catalogSavedAt;
     if (savedAt == null) return title;
     return '$title · ${MoaiFormats.date(savedAt.toLocal())}';
@@ -67,13 +64,7 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final tvSettings = context.watch<TvSettingsProvider>();
-    final updateOnLaunch = !tvSettings.skipCatalogUpdate;
-
-    final items = <_SettingsMoviesSeriesItemType>[
-      _SettingsMoviesSeriesItemType.skipCatalog,
-      if (updateOnLaunch) _SettingsMoviesSeriesItemType.catalogFrequency,
-    ];
+    const items = _SettingsMoviesSeriesItemType.values;
 
     if (_selectedIndex >= items.length) {
       _selectedIndex = items.length - 1;
@@ -160,32 +151,15 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
     required VoidCallback onKeyDown,
   }) {
     switch (item) {
-      case _SettingsMoviesSeriesItemType.skipCatalog:
-        // Pref interna: skipCatalogUpdate. UI positiva: ON = actualizar.
-        final updateOnLaunch =
-            !context.watch<TvSettingsProvider>().skipCatalogUpdate;
-        return TvSettingsSwitchRow(
-          focusNode: focusNode,
-          icon: updateOnLaunch
-              ? MoaiIcons.catalogSync
-              : MoaiIcons.catalogEmpty,
-          label: _catalogUpdateLabel(),
-          description: LocaleKeys.settings_general_skip_catalog_desc.tr(),
-          value: updateOnLaunch,
-          onChanged: (value) {
-            context.read<TvSettingsProvider>().setSkipCatalogUpdate(!value);
-          },
-          onKeyLeft: widget.onKeyLeft,
-          onKeyRight: widget.onKeyRight,
-          onKeyUp: onKeyUp,
-          onKeyDown: onKeyDown,
-        );
       case _SettingsMoviesSeriesItemType.catalogFrequency:
         final frequency =
             context.watch<TvSettingsProvider>().catalogUpdateFrequency;
         return SettingsCatalogFrequencyRow(
           focusNode: focusNode,
+          label: _catalogFrequencyLabel(),
           selected: frequency,
+          onKeyLeft: widget.onKeyLeft,
+          onKeyRight: widget.onKeyRight,
           onChanged: (value) {
             context.read<TvSettingsProvider>().setCatalogUpdateFrequency(value);
           },

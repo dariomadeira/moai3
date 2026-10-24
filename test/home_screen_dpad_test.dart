@@ -85,7 +85,14 @@ void main() {
           ChangeNotifierProvider(
             create: (_) => CalendarProvider(preferences: prefs, startTicker: false),
           ),
-          ChangeNotifierProvider(create: (_) => FeaturedMoviesProvider()),
+          ChangeNotifierProvider(
+            create: (_) => FeaturedMoviesProvider()
+              ..setAvailableSections(const {
+                FeaturedMoviesProvider.sectionFeatured,
+                FeaturedMoviesProvider.sectionMovies,
+                FeaturedMoviesProvider.sectionSeries,
+              }),
+          ),
           ChangeNotifierProvider(create: (_) => PlaybackStatsController()),
           ChangeNotifierProvider(create: (_) => DebugLogController()),
           ChangeNotifierProvider.value(value: channels.pluginHost),

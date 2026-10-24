@@ -21,6 +21,22 @@ class FeaturedMoviesProvider extends ChangeNotifier {
 
   final Map<String, _CatalogSectionState> _sections = {};
 
+  /// Secciones que el rail puede mostrar: las decide el arranque
+  /// (login de este arranque + catálogo guardado).
+  Set<String> _availableSections = const {};
+
+  Set<String> get availableSections => _availableSections;
+
+  bool isSectionAvailable(String section) =>
+      _availableSections.contains(section);
+
+  /// Resultado del arranque. Descarta lo cargado antes para releer el disco.
+  void setAvailableSections(Set<String> sections) {
+    _availableSections = Set.unmodifiable(sections);
+    _sections.clear();
+    notifyListeners();
+  }
+
   _CatalogSectionState _stateFor(String section) =>
       _sections.putIfAbsent(section, _CatalogSectionState.new);
 
@@ -74,7 +90,7 @@ class FeaturedMoviesProvider extends ChangeNotifier {
   String? get errorDetail => _stateFor(sectionFeatured).errorDetail;
   bool get loadedOnce => _stateFor(sectionFeatured).loadedOnce;
 
-  /// Carga `masnew_featured` desde persistido/bundled.
+  /// Carga `masnew_featured` desde el catálogo guardado.
   Future<void> loadFeatured({bool force = false}) =>
       loadSection(sectionFeatured, force: force);
 
@@ -90,12 +106,12 @@ class FeaturedMoviesProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await MoiamovApiService.instance.loadSavedOrBundled(
-        section: section,
-      );
+      final result =
+          await MoiamovApiService.instance.loadPersistedCatalog(section);
+      final columns = result?.categories ?? const <CategoryColumn>[];
       final flat = <MovieItem>[];
       final seen = <String>{};
-      for (final column in result.categories) {
+      for (final column in columns) {
         for (final movie in column.movies) {
           final key = movie.contentId.isNotEmpty
               ? movie.contentId
@@ -106,8 +122,7 @@ class FeaturedMoviesProvider extends ChangeNotifier {
         }
       }
       state.items = flat;
-      var categories =
-          result.categories.where((c) => c.movies.isNotEmpty).toList();
+      var categories = columns.where((c) => c.movies.isNotEmpty).toList();
 
       if (section == sectionMovies) {
         try {

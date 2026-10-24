@@ -89,6 +89,7 @@ class MainActivity : FlutterActivity() {
             it.registerChannel(flutterEngine.dartExecutor.binaryMessenger)
         }
         setupDeviceChannel(flutterEngine)
+        setupVpnPermissionChannel(flutterEngine)
         setupVoiceTestChannel(flutterEngine)
         engine.attach(flutterEngine)
         pluginLoader.attach(flutterEngine.dartExecutor.binaryMessenger)
@@ -295,6 +296,19 @@ class MainActivity : FlutterActivity() {
                         result.error("INSTALL_ERROR", e.message, null)
                     }
                 }
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    /** Permiso VPN: Flutter pregunta si ya está concedido; el aviso de rechazo va en onActivityResult. */
+    private fun setupVpnPermissionChannel(flutterEngine: FlutterEngine) {
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "com.infomak.moai.tv/vpn_permission",
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "isGranted" -> result.success(android.net.VpnService.prepare(this) == null)
                 else -> result.notImplemented()
             }
         }

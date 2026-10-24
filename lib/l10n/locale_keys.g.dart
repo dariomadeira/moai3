@@ -303,7 +303,7 @@ abstract class  LocaleKeys {
   static const loading_catalog_cancel = 'loading_catalog_cancel';
   static const loading_catalog_cancel_no_date = 'loading_catalog_cancel_no_date';
   static const loading_catalog_downloading = 'loading_catalog_downloading';
-  static const loading_catalog_fallback = 'loading_catalog_fallback';
+  static const loading_catalog_not_updated = 'loading_catalog_not_updated';
   static const loading_catalog_updated = 'loading_catalog_updated';
   static const loading_connecting = 'loading_connecting';
   static const loading_connecting_server = 'loading_connecting_server';
@@ -315,6 +315,7 @@ abstract class  LocaleKeys {
   static const loading_secure_connecting = 'loading_secure_connecting';
   static const loading_secure_disconnecting = 'loading_secure_disconnecting';
   static const loading_secure_verified = 'loading_secure_verified';
+  static const loading_session_failed = 'loading_session_failed';
   static const loading_session_init = 'loading_session_init';
   static const loading_verifying_connection = 'loading_verifying_connection';
   static const mic_error_null_response = 'mic_error_null_response';
@@ -343,7 +344,6 @@ abstract class  LocaleKeys {
   static const movies_cast = 'movies_cast';
   static const movies_catalog_empty = 'movies_catalog_empty';
   static const movies_catalog_from_saved = 'movies_catalog_from_saved';
-  static const movies_catalog_load_error = 'movies_catalog_load_error';
   static const movies_category_default = 'movies_category_default';
   static const movies_category_new_releases = 'movies_category_new_releases';
   static const movies_detail_tab = 'movies_detail_tab';
@@ -538,7 +538,6 @@ abstract class  LocaleKeys {
   static const settings_general_catalog_freq_weekly = 'settings_general_catalog_freq_weekly';
   static const settings_general_catalog_frequency = 'settings_general_catalog_frequency';
   static const settings_general_catalog_frequency_desc = 'settings_general_catalog_frequency_desc';
-  static const settings_general_catalog_frequency_disabled_desc = 'settings_general_catalog_frequency_disabled_desc';
   static const settings_general_dark_mode = 'settings_general_dark_mode';
   static const settings_general_dark_mode_desc = 'settings_general_dark_mode_desc';
   static const settings_general_mute_ui_sounds = 'settings_general_mute_ui_sounds';
@@ -547,8 +546,6 @@ abstract class  LocaleKeys {
   static const settings_general_overscan_desc = 'settings_general_overscan_desc';
   static const settings_general_plugins_desc = 'settings_general_plugins_desc';
   static const settings_general_plugins_title = 'settings_general_plugins_title';
-  static const settings_general_skip_catalog = 'settings_general_skip_catalog';
-  static const settings_general_skip_catalog_desc = 'settings_general_skip_catalog_desc';
   static const settings_general_sources = 'settings_general_sources';
   static const settings_general_sources_desc = 'settings_general_sources_desc';
   static const settings_general_subtitle = 'settings_general_subtitle';

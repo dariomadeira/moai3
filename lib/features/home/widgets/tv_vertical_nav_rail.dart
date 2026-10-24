@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/services/arcade_plugin_service.dart';
 import 'package:moai3/state/calendar_provider.dart';
+import 'package:moai3/state/featured_movies_provider.dart';
 import 'package:moai3/features/home/home_section.dart';
 import 'package:moai3/features/home/widgets/tv_bottom_weather_pill.dart';
 import 'package:moai3/theme/moai_icons.dart';
@@ -64,28 +65,22 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
     }
   }
 
+  /// Destacados, Películas y Series dependen del login y el catálogo del arranque.
+  static const _catalogSections = {
+    HomeSection.featured: FeaturedMoviesProvider.sectionFeatured,
+    HomeSection.movies: FeaturedMoviesProvider.sectionMovies,
+    HomeSection.series: FeaturedMoviesProvider.sectionSeries,
+  };
+
   List<HomeSection> _getAvailableSections(bool isArcadeInstalled) {
-    if (isArcadeInstalled) {
-      return const [
-        HomeSection.home,
-        HomeSection.tv,
-        HomeSection.featured,
-        HomeSection.movies,
-        HomeSection.series,
-        HomeSection.calendar,
-        HomeSection.arcade,
-        HomeSection.settings,
-      ];
+    final movies = context.read<FeaturedMoviesProvider>();
+    bool isVisible(HomeSection section) {
+      if (section == HomeSection.arcade) return isArcadeInstalled;
+      final catalog = _catalogSections[section];
+      return catalog == null || movies.isSectionAvailable(catalog);
     }
-    return const [
-      HomeSection.home,
-      HomeSection.tv,
-      HomeSection.featured,
-      HomeSection.movies,
-      HomeSection.series,
-      HomeSection.calendar,
-      HomeSection.settings,
-    ];
+
+    return HomeSection.values.where(isVisible).toList();
   }
 
   void _moveFocusDown(bool isArcadeInstalled) {
@@ -108,6 +103,8 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
     final isArcadeInstalled = _arcadePlugin.isInstalled;
+    // Reconstruye el rail cuando el arranque define las secciones del catálogo.
+    context.select((FeaturedMoviesProvider p) => p.availableSections);
     final availableSections = _getAvailableSections(isArcadeInstalled);
 
     final todayEvents = context.select(

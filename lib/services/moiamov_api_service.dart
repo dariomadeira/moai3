@@ -75,6 +75,7 @@ class MoiamovApiService {
   /// Permite un nuevo intento de descarga después de un arranque cancelado.
   void beginCatalogSync() {
     _syncCancelled = false;
+    _reactivationTried = false;
   }
 
   /// Cierra las descargas en curso para que el arranque no siga esperando.
@@ -631,53 +632,6 @@ class MoiamovApiService {
     return false;
   }
 
-  /// Intenta cargar el catálogo desde los documentos locales del almacenamiento del TV.
-  CatalogResult? _loadFromLocalDeviceDocument(String section) {
-    try {
-      final sectionLabel = _sectionLabel(section);
-
-      final candidatePaths = [
-        '/sdcard/Android/data/$kMoiamovDocPackage/files/Documents/$section;1',
-        '/storage/emulated/0/Android/data/$kMoiamovDocPackage/files/Documents/$section;1',
-      ];
-
-      for (final p in candidatePaths) {
-        final f = File(p);
-        if (f.existsSync() && f.lengthSync() > 100) {
-          final rawHex = f.readAsStringSync().trim();
-          final decryptedJson = decryptDocument(rawHex, key: localDocumentKey);
-          final decoded = jsonDecode(decryptedJson);
-
-          if (decoded is Map<String, dynamic> &&
-              decoded['recommendList'] is List) {
-            final list = (decoded['recommendList'] as List)
-                .whereType<Map<String, dynamic>>()
-                .map(CategoryColumn.fromJson)
-                .where((cat) => cat.movies.isNotEmpty)
-                .toList();
-
-            if (list.isNotEmpty) {
-              final total = list.fold(0, (sum, c) => sum + c.movies.length);
-              logLine('⚡ Documento local: $total títulos ($p)');
-              final result = CatalogResult(
-                categories: list,
-                isFromNetwork: true,
-                source: CatalogSource.localDocument,
-                statusMessage:
-                    '$sectionLabel desde cache local del TV ($total títulos en ${list.length} categorías)',
-              );
-              _cachedCatalog = result;
-              return result;
-            }
-          }
-        }
-      }
-    } catch (e) {
-      logLine('⚠️ Error leyendo cache local: $e');
-    }
-    return null;
-  }
-
   /// Asegura una sesión activa y autenticada del dispositivo
   Future<bool> ensureSession({
     Duration timeout = const Duration(seconds: 8),
@@ -686,9 +640,8 @@ class MoiamovApiService {
   }
 
   /// Sincroniza y actualiza el catálogo (features, películas o series)
-  /// Prioridad 1: Descarga en vivo por API directa (login + getNextColumns)
-  /// Prioridad 2: Almacenamiento local del dispositivo
-  /// Prioridad 3: Respaldo empaquetado en assets
+  /// Solo descarga en vivo (`getNextColumns`); lo que baja se guarda en disco.
+  /// Si falla devuelve un catálogo vacío: no hay respaldos.
   Future<CatalogResult> syncCatalog({
     String section = 'masnew_movies',
     String? serverUrl,
@@ -835,39 +788,9 @@ class MoiamovApiService {
       }
     }
 
-    if (_syncCancelled) {
-      return _emptyCatalog(sectionLabel);
-    }
-
-    // 2. Última descarga que esta app guardó
-    logLine(
-      'ℹ️ API en vivo no devolvió $sectionLabel. Probando la última copia guardada...',
-    );
-    final saved = await loadPersistedCatalog(section);
-    if (saved != null) {
-      return saved;
-    }
-
-    // 3. Almacenamiento local del dispositivo
-    logLine('Probando cache local del TV...');
-    final localLive = _loadFromLocalDeviceDocument(section);
-    if (localLive != null) {
-      return localLive;
-    }
-
-    // 4. Respaldo empaquetado. No se guarda: no debe pisar una descarga anterior.
-    logLine('📦 Usando respaldo HARDCODEADO para $sectionLabel.');
-    return loadFallbackCatalog(section: section);
-  }
-
-  /// Sincroniza todas las secciones clave al abrir la app (Películas, Destacados y Series)
-  Future<void> syncAll({Duration timeout = const Duration(seconds: 10)}) async {
-    debugPrint(
-      '🚀 [SYNC ALL] Iniciando sincronización integral de catálogo...',
-    );
-    await syncCatalog(timeout: timeout);
-    await syncCatalog(section: 'masnew_featured', timeout: timeout);
-    await syncCatalog(section: 'masnew_series', timeout: timeout);
+    // Sin respaldos: si no bajó en vivo, la sección queda sin actualizar.
+    logLine('⚠️ $sectionLabel no se pudo descargar.');
+    return _emptyCatalog(sectionLabel);
   }
 
   static const Set<String> _persistableSections = {
@@ -908,36 +831,42 @@ class MoiamovApiService {
     }
   }
 
-  /// Momento en que se guardó la descarga más reciente. Null si todavía no hay ninguna.
+  static const String _catalogDateKey = 'moiamov_catalog_date';
+
+  /// Fecha del catálogo: se guarda solo cuando bajan las 3 secciones.
+  /// Null si todavía no hubo una descarga completa.
   Future<DateTime?> lastSavedCatalogAt() async {
     try {
-      final Directory? dir;
-      if (_catalogDirectoryOverride != null) {
-        dir = _catalogDirectoryOverride;
-      } else {
-        final support = await getApplicationSupportDirectory();
-        final candidate = Directory('${support.path}/catalog');
-        dir = candidate.existsSync() ? candidate : null;
-      }
-      if (dir == null || !dir.existsSync()) return null;
-
-      DateTime? latest;
-      for (final section in _persistableSections) {
-        final file = File('${dir.path}/$section.json');
-        if (!file.existsSync() || file.lengthSync() < 50) continue;
-        final modified = file.lastModifiedSync();
-        if (latest == null || modified.isAfter(latest)) {
-          latest = modified;
-        }
-      }
-      return latest;
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_catalogDateKey);
+      return raw == null ? null : DateTime.tryParse(raw);
     } catch (e) {
       logLine('No se pudo leer la fecha del catálogo: $e');
       return null;
     }
   }
 
-  /// Lee la última descarga en vivo guardada por esta app. No incluye el respaldo empaquetado.
+  Future<void> saveCatalogDate(DateTime date) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_catalogDateKey, date.toIso8601String());
+  }
+
+  /// Secciones que tienen una descarga guardada en disco.
+  Future<Set<String>> savedSections() async {
+    final saved = <String>{};
+    try {
+      final dir = await _catalogDirectory();
+      for (final section in _persistableSections) {
+        final file = File('${dir.path}/$section.json');
+        if (file.existsSync() && file.lengthSync() >= 50) saved.add(section);
+      }
+    } catch (e) {
+      logLine('No se pudo revisar el catálogo guardado: $e');
+    }
+    return saved;
+  }
+
+  /// Lee la última descarga en vivo guardada por esta app.
   Future<CatalogResult?> loadPersistedCatalog(String section) async {
     if (!_persistableSections.contains(section)) return null;
     try {
@@ -962,15 +891,6 @@ class MoiamovApiService {
       logLine('No se pudo leer la copia guardada de $section: $e');
       return null;
     }
-  }
-
-  /// Última descarga guardada, o el respaldo empaquetado si todavía no hay ninguna.
-  Future<CatalogResult> loadSavedOrBundled({
-    String section = 'masnew_featured',
-  }) async {
-    final saved = await loadPersistedCatalog(section);
-    if (saved != null) return saved;
-    return loadFallbackCatalog(section: section);
   }
 
   CatalogResult _emptyCatalog(String sectionLabel) {
@@ -1016,49 +936,6 @@ class MoiamovApiService {
       isFromNetwork: isFromNetwork,
       source: source,
       statusMessage: statusMessage,
-    );
-  }
-
-  /// Carga el catálogo desde la copia local empaquetada
-  Future<CatalogResult> loadFallbackCatalog({
-    String section = 'masnew_featured',
-  }) async {
-    final sectionLabel = _sectionLabel(section);
-
-    try {
-      final jsonString = await rootBundle.loadString(
-        'assets/data/$section.json',
-      );
-      final data = jsonDecode(jsonString);
-
-      if (data is Map<String, dynamic> && data['recommendList'] is List) {
-        final list = (data['recommendList'] as List)
-            .whereType<Map<String, dynamic>>()
-            .map(CategoryColumn.fromJson)
-            .where((cat) => cat.movies.isNotEmpty)
-            .toList();
-
-        final total = list.fold(0, (sum, c) => sum + c.movies.length);
-        logLine('📦 Respaldo HARDCODEADO: $total títulos ($section).');
-        final result = CatalogResult(
-          categories: list,
-          isFromNetwork: false,
-          statusMessage:
-              '$sectionLabel HARDCODEADOS ($total títulos en ${list.length} categorías)',
-        );
-        _cachedCatalog ??= result;
-        return result;
-      }
-    } catch (e) {
-      logLine('❌ Error al cargar assets/data/$section.json: $e');
-    }
-
-    return CatalogResult(
-      categories: [],
-      isFromNetwork: false,
-      statusMessage: LocaleKeys.movies_catalog_load_error.tr(
-        namedArgs: {'section': sectionLabel},
-      ),
     );
   }
 

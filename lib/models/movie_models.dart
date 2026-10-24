@@ -336,14 +336,11 @@ enum CatalogSource {
   /// Descargado en vivo desde el servicio de catálogo (sesión válida).
   liveApi,
 
-  /// Documento fresco generado por la app oficial en el almacenamiento del TV.
-  localDocument,
-
   /// Última descarga en vivo que Moai guardó en su carpeta privada.
   savedCatalog,
 
-  /// Respaldo empaquetado en los assets del APK (hardcodeado).
-  assetBundle,
+  /// Sin catálogo: la descarga falló o se canceló.
+  none,
 }
 
 class CatalogResult {
@@ -356,14 +353,11 @@ class CatalogResult {
     required this.categories,
     required this.isFromNetwork,
     required this.statusMessage,
-    this.source = CatalogSource.assetBundle,
+    this.source = CatalogSource.none,
   });
 
-  /// `true` solo si el catálogo vino EN VIVO por la API (no caché local ni assets).
+  /// `true` solo si el catálogo vino EN VIVO por la API.
   bool get isFreshLive => source == CatalogSource.liveApi;
-
-  /// `true` si el catálogo es el respaldo empaquetado (hardcodeado).
-  bool get isHardcoded => source == CatalogSource.assetBundle;
 
   int get totalMovies =>
       categories.fold(0, (sum, cat) => sum + cat.movies.length);

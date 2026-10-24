@@ -60,6 +60,20 @@ class VpnService {
     });
   }
 
+  /// `true` si el usuario rechazó el permiso VPN del sistema en este arranque.
+  bool get permissionDenied => _androidVpnPermissionGranted == false;
+
+  /// Pregunta a Android si el permiso VPN ya está concedido (no muestra nada).
+  Future<bool> _isPermissionGrantedNative() async {
+    try {
+      return await _vpnPermissionChannel.invokeMethod<bool>('isGranted') ??
+          false;
+    } catch (e) {
+      debugPrint('⚠️ [VPN] No se pudo consultar el permiso: $e');
+      return false;
+    }
+  }
+
   /// Corta el intento de conexión en curso para salir del arranque sin esperar el timeout.
   void cancelConnect() {
     _connectCancelled = true;
@@ -153,6 +167,9 @@ class VpnService {
     void Function(String message)? onStatusUpdate,
   }) async {
     await initialize();
+    if (_androidVpnPermissionGranted == null && await _isPermissionGrantedNative()) {
+      _androidVpnPermissionGranted = true;
+    }
     if (_androidVpnPermissionGranted == true) return;
     onStatusUpdate?.call(LocaleKeys.loading_permission_required);
   }
@@ -161,8 +178,6 @@ class VpnService {
   Future<bool> connectMexico({
     int nodeIndex = 0,
     Duration timeout = const Duration(seconds: 14),
-    /// Tiempo extra mientras el sistema muestra el aviso VPN (primera vez).
-    Duration permissionWait = const Duration(seconds: 120),
     void Function(String message)? onStatusUpdate,
   }) async {
     _connectCancelled = false;
@@ -253,15 +268,19 @@ class VpnService {
       });
     }
 
-    final permissionDeadline = Timer(permissionWait, () {
-      if (!connectionAttemptStarted) {
-        debugPrint(
-          '⚠️ [VPN] Timeout esperando permiso/inicio '
-          '(${permissionWait.inSeconds}s).',
-        );
-        finish(false);
-      }
-    });
+    // Sin permiso, Android muestra su diálogo y se espera al usuario sin
+    // límite. Con permiso ya concedido no hay nada que esperar: si el túnel no
+    // arranca en `timeout`, el pedido se perdió y se pasa al siguiente nodo.
+    final permissionDeadline = _androidVpnPermissionGranted == true
+        ? Timer(timeout, () {
+            if (!connectionAttemptStarted) {
+              debugPrint(
+                '⚠️ [VPN] El túnel no arrancó (${timeout.inSeconds}s).',
+              );
+              finish(false);
+            }
+          })
+        : null;
 
     sub = stageStream.listen((stage) {
       debugPrint('🔒 [VPN Stage Event] Recibido: $stage');
@@ -281,7 +300,7 @@ class VpnService {
         if (!connectionAttemptStarted) {
           connectionAttemptStarted = true;
           attemptStartedAt = DateTime.now();
-          permissionDeadline.cancel();
+          permissionDeadline?.cancel();
           onStatusUpdate?.call(LocaleKeys.loading_connecting_server);
           armConnectDeadline();
           debugPrint(
@@ -311,7 +330,7 @@ class VpnService {
           }));
     } catch (e) {
       debugPrint('❌ [VPN] Excepción sincrónica al invocar connect: $e');
-      permissionDeadline.cancel();
+      permissionDeadline?.cancel();
       await sub.cancel();
       return false;
     }
@@ -321,7 +340,7 @@ class VpnService {
     });
 
     final connected = await completer.future;
-    permissionDeadline.cancel();
+    permissionDeadline?.cancel();
     connectDeadline?.cancel();
     cancelWatch.cancel();
     await sub.cancel();
@@ -423,6 +442,9 @@ class VpnService {
 
       await completer.future;
       await sub.cancel();
+      // El proceso de OpenVPN termina ~150 ms después de `disconnected`; un
+      // connect antes de eso se pierde sin emitir ninguna etapa.
+      await Future<void>.delayed(const Duration(milliseconds: 600));
     } catch (e) {
       debugPrint('⚠️ [VPN] Error al desconectar: $e');
     }

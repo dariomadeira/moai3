@@ -9,6 +9,7 @@ import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/supabase_presence_service.dart';
 import 'package:moai3/services/vpn_service.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
+import 'package:moai3/state/featured_movies_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -46,9 +47,16 @@ class _LoadingScreenState extends State<LoadingScreen>
   String _statusText = LocaleKeys.loading_connecting.tr();
   bool _catalogUpdateInProgress = false;
   bool _catalogCancelRequested = false;
-  /// Invalida awaits en vuelo al cancelar o reiniciar sync.
-  int _catalogRunId = 0;
   DateTime? _storedCatalogAt;
+
+  /// Intentos de VPN + login + descarga, cada uno con otro nodo.
+  static const int _maxAttempts = 3;
+
+  static const List<String> _catalogSections = [
+    FeaturedMoviesProvider.sectionMovies,
+    FeaturedMoviesProvider.sectionFeatured,
+    FeaturedMoviesProvider.sectionSeries,
+  ];
 
   @override
   void initState() {
@@ -87,29 +95,22 @@ class _LoadingScreenState extends State<LoadingScreen>
     }
   }
 
-  void _cancelCatalogUpdate() {
-    if (_catalogCancelRequested) return;
-    _catalogRunId++;
-    setState(() => _catalogCancelRequested = true);
-    MoiamovApiService.instance.cancelActiveRequests();
-    VpnService.instance.cancelConnect();
-    VpnService.instance.disconnect();
+  void _setStatus(String key) {
+    if (mounted) setState(() => _statusText = key.tr());
   }
 
-  bool _isCatalogRunCurrent(int runId) =>
-      mounted && !_catalogCancelRequested && runId == _catalogRunId;
+  /// Corta solo la descarga del catálogo; el login ya terminó.
+  void _cancelCatalogUpdate() {
+    if (_catalogCancelRequested) return;
+    setState(() => _catalogCancelRequested = true);
+    MoiamovApiService.instance.cancelActiveRequests();
+  }
 
   String _cancelCatalogLabel() {
     final savedAt = _storedCatalogAt;
     if (savedAt == null) return LocaleKeys.loading_catalog_cancel_no_date.tr();
     final date = MoaiFormats.date(savedAt.toLocal());
     return LocaleKeys.loading_catalog_cancel.tr(namedArgs: {'date': date});
-  }
-
-  Future<void> _loadSavedSections() async {
-    await MoiamovApiService.instance.loadSavedOrBundled(section: 'masnew_movies');
-    await MoiamovApiService.instance.loadSavedOrBundled();
-    await MoiamovApiService.instance.loadSavedOrBundled(section: 'masnew_series');
   }
 
   Future<void> _startVerification() async {
@@ -157,236 +158,9 @@ class _LoadingScreenState extends State<LoadingScreen>
         return;
       }
 
-      final tvSettings = context.read<TvSettingsProvider>();
-      final skipCatalogUpdate = tvSettings.skipCatalogUpdate;
-      final catalogSavedAt =
-          await MoiamovApiService.instance.lastSavedCatalogAt();
-      final frequencyAllows = TvSettingsProvider.shouldAttemptCatalogUpdate(
-        savedAt: catalogSavedAt,
-        frequency: tvSettings.catalogUpdateFrequency,
-      );
-      final shouldSyncCatalog = !skipCatalogUpdate && frequencyAllows;
+      await _syncSessionAndCatalog(context.read<TvSettingsProvider>());
+      if (!mounted) return;
 
-      MoiamovApiService.logLine(
-        'Catálogo arranque: skip=$skipCatalogUpdate '
-        'freq=${tvSettings.catalogUpdateFrequency.storageValue} '
-        'savedAt=${catalogSavedAt?.toIso8601String() ?? 'null'} '
-        'frequencyAllows=$frequencyAllows → sync=$shouldSyncCatalog',
-      );
-
-      // Sin sync: skip → solo assets; frecuencia no vencida → último guardado o assets.
-      if (!shouldSyncCatalog) {
-        if (mounted) {
-          setState(() => _statusText = LocaleKeys.loading_catalog_cached.tr());
-        }
-        if (skipCatalogUpdate) {
-          MoiamovApiService.logLine('Catálogo de assets (actualizar apagado).');
-          await MoiamovApiService.instance.loadFallbackCatalog(
-            section: 'masnew_movies',
-          );
-          await MoiamovApiService.instance.loadFallbackCatalog(
-            
-          );
-          await MoiamovApiService.instance.loadFallbackCatalog(
-            section: 'masnew_series',
-          );
-        } else {
-          MoiamovApiService.logLine(
-            'Frecuencia aún no vencida '
-            '(${tvSettings.catalogUpdateFrequency.storageValue}); '
-            'usando última descarga o assets.',
-          );
-          await MoiamovApiService.instance.loadSavedOrBundled(
-            section: 'masnew_movies',
-          );
-          await MoiamovApiService.instance.loadSavedOrBundled(
-            
-          );
-          await MoiamovApiService.instance.loadSavedOrBundled(
-            section: 'masnew_series',
-          );
-        }
-      } else {
-      MoiamovApiService.instance.beginCatalogSync();
-      VpnService.instance.resetConnectCancellation();
-      final catalogRunId = ++_catalogRunId;
-      _catalogCancelRequested = false;
-      _storedCatalogAt = await MoiamovApiService.instance.lastSavedCatalogAt();
-      if (_isCatalogRunCurrent(catalogRunId)) {
-        setState(() {
-          _catalogUpdateInProgress = true;
-          _statusText = LocaleKeys.loading_secure_connecting.tr();
-        });
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_isCatalogRunCurrent(catalogRunId)) {
-            _cancelCatalogFocus.requestFocus();
-          }
-        });
-      }
-      // --- 1+2. VPN (permiso dentro de connect) + sesión; rotar nodo si falla ---
-      bool vpnConnected = false;
-      bool sessionOk = false;
-      const int maxNodes = 4;
-
-      void onVpnStatus(String key) {
-        if (_isCatalogRunCurrent(catalogRunId)) {
-          setState(() => _statusText = key.tr());
-        }
-      }
-
-      // El permiso VPN se pide dentro de connectMexico (el plugin guarda la
-      // config, muestra el aviso del SO y al OK arranca el túnel). No usar
-      // requestPermissionAndroid aparte: devuelve false al mostrar el diálogo.
-      MoiamovApiService.logLine('Iniciando flujo VPN + sync de catálogo...');
-
-      for (int node = 0;
-          _isCatalogRunCurrent(catalogRunId) &&
-              node < maxNodes &&
-              !sessionOk;
-          node++) {
-        setState(() {
-          _statusText = LocaleKeys.loading_secure_connecting.tr();
-        });
-        MoiamovApiService.logLine('Nodo ${node + 1}/$maxNodes');
-
-        vpnConnected = await VpnService.instance.connectMexico(
-          nodeIndex: node,
-          onStatusUpdate: onVpnStatus,
-        );
-
-        if (!_isCatalogRunCurrent(catalogRunId)) break;
-
-        if (!vpnConnected) {
-          MoiamovApiService.logLine('Nodo ${node + 1}: conexión no verificada.');
-          vpnConnected = false;
-          continue;
-        }
-
-        if (_isCatalogRunCurrent(catalogRunId)) {
-          setState(() => _statusText = LocaleKeys.loading_secure_verified.tr());
-        }
-        MoiamovApiService.logLine(
-            'Conexión lista. Salida: ${VpnService.instance.lastExitIp} '
-            '(${VpnService.instance.lastExitCountry})');
-        // Esperar 2 segundos para estabilizar rutas y DNS de la interfaz tun0
-        await _pause(const Duration(milliseconds: 2000));
-        if (!_isCatalogRunCurrent(catalogRunId)) break;
-
-        if (_isCatalogRunCurrent(catalogRunId)) {
-          setState(() => _statusText = LocaleKeys.loading_session_init.tr());
-        }
-        MoiamovApiService.logLine('Solicitando sesión de dispositivo (sin credenciales)...');
-        sessionOk = await MoiamovApiService.instance.ensureSession();
-        if (!_isCatalogRunCurrent(catalogRunId)) break;
-
-        if (sessionOk) {
-          MoiamovApiService.logLine('✅ Sesión de dispositivo obtenida.');
-          break;
-        }
-
-        MoiamovApiService.logLine('Nodo ${node + 1}: sesión rechazada; rotando nodo...');
-        await VpnService.instance.disconnect();
-        await _pause(const Duration(milliseconds: 1500));
-      }
-
-      if (_isCatalogRunCurrent(catalogRunId) && vpnConnected && sessionOk) {
-        // --- 3. Descargar catálogo en vivo con la sesión ya activa ---
-        for (int attempt = 1; attempt <= 3; attempt++) {
-          if (!_isCatalogRunCurrent(catalogRunId)) break;
-          setState(() {
-            _statusText = LocaleKeys.loading_catalog_downloading.tr();
-          });
-
-          final catResult = await MoiamovApiService.instance.syncCatalog(
-            timeout: const Duration(seconds: 12),
-          );
-
-          // Sincronizar también destacados y series de forma paralela garantizando que terminen antes de cerrar VPN
-          if (_isCatalogRunCurrent(catalogRunId)) {
-            await Future.wait([
-              MoiamovApiService.instance.syncCatalog(section: 'masnew_featured', timeout: const Duration(seconds: 12)),
-              MoiamovApiService.instance.syncCatalog(section: 'masnew_series', timeout: const Duration(seconds: 12)),
-            ]);
-          }
-          if (!_isCatalogRunCurrent(catalogRunId)) break;
-
-          if (catResult.isFreshLive) {
-            if (_isCatalogRunCurrent(catalogRunId)) {
-              setState(() {
-                _statusText = LocaleKeys.loading_catalog_updated.tr();
-              });
-            }
-            await _pause(const Duration(milliseconds: 1200));
-            break;
-          } else if (catResult.categories.isNotEmpty) {
-            // No vino en vivo (cache del TV o hardcodeado). No reintentar: informar claramente.
-            if (_isCatalogRunCurrent(catalogRunId)) {
-              setState(() {
-                _statusText = catResult.isHardcoded
-                    ? LocaleKeys.loading_catalog_fallback.tr()
-                    : LocaleKeys.loading_catalog_cached.tr();
-              });
-            }
-            await _pause(const Duration(milliseconds: 1200));
-            break;
-          } else {
-            if (attempt < 3 && _isCatalogRunCurrent(catalogRunId)) {
-              await _pause(const Duration(milliseconds: 1000));
-            }
-          }
-        }
-
-        // --- 4. Desconectar servicio de fondo después de sincronizar ---
-        if (_isCatalogRunCurrent(catalogRunId)) {
-          setState(() {
-            _statusText = LocaleKeys.loading_secure_disconnecting.tr();
-          });
-        }
-        await VpnService.instance.disconnect();
-        if (_isCatalogRunCurrent(catalogRunId)) {
-          await _pause(const Duration(milliseconds: 1000));
-        }
-      } else if (_isCatalogRunCurrent(catalogRunId)) {
-        // Sin VPN y/o sin sesión: desconectar y cargar respaldo
-        setState(() {
-          _statusText = LocaleKeys.loading_catalog_fallback.tr();
-        });
-        await VpnService.instance.disconnect();
-        await _pause(const Duration(milliseconds: 1500));
-        if (_isCatalogRunCurrent(catalogRunId)) {
-          final movies = await MoiamovApiService.instance.loadSavedOrBundled(
-            section: 'masnew_movies',
-          );
-          await MoiamovApiService.instance.loadSavedOrBundled(
-            
-          );
-          await MoiamovApiService.instance.loadSavedOrBundled(
-            section: 'masnew_series',
-          );
-          if (_isCatalogRunCurrent(catalogRunId)) {
-            setState(() {
-              _statusText = movies.isHardcoded
-                  ? LocaleKeys.loading_catalog_fallback.tr()
-                  : LocaleKeys.loading_catalog_cached.tr();
-            });
-          }
-          await _pause(const Duration(milliseconds: 1200));
-        }
-      }
-
-      if (_catalogCancelRequested) {
-        MoiamovApiService.logLine('Actualización cancelada. Se usa el catálogo guardado.');
-        await VpnService.instance.disconnect();
-        await _loadSavedSections();
-      }
-      if (mounted) {
-        setState(() => _catalogUpdateInProgress = false);
-      }
-      }
-
-      if (_catalogCancelRequested) {
-        if (!mounted) return;
-      } else {
       // Garantizar un tiempo mínimo total cinematográfico
       final elapsed = DateTime.now().difference(startTime);
       if (elapsed < const Duration(milliseconds: 1200)) {
@@ -399,7 +173,6 @@ class _LoadingScreenState extends State<LoadingScreen>
         _statusText = LocaleKeys.loading_ready.tr();
       });
       await Future.delayed(const Duration(milliseconds: 1200));
-      }
 
       if (!mounted) return;
 
@@ -411,14 +184,15 @@ class _LoadingScreenState extends State<LoadingScreen>
                 ? localNickname.trim()
                 : widget.identityService.getNickname()?.trim());
 
-      if (!tvSettings.hasOverlapConfig) {
+      if (!context.read<TvSettingsProvider>().hasOverlapConfig) {
         context.go('/overlap');
       } else if (effectiveNick == null || effectiveNick.isEmpty) {
         context.go('/nickname_setup');
       } else {
         context.go('/home');
       }
-    } on TimeoutException {
+    } on TimeoutException catch (e) {
+      MoiamovApiService.logLine('❌ Verificación del dispositivo: $e');
       try {
         await VpnService.instance.disconnect();
       } catch (_) {}
@@ -430,7 +204,8 @@ class _LoadingScreenState extends State<LoadingScreen>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _retryFocusNode.requestFocus();
       });
-    } catch (e) {
+    } catch (e, st) {
+      MoiamovApiService.logLine('❌ Verificación del dispositivo: $e\n$st');
       try {
         await VpnService.instance.disconnect();
       } catch (_) {}
@@ -443,6 +218,166 @@ class _LoadingScreenState extends State<LoadingScreen>
         if (mounted) _retryFocusNode.requestFocus();
       });
     }
+  }
+
+  /// VPN + login en todo arranque y, si toca, descarga del catálogo
+  /// (SPEC-39 §4). No lanza: si algo falla, Destacados,
+  /// Películas y Series quedan ocultas y se sigue al home.
+  Future<void> _syncSessionAndCatalog(TvSettingsProvider tvSettings) async {
+    final api = MoiamovApiService.instance;
+    final vpn = VpnService.instance;
+    var sessionOk = false;
+
+    try {
+      final hasCatalog = (await api.savedSections()).isNotEmpty;
+      _storedCatalogAt = await api.lastSavedCatalogAt();
+      final needsUpdate = !hasCatalog ||
+          TvSettingsProvider.shouldAttemptCatalogUpdate(
+            savedAt: _storedCatalogAt,
+            frequency: tvSettings.catalogUpdateFrequency,
+          );
+      MoiamovApiService.logLine(
+        'Arranque: catálogo=${hasCatalog ? 'sí' : 'no'} '
+        'fecha=${_storedCatalogAt?.toIso8601String() ?? 'null'} '
+        'freq=${tvSettings.catalogUpdateFrequency.storageValue} '
+        '→ actualizar=$needsUpdate',
+      );
+
+      api.beginCatalogSync();
+      vpn.resetConnectCancellation();
+      _catalogCancelRequested = false;
+      final downloaded = <String>{};
+
+      // El permiso VPN se pide dentro de connectMexico (el plugin guarda la
+      // config, muestra el aviso del SO y al OK arranca el túnel). No usar
+      // requestPermissionAndroid aparte: devuelve false al mostrar el diálogo.
+      for (var attempt = 0; attempt < _maxAttempts && mounted; attempt++) {
+        _setStatus(LocaleKeys.loading_secure_connecting);
+        MoiamovApiService.logLine('Intento ${attempt + 1}/$_maxAttempts');
+
+        final vpnOk = await vpn.connectMexico(
+          nodeIndex: attempt,
+          onStatusUpdate: _setStatus,
+        );
+        if (vpn.permissionDenied) {
+          MoiamovApiService.logLine('Permiso VPN rechazado por el usuario.');
+          break;
+        }
+        if (!vpnOk) {
+          MoiamovApiService.logLine(
+            'Nodo ${attempt + 1}: conexión no verificada.',
+          );
+          await vpn.disconnect();
+          await _pause(const Duration(milliseconds: 1500));
+          continue;
+        }
+
+        _setStatus(LocaleKeys.loading_secure_verified);
+        MoiamovApiService.logLine(
+          'Conexión lista. Salida: ${vpn.lastExitIp} (${vpn.lastExitCountry})',
+        );
+        // Esperar 2 segundos para estabilizar rutas y DNS de la interfaz tun0
+        await _pause(const Duration(milliseconds: 2000));
+
+        _setStatus(LocaleKeys.loading_session_init);
+        MoiamovApiService.logLine(
+          'Solicitando sesión de dispositivo (sin credenciales)...',
+        );
+        if (!await api.ensureSession()) {
+          MoiamovApiService.logLine(
+            'Nodo ${attempt + 1}: sesión rechazada; rotando nodo...',
+          );
+          await vpn.disconnect();
+          await _pause(const Duration(milliseconds: 1500));
+          continue;
+        }
+        sessionOk = true;
+        MoiamovApiService.logLine('✅ Sesión de dispositivo obtenida.');
+
+        if (!needsUpdate) break;
+        await _downloadMissingSections(downloaded, showCancel: hasCatalog);
+        if (_catalogCancelRequested ||
+            downloaded.length == _catalogSections.length) {
+          break;
+        }
+        MoiamovApiService.logLine(
+          'Faltan secciones (${downloaded.length}/${_catalogSections.length}); '
+          'rotando nodo...',
+        );
+        await vpn.disconnect();
+        await _pause(const Duration(milliseconds: 1500));
+      }
+
+      _setStatus(LocaleKeys.loading_secure_disconnecting);
+      await vpn.disconnect();
+      await _pause(const Duration(milliseconds: 1000));
+
+      // La fecha cambia solo con las 3 secciones: si falta alguna, el
+      // próximo arranque vuelve a intentar.
+      final complete = downloaded.length == _catalogSections.length;
+      if (complete) await api.saveCatalogDate(DateTime.now());
+
+      final String status;
+      if (!sessionOk) {
+        status = LocaleKeys.loading_session_failed;
+      } else if (complete) {
+        status = LocaleKeys.loading_catalog_updated;
+      } else if (needsUpdate && !_catalogCancelRequested) {
+        status = LocaleKeys.loading_catalog_not_updated;
+      } else {
+        status = LocaleKeys.loading_catalog_cached;
+      }
+      _setStatus(status);
+      await _pause(const Duration(milliseconds: 1200));
+    } catch (e) {
+      MoiamovApiService.logLine('⚠️ Error en VPN, login o catálogo: $e');
+      try {
+        await vpn.disconnect();
+      } catch (_) {}
+    }
+
+    final available =
+        sessionOk ? await api.savedSections() : const <String>{};
+    MoiamovApiService.logLine('Secciones disponibles: $available');
+    if (mounted) {
+      context.read<FeaturedMoviesProvider>().setAvailableSections(available);
+    }
+  }
+
+  /// Baja las secciones que faltan: Películas primero, Destacados y Series juntas.
+  Future<void> _downloadMissingSections(
+    Set<String> downloaded, {
+    required bool showCancel,
+  }) async {
+    if (!mounted) return;
+    setState(() {
+      _catalogUpdateInProgress = showCancel;
+      _statusText = LocaleKeys.loading_catalog_downloading.tr();
+    });
+    if (showCancel) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _catalogUpdateInProgress) {
+          _cancelCatalogFocus.requestFocus();
+        }
+      });
+    }
+
+    Future<void> download(String section) async {
+      if (_catalogCancelRequested || downloaded.contains(section)) return;
+      final result = await MoiamovApiService.instance.syncCatalog(
+        section: section,
+        timeout: const Duration(seconds: 12),
+      );
+      if (result.isFreshLive) downloaded.add(section);
+    }
+
+    await download(FeaturedMoviesProvider.sectionMovies);
+    await Future.wait([
+      download(FeaturedMoviesProvider.sectionFeatured),
+      download(FeaturedMoviesProvider.sectionSeries),
+    ]);
+
+    if (mounted) setState(() => _catalogUpdateInProgress = false);
   }
 
   @override

@@ -39,9 +39,6 @@ class TvSettingsProvider extends ChangeNotifier {
   static const String _overlapPaddingYKey = 'overlap_padding_y';
   static const String _hasOverlapConfigKey = 'has_overlap_config';
   static const String _parentalPinKey = 'parental_pin';
-  /// v2: default false. La clave anterior (`skip_catalog_update`) quedaba en true
-  /// de fábrica y bloqueaba VPN/sync aunque la frecuencia dijera "Siempre".
-  static const String _skipCatalogUpdateKey = 'skip_catalog_update_v2';
   static const String _uiSoundsDisabledKey = 'ui_sounds_disabled';
   static const String _catalogUpdateFrequencyKey = 'catalog_update_frequency';
   static const String _startupTvTabKey = 'startup_tv_tab';
@@ -56,7 +53,6 @@ class TvSettingsProvider extends ChangeNotifier {
   late double _overlapPaddingX;
   late double _overlapPaddingY;
   late bool _hasOverlapConfig;
-  late bool _skipCatalogUpdate;
   late bool _uiSoundsDisabled;
   late CatalogUpdateFrequency _catalogUpdateFrequency;
   late TvTab _startupTvTab;
@@ -73,9 +69,6 @@ class TvSettingsProvider extends ChangeNotifier {
     _overlapPaddingY =
         _prefs.readPreferenceDouble(_overlapPaddingYKey, defaultValue: 20.0);
     _hasOverlapConfig = _prefs.readPreferenceBool(_hasOverlapConfigKey);
-    _skipCatalogUpdate = _prefs.readPreferenceBool(
-      _skipCatalogUpdateKey,
-    );
     _uiSoundsDisabled = _prefs.readPreferenceBool(
       _uiSoundsDisabledKey,
     );
@@ -96,9 +89,6 @@ class TvSettingsProvider extends ChangeNotifier {
   double get overlapPaddingY => _overlapPaddingY;
   bool get hasOverlapConfig => _hasOverlapConfig;
   TvTab get startupTvTab => _startupTvTab;
-
-  /// Si es true, el arranque no actualiza el catálogo y usa el incluido en la app.
-  bool get skipCatalogUpdate => _skipCatalogUpdate;
 
   /// Si es true, no se reproducen los WAV de clicks D-pad de la interfaz.
   bool get uiSoundsDisabled => _uiSoundsDisabled;
@@ -171,13 +161,6 @@ class TvSettingsProvider extends ChangeNotifier {
     if (_showTvLog == value) return;
     _showTvLog = value;
     await _prefs.saveBool(_showTvLogKey, value);
-    notifyListeners();
-  }
-
-  Future<void> setSkipCatalogUpdate(bool value) async {
-    if (_skipCatalogUpdate == value) return;
-    _skipCatalogUpdate = value;
-    await _prefs.saveBool(_skipCatalogUpdateKey, value);
     notifyListeners();
   }
 
