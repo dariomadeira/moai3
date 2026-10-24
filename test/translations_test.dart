@@ -51,17 +51,41 @@ void main() {
     expect(offenders, isEmpty);
   });
 
+  test('es.json está ordenado alfabéticamente', () {
+    final keys = (jsonDecode(
+      File('assets/translations/es.json').readAsStringSync(),
+    ) as Map<String, dynamic>)
+        .keys
+        .toList();
+    expect(keys, [...keys]..sort());
+  });
+
   test('no hay textos de interfaz hardcodeados', () {
-    // Text('...') con al menos una palabra. Películas queda fuera de alcance.
-    final hardcoded = RegExp(r"Text\(\s*'([^'$]*[A-Za-zÁÉÍÓÚáéíóúñ]{3,}[^']*)'");
-    const allowedFiles = ['lib/features/movies/', 'tv_movie', 'home_movies_area'];
-    // Prefijo del código de amigo: es marca, no se traduce.
-    const allowedTexts = {'MOAI-'};
+    // Literales en los lugares donde un texto llega a pantalla: widgets,
+    // parámetros de etiqueta, mensajes de error y valores por defecto.
+    final hardcoded = RegExp(
+      r'''(Text\(|label:|title:|tooltip:|message:|description:|hintText:|'''
+      r'''subtitle:|statusMessage:|playLabel:|titles:\s*\[|Exception\(|'''
+      r'''lastResolutionError\s*\?*=|\?\?)\s*'([^'$\n]*)'(?!\s*:)''',
+    );
+    // Parece texto para una persona: dos palabras, acentos o una palabra
+    // con mayúscula inicial.
+    final phrase = RegExp(
+      r'[a-záéíóúñ]{2,} [a-záéíóúñ]{2,}|[áéíóúñ¿¡]|[A-ZÁÉÍÓÚ][a-záéíóú]{3,}',
+    );
+    const allowedTexts = {
+      'MOAI-', // prefijo del código de amigo: es marca
+      'Capcom', // empresa por defecto de las ROMs: nombre propio
+      // Mensajes internos que solo van al log.
+      'session subscribe failed',
+      'Tiempo de espera agotado al conectar con Supabase (10s)',
+      'Dispositivo no encontrado',
+    };
     final offenders = [
       for (final e in sources.entries)
-        if (!allowedFiles.any(e.key.contains))
-          for (final m in hardcoded.allMatches(e.value))
-            if (!allowedTexts.contains(m[1])) '${e.key}: ${m[1]}',
+        for (final m in hardcoded.allMatches(e.value))
+          if (phrase.hasMatch(m[2]!) && !allowedTexts.contains(m[2]))
+            '${e.key}: ${m[2]}',
     ];
     expect(offenders, isEmpty);
   });

@@ -89,7 +89,9 @@ class _CalendarEventDialogContentState
         TvInfoTile(
           icon: MoaiIcons.calendarDialogTime,
           label: LocaleKeys.calendar_event_time.tr(),
-          description: '${event.formattedDate} • ${event.formattedTime} hs',
+          description: LocaleKeys.calendar_event_date_time.tr(
+            namedArgs: {'date': event.formattedDate, 'time': event.formattedTime},
+          ),
         ),
         const SizedBox(height: 8),
         TvInfoTile(

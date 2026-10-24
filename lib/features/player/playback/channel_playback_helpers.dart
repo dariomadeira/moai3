@@ -44,8 +44,19 @@ class ChannelPlaybackHelpers {
   static const int _codeNetworkTimeout = 2002;
   static const int _codeBadHttpStatus = 2004;
   static const int _codeCleartextNotPermitted = 2007;
+  // Códigos propios de MoaiEngineController.
+  static const int _codeEngineCreate = -1;
+  static const int _codeBufferingTimeout = -30;
 
   static String friendlyPlaybackError(int? code, String? message) {
+    // Por código antes que por texto: el mensaje del watchdog menciona
+    // "DRM" y se confundía con un error de licencia.
+    if (code == _codeBufferingTimeout) {
+      return LocaleKeys.playback_error_buffering.tr();
+    }
+    if (code == _codeEngineCreate) {
+      return LocaleKeys.playback_error_engine.tr();
+    }
     final m = (message ?? '').trim().toLowerCase();
     if (m.contains('geo') ||
         m.contains('geo fencing') ||

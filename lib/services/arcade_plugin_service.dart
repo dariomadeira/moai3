@@ -101,7 +101,11 @@ class ArcadePluginService extends ChangeNotifier {
       final response = await request.close();
 
       if (response.statusCode != 200) {
-        throw HttpException('HTTP ${response.statusCode} al descargar core');
+        throw HttpException(
+          LocaleKeys.arcade_error_core_download.tr(
+            namedArgs: {'code': '${response.statusCode}'},
+          ),
+        );
       }
 
       final totalBytes = response.contentLength;

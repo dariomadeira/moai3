@@ -9,6 +9,7 @@ import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'helpers/spanish_translations.dart';
 
 void main() {
   setUp(() {
@@ -45,6 +46,7 @@ void main() {
   }
 
   testWidgets('renders CalendarEventsPanel with 7 days of the week', (tester) async {
+    useSpanishTranslations();
     final calendarProvider = CalendarProvider();
     final focusNode = FocusNode();
 

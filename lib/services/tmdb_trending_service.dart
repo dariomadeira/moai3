@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import '../config/constants.dart';
 import '../models/movie_models.dart';
 import 'package:moai3/utils/text_normalize.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:moai3/l10n/locale_keys.g.dart';
 
 /// Servicio para consultar estrenos y tendencias globales de TMDb
 /// y cruzarlos con el catálogo local de películas.
@@ -159,7 +161,7 @@ class TmdbTrendingService {
 
     return CategoryColumn(
       columnId: 88888,
-      columnName: 'Estrenos de Cartelera',
+      columnName: LocaleKeys.movies_category_new_releases.tr(),
       movies: matchedMovies.take(targetCount).toList(),
     );
   }

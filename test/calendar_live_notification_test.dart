@@ -3,9 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/state/calendar_provider.dart';
+import 'helpers/spanish_translations.dart';
 
 void main() {
   setUp(() {
+    useSpanishTranslations();
     SharedPreferences.setMockInitialValues({});
   });
 

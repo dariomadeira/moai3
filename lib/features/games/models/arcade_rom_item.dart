@@ -1,3 +1,5 @@
+import 'package:easy_localization/easy_localization.dart';
+import 'package:moai3/l10n/locale_keys.g.dart';
 class ArcadeRomItem {
   final String id;
   final String name;
@@ -34,7 +36,7 @@ class ArcadeRomItem {
     final label = json['pesoLabel'] ?? json['sizeLabel'] ?? '${(size / (1024 * 1024)).toStringAsFixed(1)} MB';
     return ArcadeRomItem(
       id: json['id'] as String? ?? json['archivo'] ?? json['filename'] ?? '',
-      name: json['nombre'] as String? ?? json['name'] as String? ?? 'Arcade Game',
+      name: json['nombre'] as String? ?? json['name'] as String? ?? LocaleKeys.arcade_game_unknown.tr(),
       filename: json['archivo'] as String? ?? json['filename'] as String? ?? '',
       system: json['sistema'] as String? ?? json['system'] as String? ?? 'CPS-2',
       year: json['año'] as String? ?? json['year'] as String? ?? '',

@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/config/app_info.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:moai3/l10n/locale_keys.g.dart';
 
 /// Información de una versión disponible para actualizar.
 class AppUpdateInfo {
@@ -196,7 +198,9 @@ class UpdateService {
       return AppUpdateInfo(
         version: remoteVersion,
         apkUrl: apkUrl,
-        changelog: cleanChangelog.isNotEmpty ? cleanChangelog : 'Mejoras y correcciones generales.',
+        changelog: cleanChangelog.isNotEmpty
+            ? cleanChangelog
+            : LocaleKeys.update_changelog_default.tr(),
         fileSize: size,
         releaseTag: releaseTag,
         isMandatory: isMandatory,
@@ -246,7 +250,11 @@ class UpdateService {
     final response = await request.close();
 
     if (response.statusCode != 200) {
-      throw HttpException('Error ${response.statusCode} al descargar APK');
+      throw HttpException(
+          LocaleKeys.update_error_http.tr(
+            namedArgs: {'code': '${response.statusCode}'},
+          ),
+        );
     }
 
     final totalBytes = response.contentLength;
@@ -268,7 +276,7 @@ class UpdateService {
           sinkClosed = true;
           await sink.close();
           if (await file.exists()) await file.delete();
-          throw Exception('Descarga cancelada');
+          throw Exception(LocaleKeys.update_download_cancelled.tr());
         }
 
         sink.add(chunk);

@@ -328,7 +328,7 @@ class ArcadeRomManagerService extends ChangeNotifier {
       return known[clean]!;
     }
     final base = clean.replaceAll('.zip', '');
-    return base.isNotEmpty ? base.toUpperCase() : 'Juego Arcade';
+    return base.isNotEmpty ? base.toUpperCase() : LocaleKeys.arcade_game_unknown.tr();
   }
 
   void _updateCatalogInstalledFlags() {

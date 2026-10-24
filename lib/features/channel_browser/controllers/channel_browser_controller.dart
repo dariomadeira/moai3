@@ -3,6 +3,8 @@ import 'package:moai3/focus/focus_scroll_sync.dart';
 import 'package:moai3/focus/tv_panel_layout.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/utils/safe_change_notifier.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:moai3/l10n/locale_keys.g.dart';
 
 class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
   String selectedCountry = 'Argentina';
@@ -31,13 +33,13 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
   void _updateCountriesAndFlags(List<Channel> filtered) {
     countries =
         filtered
-            .map((c) => c.country.trim().isEmpty ? 'General' : c.country.trim())
+            .map((c) => c.country.trim().isEmpty ? LocaleKeys.browser_group_general.tr() : c.country.trim())
             .toSet()
             .toList()
           ..sort();
     final flags = <String, String>{};
     for (final c in filtered) {
-      final name = c.country.trim().isEmpty ? 'General' : c.country.trim();
+      final name = c.country.trim().isEmpty ? LocaleKeys.browser_group_general.tr() : c.country.trim();
       final flag = c.countryFlagUrl;
       if (!flags.containsKey(name) && flag != null && flag.isNotEmpty) {
         flags[name] = flag;
@@ -96,11 +98,11 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
     _updateCountriesAndFlags(filtered);
     selectedChannel = channel;
     selectedCountry = channel.country.trim().isEmpty
-        ? 'General'
+        ? LocaleKeys.browser_group_general.tr()
         : channel.country.trim();
     _refreshCategories(filtered);
     selectedCategory = channel.category.trim().isEmpty
-        ? 'General'
+        ? LocaleKeys.browser_group_general.tr()
         : channel.category.trim();
     _refreshChannels(filtered);
     safeNotifyListeners();
@@ -131,11 +133,11 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
         filtered
             .where(
               (c) =>
-                  (c.country.trim().isEmpty ? 'General' : c.country.trim()) ==
+                  (c.country.trim().isEmpty ? LocaleKeys.browser_group_general.tr() : c.country.trim()) ==
                   selectedCountry,
             )
             .map(
-              (c) => c.category.trim().isEmpty ? 'General' : c.category.trim(),
+              (c) => c.category.trim().isEmpty ? LocaleKeys.browser_group_general.tr() : c.category.trim(),
             )
             .toSet()
             .toList()
@@ -158,11 +160,11 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
         filtered
             .where(
               (c) =>
-                  (c.country.trim().isEmpty ? 'General' : c.country.trim()) ==
+                  (c.country.trim().isEmpty ? LocaleKeys.browser_group_general.tr() : c.country.trim()) ==
                   country,
             )
             .map(
-              (c) => c.category.trim().isEmpty ? 'General' : c.category.trim(),
+              (c) => c.category.trim().isEmpty ? LocaleKeys.browser_group_general.tr() : c.category.trim(),
             )
             .toSet()
             .toList()
@@ -192,11 +194,11 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
         allChannels
             .where(
               (c) =>
-                  (c.country.trim().isEmpty ? 'General' : c.country.trim()) ==
+                  (c.country.trim().isEmpty ? LocaleKeys.browser_group_general.tr() : c.country.trim()) ==
                   selectedCountry,
             )
             .map(
-              (c) => c.category.trim().isEmpty ? 'General' : c.category.trim(),
+              (c) => c.category.trim().isEmpty ? LocaleKeys.browser_group_general.tr() : c.category.trim(),
             )
             .toSet()
             .toList()
@@ -208,9 +210,9 @@ class ChannelBrowserController extends ChangeNotifier with SafeChangeNotifier {
         allChannels
             .where(
               (c) =>
-                  (c.country.trim().isEmpty ? 'General' : c.country.trim()) ==
+                  (c.country.trim().isEmpty ? LocaleKeys.browser_group_general.tr() : c.country.trim()) ==
                       selectedCountry &&
-                  (c.category.trim().isEmpty ? 'General' : c.category.trim()) ==
+                  (c.category.trim().isEmpty ? LocaleKeys.browser_group_general.tr() : c.category.trim()) ==
                       selectedCategory,
             )
             .toList()

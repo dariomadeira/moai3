@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:moai3/l10n/locale_keys.g.dart';
 
 /// Tarjeta visual cinematográfica 16:9 para la pantalla de detalle de películas en Smart TV.
 class TvMovieHeroCard extends StatefulWidget {
@@ -214,7 +216,7 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Cargando...',
+                              LocaleKeys.movies_loading.tr(),
                               style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w600,
@@ -230,7 +232,7 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              widget.playLabel ?? 'Reproducir',
+                              widget.playLabel ?? LocaleKeys.movies_play.tr(),
                               style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w600,

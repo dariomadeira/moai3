@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:moai3/platform/platform_channels.dart';
 import 'package:flutter/services.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:moai3/l10n/locale_keys.g.dart';
 
 /// Micrófono del control remoto y reproducción de mensajes de voz (Miremos Juntos).
 /// Lo usan el coordinador de voz y el diálogo de prueba de audio.
@@ -66,7 +68,7 @@ class VoiceAudioService {
     try {
       final res =
           await _channel.invokeMapMethod<String, dynamic>('startRecording');
-      return res ?? {'success': false, 'error': 'Respuesta nula'};
+      return res ?? {'success': false, 'error': LocaleKeys.mic_error_null_response.tr()};
     } on PlatformException catch (e) {
       return {'success': false, 'error': e.message};
     }
@@ -77,7 +79,7 @@ class VoiceAudioService {
     try {
       final res =
           await _channel.invokeMapMethod<String, dynamic>('stopRecording');
-      return res ?? {'success': false, 'error': 'Respuesta nula'};
+      return res ?? {'success': false, 'error': LocaleKeys.mic_error_null_response.tr()};
     } on PlatformException catch (e) {
       return {'success': false, 'error': e.message};
     }
@@ -88,7 +90,7 @@ class VoiceAudioService {
     try {
       final res =
           await _channel.invokeMapMethod<String, dynamic>('playRecording');
-      return res ?? {'success': false, 'error': 'Respuesta nula'};
+      return res ?? {'success': false, 'error': LocaleKeys.mic_error_null_response.tr()};
     } on PlatformException catch (e) {
       return {'success': false, 'error': e.message};
     }
@@ -101,7 +103,7 @@ class VoiceAudioService {
         'playAudio',
         {'source': source},
       );
-      return res ?? {'success': false, 'error': 'Respuesta nula'};
+      return res ?? {'success': false, 'error': LocaleKeys.mic_error_null_response.tr()};
     } on PlatformException catch (e) {
       return {'success': false, 'error': e.message};
     }

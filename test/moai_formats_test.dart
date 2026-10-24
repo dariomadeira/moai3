@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/utils/moai_formats.dart';
+import 'helpers/spanish_translations.dart';
 
 void main() {
   group('MoaiFormats', () {
@@ -10,6 +11,7 @@ void main() {
     });
 
     test('nombres cortos de mes y día', () {
+      useSpanishTranslations();
       expect(MoaiFormats.monthShort(1), 'Ene');
       expect(MoaiFormats.monthShort(12), 'Dic');
       expect(MoaiFormats.weekdayShort(DateTime.monday), 'LUN');
@@ -17,6 +19,7 @@ void main() {
     });
 
     test('rango de semana en un mes, entre meses y entre años', () {
+      useSpanishTranslations();
       expect(
         MoaiFormats.weekRange(DateTime(2026, 10, 19), DateTime(2026, 10, 25)),
         '19 - 25 Oct 2026',

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/state/calendar_provider.dart';
+import 'helpers/spanish_translations.dart';
 
 void main() {
   group('Home Flow and Translations Regression Tests', () {
@@ -22,6 +23,7 @@ void main() {
     });
 
     test('CalendarProvider formatLiveEventsMessage returns formatted text for all cases', () {
+      useSpanishTranslations();
       final ev1 = CalendarEvent(
         id: '1',
         subscriptionId: 'sub1',

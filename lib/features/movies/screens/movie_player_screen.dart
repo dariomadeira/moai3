@@ -10,6 +10,8 @@ import 'package:moai3/services/movie_progress_service.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/buttons/tv_back_pill.dart';
 import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:moai3/l10n/locale_keys.g.dart';
 
 /// Pantalla completa de reproducción de películas para Smart TV.
 /// Soporta controles nativos de D-Pad (Play/Pausa, Seek ±10s, OSD cinemático y persistencia).
@@ -303,7 +305,7 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Cargando video...',
+                          LocaleKeys.movies_loading_video.tr(),
                           style: MoaiText.body(
                             context,
                             fontSize: 13,

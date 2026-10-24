@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:moai3/l10n/locale_keys.g.dart';
 
 /// Píldora de navegación para retroceder / Volver.
 ///
@@ -32,7 +34,7 @@ class TvBackPill extends StatefulWidget {
     this.size = 36.0,
     this.iconSize = 18.0,
     this.borderRadius,
-    this.tooltip = 'Volver',
+    this.tooltip,
     this.icon = MoaiIcons.arrowBackRounded,
   });
 
@@ -128,7 +130,7 @@ class _TvBackPillState extends State<TvBackPill> {
         return KeyEventResult.ignored;
       },
       child: Tooltip(
-        message: widget.tooltip ?? '',
+        message: widget.tooltip ?? LocaleKeys.common_back.tr(),
         child: InkWell(
           onTap: _handlePress,
           borderRadius: BorderRadius.circular(radius),

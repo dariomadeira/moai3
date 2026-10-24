@@ -15,6 +15,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/constants.dart';
 import '../models/movie_models.dart';
 import 'titan_ranger_service.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:moai3/l10n/locale_keys.g.dart';
 
 /// Servicio de sincronización del catálogo de películas y series Moiamov
 /// con cifrado nativo Triple DES (3DES) y autenticación automática.
@@ -612,7 +614,7 @@ class MoiamovApiService {
             '🚫 La salida de red fue rechazada. Reintentá con otro nodo.',
           );
           lastResolutionError =
-              'Región no permitida por el servidor. Conecta el túnel seguro.';
+              LocaleKeys.movies_error_region.tr();
           return false;
         }
         if (_applyActiveResult(actDecoded)) {
@@ -632,9 +634,7 @@ class MoiamovApiService {
   /// Intenta cargar el catálogo desde los documentos locales del almacenamiento del TV.
   CatalogResult? _loadFromLocalDeviceDocument(String section) {
     try {
-      final sectionLabel = section == 'masnew_featured'
-          ? 'Destacados'
-          : (section == 'masnew_series' ? 'Series' : 'Películas');
+      final sectionLabel = _sectionLabel(section);
 
       final candidatePaths = [
         '/sdcard/Android/data/$kMoiamovDocPackage/files/Documents/$section;1',
@@ -698,9 +698,7 @@ class MoiamovApiService {
     Duration timeout = const Duration(seconds: 10),
   }) async {
     serverUrl ??= defaultBaseUrl;
-    final sectionLabel = section == 'masnew_featured'
-        ? 'Destacados'
-        : (section == 'masnew_series' ? 'Series' : 'Películas');
+    final sectionLabel = _sectionLabel(section);
 
     // 1. Descarga en vivo por API directa
     final candidateHosts = <String>{
@@ -979,16 +977,24 @@ class MoiamovApiService {
     return CatalogResult(
       categories: [],
       isFromNetwork: false,
-      statusMessage: 'Sin catálogo de $sectionLabel.',
+      statusMessage: LocaleKeys.movies_catalog_empty.tr(
+        namedArgs: {'section': sectionLabel},
+      ),
     );
   }
 
   String _savedStatusMessage(String section) {
-    final sectionLabel = section == 'masnew_featured'
-        ? 'Destacados'
-        : (section == 'masnew_series' ? 'Series' : 'Películas');
-    return '$sectionLabel desde la última descarga guardada';
+    final sectionLabel = _sectionLabel(section);
+    return LocaleKeys.movies_catalog_from_saved.tr(
+      namedArgs: {'section': sectionLabel},
+    );
   }
+
+  static String _sectionLabel(String section) => switch (section) {
+        'masnew_featured' => LocaleKeys.movies_panel_featured_title.tr(),
+        'masnew_series' => LocaleKeys.movies_panel_series_title.tr(),
+        _ => LocaleKeys.movies_panel_movies_title.tr(),
+      };
 
   CatalogResult? _catalogFromRecommendList(
     Object? decoded, {
@@ -1017,9 +1023,7 @@ class MoiamovApiService {
   Future<CatalogResult> loadFallbackCatalog({
     String section = 'masnew_featured',
   }) async {
-    final sectionLabel = section == 'masnew_featured'
-        ? 'Destacados'
-        : (section == 'masnew_series' ? 'Series' : 'Películas');
+    final sectionLabel = _sectionLabel(section);
 
     try {
       final jsonString = await rootBundle.loadString(
@@ -1052,7 +1056,9 @@ class MoiamovApiService {
     return CatalogResult(
       categories: [],
       isFromNetwork: false,
-      statusMessage: 'No se pudo cargar el catálogo de $sectionLabel.',
+      statusMessage: LocaleKeys.movies_catalog_load_error.tr(
+        namedArgs: {'section': sectionLabel},
+      ),
     );
   }
 
@@ -1118,7 +1124,8 @@ class MoiamovApiService {
             '⚠️ startPlayVOD returnCode=$returnCode (${decoded['errorMessage']})',
           );
           if (returnCode == 'aaa100028') {
-            lastResolutionError = 'Sesión expirada o no autenticada.';
+            lastResolutionError =
+                LocaleKeys.movies_error_session_expired.tr();
           } else if (decoded['errorMessage'] != null &&
               decoded['errorMessage'].toString().isNotEmpty) {
             lastResolutionError = decoded['errorMessage'].toString();
@@ -1430,7 +1437,7 @@ class MoiamovApiService {
         '❌ No se encontraron calidades de reproducción para "${movie.name}"',
       );
       lastResolutionError ??=
-          'No se encontraron opciones de reproducción para este título.';
+          LocaleKeys.movies_error_no_play_options.tr();
       return null;
     }
 
@@ -1457,7 +1464,7 @@ class MoiamovApiService {
         '❌ La calidad ${selectedQuality.quality} no tiene pistas de audio válidas',
       );
       lastResolutionError ??=
-          'No hay pistas de audio disponibles para esta película.';
+          LocaleKeys.movies_error_no_audio.tr();
       return null;
     }
 
@@ -1580,8 +1587,9 @@ class MoiamovApiService {
                   '⚠️ [Titan Ranger] play_url con esquema no reproducible por ExoPlayer: $resolvedPlayUrl',
                 );
                 lastResolutionError =
-                    'El servidor entregó un stream interno (${resolvedPlayUrl.split(':').first}://) '
-                    'que requiere el motor nativo de Titan.';
+                    LocaleKeys.movies_error_internal_stream.tr(
+                      namedArgs: {'scheme': resolvedPlayUrl.split(':').first},
+                    );
               } else if (resolvedPlayUrl.isNotEmpty) {
                 logLine(
                   '🎉 [Titan Ranger] Stream URL resuelta por libranger-jni: $resolvedPlayUrl',
@@ -1612,8 +1620,7 @@ class MoiamovApiService {
     if (streamUrl == null) {
       logLine('❌ No se pudo obtener la URL de streaming');
       lastResolutionError ??=
-          'Titan Ranger no pudo resolver el stream y el CDN no entregó una URL '
-          'completa (solo tokens firmados).';
+          LocaleKeys.movies_error_unresolved_stream.tr();
       return null;
     }
 

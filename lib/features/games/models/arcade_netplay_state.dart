@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:moai3/l10n/locale_keys.g.dart';
 
 /// Estados posibles de una sesión de Arcade Netplay a la distancia.
 enum ArcadeNetplayStatus {
@@ -52,7 +54,7 @@ class ArcadeNetplayInvite {
     return ArcadeNetplayInvite(
       sessionId: map['sessionId'] as String? ?? '',
       hostDeviceId: map['hostDeviceId'] as String? ?? '',
-      hostNickname: map['hostNickname'] as String? ?? 'Amigo',
+      hostNickname: map['hostNickname'] as String? ?? LocaleKeys.common_friend.tr(),
       guestDeviceId: map['guestDeviceId'] as String? ?? '',
       romFilename: map['romFilename'] as String? ?? '',
       romName: map['romName'] as String? ?? '',
@@ -105,9 +107,10 @@ class ArcadeNetplaySession {
     this.status = ArcadeNetplayStatus.preparingRoms,
     this.myProgress = 0.0,
     this.peerProgress = 0.0,
-    this.myStatusText = 'Verificando...',
-    this.peerStatusText = 'Esperando...',
+    String? myStatusText,
+    String? peerStatusText,
     this.exitReason,
-  });
+  })  : myStatusText = myStatusText ?? LocaleKeys.arcade_status_verifying.tr(),
+        peerStatusText = peerStatusText ?? LocaleKeys.arcade_status_waiting.tr();
 
 }

@@ -11,10 +11,12 @@ import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/widgets/buttons/tv_back_pill.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
 import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
+import 'helpers/spanish_translations.dart';
 
 void main() {
   group('MovieItem Content Type & Helpers Tests', () {
     test('Identifica correctamente película, serie y trailer', () {
+      useSpanishTranslations();
       final movie = MovieItem(
         contentId: '1',
         name: 'El Secreto de sus Ojos',
@@ -142,6 +144,7 @@ void main() {
     testWidgets(
       'Muestra información detallada, botón back, hero card, calidad y score pill',
       (tester) async {
+        useSpanishTranslations();
         SharedPreferences.setMockInitialValues({});
         final prefs = await AppPreferences.init();
         final movie = MovieItem(

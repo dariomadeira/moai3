@@ -15,6 +15,8 @@ import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 import 'package:moai3/features/movies/screens/movie_player_screen.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/services/movie_progress_service.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:moai3/l10n/locale_keys.g.dart';
 
 /// Pantalla de detalle de película para Smart TV con diseño Split Cinemático 60/40.
 class MovieDetailScreen extends StatefulWidget {
@@ -74,7 +76,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
 
       if (stream == null || stream.directHlsUrl.isEmpty) {
         final errorMsg = MoiamovApiService.instance.lastResolutionError ??
-            'No se pudo conectar con el servidor de streaming.';
+            LocaleKeys.movies_error_stream_connect.tr();
         MoaiSnackBar.showError(
           context,
           message: errorMsg,
@@ -106,7 +108,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
       if (mounted) {
         MoaiSnackBar.showError(
           context,
-          message: 'Error al iniciar reproducción: $e',
+          message: LocaleKeys.movies_error_play_start.tr(namedArgs: {'error': '$e'}),
           duration: const Duration(seconds: 4),
         );
       }
@@ -196,7 +198,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                           panelCount: 1,
                           activeIndex: 0,
                           colors: [scheme.surface.withValues(alpha: 0.85)],
-                          titles: const ['Película'],
+                          titles: [LocaleKeys.movies_detail_tab.tr()],
                           icons: const [MoaiIcons.vodPoster],
                           onPanelTap: (_) {},
                           tabBuilder: (index, isExpanded) {
@@ -208,7 +210,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                   RotatedBox(
                                     quarterTurns: 3,
                                     child: Text(
-                                      'Película',
+                                      LocaleKeys.movies_detail_tab.tr(),
                                       maxLines: 1,
                                       softWrap: false,
                                       overflow: TextOverflow.fade,
@@ -304,8 +306,8 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                                   movieTitle: movie.name,
                                                   isLoading: _isLoadingStream,
                                                   playLabel: (_watchProgress?.canResume == true)
-                                                      ? 'Reanudar'
-                                                      : 'Reproducir',
+                                                      ? LocaleKeys.movies_resume.tr()
+                                                      : LocaleKeys.movies_play.tr(),
                                                   onPressed: _onPlayPressed,
                                                   onArrowLeft: _backFocusNode.requestFocus,
                                                   onArrowDown: _favFocusNode.requestFocus,
@@ -319,8 +321,8 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                                 child: TvFocusButton(
                                                   focusNode: _favFocusNode,
                                                   label: _isFavorite
-                                                      ? 'En Favoritos'
-                                                      : 'Favorito',
+                                                      ? LocaleKeys.movies_in_favorites.tr()
+                                                      : LocaleKeys.movies_favorite.tr(),
                                                   icon: _isFavorite
                                                       ? MoaiIcons.vodRatingFilled
                                                       : MoaiIcons.vodRating,
@@ -474,14 +476,16 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                   color: const Color(0xFF10B981).withValues(alpha: 0.22),
                   foreground: const Color(0xFF34D399),
                   icon: MoaiIcons.vodWatched,
-                  label: 'Vista',
+                  label: LocaleKeys.movies_watched.tr(),
                 )
               else if (_watchProgress!.canResume)
                 TvMetaPill(
                   color: scheme.primary.withValues(alpha: 0.2),
                   foreground: scheme.primary,
                   icon: MoaiIcons.vodResume,
-                  label: '${(_watchProgress!.progressPercentage * 100).toInt()}% visto',
+                  label: LocaleKeys.movies_watched_percent.tr(namedArgs: {
+                    'percent': '${(_watchProgress!.progressPercentage * 100).toInt()}',
+                  }),
                 ),
           ],
         ),
@@ -503,7 +507,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Director: ',
+                LocaleKeys.movies_director.tr(),
                 style: MoaiText.body(
                   context,
                   fontSize: 12.5,
@@ -535,7 +539,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Elenco: ',
+                LocaleKeys.movies_cast.tr(),
                 style: MoaiText.body(
                   context,
                   fontSize: 12.5,
@@ -567,7 +571,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Sinopsis',
+                LocaleKeys.movies_synopsis.tr(),
                 style: MoaiText.body(
                   context,
                   fontSize: 12,
@@ -582,7 +586,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                     (movie.description != null &&
                             movie.description!.trim().isNotEmpty)
                         ? movie.description!
-                        : 'Sin sinopsis disponible.',
+                        : LocaleKeys.movies_synopsis_empty.tr(),
                     style: MoaiText.body(
                       context,
                       fontSize: 13,

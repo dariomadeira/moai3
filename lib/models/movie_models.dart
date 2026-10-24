@@ -1,3 +1,5 @@
+import 'package:easy_localization/easy_localization.dart';
+import 'package:moai3/l10n/locale_keys.g.dart';
 class CategoryColumn {
   final int columnId;
   final String columnName;
@@ -22,7 +24,7 @@ class CategoryColumn {
         json['name']?.toString() ??
         json['alias']?.toString() ??
         json['columnName']?.toString() ??
-        'Categoría';
+        LocaleKeys.movies_category_default.tr();
     final normalizedName = rawName.trim().toLowerCase() == 'all'
         ? 'Todos'
         : rawName.replaceAll(RegExp(r'\bAll\b', caseSensitive: false), 'Todos');
@@ -158,33 +160,33 @@ class MovieItem {
   }
 
   static const Map<String, String> _genreSpanishMap = {
-    'action': 'Acción',
-    'adventure': 'Aventura',
-    'animation': 'Animación',
-    'anime': 'Anime',
-    'biography': 'Biografía',
-    'comedy': 'Comedia',
-    'crime': 'Crimen',
-    'documentary': 'Documental',
-    'drama': 'Drama',
-    'family': 'Familiar',
-    'fantasy': 'Fantasía',
-    'film-noir': 'Cine negro',
-    'history': 'Historia',
-    'horror': 'Terror',
-    'music': 'Música',
-    'musical': 'Musical',
-    'mystery': 'Misterio',
-    'romance': 'Romance',
-    'sci-fi': 'Ciencia ficción',
-    'science fiction': 'Ciencia ficción',
-    'short': 'Cortometraje',
-    'sport': 'Deportes',
-    'superhero': 'Superhéroes',
-    'suspense': 'Suspenso',
-    'thriller': 'Suspenso',
-    'war': 'Bélica',
-    'western': 'Western',
+    'action': LocaleKeys.movies_genre_action,
+    'adventure': LocaleKeys.movies_genre_adventure,
+    'animation': LocaleKeys.movies_genre_animation,
+    'anime': LocaleKeys.movies_genre_anime,
+    'biography': LocaleKeys.movies_genre_biography,
+    'comedy': LocaleKeys.movies_genre_comedy,
+    'crime': LocaleKeys.movies_genre_crime,
+    'documentary': LocaleKeys.movies_genre_documentary,
+    'drama': LocaleKeys.movies_genre_drama,
+    'family': LocaleKeys.movies_genre_family,
+    'fantasy': LocaleKeys.movies_genre_fantasy,
+    'film-noir': LocaleKeys.movies_genre_film_noir,
+    'history': LocaleKeys.movies_genre_history,
+    'horror': LocaleKeys.movies_genre_horror,
+    'music': LocaleKeys.movies_genre_music,
+    'musical': LocaleKeys.movies_genre_musical,
+    'mystery': LocaleKeys.movies_genre_mystery,
+    'romance': LocaleKeys.movies_genre_romance,
+    'sci-fi': LocaleKeys.movies_genre_sci_fi,
+    'science fiction': LocaleKeys.movies_genre_sci_fi,
+    'short': LocaleKeys.movies_genre_short,
+    'sport': LocaleKeys.movies_genre_sport,
+    'superhero': LocaleKeys.movies_genre_superhero,
+    'suspense': LocaleKeys.movies_genre_suspense,
+    'thriller': LocaleKeys.movies_genre_suspense,
+    'war': LocaleKeys.movies_genre_war,
+    'western': LocaleKeys.movies_genre_western,
   };
 
   /// Lista limpia de géneros traducidos al castellano a partir de [tags]
@@ -194,7 +196,7 @@ class MovieItem {
         .split(RegExp(r'[,/]'))
         .map((s) => s.trim())
         .where((s) => s.isNotEmpty && int.tryParse(s) == null)
-        .map((raw) => _genreSpanishMap[raw.toLowerCase()] ?? raw)
+        .map((raw) => _genreSpanishMap[raw.toLowerCase()]?.tr() ?? raw)
         .toList();
   }
 
@@ -290,7 +292,8 @@ class MovieItem {
     return MovieItem(
       contentId: json['contentId']?.toString() ?? json['id']?.toString() ?? '',
       name:
-          json['name']?.toString() ?? json['title']?.toString() ?? 'Sin título',
+          json['name']?.toString() ?? json['title']?.toString() ??
+          LocaleKeys.movies_untitled.tr(),
       alias: json['alias']?.toString(),
       poster: foundPoster,
       backdrop: foundBackdrop,
@@ -399,7 +402,8 @@ class VodMediaSource {
     }
     return VodMediaSource(
       mediaContentId: json['contentId']?.toString() ?? '',
-      audioInfo: json['audioInfo']?.toString() ?? 'Español',
+      audioInfo: json['audioInfo']?.toString() ??
+          LocaleKeys.movies_audio_default.tr(),
       audioType: json['audioType']?.toString(),
       videoType: json['videoType']?.toString(),
       videoFormat: json['videoFormat']?.toString(),
@@ -442,7 +446,7 @@ class VodQualityOption {
         .where((s) => s.mediaContentId.isNotEmpty)
         .toList();
     return VodQualityOption(
-      quality: json['quality']?.toString() ?? 'Auto',
+      quality: json['quality']?.toString() ?? LocaleKeys.movies_quality_auto.tr(),
       sources: list,
     );
   }
@@ -485,7 +489,8 @@ class VodSubtitleOption {
       name:
           json['name']?.toString() ??
           json['subTitleName']?.toString() ??
-          (json['language']?.toString() ?? 'Subtítulo'),
+          (json['language']?.toString() ??
+              LocaleKeys.movies_subtitle_default.tr()),
       language: json['language']?.toString() ?? '',
       url: url,
     );

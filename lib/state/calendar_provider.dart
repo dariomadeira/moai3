@@ -332,19 +332,14 @@ class CalendarProvider extends ChangeNotifier {
     if (events.length == 1 &&
         leadMinutes > 0 &&
         events.first.status == CalendarEventStatus.upcoming) {
-      const key = LocaleKeys.calendar_live_notification_soon;
-      final res = tr(key, namedArgs: {
+      return LocaleKeys.calendar_live_notification_soon.tr(namedArgs: {
         'minutes': '$leadMinutes',
         'title': events.first.title,
       });
-      if (res != key) return res;
-      return 'En $leadMinutes min: ${events.first.title}';
     }
     if (events.length == 1) {
-      const key = LocaleKeys.calendar_live_notification_single;
-      final res = tr(key, namedArgs: {'title': events.first.title});
-      if (res != key) return res;
-      return 'Comenzó en vivo: ${events.first.title}';
+      return LocaleKeys.calendar_live_notification_single
+          .tr(namedArgs: {'title': events.first.title});
     }
 
     final count = events.length;
@@ -352,20 +347,15 @@ class CalendarProvider extends ChangeNotifier {
     final t2 = _shortMatchTitle(events[1]);
 
     if (count == 2) {
-      const key = LocaleKeys.calendar_live_notification_two;
-      final res = tr(key, namedArgs: {'t1': t1, 't2': t2});
-      if (res != key) return res;
-      return 'Comenzaron 2 eventos: $t1 y $t2';
+      return LocaleKeys.calendar_live_notification_two
+          .tr(namedArgs: {'t1': t1, 't2': t2});
     } else {
-      const key = LocaleKeys.calendar_live_notification_multiple;
-      final res = tr(key, namedArgs: {
+      return LocaleKeys.calendar_live_notification_multiple.tr(namedArgs: {
         'count': '$count',
         't1': t1,
         't2': t2,
         'more': '${count - 2}',
       });
-      if (res != key) return res;
-      return 'Comenzaron $count eventos en vivo: $t1, $t2 y ${count - 2} más';
     }
   }
 

@@ -3,6 +3,7 @@ import 'package:moai3/platform/platform_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/models/channel.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 /// Canal de un plugin tal como lo declara su manifest.
 class PluginChannelInfo {
@@ -18,8 +19,8 @@ class PluginChannelInfo {
     required this.id,
     required this.nombre,
     this.logo = '',
-    this.categoria = 'General',
-    this.pais = 'General',
+    this.categoria = '',
+    this.pais = '',
     this.flag = '',
   });
 
@@ -28,8 +29,8 @@ class PluginChannelInfo {
       id: map['id'] as String? ?? '',
       nombre: map['nombre'] as String? ?? '',
       logo: map['logo'] as String? ?? '',
-      categoria: map['categoria'] as String? ?? 'General',
-      pais: map['pais'] as String? ?? 'General',
+      categoria: map['categoria'] as String? ?? '',
+      pais: map['pais'] as String? ?? '',
       flag: (map['flag'] as String? ?? '').trim(),
     );
   }
@@ -299,8 +300,8 @@ class PluginChannelCatalog {
             id: channelId(source, info),
             name: info.nombre,
             logoUrl: info.logo,
-            country: info.pais.trim().isEmpty ? 'General' : info.pais.trim(),
-            category: info.categoria.trim().isEmpty ? 'General' : info.categoria.trim(),
+            country: info.pais.trim().isEmpty ? LocaleKeys.browser_group_general.tr() : info.pais.trim(),
+            category: info.categoria.trim().isEmpty ? LocaleKeys.browser_group_general.tr() : info.categoria.trim(),
             countryFlagUrl: info.flag.isNotEmpty ? info.flag : null,
             fallbackUrls: const [],
             pluginId: source.id,

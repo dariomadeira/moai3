@@ -2,6 +2,8 @@ import 'package:moai3/platform/platform_channels.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:moai3/l10n/locale_keys.g.dart';
 
 /// Define los botones estándar de arcade (CPS-2 / FBNeo) como bitmasks.
 class ArcadeButtons {
@@ -88,7 +90,8 @@ class ArcadeEmulatorService {
         }
         break;
       case 'onEmulatorError':
-        final String error = call.arguments as String? ?? 'Error desconocido';
+        final String error = call.arguments as String? ??
+            LocaleKeys.common_error_unknown.tr();
         if (kDebugMode) {
           debugPrint('[ArcadeEmulatorService] Error nativo: $error');
         }

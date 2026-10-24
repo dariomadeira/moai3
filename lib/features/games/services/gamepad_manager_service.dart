@@ -1,6 +1,8 @@
 import 'package:moai3/platform/platform_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:moai3/l10n/locale_keys.g.dart';
 
 /// Modelo que describe un Gamepad físico conectado al dispositivo.
 class GamepadDeviceInfo {
@@ -23,7 +25,7 @@ class GamepadDeviceInfo {
   factory GamepadDeviceInfo.fromMap(Map<dynamic, dynamic> map) {
     return GamepadDeviceInfo(
       id: (map['id'] as num?)?.toInt() ?? 0,
-      name: (map['name'] as String?) ?? 'Control Desconocido',
+      name: (map['name'] as String?) ?? LocaleKeys.gamepad_unknown.tr(),
       descriptor: (map['descriptor'] as String?) ?? '',
       vendorId: (map['vendorId'] as num?)?.toInt() ?? 0,
       productId: (map['productId'] as num?)?.toInt() ?? 0,
