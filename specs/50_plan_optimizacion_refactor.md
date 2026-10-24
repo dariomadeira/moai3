@@ -48,7 +48,7 @@ Dejar moai3 **sin código muerto, sin piezas rotas ni redundantes, con traduccio
 | 3 | **Hecha** salvo ordenar `es.json` (cosmético). 689 literales → `LocaleKeys`; claves genéricas `common_*`; guarda en `test/translations_test.dart`; 3.4 `MoaiFormats` (`lib/utils/moai_formats.dart`) centraliza fechas, horas, meses/días cortos y el rango de semana de la Agenda. |
 | 4 | **Parcial.** Hechos: 4.3 (`moai_icons.dart` 1.736 → 802 líneas), 4.5 (`test/icons_usage_test.dart`: nadie fuera de `MoaiIcons` importa paquetes de íconos). Pendientes: 4.1 colapsar duplicados en nombres semánticos, 4.4 tamaños, 4.2 familia única (D-3, requiere aprobar capturas). |
 | 5 | **Hecha** salvo lo indicado en §1.4. 5.1 `HomeSection`; 5.2 todas las áreas son `HomeAreaState` (`requestEntryFocus`/`handleBack`), Ajustes/Agenda/Arcade dueños de sus nodos, `HomeScreen` 653 → 512 líneas; 5.3 parcial (`PresenceCoordinator`, `StartupUpdateChecker`); 5.4 `TvTab`, `TvExplorePanel`, `TvBrowserSession` (TV conserva pestaña/panel/canal al volver), `HomeTvArea` 1.301 → 363 + `areas/tv/*.dart`; 5.5 UI partida en `part`s (`calendar_events_panel` 1.525 → 334, `tv_friends_dialog` 1.141 → 347, `sources_screen` 906 → 375, `tv_pin_dialog` 840 → 415, `tv_gamepad_config_dialog` 853 → 288, `arcade_games_screen` 782 → 323, `general_plugins_screen` 679 → 294, `tv_voice_test_dialog` 781 → 304) y lógica (`CalendarRepository` + `LiveEventDetector`, `FriendsRoster`, `arcade_netplay_service` 737 → 455); 5.6 capas; 5.7 `ArcadeLauncher` + `ArcadeGameArgs`; 5.8 `AppBootstrap`/`AppDependencies`/`MoaiApp`, `main.dart` 290 → 25, `PluginHostController` inyectado; 5.9 `PlayerEngine.kt` fuera de `MainActivity`. |
-| 6 | **Hecha** salvo optimizar el raster (§1.4). 6.1 menos rebuilds; 6.2 arranque en paralelo; 6.3 repeticiones de ←/→ verificadas (no mueven el foco) y medición en Chromecast: build 1–6 ms, raster ~25 ms por cuadro aun en reposo — el acordeón suma poco, el costo está en el dibujado continuo; 6.4 `tool/build_release.ps1`: APK universal 79,3 MB → `armeabi-v7a` 26,7 MB, `arm64-v8a` 30,8 MB, `x86_64` 29,2 MB. **Cuidado**: `--split-per-abi` sube el versionCode (31 → 1031); instalar uno en un aparato de desarrollo hace que `flutter run` lo desinstale y borre sus datos (pasó en el Chromecast de pruebas). |
+| 6 | **Hecha.** 6.1 menos rebuilds; 6.2 arranque en paralelo; 6.3 repeticiones de ←/→ verificadas (no mueven el foco) y medición en Chromecast: build 1–6 ms, el acordeón suma poco; 6.4 `tool/build_release.ps1`: APK universal 79,3 MB → `armeabi-v7a` 26,7 MB, `arm64-v8a` 30,8 MB, `x86_64` 29,2 MB. **Cuidado**: `--split-per-abi` sube el versionCode (31 → 1031); instalar uno en un aparato de desarrollo hace que `flutter run` lo desinstale y borre sus datos (pasó en el Chromecast de pruebas); 6.5 motor gráfico: Skia en vez de Impeller, cada cuadro baja de 33 ms a 11 ms (ver §6.5). |
 | 7 | **Hecha** para specs (SPEC-11/20/22/30/34). `docs/` está en `.gitignore` (local): su reorganización y la copia duplicada en `../docs` quedan a criterio del usuario. |
 | 8 | **Hecha.** `test/home_screen_dpad_test.dart` sobre el `HomeScreen` real: rail con flechas+OK, back desde rail/contenido, Ajustes recibe el foco y recuerda el panel sin saltar al siguiente, TV conserva la pestaña. Recorrido manual completo en Chromecast (ver hallazgos). |
 
@@ -79,7 +79,7 @@ Hallazgos que aparecieron al ejecutar (no estaban en el análisis original):
 | Señalización de netplay como clase propia | Solo se movió a `part`s: separarla exige probar una partida real entre dos TVs. |
 | 5.3 `LiveEventNotifier` / `ArcadeInviteListener` fuera de `HomeScreen` | Bajo riesgo pero sin urgencia; `HomeScreen` ya bajó a 512 líneas. |
 | 5.8 singletons leídos por Provider | ~30 usos, varios fuera de widgets; ningún test lo necesita hoy. |
-| Raster ~25 ms por cuadro en reposo | Trabajo nuevo: hay algo que fuerza redibujado continuo aun sin video. |
+| Volver a medir el motor gráfico (§6.5) en cada actualización de Flutter | Flutter marca como deprecada la opción de usar Skia; cuando la quite, medir Impeller otra vez en el Chromecast. |
 | Ordenar `es.json` y `.gitattributes` (`* text=auto eol=lf`) | Cosméticos; el segundo en un PR aparte para no ensuciar el historial. |
 
 ## 2. Resumen de Fases
@@ -439,6 +439,22 @@ Extraer a `BootstrapController` solo lo que no es catálogo: verificación de pr
 - `material_symbols_icons` fuera tras §4.2.
 - `flutter build apk --split-per-abi` para distribución (hoy el APK lleva `arm64-v8a`, `armeabi-v7a` y `x86_64` de `jniLibs`); el actualizador elige el APK por ABI (`Build.SUPPORTED_ABIS` vía `DeviceChannel`).
 - Medir con M7.
+
+### 6.5. Motor gráfico (medido en Chromecast, 2026-10-23)
+La primera medición se leyó mal: las dos tandas "en reposo" eran cuadros del arranque. **No hay redibujado continuo**: con la app quieta y sin video no se dibuja nada. El problema real era el costo de cada cuadro cuando algo se mueve.
+
+Medición con video (Telefe en el reproductor chico), sonda temporal con `addTimingsCallback`, 20 s por variante, dos vueltas:
+
+| Motor | Raster p50 / p90 | Cuadros > 16 ms |
+| :--- | :--- | :--- |
+| Impeller + Vulkan (por defecto) | 33 ms / 40 ms | ~95 % |
+| Impeller + OpenGL (solo debug/profile) | 17,6 ms / 21,5 ms | ~65 % |
+| **Skia** | **11 ms / 14 ms** | **~2 %** |
+
+- El fondo (`fondo.png`, 3840×2160) no es la causa: con Skia da igual 4K, decodificado a 1920 o sin fondo. Con Impeller/Vulkan sacarlo ahorra 5–8 ms, pero no alcanza.
+- Build < 1 ms en todos los casos: el costo era solo de pintado.
+- Decisión: `io.flutter.embedding.android.EnableImpeller=false` en `AndroidManifest.xml`. Flutter 3.47.2 avisa que esa opción está deprecada; en cada actualización de Flutter volver a medir (§1.4). `ImpellerBackend=opengles` no sirve como salida: el motor lo ignora en release.
+- Hay margen para un fondo más elaborado (fijo, o con fundido solo al cambiar). Evitar animaciones continuas y desenfoque en vivo. Requiere aprobar capturas.
 
 ---
 
