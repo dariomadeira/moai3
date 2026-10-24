@@ -16,6 +16,7 @@ import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 import 'package:moai3/widgets/buttons/tv_icon_action_button.dart';
+import 'package:moai3/widgets/tv_common/moai_background_image.dart';
 
 part 'general_plugins/general_plugins_layout.dart';
 part 'general_plugins/installed_plugin_tile.dart';
@@ -149,12 +150,9 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Positioned.fill(
+            const Positioned.fill(
               child: IgnorePointer(
-                child: Image.asset(
-                  'assets/images/fondo.png',
-                  fit: BoxFit.cover,
-                ),
+                child: MoaiBackgroundImage(MoaiBackground.screen),
               ),
             ),
             SafeArea(

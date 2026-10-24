@@ -38,6 +38,7 @@ import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/tv_common/moai_background_image.dart';
 
 /// Shell del home — foco como moaiSmart:
 /// Shortcuts D-pad globales; → del rail llama [HomeTvAreaState.requestEntryFocus].
@@ -461,12 +462,9 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Positioned.fill(
+                const Positioned.fill(
                   child: IgnorePointer(
-                    child: Image.asset(
-                      'assets/images/fondo.png',
-                      fit: BoxFit.cover,
-                    ),
+                    child: MoaiBackgroundImage(MoaiBackground.screen),
                   ),
                 ),
                 Scaffold(

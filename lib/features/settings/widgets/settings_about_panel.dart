@@ -118,6 +118,9 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
                   final image = Image.asset(
                     'assets/images/moaiAbout.png',
                     height: narrow ? 60 : 76,
+                    cacheHeight: ((narrow ? 60 : 76) *
+                            MediaQuery.devicePixelRatioOf(context))
+                        .ceil(),
                     width: narrow ? constraints.maxWidth : null,
                     fit: BoxFit.contain,
                   );

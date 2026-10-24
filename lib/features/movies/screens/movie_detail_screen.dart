@@ -17,6 +17,7 @@ import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/services/movie_progress_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
+import 'package:moai3/widgets/tv_common/moai_background_image.dart';
 
 /// Pantalla de detalle de película para Smart TV con diseño Split Cinemático 60/40.
 class MovieDetailScreen extends StatefulWidget {
@@ -157,12 +158,9 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Positioned.fill(
+            const Positioned.fill(
               child: IgnorePointer(
-                child: Image.asset(
-                  'assets/images/movie.png',
-                  fit: BoxFit.cover,
-                ),
+                child: MoaiBackgroundImage(MoaiBackground.movie),
               ),
             ),
             SafeArea(

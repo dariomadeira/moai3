@@ -16,6 +16,7 @@ import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/utils/moai_formats.dart';
+import 'package:moai3/widgets/tv_common/moai_background_image.dart';
 
 /// Pantalla inicial de verificación de presencia y carga con estética Material 3 Expressive (SPEC-22 §4.1).
 class LoadingScreen extends StatefulWidget {
@@ -474,12 +475,9 @@ class _LoadingScreenState extends State<LoadingScreen>
         child: SizedBox.expand(
           child: Stack(
             children: [
-              Positioned.fill(
+              const Positioned.fill(
                 child: IgnorePointer(
-                  child: Image.asset(
-                    'assets/images/fondo.png',
-                    fit: BoxFit.cover,
-                  ),
+                  child: MoaiBackgroundImage(MoaiBackground.screen),
                 ),
               ),
               Center(
@@ -552,6 +550,7 @@ class _LoadingScreenState extends State<LoadingScreen>
               Image.asset(
                 'assets/images/moaiAbout.png',
                 height: 112,
+                cacheHeight: (112 * MediaQuery.devicePixelRatioOf(context)).ceil(),
                 fit: BoxFit.contain,
               ),
               const SizedBox(height: 14),

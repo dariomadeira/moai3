@@ -454,6 +454,7 @@ Medición con video (Telefe en el reproductor chico), sonda temporal con `addTim
 - El fondo (`fondo.png`, 3840×2160) no es la causa: con Skia da igual 4K, decodificado a 1920 o sin fondo. Con Impeller/Vulkan sacarlo ahorra 5–8 ms, pero no alcanza.
 - Build < 1 ms en todos los casos: el costo era solo de pintado.
 - Decisión: `io.flutter.embedding.android.EnableImpeller=false` en `AndroidManifest.xml`. Flutter 3.47.2 avisa que esa opción está deprecada; en cada actualización de Flutter volver a medir (§1.4). `ImpellerBackend=opengles` no sirve como salida: el motor lo ignora en release.
+- Memoria: los fondos (`fondo.png`, `movie.png` 3840×2160 y `dialog.png` 2100×2160) se decodifican al tamaño en pantalla con `MoaiBackgroundImage` (`lib/widgets/tv_common/moai_background_image.dart`): en 1080p el fondo pasa de ~33 MB a ~8 MB y entra en el caché de imágenes (límite 30 MB), con un diálogo abierto ~48 MB → ~12 MB. Los archivos siguen en 4K por si un aparato dibuja la interfaz en 4K.
 - Hay margen para un fondo más elaborado (fijo, o con fundido solo al cambiar). Evitar animaciones continuas y desenfoque en vivo. Requiere aprobar capturas.
 
 ---

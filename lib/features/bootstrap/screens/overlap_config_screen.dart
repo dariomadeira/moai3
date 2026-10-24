@@ -9,6 +9,7 @@ import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/tv_common/moai_background_image.dart';
 class OverlapConfigScreen extends StatefulWidget {
   /// Primera vez (bootstrap) → al guardar va a home.
   /// Desde Ajustes (`false`) → pop al guardar / Back.
@@ -176,12 +177,9 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
                   ),
                   child: Stack(
                     children: [
-                      Positioned.fill(
+                      const Positioned.fill(
                         child: IgnorePointer(
-                          child: Image.asset(
-                            'assets/images/fondo.png',
-                            fit: BoxFit.cover,
-                          ),
+                          child: MoaiBackgroundImage(MoaiBackground.screen),
                         ),
                       ),
                       Padding(

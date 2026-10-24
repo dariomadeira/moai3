@@ -5,6 +5,7 @@ import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_layouts.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
 import 'package:moai3/widgets/tv_input/tv_on_screen_keyboard.dart';
+import 'package:moai3/widgets/tv_common/moai_background_image.dart';
 
 Future<String?> showTvTextInput(
   BuildContext context, {
@@ -227,12 +228,9 @@ class _TvTextInputSheetState extends State<_TvTextInputSheet> {
               ),
               child: Stack(
                 children: [
-                  Positioned.fill(
+                  const Positioned.fill(
                     child: IgnorePointer(
-                      child: Image.asset(
-                        'assets/images/dialog.png',
-                        fit: BoxFit.cover,
-                      ),
+                      child: MoaiBackgroundImage(MoaiBackground.dialog),
                     ),
                   ),
                   Padding(
