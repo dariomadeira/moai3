@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Tarjeta reutilizable de estado vacío para listas en pantallas TV.
 ///
@@ -66,70 +67,92 @@ class TvEmptyStateCard extends StatelessWidget {
         child: Builder(
           builder: (context) {
             final isFocused = Focus.of(context).hasFocus;
+            final content = _content(context, scheme, isFocused);
+            // En cristal el foco es el de [MoaiGlass] (borde del acento y
+            // tinte suave), igual que el resto de los componentes; en reposo
+            // queda transparente.
+            if (isFocused && MoaiGlassScope.enabledOf(context)) {
+              return Padding(
+                padding:
+                    margin ??
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                child: MoaiGlass(
+                  borderRadius: 16,
+                  elevated: false,
+                  solid: true,
+                  focused: true,
+                  padding: padding ?? const EdgeInsets.all(20),
+                  child: content,
+                ),
+              );
+            }
             return AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              margin: margin ??
-                  const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 24,
-                  ),
+              margin:
+                  margin ??
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
               padding: padding ?? const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: isFocused
                     ? scheme.primary.withValues(alpha: 0.08)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
+              ),
+              // Borde del foco pintado encima: no ocupa espacio, así el
+              // contenido no se mueve al enfocar.
+              foregroundDecoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isFocused ? scheme.primary : Colors.transparent,
-                  width: isFocused ? 1.0 : 0.6,
+                  width: 2,
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    icon,
-                    size: MoaiIconSizes.hero,
-                    color: isFocused
-                        ? scheme.primary
-                        : scheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(height: 8),
-                  Center(
-                    child: Text(
-                      message,
-                      textAlign: TextAlign.center,
-                      style: MoaiText.body(
-                        context,
-                        color: isFocused
-                            ? scheme.onSurface
-                            : scheme.onSurfaceVariant,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 6),
-                    Center(
-                      child: Text(
-                        subtitle!,
-                        textAlign: TextAlign.center,
-                        style: MoaiText.body(
-                          context,
-                          color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+              child: content,
             );
           },
         ),
       ),
+    );
+  }
+
+  Widget _content(BuildContext context, ColorScheme scheme, bool isFocused) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          icon,
+          size: MoaiIconSizes.hero,
+          color: isFocused ? scheme.primary : scheme.onSurfaceVariant,
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: Text(
+            message,
+            textAlign: TextAlign.center,
+            style: MoaiText.body(
+              context,
+              color: isFocused ? scheme.onSurface : scheme.onSurfaceVariant,
+              fontSize: 13,
+            ),
+          ),
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 6),
+          Center(
+            child: Text(
+              subtitle!,
+              textAlign: TextAlign.center,
+              style: MoaiText.body(
+                context,
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                fontSize: 11.5,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

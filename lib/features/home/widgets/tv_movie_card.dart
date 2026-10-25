@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Tarjeta de película Moiamov para Smart TV con soporte D-Pad.
 class TvMovieCard extends StatefulWidget {
@@ -60,6 +61,15 @@ class _TvMovieCardState extends State<TvMovieCard> {
     final isFocused = _isFocused || (widget.focusNode?.hasFocus ?? false);
     final poster = widget.movie.poster;
     final cardIcon = _cardIcon;
+    // Sobre el fondo ambiente la tarjeta es de cristal; fuera, estilo opaco.
+    final glass = MoaiGlassScope.enabledOf(context);
+    // Sin póster: en cristal un "pozo" tenue en vez de un bloque opaco.
+    final emptyColor = glass
+        ? (scheme.brightness == Brightness.dark
+                  ? Colors.white
+                  : scheme.onSurface)
+              .withValues(alpha: 0.04)
+        : scheme.surfaceContainerLowest;
 
     return Focus(
       focusNode: widget.focusNode,
@@ -103,20 +113,12 @@ class _TvMovieCardState extends State<TvMovieCard> {
           widget.focusNode?.requestFocus();
           widget.onTap();
         },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          decoration: BoxDecoration(
-            color: scheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isFocused
-                  ? scheme.primary
-                  : scheme.outlineVariant.withValues(alpha: 0.48),
-              width: isFocused ? 2.5 : 1.0,
-            ),
-          ),
+        child: _chrome(
+          glass: glass,
+          isFocused: isFocused,
+          scheme: scheme,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(glass ? 12 : 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -132,7 +134,7 @@ class _TvMovieCardState extends State<TvMovieCard> {
                           fadeInDuration: const Duration(milliseconds: 180),
                           fadeOutDuration: const Duration(milliseconds: 180),
                           placeholder: (context, url) => Container(
-                            color: scheme.surfaceContainerLowest,
+                            color: emptyColor,
                             child: Icon(
                               cardIcon,
                               size: MoaiIconSizes.xxl,
@@ -140,7 +142,7 @@ class _TvMovieCardState extends State<TvMovieCard> {
                             ),
                           ),
                           errorWidget: (context, url, error) => Container(
-                            color: scheme.surfaceContainerLowest,
+                            color: emptyColor,
                             child: Icon(
                               cardIcon,
                               size: MoaiIconSizes.xxl,
@@ -150,7 +152,7 @@ class _TvMovieCardState extends State<TvMovieCard> {
                         )
                       else
                         Container(
-                          color: scheme.surfaceContainerLowest,
+                          color: emptyColor,
                           child: Icon(
                             cardIcon,
                             size: MoaiIconSizes.xxl,
@@ -161,8 +163,10 @@ class _TvMovieCardState extends State<TvMovieCard> {
                   ),
                 ),
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
                   child: Text(
                     widget.movie.name,
                     maxLines: 1,
@@ -180,6 +184,39 @@ class _TvMovieCardState extends State<TvMovieCard> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Marco de la tarjeta: cristal (el borde del foco se pinta encima del
+  /// póster) o el estilo opaco de siempre.
+  Widget _chrome({
+    required bool glass,
+    required bool isFocused,
+    required ColorScheme scheme,
+    required Widget child,
+  }) {
+    if (glass) {
+      return MoaiGlass(
+        borderRadius: 12,
+        elevated: false,
+        solid: true,
+        focused: isFocused,
+        child: child,
+      );
+    }
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 140),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isFocused
+              ? scheme.primary
+              : scheme.outlineVariant.withValues(alpha: 0.48),
+          width: isFocused ? 2.5 : 1.0,
+        ),
+      ),
+      child: child,
     );
   }
 }

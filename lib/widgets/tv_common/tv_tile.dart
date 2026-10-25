@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Misma ficha que [TvTile]: diseño idéntico, puede usarse para tiles de solo lectura
 /// o tiles compuestos que gestionan sus propios focos internos (ej. botones de acción).
@@ -75,6 +76,13 @@ class TvTile extends StatefulWidget {
 
   @override
   State<TvTile> createState() => _TvTileState();
+
+  /// Si la ficha que contiene a [context] tiene el foco. Sirve a los
+  /// elementos de la derecha (p. ej. un switch) en el estilo cristal, donde
+  /// el `trailingBuilder` recibe `isFocused: false` para no cambiar de color.
+  static bool isFocusedOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_TvTileFocus>()?.isFocused ??
+      false;
 }
 
 class _TvTileState extends State<TvTile> {
@@ -135,14 +143,22 @@ class _TvTileState extends State<TvTile> {
       },
       child: GestureDetector(
         onTap: _runPressed,
-        child: _TvTileChrome(
+        child: _TvTileFocus(
           isFocused: isFocused,
-          label: widget.label,
-          description: widget.description,
-          icon: widget.icon,
-          padding: widget.padding,
-          minHeight: widget.minHeight,
-          trailing: widget.trailingBuilder?.call(context, isFocused),
+          child: _TvTileChrome(
+            isFocused: isFocused,
+            label: widget.label,
+            description: widget.description,
+            icon: widget.icon,
+            padding: widget.padding,
+            minHeight: widget.minHeight,
+            // En cristal el foco no rellena la ficha, así que el trailing
+            // conserva sus colores normales.
+            trailing: widget.trailingBuilder?.call(
+              context,
+              isFocused && !MoaiGlassScope.enabledOf(context),
+            ),
+          ),
         ),
       ),
     );
@@ -171,102 +187,153 @@ class _TvTileChrome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
+    // Sobre el fondo ambiente la ficha es de cristal; fuera (diálogos,
+    // pantallas con imagen de fondo) mantiene el estilo opaco.
+    final glass = MoaiGlassScope.enabledOf(context);
+    // En cristal el foco no rellena la ficha: los colores no cambian.
+    final solidFocus = isFocused && !glass;
     final bg = isFocused ? scheme.primary : scheme.surfaceContainerLow;
-    final titleColor = isFocused ? scheme.onPrimary : scheme.onSurface;
-    final descColor = isFocused
+    final titleColor = solidFocus ? scheme.onPrimary : scheme.onSurface;
+    final descColor = solidFocus
         ? scheme.onPrimary.withValues(alpha: 0.85)
         : scheme.onSurfaceVariant;
     final iconBg = isFocused
         ? scheme.onPrimary.withValues(alpha: 0.18)
         : scheme.primaryContainer;
-    final iconColor =
-        isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
+    // En cristal el ícono va suelto (como en el rail): acento suave, y pleno
+    // con foco para acompañar el borde.
+    final iconColor = glass
+        ? scheme.primary.withValues(alpha: isFocused ? 1 : 0.75)
+        : (solidFocus ? scheme.onPrimary : scheme.onPrimaryContainer);
 
     final borderColor = isFocused
         ? scheme.primary
         : scheme.outlineVariant.withValues(alpha: 0.12);
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 120),
-      constraints: BoxConstraints(minHeight: minHeight ?? 58),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: borderColor,
-        ),
-      ),
-      padding:
-          padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final maxTrailingWidth =
-              (constraints.maxWidth - 100).clamp(40.0, double.infinity);
+    final iconGlyph = Padding(
+      padding: const EdgeInsets.all(10),
+      child: Icon(icon, size: MoaiIconSizes.md, color: iconColor),
+    );
 
-          return Row(
-            children: [
-              if (icon != null) ...[
+    final content = LayoutBuilder(
+      builder: (context, constraints) {
+        final maxTrailingWidth = (constraints.maxWidth - 100).clamp(
+          40.0,
+          double.infinity,
+        );
+
+        return Row(
+          children: [
+            if (icon != null) ...[
+              // Sin fondo ocupa el mismo lugar, así los títulos siguen
+              // alineados.
+              if (glass)
+                iconGlyph
+              else
                 Material(
                   color: iconBg,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Icon(icon, size: MoaiIconSizes.md, color: iconColor),
-                  ),
+                  child: iconGlyph,
                 ),
-                const SizedBox(width: 14),
-              ],
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+              const SizedBox(width: 14),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: MoaiText.body(
+                      context,
+                      color: titleColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (description != null) ...[
+                    const SizedBox(height: 2),
                     Text(
-                      label,
+                      description!,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: MoaiText.body(
                         context,
-                        color: titleColor,
-                        fontWeight: FontWeight.w700,
+                        color: descColor,
+                        fontSize: 12,
+                        height: 1.3,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    if (description != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        description!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: MoaiText.body(
-                          context,
-                          color: descColor,
-                          fontSize: 12,
-                          height: 1.3,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
                   ],
+                ],
+              ),
+            ),
+            if (trailing != null) ...[
+              const SizedBox(width: 12),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxTrailingWidth),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: trailing,
                 ),
               ),
-              if (trailing != null) ...[
-                const SizedBox(width: 12),
-                ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: maxTrailingWidth),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerRight,
-                    child: trailing,
-                  ),
-                ),
-              ],
             ],
-          );
-        },
+          ],
+        );
+      },
+    );
+
+    final constraints = BoxConstraints(minHeight: minHeight ?? 58);
+    final innerPadding =
+        padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 10);
+
+    if (glass) {
+      // Cristal discreto; el foco es el mismo de los widgets del Inicio
+      // (borde del acento y tinte suave).
+      return MoaiGlass(
+        borderRadius: 16,
+        elevated: false,
+        solid: true,
+        focused: isFocused,
+        padding: innerPadding,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: (constraints.minHeight - innerPadding.vertical).clamp(
+              0.0,
+              double.infinity,
+            ),
+          ),
+          child: content,
+        ),
+      );
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 120),
+      constraints: constraints,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
       ),
+      padding: innerPadding,
+      child: content,
     );
   }
 }
 
+/// Expone el foco de la ficha a su contenido ([TvTile.isFocusedOf]).
+class _TvTileFocus extends InheritedWidget {
+  const _TvTileFocus({required this.isFocused, required super.child});
+
+  final bool isFocused;
+
+  @override
+  bool updateShouldNotify(_TvTileFocus oldWidget) =>
+      oldWidget.isFocused != isFocused;
+}

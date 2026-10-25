@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moai3/features/home/widgets/collapsed_panel_tab_preview.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Acordeón horizontal TV: un panel expandido + tabs colapsados.
 class TvAccordionRowPreview extends StatelessWidget {
@@ -42,6 +43,7 @@ class TvAccordionRowPreview extends StatelessWidget {
         final scheme = Theme.of(context).colorScheme;
         final borderExpanded = scheme.outlineVariant.withValues(alpha: 0.48);
         final borderCollapsed = scheme.outlineVariant.withValues(alpha: 0.38);
+        final glass = MoaiGlassScope.enabledOf(context);
 
         return RepaintBoundary(
           child: SingleChildScrollView(
@@ -54,75 +56,89 @@ class TvAccordionRowPreview extends StatelessWidget {
                 final width = isExpanded ? expandedWidth : collapsedWidth;
                 final title = titles[index];
                 final icon = icons[index];
-                final showAlphabet = alphabetModePanelIndex == index &&
+                final showAlphabet =
+                    alphabetModePanelIndex == index &&
                     alphabetPanelBuilder != null;
                 final isLast = index == panelCount - 1;
 
                 final baseColor = colors[index];
+
+                final panelContent = Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (showAlphabet)
+                      SizedBox(
+                        width: collapsedWidth - 2.0,
+                        child: alphabetPanelBuilder!(index),
+                      )
+                    else if (tabBuilder != null)
+                      SizedBox(
+                        width: collapsedWidth - 2.0,
+                        child: tabBuilder!(index, isExpanded),
+                      )
+                    else
+                      ExcludeFocus(
+                        child: InkWell(
+                          onTap: () => onPanelTap(index),
+                          child: SizedBox(
+                            width: collapsedWidth - 2.0,
+                            child: CollapsedPanelTabPreview(
+                              title: title,
+                              icon: icon,
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (isExpanded)
+                      Expanded(
+                        child: LayoutBuilder(
+                          builder: (context, innerConstraints) {
+                            if (innerConstraints.maxWidth < 180) {
+                              return const SizedBox.shrink();
+                            }
+                            final content = ClipRect(
+                              child: buildExpandedContent(index, title),
+                            );
+                            if (alphabetModePanelIndex != null) {
+                              return ExcludeFocus(child: content);
+                            }
+                            return content;
+                          },
+                        ),
+                      ),
+                  ],
+                );
 
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
                   curve: Curves.easeOutCubic,
                   width: width,
                   margin: EdgeInsets.only(right: isLast ? 0 : gap),
-                  decoration: BoxDecoration(
-                    color: baseColor,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isExpanded ? borderExpanded : borderCollapsed,
-                    ),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (showAlphabet)
-                        SizedBox(
-                          width: collapsedWidth - 2.0,
-                          child: alphabetPanelBuilder!(index),
-                        )
-                      else if (tabBuilder != null)
-                        SizedBox(
-                          width: collapsedWidth - 2.0,
-                          child: tabBuilder!(index, isExpanded),
-                        )
-                      else
-                        ExcludeFocus(
-                          child: InkWell(
-                            onTap: () => onPanelTap(index),
-                            child: SizedBox(
-                              width: collapsedWidth - 2.0,
-                              child: CollapsedPanelTabPreview(
-                                title: title,
-                                icon: icon,
-                              ),
-                            ),
+                  decoration: glass
+                      ? null
+                      : BoxDecoration(
+                          color: baseColor,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isExpanded
+                                ? borderExpanded
+                                : borderCollapsed,
                           ),
                         ),
-                      if (isExpanded)
-                        Expanded(
-                          child: LayoutBuilder(
-                            builder: (context, innerConstraints) {
-                              if (innerConstraints.maxWidth < 180) {
-                                return const SizedBox.shrink();
-                              }
-                              final content = ClipRect(
-                                child: buildExpandedContent(index, title),
-                              );
-                              if (alphabetModePanelIndex != null) {
-                                return ExcludeFocus(child: content);
-                              }
-                              return content;
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
+                  child: glass
+                      ? MoaiGlass(
+                          borderRadius: 16,
+                          solid: true,
+                          elevated: false,
+                          child: panelContent,
+                        )
+                      : panelContent,
                 );
               }),
+            ),
           ),
-        ),
-      );
-    },
+        );
+      },
     );
   }
 }

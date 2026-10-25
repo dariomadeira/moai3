@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Selector segmentado tipo píldora para menús TV.
 ///
@@ -44,8 +45,24 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
 
     // Sobre fila enfocada (fondo primary) usamos onPrimary con opacidad.
     // En reposo, aplicamos el mismo degradado sutil y borde de TvTabBar / TvAccordionRowPreview.
+    // Sobre el fondo ambiente: riel de cristal como la pista del switch, la
+    // opción elegida en el acento y, editando, borde del acento.
+    final glass = MoaiGlassScope.enabledOf(context);
+    final dark = scheme.brightness == Brightness.dark;
+    final glassLine = dark ? Colors.white : scheme.onSurface;
+
     final BoxDecoration trackDecoration;
-    if (focused) {
+    if (glass) {
+      trackDecoration = BoxDecoration(
+        color: glassLine.withValues(alpha: dark ? 0.06 : 0.08),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: widget.isEditing
+              ? scheme.primary
+              : glassLine.withValues(alpha: 0.14),
+        ),
+      );
+    } else if (focused) {
       trackDecoration = BoxDecoration(
         color: scheme.onPrimary.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(999),
@@ -60,9 +77,7 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
       trackDecoration = BoxDecoration(
         color: baseColor,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: borderColor,
-        ),
+        border: Border.all(color: borderColor),
       );
     }
 
@@ -78,8 +93,25 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
           late final Color bg;
           late final Color border;
           late final Color fg;
+          Gradient? gradient;
 
-          if (focused) {
+          if (glass) {
+            border = Colors.transparent;
+            if (isSelected) {
+              bg = accent;
+              gradient = LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color.lerp(accent, Colors.white, 0.15)!, accent],
+              );
+              fg = scheme.onPrimary;
+            } else {
+              bg = isHovered
+                  ? glassLine.withValues(alpha: 0.08)
+                  : Colors.transparent;
+              fg = isHovered ? scheme.onSurface : scheme.onSurfaceVariant;
+            }
+          } else if (focused) {
             if (isSelected) {
               bg = scheme.onPrimary;
               fg = accent;
@@ -123,6 +155,7 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
                 ),
                 decoration: BoxDecoration(
                   color: bg,
+                  gradient: gradient,
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
                     color: border,
@@ -135,8 +168,7 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
                     context,
                     color: fg,
                     fontSize: 11,
-                    fontWeight:
-                        isSelected ? FontWeight.w800 : FontWeight.w600,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   ),
                 ),
               ),
@@ -147,7 +179,7 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
     );
 
     if (!widget.isEditing) return track;
-    final arrowColor = scheme.onPrimary;
+    final arrowColor = glass ? scheme.primary : scheme.onPrimary;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

@@ -11,6 +11,7 @@ import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/state/featured_movies_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
 
 /// Área del rail para catálogos de Moiamov (Destacados, Películas, Series):
@@ -333,17 +334,21 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
           const SizedBox(width: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: scheme.tertiaryContainer,
-              borderRadius: BorderRadius.circular(10),
-            ),
+            decoration: MoaiGlassScope.enabledOf(context)
+                ? moaiGlassChipDecoration(scheme, radius: 10)
+                : BoxDecoration(
+                    color: scheme.tertiaryContainer,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
             child: Text(
               '${cat.movies.length}',
               style: MoaiText.body(
                 context,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: scheme.onTertiaryContainer,
+                color: MoaiGlassScope.enabledOf(context)
+                    ? scheme.onSurface
+                    : scheme.onTertiaryContainer,
               ),
             ),
           ),

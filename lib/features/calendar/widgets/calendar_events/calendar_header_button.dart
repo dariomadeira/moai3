@@ -20,58 +20,74 @@ class _HeaderButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-
-    final baseColor = isFocused ? scheme.primary : scheme.surfaceContainerHigh;
-    final borderColor = isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.55)
-        : scheme.outlineVariant.withValues(alpha: 0.35);
     final fgColor = isFocused ? scheme.onPrimary : scheme.onSurface;
+    const radius = 12.0;
+    final padding = EdgeInsets.symmetric(
+      horizontal: label != null ? 12 : 10,
+      vertical: 8,
+    );
 
+    final content = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (isLoading)
+          SizedBox(
+            width: 17,
+            height: 17,
+            child: CircularProgressIndicator(strokeWidth: 2, color: fgColor),
+          )
+        else
+          Icon(icon, size: MoaiIconSizes.sm, color: fgColor),
+        if (label != null) ...[
+          const SizedBox(width: 6),
+          Text(
+            label!,
+            style: MoaiText.body(
+              context,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: fgColor,
+            ),
+          ),
+        ],
+      ],
+    );
+
+    // Como el botón de volver: cristal en reposo y, con foco, acento con
+    // brillo arriba y halo. Ninguno de los dos estados ocupa borde, así que
+    // el tamaño no cambia.
     return Tooltip(
       message: tooltip ?? label ?? '',
       child: GestureDetector(
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOutCubic,
-          padding: EdgeInsets.symmetric(
-            horizontal: label != null ? 12 : 10,
-            vertical: 8,
-          ),
-          decoration: BoxDecoration(
-            color: baseColor,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isLoading)
-                SizedBox(
-                  width: 17,
-                  height: 17,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: fgColor,
+        child: isFocused
+            ? Container(
+                padding: padding,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(radius),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color.lerp(scheme.primary, Colors.white, 0.22)!,
+                      scheme.primary,
+                    ],
                   ),
-                )
-              else
-                Icon(icon, size: MoaiIconSizes.sm, color: fgColor),
-              if (label != null) ...[
-                const SizedBox(width: 6),
-                Text(
-                  label!,
-                  style: MoaiText.body(
-                    context,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: fgColor,
-                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: scheme.primary.withValues(alpha: 0.40),
+                      blurRadius: 14,
+                    ),
+                  ],
                 ),
-              ],
-            ],
-          ),
-        ),
+                child: content,
+              )
+            : MoaiGlass(
+                borderRadius: radius,
+                elevated: false,
+                padding: padding,
+                child: content,
+              ),
       ),
     );
   }
@@ -91,10 +107,7 @@ class _PressScale extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: child,
-    );
+    return GestureDetector(onTap: onTap, child: child);
   }
 }
 

@@ -7,6 +7,7 @@ import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/widgets/feedback/notification_helper.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
@@ -62,10 +63,13 @@ class _ClearFavoritesButtonState extends State<ClearFavoritesButton> {
     final scheme = context.scheme;
     final isFocused = _isFocused || widget.focusNode.hasFocus;
 
-    final Color bgColor =
-        isFocused ? scheme.error : scheme.surfaceContainerHighest;
-    final Color iconColor =
-        isFocused ? scheme.onError : scheme.onSurfaceVariant;
+    final glass = MoaiGlassScope.enabledOf(context);
+    final Color bgColor = isFocused
+        ? scheme.error
+        : scheme.surfaceContainerHighest;
+    final Color iconColor = isFocused
+        ? scheme.onError
+        : (glass ? scheme.onSurface : scheme.onSurfaceVariant);
 
     return Focus(
       focusNode: widget.focusNode,
@@ -77,7 +81,8 @@ class _ClearFavoritesButtonState extends State<ClearFavoritesButton> {
             widget.onKeyLeft!();
             return KeyEventResult.handled;
           }
-          if (key == LogicalKeyboardKey.arrowRight && widget.onKeyRight != null) {
+          if (key == LogicalKeyboardKey.arrowRight &&
+              widget.onKeyRight != null) {
             widget.onKeyRight!();
             return KeyEventResult.handled;
           }
@@ -108,10 +113,16 @@ class _ClearFavoritesButtonState extends State<ClearFavoritesButton> {
               duration: const Duration(milliseconds: 150),
               width: 44,
               height: 24,
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.circular(999),
-              ),
+              decoration: glass
+                  ? moaiGlassButtonDecoration(
+                      scheme,
+                      focused: isFocused,
+                      accent: scheme.error,
+                    )
+                  : BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
               child: Center(
                 child: Icon(
                   MoaiIcons.tvFavoritesClear,

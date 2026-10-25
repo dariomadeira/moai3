@@ -8,6 +8,7 @@ import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/services/watch_party_voice_coordinator.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
 /// Componente de la barra superior en Modo TV para la funcionalidad "Mirar juntos".
@@ -186,9 +187,14 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
         ? scheme.error
         : (_isMicFocused ? scheme.primary : scheme.surfaceContainerHighest);
 
+    // Cristal: como los botones de Favoritos (tenue en reposo; con foco o
+    // grabando, el color pleno con brillo y halo).
+    final glass = MoaiGlassScope.enabledOf(context);
     final foregroundColor = isRecording
         ? scheme.onError
-        : (_isMicFocused ? scheme.onPrimary : scheme.onSurfaceVariant);
+        : (_isMicFocused
+              ? scheme.onPrimary
+              : (glass ? scheme.onSurface : scheme.onSurfaceVariant));
 
     return Focus(
       focusNode: _micFocusNode,
@@ -269,10 +275,17 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
             horizontal: isRecording ? 12 : 10,
             vertical: 6,
           ),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(20),
-          ),
+          decoration: glass
+              ? moaiGlassButtonDecoration(
+                  scheme,
+                  focused: _isMicFocused || isRecording,
+                  accent: isRecording ? scheme.error : null,
+                  radius: 20,
+                )
+              : BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: BorderRadius.circular(20),
+                ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

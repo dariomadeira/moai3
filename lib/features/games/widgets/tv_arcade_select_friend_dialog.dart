@@ -1,6 +1,7 @@
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/models/friend_info.dart';
 import 'package:moai3/state/watch_party_provider.dart';
@@ -197,10 +198,7 @@ class _EmptyFriends extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(16),
-      ),
+      decoration: moaiGlassWellDecoration(scheme),
       child: Column(
         children: [
           Icon(

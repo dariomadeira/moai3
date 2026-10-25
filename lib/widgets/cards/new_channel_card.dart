@@ -4,6 +4,7 @@ import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/cards/tv_list_card_leading_logo.dart';
 import 'package:moai3/widgets/cards/tv_list_card_metrics.dart';
 import 'package:moai3/widgets/cards/tv_list_card_style.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/tv_common/tv_press_detector.dart';
 
 /// Ítem de canal: mismo layout que [TvIconListCard], leading rectangular con logo.
@@ -60,6 +61,11 @@ class _NewChannelCardState extends State<NewChannelCard> {
       focused: isFocused,
       selected: widget.isSelected,
     );
+    // Sobre el fondo ambiente el ítem es de cristal, como [TvIconListCard];
+    // el foco no rellena, así que texto y etiqueta no cambian.
+    final glass = MoaiGlassScope.enabledOf(context);
+    final solidFocus = isFocused && !glass;
+    final labelColor = glass ? scheme.onSurface : itemStyle.foregroundColor;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -73,26 +79,23 @@ class _NewChannelCardState extends State<NewChannelCard> {
         onUp: widget.onKeyUp,
         onDown: widget.onKeyDown,
         child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {
-              widget.focusNode?.requestFocus();
-              widget.onTap();
-            },
-            onLongPress: widget.onLongPress,
-            child: SizedBox(
-                width: double.infinity,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 120),
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: itemStyle.backgroundColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: itemStyle.border,
-                  ),
-                  child: LayoutBuilder(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            widget.focusNode?.requestFocus();
+            widget.onTap();
+          },
+          onLongPress: widget.onLongPress,
+          child: SizedBox(
+            width: double.infinity,
+            child: _chrome(
+              glass: glass,
+              isFocused: isFocused,
+              itemStyle: itemStyle,
+              child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final metrics =
-                      TvListCardMetrics.forWidth(constraints.maxWidth);
+                  final metrics = TvListCardMetrics.forWidth(
+                    constraints.maxWidth,
+                  );
 
                   final rawTag = widget.channel.pluginTag?.trim();
                   final tag = (rawTag != null && rawTag.isNotEmpty)
@@ -119,7 +122,7 @@ class _NewChannelCardState extends State<NewChannelCard> {
                             context,
                             fontSize: constraints.maxWidth < 120 ? 10.0 : 11.5,
                             height: 1.15,
-                            color: itemStyle.foregroundColor,
+                            color: labelColor,
                             fontWeight: itemStyle.fontWeight,
                           ),
                         ),
@@ -132,8 +135,10 @@ class _NewChannelCardState extends State<NewChannelCard> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: isFocused
-                                ? itemStyle.foregroundColor.withValues(alpha: 0.18)
+                            color: solidFocus
+                                ? itemStyle.foregroundColor.withValues(
+                                    alpha: 0.18,
+                                  )
                                 : scheme.tertiaryContainer,
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -146,7 +151,7 @@ class _NewChannelCardState extends State<NewChannelCard> {
                               fontWeight: FontWeight.w700,
                               height: 1.0,
                               letterSpacing: 0.5,
-                              color: isFocused
+                              color: solidFocus
                                   ? itemStyle.foregroundColor
                                   : scheme.onTertiaryContainer,
                             ),
@@ -163,5 +168,36 @@ class _NewChannelCardState extends State<NewChannelCard> {
       ),
     );
   }
-}
 
+  /// Fondo del ítem: cristal (foco con borde del acento, elegido teñido) o
+  /// el estilo opaco de siempre.
+  Widget _chrome({
+    required bool glass,
+    required bool isFocused,
+    required TvListCardStyle itemStyle,
+    required Widget child,
+  }) {
+    const padding = EdgeInsets.symmetric(horizontal: 6, vertical: 6);
+    if (glass) {
+      return MoaiGlass(
+        borderRadius: 12,
+        elevated: false,
+        solid: true,
+        tint: widget.isSelected ? context.scheme.primary : null,
+        focused: isFocused,
+        padding: padding,
+        child: child,
+      );
+    }
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 120),
+      padding: padding,
+      decoration: BoxDecoration(
+        color: itemStyle.backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+        border: itemStyle.border,
+      ),
+      child: child,
+    );
+  }
+}

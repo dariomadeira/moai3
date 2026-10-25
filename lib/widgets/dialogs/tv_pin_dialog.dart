@@ -7,6 +7,7 @@ import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
@@ -285,17 +286,14 @@ class _TvPinDialogState extends State<TvPinDialog>
     final stepBadge = _totalSteps > 1
         ? Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: scheme.tertiaryContainer,
-              borderRadius: BorderRadius.circular(12),
-            ),
+            decoration: moaiGlassChipDecoration(scheme, radius: 12),
             child: Text(
               LocaleKeys.parental_pin_step.tr(args: ['$_currentStep', '$_totalSteps']),
               style: MoaiText.body(
                 context,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: scheme.onTertiaryContainer,
+                color: scheme.onSurface,
               ),
             ),
           )

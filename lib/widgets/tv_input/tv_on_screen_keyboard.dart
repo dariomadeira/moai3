@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_layouts.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 typedef TvKeyPressed = void Function(TvKeyDef key);
 
@@ -322,10 +323,20 @@ class _TvKeyButtonState extends State<_TvKeyButton> {
     final scheme = Theme.of(context).colorScheme;
     final focused = widget.focusNode.hasFocus;
 
+    final glass = MoaiGlassScope.enabledOf(context);
+
     // Gboard M3 Expressive: letras blancas, funciones pastel azul, sin bordes.
+    // En cristal: letras de cristal tenue, funciones un poco más marcadas con
+    // el ícono en el acento; foco en acento con brillo, sin halo (las teclas
+    // están pegadas y las vecinas lo cortarían).
     final Color bg;
     final Color fg;
-    if (focused) {
+    if (glass) {
+      bg = focused ? scheme.primary : Colors.transparent;
+      fg = focused
+          ? scheme.onPrimary
+          : (widget.emphasized ? scheme.primary : scheme.onSurface);
+    } else if (focused) {
       bg = scheme.primary;
       fg = scheme.onPrimary;
     } else if (widget.emphasized) {
@@ -404,7 +415,27 @@ class _TvKeyButtonState extends State<_TvKeyButton> {
         }
         return KeyEventResult.ignored;
       },
-      child: Material(
+      child: glass
+          ? Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(radius),
+              child: Ink(
+                decoration: _glassKeyDecoration(
+                  scheme,
+                  focused: focused,
+                  emphasized: widget.emphasized,
+                  radius: radius,
+                ),
+                child: InkWell(
+                  onTap: widget.onPressed,
+                  borderRadius: BorderRadius.circular(radius),
+                  splashColor: fg.withValues(alpha: 0.12),
+                  highlightColor: fg.withValues(alpha: 0.08),
+                  child: SizedBox(height: 34, child: Center(child: childContent)),
+                ),
+              ),
+            )
+          : Material(
         color: bg,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radius),
@@ -426,6 +457,35 @@ class _TvKeyButtonState extends State<_TvKeyButton> {
       ),
     );
   }
+}
+
+/// Tecla de cristal: tenue en reposo (algo más marcada si es de función) y,
+/// con foco, acento con brillo arriba. Sin sombra ni halo.
+BoxDecoration _glassKeyDecoration(
+  ColorScheme scheme, {
+  required bool focused,
+  required bool emphasized,
+  required double radius,
+}) {
+  final dark = scheme.brightness == Brightness.dark;
+  final line = dark ? Colors.white : scheme.onSurface;
+  if (focused) {
+    return BoxDecoration(
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(color: Colors.transparent),
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color.lerp(scheme.primary, Colors.white, 0.18)!, scheme.primary],
+      ),
+    );
+  }
+  final fill = emphasized ? (dark ? 0.09 : 0.10) : (dark ? 0.045 : 0.06);
+  return BoxDecoration(
+    borderRadius: BorderRadius.circular(radius),
+    color: line.withValues(alpha: fill),
+    border: Border.all(color: line.withValues(alpha: emphasized ? 0.14 : 0.10)),
+  );
 }
 
 class _TvActionButton extends StatefulWidget {
@@ -482,10 +542,19 @@ class _TvActionButtonState extends State<_TvActionButton> {
     final scheme = Theme.of(context).colorScheme;
     final focused = widget.focusNode.hasFocus;
 
+    final glass = MoaiGlassScope.enabledOf(context);
+
     // Siguiente = secondary (CTA distinto del foco primary de las teclas).
+    // En cristal: Cancelar es cristal neutro y Listo cristal con tinte de
+    // acento; con foco, acento con brillo.
     final Color bg;
     final Color fg;
-    if (focused) {
+    if (glass) {
+      bg = scheme.primary;
+      fg = focused
+          ? scheme.onPrimary
+          : (widget.filled ? scheme.primary : scheme.onSurface);
+    } else if (focused) {
       bg = scheme.primary;
       fg = scheme.onPrimary;
     } else if (widget.filled) {
@@ -531,15 +600,32 @@ class _TvActionButtonState extends State<_TvActionButton> {
         return KeyEventResult.ignored;
       },
       child: Material(
-        color: bg,
+        color: glass ? Colors.transparent : bg,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
-          side: BorderSide(
-            color: borderColor,
-          ),
+          side: glass ? BorderSide.none : BorderSide(color: borderColor),
         ),
-        child: InkWell(
+        child: Ink(
+          decoration: !glass
+              ? null
+              : focused
+              ? BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.transparent),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color.lerp(bg, Colors.white, 0.18)!, bg],
+                  ),
+                )
+              : moaiGlassChipDecoration(
+                  scheme,
+                  radius: 18,
+                  highlighted: widget.filled,
+                ),
+          child: InkWell(
           onTap: widget.onPressed,
+          borderRadius: BorderRadius.circular(18),
           splashColor: fg.withValues(alpha: 0.12),
           child: SizedBox(
             height: 36,
@@ -555,6 +641,7 @@ class _TvActionButtonState extends State<_TvActionButton> {
               ),
             ),
           ),
+        ),
         ),
       ),
     );

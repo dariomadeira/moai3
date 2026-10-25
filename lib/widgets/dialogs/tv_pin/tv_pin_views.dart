@@ -3,15 +3,20 @@ part of '../tv_pin_dialog.dart';
 /// Casillas del PIN y teclado numérico.
 extension _TvPinDialogViews on _TvPinDialogState {
   Widget _buildPinBoxes(ColorScheme scheme) {
+    // En cristal las casillas van en un "pozo" y son chips: llenas, teñidas
+    // del acento; la actual, con borde del acento; las vacías, tenues.
+    final glass = MoaiGlassScope.enabledOf(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.25),
-        ),
-      ),
+      decoration: glass
+          ? moaiGlassWellDecoration(scheme)
+          : BoxDecoration(
+              color: scheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: scheme.outlineVariant.withValues(alpha: 0.25),
+              ),
+            ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -36,13 +41,17 @@ extension _TvPinDialogViews on _TvPinDialogState {
             width: 44,
             height: 48,
             margin: const EdgeInsets.symmetric(horizontal: 5),
-            decoration: BoxDecoration(
-              color: boxBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: boxBorderColor,
-              ),
-            ),
+            decoration: glass && !isCurrent
+                ? moaiGlassChipDecoration(
+                    scheme,
+                    radius: 12,
+                    highlighted: isFilled,
+                  )
+                : BoxDecoration(
+                    color: glass ? Colors.transparent : boxBg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: boxBorderColor),
+                  ),
             alignment: Alignment.center,
             child: AnimatedScale(
               scale: isFilled ? 1.0 : (isCurrent ? 1.0 : 0.7),
@@ -58,22 +67,24 @@ extension _TvPinDialogViews on _TvPinDialogState {
                       ),
                     )
                   : (isCurrent
-                      ? Container(
-                          width: 3.0,
-                          height: 18,
-                          decoration: BoxDecoration(
-                            color: scheme.primary,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        )
-                      : Container(
-                          width: 5,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            color: scheme.outlineVariant.withValues(alpha: 0.6),
-                            shape: BoxShape.circle,
-                          ),
-                        )),
+                        ? Container(
+                            width: 3.0,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: scheme.primary,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          )
+                        : Container(
+                            width: 5,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: scheme.outlineVariant.withValues(
+                                alpha: 0.6,
+                              ),
+                              shape: BoxShape.circle,
+                            ),
+                          )),
             ),
           );
         }),
@@ -89,9 +100,27 @@ extension _TvPinDialogViews on _TvPinDialogState {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildKey(0, 0, label: '1', scheme: scheme, onTap: () => _onDigitEntered('1')),
-            _buildKey(0, 1, label: '2', scheme: scheme, onTap: () => _onDigitEntered('2')),
-            _buildKey(0, 2, label: '3', scheme: scheme, onTap: () => _onDigitEntered('3')),
+            _buildKey(
+              0,
+              0,
+              label: '1',
+              scheme: scheme,
+              onTap: () => _onDigitEntered('1'),
+            ),
+            _buildKey(
+              0,
+              1,
+              label: '2',
+              scheme: scheme,
+              onTap: () => _onDigitEntered('2'),
+            ),
+            _buildKey(
+              0,
+              2,
+              label: '3',
+              scheme: scheme,
+              onTap: () => _onDigitEntered('3'),
+            ),
           ],
         ),
         const SizedBox(height: 6),
@@ -99,9 +128,27 @@ extension _TvPinDialogViews on _TvPinDialogState {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildKey(1, 0, label: '4', scheme: scheme, onTap: () => _onDigitEntered('4')),
-            _buildKey(1, 1, label: '5', scheme: scheme, onTap: () => _onDigitEntered('5')),
-            _buildKey(1, 2, label: '6', scheme: scheme, onTap: () => _onDigitEntered('6')),
+            _buildKey(
+              1,
+              0,
+              label: '4',
+              scheme: scheme,
+              onTap: () => _onDigitEntered('4'),
+            ),
+            _buildKey(
+              1,
+              1,
+              label: '5',
+              scheme: scheme,
+              onTap: () => _onDigitEntered('5'),
+            ),
+            _buildKey(
+              1,
+              2,
+              label: '6',
+              scheme: scheme,
+              onTap: () => _onDigitEntered('6'),
+            ),
           ],
         ),
         const SizedBox(height: 6),
@@ -109,9 +156,27 @@ extension _TvPinDialogViews on _TvPinDialogState {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildKey(2, 0, label: '7', scheme: scheme, onTap: () => _onDigitEntered('7')),
-            _buildKey(2, 1, label: '8', scheme: scheme, onTap: () => _onDigitEntered('8')),
-            _buildKey(2, 2, label: '9', scheme: scheme, onTap: () => _onDigitEntered('9')),
+            _buildKey(
+              2,
+              0,
+              label: '7',
+              scheme: scheme,
+              onTap: () => _onDigitEntered('7'),
+            ),
+            _buildKey(
+              2,
+              1,
+              label: '8',
+              scheme: scheme,
+              onTap: () => _onDigitEntered('8'),
+            ),
+            _buildKey(
+              2,
+              2,
+              label: '9',
+              scheme: scheme,
+              onTap: () => _onDigitEntered('9'),
+            ),
           ],
         ),
         const SizedBox(height: 6),
@@ -127,7 +192,13 @@ extension _TvPinDialogViews on _TvPinDialogState {
               scheme: scheme,
               onTap: _onBackspace,
             ),
-            _buildKey(3, 1, label: '0', scheme: scheme, onTap: () => _onDigitEntered('0')),
+            _buildKey(
+              3,
+              1,
+              label: '0',
+              scheme: scheme,
+              onTap: () => _onDigitEntered('0'),
+            ),
             _buildKey(
               3,
               2,
@@ -197,9 +268,16 @@ extension _TvPinDialogViews on _TvPinDialogState {
             final Color bg;
             final Color fg;
 
+            // Cristal: teclas como los botones de los encabezados; la de
+            // acción va resaltada.
+            final glass = MoaiGlassScope.enabledOf(context);
+
             if (isFocused) {
               bg = scheme.primary;
               fg = scheme.onPrimary;
+            } else if (glass) {
+              bg = Colors.transparent;
+              fg = isAction ? scheme.primary : scheme.onSurface;
             } else if (isAction) {
               bg = scheme.primaryContainer;
               fg = scheme.onPrimaryContainer;
@@ -221,27 +299,22 @@ extension _TvPinDialogViews on _TvPinDialogState {
                   duration: const Duration(milliseconds: 140),
                   width: 72,
                   height: 40,
-                  decoration: BoxDecoration(
-                    color: bg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: borderColor,
-                    ),
-                  ),
+                  decoration: glass
+                      ? moaiGlassButtonDecoration(
+                          scheme,
+                          focused: isFocused,
+                          highlighted: isAction,
+                          radius: 12,
+                        )
+                      : BoxDecoration(
+                          color: bg,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: borderColor),
+                        ),
                   alignment: Alignment.center,
                   child: label != null
-                      ? Text(
-                          label,
-                          style: MoaiText.body(
-                            context,
-                            color: fg,
-                          ),
-                        )
-                      : Icon(
-                          icon,
-                          color: fg,
-                          size: MoaiIconSizes.md,
-                        ),
+                      ? Text(label, style: MoaiText.body(context, color: fg))
+                      : Icon(icon, color: fg, size: MoaiIconSizes.md),
                 ),
               ),
             );

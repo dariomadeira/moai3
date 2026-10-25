@@ -7,6 +7,7 @@ import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/tv_input/tv_input.dart';
@@ -64,10 +65,13 @@ class _CreateGroupButtonState extends State<CreateGroupButton> {
     final scheme = context.scheme;
     final isFocused = _isFocused || widget.focusNode.hasFocus;
 
-    final Color bgColor =
-        isFocused ? scheme.primary : scheme.surfaceContainerHighest;
-    final Color iconColor =
-        isFocused ? scheme.onPrimary : scheme.onSurfaceVariant;
+    final glass = MoaiGlassScope.enabledOf(context);
+    final Color bgColor = isFocused
+        ? scheme.primary
+        : scheme.surfaceContainerHighest;
+    final Color iconColor = isFocused
+        ? scheme.onPrimary
+        : (glass ? scheme.onSurface : scheme.onSurfaceVariant);
 
     return Focus(
       focusNode: widget.focusNode,
@@ -79,7 +83,8 @@ class _CreateGroupButtonState extends State<CreateGroupButton> {
             widget.onKeyLeft!();
             return KeyEventResult.handled;
           }
-          if (key == LogicalKeyboardKey.arrowRight && widget.onKeyRight != null) {
+          if (key == LogicalKeyboardKey.arrowRight &&
+              widget.onKeyRight != null) {
             widget.onKeyRight!();
             return KeyEventResult.handled;
           }
@@ -110,10 +115,12 @@ class _CreateGroupButtonState extends State<CreateGroupButton> {
               duration: const Duration(milliseconds: 150),
               width: 44,
               height: 24,
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.circular(999),
-              ),
+              decoration: glass
+                  ? moaiGlassButtonDecoration(scheme, focused: isFocused)
+                  : BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
               child: Center(
                 child: Icon(
                   MoaiIcons.tvFavoritesAdd,
@@ -175,15 +182,21 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
       return;
     }
 
-    final favIds =
-        widget.originContext.read<FavoritesProvider>().favoriteChannelIds;
+    final favIds = widget.originContext
+        .read<FavoritesProvider>()
+        .favoriteChannelIds;
     Navigator.of(context).pop();
     try {
-      await widget.originContext.read<ChannelProvider>().createGroup(name, favIds);
+      await widget.originContext.read<ChannelProvider>().createGroup(
+        name,
+        favIds,
+      );
       if (widget.originContext.mounted) {
         MoaiSnackBar.show(
           widget.originContext,
-          message: LocaleKeys.groups_created_success.tr(namedArgs: {'name': name}),
+          message: LocaleKeys.groups_created_success.tr(
+            namedArgs: {'name': name},
+          ),
           icon: MoaiIcons.groupCreate,
         );
       }
@@ -191,7 +204,9 @@ class _CreateGroupDialogContentState extends State<_CreateGroupDialogContent> {
       if (widget.originContext.mounted) {
         MoaiSnackBar.show(
           widget.originContext,
-          message: LocaleKeys.groups_create_error.tr(namedArgs: {'error': '$e'}),
+          message: LocaleKeys.groups_create_error.tr(
+            namedArgs: {'error': '$e'},
+          ),
           icon: MoaiIcons.error,
         );
       }

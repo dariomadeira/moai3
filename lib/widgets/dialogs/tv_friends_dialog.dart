@@ -7,13 +7,14 @@ import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/models/friend_info.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/widgets/dialogs/tv_add_friend_dialog.dart';
+import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
 import 'package:moai3/widgets/tv_input/tv_text_field.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 part 'tv_friends/tv_friends_sections.dart';
 part 'tv_friends/friend_tile.dart';
@@ -90,11 +91,12 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
   Future<void> _handleAddFriend([String? customCode]) async {
     final rawInput = (customCode ?? _codeController.text).trim().toUpperCase();
 
+    // Sin código no se abre otro modal: se avisa y se vuelve al campo.
     if (rawInput.isEmpty) {
-      final added = await TvAddFriendDialog.show(context);
-      if (added == true && mounted) {
-        _codeController.clear();
-      }
+      setState(() {
+        _errorMessage = LocaleKeys.friend_add_dialog_error_length;
+      });
+      _codeFocus.requestFocus();
       return;
     }
 
@@ -107,10 +109,20 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
       final watchParty = context.read<WatchPartyProvider>();
       await watchParty.addFriend(rawInput);
       _codeController.clear();
+      if (mounted) {
+        MoaiSnackBar.show(
+          context,
+          message: LocaleKeys.friend_add_dialog_success.tr(),
+          icon: MoaiIcons.checkCircle,
+        );
+      }
     } catch (e) {
       if (mounted) {
         final rawKey = e.toString().replaceFirst('Exception: ', '').trim();
-        final localizedError = rawKey.tr();
+        final localizedError =
+            (rawKey.startsWith('friend_add_') || rawKey.startsWith('friends_'))
+            ? rawKey.tr()
+            : LocaleKeys.friend_add_error_generic.tr();
         setState(() {
           _errorMessage = localizedError;
         });
@@ -230,9 +242,13 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
           _inputBar(context, scheme, watchParty),
           if (_errorMessage != null) ...[
             const SizedBox(height: 8),
-            Material(
-              color: scheme.errorContainer,
-              borderRadius: BorderRadius.circular(10),
+            // Aviso de error: chip de cristal con tinte rojo.
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: scheme.error.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: scheme.error.withValues(alpha: 0.4)),
+              ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
@@ -242,7 +258,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
                   children: [
                     Icon(
                       MoaiIcons.error,
-                      color: scheme.onErrorContainer,
+                      color: scheme.error,
                       size: MoaiIconSizes.sm,
                     ),
                     const SizedBox(width: 8),
@@ -251,7 +267,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
                         _errorMessage!.tr(),
                         style: MoaiText.body(
                           context,
-                          color: scheme.onErrorContainer,
+                          color: scheme.onSurface,
                           fontSize: 12,
                           height: 1.2,
                         ),

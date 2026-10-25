@@ -14,6 +14,7 @@ import 'package:moai3/widgets/cards/new_channel_card.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Diálogo de detalle de un evento de la Agenda con los canales que lo pasan.
 class _CalendarEventDialogContent extends StatefulWidget {
@@ -74,13 +75,76 @@ class _CalendarEventDialogContentState
     }
   }
 
+  /// Chip de estado del encabezado: EN VIVO pleno del acento, PRONTO
+  /// resaltado y FIN neutro (mismo criterio que la tarjeta de la grilla).
+  Widget _statusChip(BuildContext context, ColorScheme scheme) {
+    final isFinished = widget.event.status == CalendarEventStatus.finished;
+    final BoxDecoration decoration;
+    final Color color;
+    final String label;
+    if (widget.isLive) {
+      label = LocaleKeys.calendar_status_live.tr();
+      color = scheme.onPrimary;
+      decoration = BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.transparent),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color.lerp(scheme.primary, Colors.white, 0.18)!,
+            scheme.primary,
+          ],
+        ),
+      );
+    } else if (isFinished) {
+      label = LocaleKeys.calendar_status_finished.tr();
+      color = scheme.onSurfaceVariant;
+      decoration = moaiGlassChipDecoration(scheme, radius: 6);
+    } else {
+      label = LocaleKeys.calendar_status_upcoming_short.tr();
+      color = scheme.primary;
+      decoration = moaiGlassChipDecoration(
+        scheme,
+        radius: 6,
+        highlighted: true,
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: decoration,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (widget.isLive) ...[
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: MoaiText.body(
+              context,
+              fontSize: 9.5,
+              fontWeight: FontWeight.w800,
+              color: color,
+              letterSpacing: 0.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final event = widget.event;
     final scheme = context.scheme;
     final hasChannels = _matchingChannels.isNotEmpty;
-    final panelBase = scheme.surface.withValues(alpha: 0.8);
-    final panelBorder = scheme.outlineVariant.withValues(alpha: 0.48);
 
     final detailsColumn = Column(
       mainAxisSize: MainAxisSize.min,
@@ -90,7 +154,10 @@ class _CalendarEventDialogContentState
           icon: MoaiIcons.calendarDialogTime,
           label: LocaleKeys.calendar_event_time.tr(),
           description: LocaleKeys.calendar_event_date_time.tr(
-            namedArgs: {'date': event.formattedDate, 'time': event.formattedTime},
+            namedArgs: {
+              'date': event.formattedDate,
+              'time': event.formattedTime,
+            },
           ),
         ),
         const SizedBox(height: 8),
@@ -125,13 +192,7 @@ class _CalendarEventDialogContentState
                     horizontal: 12,
                     vertical: 8,
                   ),
-                  decoration: BoxDecoration(
-                    color: panelBase,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: panelBorder,
-                    ),
-                  ),
+                  decoration: moaiGlassWellDecoration(scheme),
                   child: TvWindowedList<Channel>(
                     key: _listKey,
                     items: _matchingChannels,
@@ -176,65 +237,7 @@ class _CalendarEventDialogContentState
       icon: MoaiIcons.calendarDialogTitle,
       title: event.title,
       subtitle: event.competition,
-      trailingHeader: widget.isLive
-          ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-              decoration: BoxDecoration(
-                color: scheme.primaryContainer,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                LocaleKeys.calendar_status_live.tr(),
-                style: MoaiText.body(
-                  context,
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w800,
-                  color: scheme.onPrimaryContainer,
-                  letterSpacing: 0.4,
-                ),
-              ),
-            )
-          : (widget.event.status == CalendarEventStatus.finished
-                ? Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 2.5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: scheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      LocaleKeys.calendar_status_finished.tr(),
-                      style: MoaiText.body(
-                        context,
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w800,
-                        color: scheme.onSurfaceVariant,
-                        letterSpacing: 0.4,
-                      ),
-                    ),
-                  )
-                : Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 2.5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: scheme.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      LocaleKeys.calendar_status_upcoming_short.tr(),
-                      style: MoaiText.body(
-                        context,
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w800,
-                        color: scheme.primary,
-                        letterSpacing: 0.4,
-                      ),
-                    ),
-                  )),
+      trailingHeader: _statusChip(context, scheme),
       content: contentWidget,
       actions: [
         Focus(

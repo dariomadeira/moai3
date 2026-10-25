@@ -11,6 +11,7 @@ import 'package:moai3/features/home/home_section.dart';
 import 'package:moai3/features/home/widgets/tv_bottom_weather_pill.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Rail de navegación lateral vertical con destinos circulares compactos:
 /// - Cápsula flotante continua centrada verticalmente.
@@ -111,9 +112,6 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
       (CalendarProvider p) => p.todayEventCount,
     );
 
-    final baseColor = scheme.surface.withValues(alpha: 0.8);
-    final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
-
     return FocusScope(
       node: widget.railScopeNode,
       child: Focus(
@@ -173,20 +171,18 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
                   alignment: Alignment.bottomCenter,
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: Container(
+                    child: MoaiGlass(
                       width: 48,
-                      decoration: BoxDecoration(
-                        color: baseColor,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: borderColor,
-                        ),
-                      ),
+                      borderRadius: 24,
                       padding: const EdgeInsets.all(4),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          for (int i = 0; i < availableSections.length; i++) ...[
+                          for (
+                            int i = 0;
+                            i < availableSections.length;
+                            i++
+                          ) ...[
                             if (i > 0) const SizedBox(height: 5),
                             _buildRailDestination(
                               availableSections[i],
@@ -226,8 +222,7 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
 
     switch (section) {
       case HomeSection.home:
-        iconData =
-            isSelected ? MoaiIcons.railHomeSelected : MoaiIcons.railHome;
+        iconData = isSelected ? MoaiIcons.railHomeSelected : MoaiIcons.railHome;
         labelKey = LocaleKeys.home_rail_home_title;
         break;
       case HomeSection.tv:
@@ -241,43 +236,44 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
         labelKey = LocaleKeys.home_rail_featured_title;
         break;
       case HomeSection.movies:
-        iconData =
-            isSelected ? MoaiIcons.railMoviesSelected : MoaiIcons.railMovies;
+        iconData = isSelected
+            ? MoaiIcons.railMoviesSelected
+            : MoaiIcons.railMovies;
         labelKey = LocaleKeys.home_rail_movies_title;
         break;
       case HomeSection.series:
-        iconData =
-            isSelected ? MoaiIcons.railSeriesSelected : MoaiIcons.railSeries;
+        iconData = isSelected
+            ? MoaiIcons.railSeriesSelected
+            : MoaiIcons.railSeries;
         labelKey = LocaleKeys.home_rail_series_title;
         break;
       case HomeSection.calendar:
-        iconData =
-            isSelected ? MoaiIcons.railCalendarSelected : MoaiIcons.railCalendar;
+        iconData = isSelected
+            ? MoaiIcons.railCalendarSelected
+            : MoaiIcons.railCalendar;
         labelKey = LocaleKeys.home_rail_calendar_title;
         break;
       case HomeSection.arcade:
-        iconData =
-            isSelected ? MoaiIcons.railArcadeSelected : MoaiIcons.railArcade;
+        iconData = isSelected
+            ? MoaiIcons.railArcadeSelected
+            : MoaiIcons.railArcade;
         labelKey = LocaleKeys.home_rail_arcade_title;
         break;
       case HomeSection.settings:
-        iconData =
-            isSelected ? MoaiIcons.railSettingsSelected : MoaiIcons.railSettings;
+        iconData = isSelected
+            ? MoaiIcons.railSettingsSelected
+            : MoaiIcons.railSettings;
         labelKey = LocaleKeys.home_rail_settings_title;
         break;
     }
 
-    final Color pillColor;
     final Color iconColor;
 
     if (isHovered) {
-      pillColor = scheme.primary;
       iconColor = scheme.onPrimary;
     } else if (isSelected) {
-      pillColor = scheme.primaryContainer;
-      iconColor = scheme.onPrimaryContainer;
+      iconColor = scheme.onSurface;
     } else {
-      pillColor = Colors.transparent;
       iconColor = scheme.onSurfaceVariant;
     }
 
@@ -291,10 +287,7 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
       iconWidget = Badge(
         backgroundColor: scheme.tertiaryContainer,
         textColor: scheme.onTertiaryContainer,
-        textStyle: const TextStyle(
-          fontWeight: FontWeight.w800,
-          fontSize: 9,
-        ),
+        textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 9),
         offset: const Offset(3, -3),
         label: Text('$todayEvents'),
         child: iconWidget,
@@ -313,19 +306,43 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
           widget.railFocusNode.requestFocus();
         },
         borderRadius: BorderRadius.circular(20),
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: pillColor,
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: iconWidget,
-        ),
+        child: isHovered
+            // Foco: primario sólido con brillo arriba y halo, para que se
+            // lea bien a distancia.
+            ? Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color.lerp(scheme.primary, Colors.white, 0.22)!,
+                      scheme.primary,
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: scheme.primary.withValues(alpha: 0.45),
+                      blurRadius: 16,
+                    ),
+                  ],
+                ),
+                alignment: Alignment.center,
+                child: iconWidget,
+              )
+            : isSelected
+            ? MoaiGlass(
+                width: 40,
+                height: 40,
+                tint: scheme.primary,
+                elevated: false,
+                alignment: Alignment.center,
+                child: iconWidget,
+              )
+            : SizedBox(width: 40, height: 40, child: Center(child: iconWidget)),
       ),
     );
   }
 }
-
-

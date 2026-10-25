@@ -1,7 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 class AlphabetLetterCard extends StatefulWidget {
   final String letter;
@@ -42,8 +43,7 @@ class _AlphabetLetterCardState extends State<AlphabetLetterCard> {
         onFocusChange: (focus) => setState(() => _isFocused = focus),
         onKeyEvent: (node, event) {
           final key = event.logicalKey;
-          final isActionButton =
-              TvKeyHandler.isActionKey(key);
+          final isActionButton = TvKeyHandler.isActionKey(key);
 
           if (event is KeyDownEvent || event is KeyRepeatEvent) {
             // Nunca L/R con filtro activo (no cambiar de panel).
@@ -80,10 +80,14 @@ class _AlphabetLetterCardState extends State<AlphabetLetterCard> {
               duration: const Duration(milliseconds: 200),
               width: 26,
               height: 26,
-              decoration: BoxDecoration(
-                color: _isFocused ? scheme.primary : Colors.transparent,
-                shape: BoxShape.circle,
-              ),
+              // En cristal el foco es el de los botones (acento con brillo y
+              // halo); en reposo la letra va suelta.
+              decoration: MoaiGlassScope.enabledOf(context) && _isFocused
+                  ? moaiGlassButtonDecoration(scheme, focused: true, radius: 13)
+                  : BoxDecoration(
+                      color: _isFocused ? scheme.primary : Colors.transparent,
+                      shape: BoxShape.circle,
+                    ),
               alignment: Alignment.center,
               child: Text(
                 widget.letter,
@@ -101,4 +105,3 @@ class _AlphabetLetterCardState extends State<AlphabetLetterCard> {
     );
   }
 }
-

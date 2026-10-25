@@ -205,12 +205,7 @@ abstract class  LocaleKeys {
   static const favorites_cleared_snackbar = 'favorites_cleared_snackbar';
   static const favorites_empty = 'favorites_empty';
   static const friend_add_dialog_error_length = 'friend_add_dialog_error_length';
-  static const friend_add_dialog_hint = 'friend_add_dialog_hint';
-  static const friend_add_dialog_submit = 'friend_add_dialog_submit';
-  static const friend_add_dialog_subtitle = 'friend_add_dialog_subtitle';
   static const friend_add_dialog_success = 'friend_add_dialog_success';
-  static const friend_add_dialog_title = 'friend_add_dialog_title';
-  static const friend_add_dialog_verifying = 'friend_add_dialog_verifying';
   static const friend_add_error_already_added = 'friend_add_error_already_added';
   static const friend_add_error_generic = 'friend_add_error_generic';
   static const friend_add_error_not_found = 'friend_add_error_not_found';
@@ -270,6 +265,9 @@ abstract class  LocaleKeys {
   static const groups_name_required = 'groups_name_required';
   static const home_channels_count = 'home_channels_count';
   static const home_exit_double_back = 'home_exit_double_back';
+  static const home_greeting_afternoon = 'home_greeting_afternoon';
+  static const home_greeting_morning = 'home_greeting_morning';
+  static const home_greeting_night = 'home_greeting_night';
   static const home_panel_categories = 'home_panel_categories';
   static const home_panel_channels = 'home_panel_channels';
   static const home_panel_countries = 'home_panel_countries';
@@ -293,6 +291,11 @@ abstract class  LocaleKeys {
   static const home_tv_viewer_empty_desc = 'home_tv_viewer_empty_desc';
   static const home_tv_viewer_no_channels = 'home_tv_viewer_no_channels';
   static const home_tv_viewer_no_channels_desc = 'home_tv_viewer_no_channels_desc';
+  static const home_weather_feels_like = 'home_weather_feels_like';
+  static const home_weather_max = 'home_weather_max';
+  static const home_weather_min = 'home_weather_min';
+  static const home_weather_now = 'home_weather_now';
+  static const home_weather_rain = 'home_weather_rain';
   static const keyboard_clear = 'keyboard_clear';
   static const keyboard_close_barrier = 'keyboard_close_barrier';
   static const keyboard_done = 'keyboard_done';

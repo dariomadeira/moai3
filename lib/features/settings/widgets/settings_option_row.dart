@@ -133,7 +133,9 @@ class _SettingsOptionRowState<T> extends State<SettingsOptionRow<T>> {
         onSelect: widget.onChanged,
         labelBuilder: widget.labelBuilder,
         isFocused: isFocused,
-        isEditing: _editing && isFocused,
+        // En cristal `isFocused` llega en false (la ficha no se rellena), así
+        // que la edición se decide por el foco real de la fila.
+        isEditing: _editing && widget.focusNode.hasFocus,
       ),
     );
   }

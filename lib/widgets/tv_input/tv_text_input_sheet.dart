@@ -5,7 +5,7 @@ import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_layouts.dart';
 import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
 import 'package:moai3/widgets/tv_input/tv_on_screen_keyboard.dart';
-import 'package:moai3/widgets/tv_common/moai_background_image.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 Future<String?> showTvTextInput(
   BuildContext context, {
@@ -212,7 +212,9 @@ class _TvTextInputSheetState extends State<_TvTextInputSheet> {
             child: Container(
               width: width,
               margin: const EdgeInsets.symmetric(horizontal: 24),
-              decoration: BoxDecoration(
+              decoration: MoaiGlassScope.enabledOf(context)
+                  ? moaiDialogDecoration(scheme)
+                  : BoxDecoration(
                 color: baseColor,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
@@ -228,11 +230,6 @@ class _TvTextInputSheetState extends State<_TvTextInputSheet> {
               ),
               child: Stack(
                 children: [
-                  const Positioned.fill(
-                    child: IgnorePointer(
-                      child: MoaiBackgroundImage(MoaiBackground.dialog),
-                    ),
-                  ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                     child: Column(
@@ -240,7 +237,9 @@ class _TvTextInputSheetState extends State<_TvTextInputSheet> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Container(
-                          decoration: BoxDecoration(
+                          decoration: MoaiGlassScope.enabledOf(context)
+                              ? moaiGlassWellDecoration(scheme, radius: 14)
+                              : BoxDecoration(
                             color: scheme.surfaceContainerLow,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(

@@ -14,7 +14,7 @@ import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/buttons/tv_back_pill.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
-import 'package:moai3/widgets/tv_common/moai_background_image.dart';
+import 'package:moai3/widgets/tv_common/moai_ambient_background.dart';
 enum _AccentScreenItemType {
   colorDotsSelector,
   autoAccentSwitch,
@@ -97,7 +97,7 @@ class _AccentColorScreenState extends State<AccentColorScreen> {
           children: [
             const Positioned.fill(
               child: IgnorePointer(
-                child: MoaiBackgroundImage(MoaiBackground.screen),
+                child: MoaiAmbientBackground(),
               ),
             ),
             SafeArea(

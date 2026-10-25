@@ -1,6 +1,7 @@
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/services/calendar/argentina_time.dart';
@@ -160,10 +161,7 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
         height: 140,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHigh.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(16),
-        ),
+        decoration: moaiGlassWellDecoration(scheme),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

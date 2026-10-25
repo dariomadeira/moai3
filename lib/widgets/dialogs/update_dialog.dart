@@ -1,6 +1,7 @@
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/services/update_service.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
@@ -171,29 +172,11 @@ class _UpdateDialogState extends State<UpdateDialog> {
           const SizedBox(height: 10),
           Builder(
             builder: (context) {
-              final baseColor = scheme.surface.withValues(alpha: 0.8);
-              final endColor = Color.alphaBlend(
-                scheme.onSurface.withValues(alpha: 0.05),
-                baseColor,
-              );
-              final borderColor = scheme.outlineVariant.withValues(alpha: 0.2);
-
               return Container(
                 constraints: const BoxConstraints(maxHeight: 120),
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomRight,
-                    end: Alignment.topLeft,
-                    colors: [baseColor, baseColor, endColor],
-                    stops: const [0.0, 0.62, 1.0],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: borderColor,
-                  ),
-                ),
+                decoration: moaiGlassWellDecoration(scheme),
                 child: SingleChildScrollView(
                   child: Text(
                     widget.updateInfo.changelog,
@@ -247,7 +230,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
             child: LinearProgressIndicator(
               value: _progress >= 0 ? _progress : null,
               minHeight: 10,
-              backgroundColor: scheme.surfaceContainerHighest,
+              backgroundColor: (scheme.brightness == Brightness.dark ? Colors.white : scheme.onSurface).withValues(alpha: 0.10),
               valueColor: AlwaysStoppedAnimation<Color>(scheme.primary),
             ),
           ),

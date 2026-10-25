@@ -5,6 +5,7 @@ import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
 class FavoriteButton extends StatefulWidget {
@@ -58,10 +59,17 @@ class _FavoriteButtonState extends State<FavoriteButton> {
     );
     final isFocused = _isFocused || widget.focusNode.hasFocus;
 
+    final glass = MoaiGlassScope.enabledOf(context);
+
     final Color bgColor;
     final Color iconColor;
 
-    if (isFocused) {
+    if (glass) {
+      bgColor = Colors.transparent;
+      iconColor = isFocused
+          ? scheme.onPrimary
+          : (isFav ? scheme.primary : scheme.onSurface);
+    } else if (isFocused) {
       bgColor = scheme.primary;
       iconColor = scheme.onPrimary;
     } else if (isFav) {
@@ -124,10 +132,16 @@ class _FavoriteButtonState extends State<FavoriteButton> {
             duration: const Duration(milliseconds: 150),
             width: 44,
             height: 24,
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(999),
-            ),
+            decoration: glass
+                ? moaiGlassButtonDecoration(
+                    scheme,
+                    focused: isFocused,
+                    highlighted: isFav,
+                  )
+                : BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
             child: Center(
               child: Icon(
                 isFav
@@ -143,4 +157,3 @@ class _FavoriteButtonState extends State<FavoriteButton> {
     );
   }
 }
-

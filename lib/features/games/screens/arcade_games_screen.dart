@@ -18,7 +18,7 @@ import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 import 'package:moai3/widgets/tv_input/tv_text_field.dart';
 import 'package:moai3/widgets/buttons/tv_icon_action_button.dart';
-import 'package:moai3/widgets/tv_common/moai_background_image.dart';
+import 'package:moai3/widgets/tv_common/moai_ambient_background.dart';
 
 part 'arcade_games/arcade_games_layout.dart';
 part 'arcade_games/installed_rom_tile.dart';
@@ -149,7 +149,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
           children: [
             const Positioned.fill(
               child: IgnorePointer(
-                child: MoaiBackgroundImage(MoaiBackground.screen),
+                child: MoaiAmbientBackground(),
               ),
             ),
             SafeArea(

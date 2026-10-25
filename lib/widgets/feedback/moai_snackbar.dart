@@ -4,6 +4,7 @@ import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/services/modal_route_tracker.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Sistema unificado de SnackBar estilo Pill para Moai.
 /// Centrado, flotante, colores del rail activo y sombra negra.
@@ -48,6 +49,7 @@ class MoaiSnackBar {
             iconColor: iconColor ?? fg,
             foregroundColor: fg,
             backgroundColor: bg,
+            customColors: backgroundColor != null || iconColor != null,
             onAction: onAction,
             onBack: onBack,
             textContext: context,
@@ -188,6 +190,9 @@ class _MoaiSnackBarBody extends StatefulWidget {
   final Color iconColor;
   final Color foregroundColor;
   final Color backgroundColor;
+
+  /// Quien llama eligió colores: se respetan también en cristal.
+  final bool customColors;
   final VoidCallback? onAction;
   final VoidCallback? onBack;
   final BuildContext? textContext;
@@ -197,6 +202,7 @@ class _MoaiSnackBarBody extends StatefulWidget {
     required this.iconColor,
     required this.foregroundColor,
     required this.backgroundColor,
+    this.customColors = false,
     this.hint,
     this.icon,
     this.onAction,
@@ -245,38 +251,48 @@ class _MoaiSnackBarBodyState extends State<_MoaiSnackBarBody> {
 
   @override
   Widget build(BuildContext context) {
-    final fg = widget.foregroundColor;
+    // En cristal el snack es una superficie de diálogo (sólida, se lee sobre
+    // el video) con el ícono y la acción en el acento.
+    final scheme = Theme.of(context).colorScheme;
+    final glass = MoaiGlassScope.enabledOf(context) && !widget.customColors;
+    final fg = glass ? scheme.onSurface : widget.foregroundColor;
+    final iconColor = glass ? scheme.primary : widget.iconColor;
+    final actionBg = glass ? scheme.primary : fg;
+    final actionFg = glass ? scheme.onPrimary : widget.backgroundColor;
     final textContext = widget.textContext ?? context;
     final actionLabel = widget.hint;
 
-    final hasAction = widget.onAction != null &&
+    final hasAction =
+        widget.onAction != null &&
         actionLabel != null &&
         actionLabel.isNotEmpty;
 
     final body = DecoratedBox(
-      decoration: BoxDecoration(
-        color: widget.backgroundColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: glass
+          ? moaiDialogDecoration(scheme)
+          : BoxDecoration(
+              color: widget.backgroundColor,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (widget.icon != null) ...[
-              Icon(widget.icon, color: widget.iconColor, size: MoaiIconSizes.lg),
+              Icon(widget.icon, color: iconColor, size: MoaiIconSizes.lg),
               const SizedBox(width: 10),
             ],
             Flexible(
@@ -299,7 +315,7 @@ class _MoaiSnackBarBodyState extends State<_MoaiSnackBarBody> {
                 onTap: _runAction,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: fg,
+                    color: actionBg,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Padding(
@@ -311,7 +327,7 @@ class _MoaiSnackBarBodyState extends State<_MoaiSnackBarBody> {
                       actionLabel,
                       style: MoaiText.body(
                         textContext,
-                        color: widget.backgroundColor,
+                        color: actionFg,
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                       ),
@@ -350,4 +366,3 @@ class _MoaiSnackBarBodyState extends State<_MoaiSnackBarBody> {
     );
   }
 }
-

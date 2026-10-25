@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/services/voice_audio_service.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
 part 'tv_voice_test/tv_voice_test_views.dart';
@@ -57,7 +59,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
     super.initState();
     _waveController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 1400),
     );
 
     VoiceAudioService.initialize();
@@ -137,7 +139,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
       _recordSeconds = 0;
       _errorMessage = null;
     });
-    _waveController.repeat(reverse: true);
+    _waveController.repeat();
 
     final res = await VoiceAudioService.startRecording();
     if (res['success'] != true) {
@@ -206,7 +208,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
         _isPlaying = true;
         _errorMessage = null;
       });
-      _waveController.repeat(reverse: true);
+      _waveController.repeat();
       final res = await VoiceAudioService.playRecording();
       if (!mounted) return;
       if (res['success'] != true) {
@@ -228,16 +230,7 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
     return TvDialog(
       width: 580,
       icon: MoaiIcons.micSettings,
-      iconBgColor: _isRecording
-          ? scheme.error
-          : _isPlaying
-              ? scheme.tertiary
-              : scheme.primaryContainer,
-      iconColor: _isRecording
-          ? scheme.onError
-          : _isPlaying
-              ? scheme.onTertiary
-              : scheme.onPrimaryContainer,
+      iconColor: _isRecording ? scheme.error : scheme.primary,
       title: LocaleKeys.mic_test_title.tr(),
       subtitle: LocaleKeys.mic_test_subtitle.tr(),
       content: _isLoading
@@ -249,40 +242,15 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 1. Banner de recomendación ergonómica
-                _buildTipBanner(scheme),
-                const SizedBox(height: 14),
-
-                // 2. Tarjeta interactiva central (Estado, Olas de audio y Controles)
+                // Escenario: orbe, onda, progreso y controles.
                 _buildMainCard(scheme),
-                const SizedBox(height: 14),
-
-                // 3. Ficha compacta de hardware detectado
-                _buildHardwareFooter(scheme),
-
-                // 4. Mensaje de error si ocurre alguno
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: scheme.errorContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      _errorMessage!,
-                      style: MoaiText.body(
-                        context,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: scheme.onErrorContainer,
-                      ),
-                    ),
-                  ),
+                  _buildError(scheme),
                 ],
+                const SizedBox(height: 14),
+                // Consejo de uso y entrada de audio detectada.
+                _buildInfoFooter(scheme),
               ],
             ),
       actions: [

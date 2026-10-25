@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:moai3/features/home/widgets/tv_weather_animated_icon.dart';
 import 'package:moai3/state/weather_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:provider/provider.dart';
 
 /// Cápsula de hora y clima en la parte superior del rail lateral.
@@ -51,30 +52,21 @@ class _TvBottomWeatherPillState extends State<TvBottomWeatherPill> {
     final hourStr = DateFormat('HH').format(_now);
     final minuteStr = DateFormat('mm').format(_now);
 
-    final baseColor = scheme.surface.withValues(alpha: 0.8);
-    final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
-
     return RepaintBoundary(
-      child: Container(
+      child: MoaiGlass(
         width: 48,
         padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: baseColor,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: borderColor),
-        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Cápsula interna para la hora (dos puntos fijos sin AnimatedOpacity)
-            Container(
+            MoaiGlass(
               width: 40,
               height: 32,
-              decoration: BoxDecoration(
-                color: scheme.primaryContainer.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(16),
-              ),
+              borderRadius: 16,
+              tint: scheme.primary,
+              elevated: false,
               padding: const EdgeInsets.symmetric(horizontal: 2),
               alignment: Alignment.center,
               child: FittedBox(
@@ -89,7 +81,7 @@ class _TvBottomWeatherPillState extends State<TvBottomWeatherPill> {
                         fontSize: 12,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.2,
-                        color: scheme.onPrimaryContainer,
+                        color: scheme.onSurface,
                         height: 1.0,
                       ),
                     ),
@@ -98,7 +90,7 @@ class _TvBottomWeatherPillState extends State<TvBottomWeatherPill> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w900,
-                        color: scheme.onPrimaryContainer,
+                        color: scheme.onSurface,
                         height: 1.0,
                       ),
                     ),
@@ -108,7 +100,7 @@ class _TvBottomWeatherPillState extends State<TvBottomWeatherPill> {
                         fontSize: 12,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.2,
-                        color: scheme.onPrimaryContainer.withValues(alpha: 0.8),
+                        color: scheme.onSurface.withValues(alpha: 0.8),
                         height: 1.0,
                       ),
                     ),
@@ -116,44 +108,46 @@ class _TvBottomWeatherPillState extends State<TvBottomWeatherPill> {
                 ),
               ),
             ),
-          // Icono del clima animado (1 ciclo en actualización + congelado estático)
-          Builder(
-            builder: (context) {
-              final weatherProvider = context.watch<WeatherProvider?>();
-              final tempStr = weatherProvider?.temperatureDisplay ?? '33°';
-              final lottieUrl =
-                  weatherProvider?.lottieUrl ??
-                  'https://cdn.jsdelivr.net/npm/@meteocons/lottie@0.1.0/fill/clear-day.json';
-              final updateToken =
-                  weatherProvider?.weather?.lastUpdated.millisecondsSinceEpoch;
+            // Icono del clima animado (1 ciclo en actualización + congelado estático)
+            Builder(
+              builder: (context) {
+                final weatherProvider = context.watch<WeatherProvider?>();
+                final tempStr = weatherProvider?.temperatureDisplay ?? '33°';
+                final lottieUrl =
+                    weatherProvider?.lottieUrl ??
+                    'https://cdn.jsdelivr.net/npm/@meteocons/lottie@0.1.0/fill/clear-day.json';
+                final updateToken = weatherProvider
+                    ?.weather
+                    ?.lastUpdated
+                    .millisecondsSinceEpoch;
 
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TvWeatherAnimatedIcon(
-                    lottieUrl: lottieUrl,
-                    updateToken: updateToken,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
-                      tempStr,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
-                        color: scheme.onSurfaceVariant,
-                        height: 1.0,
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TvWeatherAnimatedIcon(
+                      lottieUrl: lottieUrl,
+                      updateToken: updateToken,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        tempStr,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                          color: scheme.onSurfaceVariant,
+                          height: 1.0,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

@@ -55,22 +55,6 @@ class _RequestTileState extends State<_RequestTile> {
     final scheme = Theme.of(context).colorScheme;
     final isFocused = widget.focusNode.hasFocus;
 
-    final bg = isFocused ? scheme.primary : scheme.surfaceContainerLow;
-    final titleColor = isFocused ? scheme.onPrimary : scheme.onSurface;
-    final descColor = isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.85)
-        : scheme.onSurfaceVariant;
-    final iconBg = isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.18)
-        : scheme.tertiaryContainer;
-    final iconColor = isFocused
-        ? scheme.onPrimary
-        : scheme.onTertiaryContainer;
-
-    final borderColor = isFocused
-        ? scheme.primary
-        : scheme.outlineVariant.withValues(alpha: 0.12);
-
     final hasNickname = widget.request.nickname != null &&
         widget.request.nickname!.trim().isNotEmpty;
     final displayName =
@@ -108,29 +92,22 @@ class _RequestTileState extends State<_RequestTile> {
         },
         child: GestureDetector(
           onTap: widget.isLoading ? null : widget.onAccept,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: borderColor,
-              ),
-            ),
+          // Ficha de cristal como TvTile: el foco es el borde del acento.
+          child: MoaiGlass(
+            borderRadius: 14,
+            elevated: false,
+            solid: true,
+            focused: isFocused,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             child: Row(
               children: [
-                Material(
-                  color: iconBg,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(7),
-                    child: Icon(
-                      MoaiIcons.personAdd,
-                      size: MoaiIconSizes.md,
-                      color: iconColor,
+                Padding(
+                  padding: const EdgeInsets.all(7),
+                  child: Icon(
+                    MoaiIcons.personAdd,
+                    size: MoaiIconSizes.md,
+                    color: scheme.primary.withValues(
+                      alpha: isFocused ? 1 : 0.75,
                     ),
                   ),
                 ),
@@ -146,7 +123,7 @@ class _RequestTileState extends State<_RequestTile> {
                         overflow: TextOverflow.ellipsis,
                         style: MoaiText.body(
                           context,
-                          color: titleColor,
+                          color: scheme.onSurface,
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
@@ -156,7 +133,7 @@ class _RequestTileState extends State<_RequestTile> {
                         widget.request.userCode,
                         style: MoaiText.body(
                           context,
-                          color: descColor,
+                          color: scheme.onSurfaceVariant,
                           fontSize: 10.5,
                         ),
                       ),
@@ -164,36 +141,45 @@ class _RequestTileState extends State<_RequestTile> {
                   ),
                 ),
                 const SizedBox(width: 6),
-                // Botón de Aceptar compacto con estilo de Administrador de Extensiones
-                Container(
+                // Aceptar: la acción de la fila, en el acento (pleno con foco).
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 120),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
+                    horizontal: 9,
                     vertical: 4,
                   ),
-                  decoration: BoxDecoration(
-                    color: isFocused
-                        ? scheme.primaryContainer
-                        : scheme.secondaryContainer.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
+                  decoration: isFocused
+                      ? BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.transparent),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Color.lerp(scheme.primary, Colors.white, 0.18)!,
+                              scheme.primary,
+                            ],
+                          ),
+                        )
+                      : moaiGlassChipDecoration(
+                          scheme,
+                          radius: 8,
+                          highlighted: true,
+                        ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         MoaiIcons.check,
                         size: MoaiIconSizes.xs,
-                        color: isFocused
-                            ? scheme.onPrimaryContainer
-                            : scheme.onSecondaryContainer,
+                        color: isFocused ? scheme.onPrimary : scheme.primary,
                       ),
                       const SizedBox(width: 3),
                       Text(
                         LocaleKeys.friends_accept_button.tr(),
                         style: MoaiText.body(
                           context,
-                          color: isFocused
-                              ? scheme.onPrimaryContainer
-                              : scheme.onSecondaryContainer,
+                          color: isFocused ? scheme.onPrimary : scheme.primary,
                           fontSize: 10.5,
                           fontWeight: FontWeight.w800,
                         ),

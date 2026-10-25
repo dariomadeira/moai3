@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:moai3/config/constants.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -18,7 +19,8 @@ import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/utils/moai_formats.dart';
-import 'package:moai3/widgets/tv_common/moai_background_image.dart';
+import 'package:moai3/widgets/tv_common/moai_ambient_background.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Pantalla inicial de verificación de presencia y carga con estética Material 3 Expressive (SPEC-22 §4.1).
 class LoadingScreen extends StatefulWidget {
@@ -41,7 +43,9 @@ class _LoadingScreenState extends State<LoadingScreen>
   late final Animation<double> _scaleAnimation;
   late final Animation<double> _glowAnimation;
   final FocusNode _retryFocusNode = FocusNode(debugLabel: 'loading_retry');
-  final FocusNode _cancelCatalogFocus = FocusNode(debugLabel: 'loading_cancel_catalog');
+  final FocusNode _cancelCatalogFocus = FocusNode(
+    debugLabel: 'loading_cancel_catalog',
+  );
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -159,21 +163,31 @@ class _LoadingScreenState extends State<LoadingScreen>
         return;
       }
 
-      await _syncSessionAndCatalog(context.read<TvSettingsProvider>());
-      if (!mounted) return;
+      if (kStartupLoginEnabled) {
+        await _syncSessionAndCatalog(context.read<TvSettingsProvider>());
+        if (!mounted) return;
 
-      // Garantizar un tiempo mínimo total cinematográfico
-      final elapsed = DateTime.now().difference(startTime);
-      if (elapsed < const Duration(milliseconds: 1200)) {
-        await Future.delayed(const Duration(milliseconds: 1200) - elapsed);
+        // Garantizar un tiempo mínimo total cinematográfico
+        final elapsed = DateTime.now().difference(startTime);
+        if (elapsed < const Duration(milliseconds: 1200)) {
+          await Future.delayed(const Duration(milliseconds: 1200) - elapsed);
+        }
+
+        if (!mounted) return;
+
+        setState(() {
+          _statusText = LocaleKeys.loading_ready.tr();
+        });
+        await Future.delayed(const Duration(milliseconds: 1200));
+      } else {
+        // Desarrollo: sin login, con el catálogo guardado.
+        MoiamovApiService.logLine(
+          '⏭ Login de arranque desactivado (desarrollo)',
+        );
+        final available = await MoiamovApiService.instance.savedSections();
+        if (!mounted) return;
+        context.read<FeaturedMoviesProvider>().setAvailableSections(available);
       }
-
-      if (!mounted) return;
-
-      setState(() {
-        _statusText = LocaleKeys.loading_ready.tr();
-      });
-      await Future.delayed(const Duration(milliseconds: 1200));
 
       if (!mounted) return;
 
@@ -232,7 +246,8 @@ class _LoadingScreenState extends State<LoadingScreen>
     try {
       final hasCatalog = (await api.savedSections()).isNotEmpty;
       _storedCatalogAt = await api.lastSavedCatalogAt();
-      final needsUpdate = !hasCatalog ||
+      final needsUpdate =
+          !hasCatalog ||
           TvSettingsProvider.shouldAttemptCatalogUpdate(
             savedAt: _storedCatalogAt,
             frequency: tvSettings.catalogUpdateFrequency,
@@ -252,8 +267,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       // Los nodos van en el orden del ranking (SPEC-39 §4.1); los
       // resultados se anotan al final.
       final ranking = VpnNodeRanking();
-      final nodes =
-          (await ranking.orderedNodes()).take(_maxAttempts).toList();
+      final nodes = (await ranking.orderedNodes()).take(_maxAttempts).toList();
       final results = <({VpnNode node, bool success, Duration? elapsed})>[];
       var anyTunnel = false;
 
@@ -268,10 +282,7 @@ class _LoadingScreenState extends State<LoadingScreen>
           'Intento ${attempt + 1}/${nodes.length}: ${node.id}',
         );
 
-        final connection = await vpn.connect(
-          node,
-          onStatusUpdate: _setStatus,
-        );
+        final connection = await vpn.connect(node, onStatusUpdate: _setStatus);
         if (connection == VpnConnectResult.permissionDenied) {
           MoiamovApiService.logLine('Permiso VPN rechazado por el usuario.');
           break;
@@ -371,8 +382,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       } catch (_) {}
     }
 
-    final available =
-        sessionOk ? await api.savedSections() : const <String>{};
+    final available = sessionOk ? await api.savedSections() : const <String>{};
     MoiamovApiService.logLine('Secciones disponibles: $available');
     if (mounted) {
       context.read<FeaturedMoviesProvider>().setAvailableSections(available);
@@ -446,9 +456,7 @@ class _LoadingScreenState extends State<LoadingScreen>
           child: Stack(
             children: [
               const Positioned.fill(
-                child: IgnorePointer(
-                  child: MoaiBackgroundImage(MoaiBackground.screen),
-                ),
+                child: IgnorePointer(child: MoaiAmbientBackground()),
               ),
               Center(
                 child: Padding(
@@ -520,7 +528,8 @@ class _LoadingScreenState extends State<LoadingScreen>
               Image.asset(
                 'assets/images/moaiAbout.png',
                 height: 112,
-                cacheHeight: (112 * MediaQuery.devicePixelRatioOf(context)).ceil(),
+                cacheHeight: (112 * MediaQuery.devicePixelRatioOf(context))
+                    .ceil(),
                 fit: BoxFit.contain,
               ),
               const SizedBox(height: 14),
@@ -540,8 +549,13 @@ class _LoadingScreenState extends State<LoadingScreen>
         Container(
           width: 160,
           height: 4.5,
+          // Riel de cristal: una línea tenue, sin relleno opaco.
           decoration: BoxDecoration(
-            color: scheme.surfaceContainerHighest.withValues(alpha: 0.35),
+            color:
+                (scheme.brightness == Brightness.dark
+                        ? Colors.white
+                        : scheme.onSurface)
+                    .withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(100),
           ),
           child: ClipRRect(
@@ -554,20 +568,17 @@ class _LoadingScreenState extends State<LoadingScreen>
           ),
         ),
         const SizedBox(height: 16),
-        // Píldora de estado estilo MoaiSnackBar (color plano, sin sombra)
+        // Píldora de estado: chip de cristal teñido del acento.
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
-          decoration: BoxDecoration(
-            color: scheme.tertiary,
-            borderRadius: BorderRadius.circular(20),
-          ),
+          decoration: moaiGlassChipDecoration(scheme, highlighted: true),
           child: Text(
             _statusText,
             textAlign: TextAlign.center,
             style: MoaiText.body(
               context,
               fontSize: 13,
-              color: scheme.onTertiary,
+              color: scheme.onSurface,
             ),
           ),
         ),
@@ -588,21 +599,8 @@ class _LoadingScreenState extends State<LoadingScreen>
     return Container(
       constraints: const BoxConstraints(maxWidth: 420),
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.25),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
-            blurRadius: 32,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
+      // Misma superficie que los diálogos sobre el fondo ambiente.
+      decoration: moaiDialogDecoration(scheme, radius: 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -612,7 +610,11 @@ class _LoadingScreenState extends State<LoadingScreen>
               color: scheme.errorContainer.withValues(alpha: 0.25),
               shape: BoxShape.circle,
             ),
-            child: Icon(MoaiIcons.offline, size: MoaiIconSizes.xxl, color: scheme.error),
+            child: Icon(
+              MoaiIcons.offline,
+              size: MoaiIconSizes.xxl,
+              color: scheme.error,
+            ),
           ),
           const SizedBox(height: 18),
           Text(

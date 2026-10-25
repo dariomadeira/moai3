@@ -16,6 +16,18 @@ class WeatherData {
   final int? humidity;
   final DateTime lastUpdated;
 
+  /// Sensación térmica actual.
+  final double? feelsLikeC;
+
+  /// Máxima, mínima y probabilidad de lluvia del día (del pronóstico).
+  final double? maxTempC;
+  final double? minTempC;
+  final int? chanceOfRain;
+
+  /// Pronóstico por hora de hoy y mañana, en orden. Vacío si la respuesta no
+  /// trae pronóstico (p. ej. datos restaurados de caché).
+  final List<WeatherHour> hourly;
+
   const WeatherData({
     required this.tempC,
     required this.condition,
@@ -27,6 +39,11 @@ class WeatherData {
     required this.country,
     this.humidity,
     required this.lastUpdated,
+    this.feelsLikeC,
+    this.maxTempC,
+    this.minTempC,
+    this.chanceOfRain,
+    this.hourly = const [],
   });
 
   factory WeatherData.fromJson(Map<String, dynamic> json) {
@@ -41,7 +58,24 @@ class WeatherData {
 
     final isDayInt = (current['is_day'] as num?)?.toInt() ?? 1;
 
+    final forecast = json['forecast'] as Map<String, dynamic>? ?? {};
+    final days = (forecast['forecastday'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .toList();
+    final today = days.isEmpty
+        ? const <String, dynamic>{}
+        : days.first['day'] as Map<String, dynamic>? ?? const {};
+
     return WeatherData(
+      feelsLikeC: (current['feelslike_c'] as num?)?.toDouble(),
+      maxTempC: (today['maxtemp_c'] as num?)?.toDouble(),
+      minTempC: (today['mintemp_c'] as num?)?.toDouble(),
+      chanceOfRain: (today['daily_chance_of_rain'] as num?)?.toInt(),
+      hourly: [
+        for (final day in days)
+          for (final hour in day['hour'] as List<dynamic>? ?? const [])
+            if (hour is Map<String, dynamic>) WeatherHour.fromJson(hour),
+      ],
       tempC: (current['temp_c'] as num?)?.toDouble() ?? 0.0,
       condition: cond['text'] as String? ?? '',
       iconUrl: rawIcon,
@@ -52,6 +86,47 @@ class WeatherData {
       country: location['country'] as String? ?? '',
       humidity: (current['humidity'] as num?)?.toInt(),
       lastUpdated: DateTime.now(),
+    );
+  }
+
+  int get formattedTemp => tempC.round();
+
+  /// Las próximas [count] horas empezando por la hora en curso.
+  List<WeatherHour> upcomingHours(DateTime now, {int count = 8}) {
+    final currentHour = DateTime(now.year, now.month, now.day, now.hour);
+    return hourly
+        .where((h) => !h.time.isBefore(currentHour))
+        .take(count)
+        .toList();
+  }
+}
+
+/// Una hora del pronóstico.
+class WeatherHour {
+  /// Hora local del aparato.
+  final DateTime time;
+  final double tempC;
+  final int? conditionCode;
+  final bool isDay;
+  final int? chanceOfRain;
+
+  const WeatherHour({
+    required this.time,
+    required this.tempC,
+    this.conditionCode,
+    this.isDay = true,
+    this.chanceOfRain,
+  });
+
+  factory WeatherHour.fromJson(Map<String, dynamic> json) {
+    final cond = json['condition'] as Map<String, dynamic>? ?? {};
+    final epoch = (json['time_epoch'] as num?)?.toInt() ?? 0;
+    return WeatherHour(
+      time: DateTime.fromMillisecondsSinceEpoch(epoch * 1000),
+      tempC: (json['temp_c'] as num?)?.toDouble() ?? 0.0,
+      conditionCode: (cond['code'] as num?)?.toInt(),
+      isDay: ((json['is_day'] as num?)?.toInt() ?? 1) == 1,
+      chanceOfRain: (json['chance_of_rain'] as num?)?.toInt(),
     );
   }
 
@@ -130,20 +205,26 @@ class WeatherLocationSearchResult {
 /// Servicio que consulta la API de WeatherAPI tanto por auto:ip como por búsqueda
 /// de localidades específicas con autocompletado en tiempo real.
 class WeatherService {
-  static const String _baseUrl = 'https://api.weatherapi.com/v1/current.json';
+  /// forecast.json trae lo mismo que current.json más el pronóstico por hora:
+  /// sigue siendo una sola consulta. Dos días para cubrir las horas que
+  /// cruzan la medianoche.
+  static const String _baseUrl = 'https://api.weatherapi.com/v1/forecast.json';
   static const String _searchUrl = 'https://api.weatherapi.com/v1/search.json';
 
   String get _apiKey => kWeatherApiKey;
 
   Future<WeatherData?> fetchWeatherByIp({String query = 'auto:ip'}) async {
     if (_apiKey.isEmpty) {
-      debugPrint('[WeatherService] WEATHER_API_KEY vacía; se omite la consulta');
+      debugPrint(
+        '[WeatherService] WEATHER_API_KEY vacía; se omite la consulta',
+      );
       return null;
     }
     try {
       final safeQuery = query.trim().isEmpty ? 'auto:ip' : query.trim();
       final url = Uri.parse(
-        '$_baseUrl?key=$_apiKey&q=${Uri.encodeQueryComponent(safeQuery)}&lang=es',
+        '$_baseUrl?key=$_apiKey&q=${Uri.encodeQueryComponent(safeQuery)}'
+        '&days=2&aqi=no&alerts=no&lang=es',
       );
       final client = HttpClient()
         ..connectionTimeout = const Duration(seconds: 8);
@@ -175,7 +256,9 @@ class WeatherService {
     final trimmed = query.trim();
     if (trimmed.length < 2) return const [];
     if (_apiKey.isEmpty) {
-      debugPrint('[WeatherService] WEATHER_API_KEY vacía; se omite la búsqueda');
+      debugPrint(
+        '[WeatherService] WEATHER_API_KEY vacía; se omite la búsqueda',
+      );
       return const [];
     }
 

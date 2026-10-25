@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moai3/widgets/tv_common/moai_ambient_background.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/services/device_identity_service.dart';
@@ -42,13 +43,21 @@ class NicknameSetupScreen extends StatelessWidget {
       canPop: false,
       child: Scaffold(
         backgroundColor: scheme.surface,
-        body: Center(
-          child: SingleChildScrollView(
-            child: TvNicknameDialog(
-              isMandatory: true,
-              onSaved: (name) => _handleSave(context, name),
+        // Mismo fondo ambiente que el resto de la app.
+        body: Stack(
+          children: [
+            const Positioned.fill(
+              child: IgnorePointer(child: MoaiAmbientBackground()),
             ),
-          ),
+            Center(
+              child: SingleChildScrollView(
+                child: TvNicknameDialog(
+                  isMandatory: true,
+                  onSaved: (name) => _handleSave(context, name),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

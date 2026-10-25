@@ -3,9 +3,11 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Panel mostrado en el área derecha cuando no hay canal activo / seleccionado.
-/// Utiliza el panel común con su degradado y borde, conteniendo el estado vacío reutilizable [TvEmptyStateCard].
+/// Mismo cristal que los paneles del acordeón, con el estado vacío
+/// reutilizable [TvEmptyStateCard] adentro.
 class EmptyViewerPanel extends StatelessWidget {
   final FocusNode focusNode;
   final bool hasChannels;
@@ -22,19 +24,10 @@ class EmptyViewerPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    final baseColor = scheme.surface.withValues(alpha: 0.8);
-    final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: baseColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: borderColor,
-        ),
-      ),
+    return MoaiGlass(
+      borderRadius: 16,
+      solid: true,
+      elevated: false,
       child: Center(
         child: TvEmptyStateCard(
           focusNode: focusNode,

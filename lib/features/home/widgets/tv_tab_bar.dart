@@ -6,14 +6,14 @@ import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
-/// Floating Toolbar M3 Expressive para las pestañas Explorar / Mis grupos.
-///
-/// Diseño visual:
-///  - Cápsula flotante continua con colores planos sin bordes ([ColorScheme.surfaceContainerHigh]).
-///  - Pestaña activa expandida con icono y texto ([ColorScheme.secondaryContainer]).
-///  - Pestaña inactiva compacta sólo con icono ([ColorScheme.onSurfaceVariant]).
-///  - Foco D-Pad de alto contraste con [ColorScheme.primary].
+/// Barra flotante de pestañas Explorar / Buscar / Marcadores, hermana del
+/// rail del home:
+///  - Cápsula de cristal del mismo grosor que el rail (48).
+///  - Pestaña activa expandida con ícono y texto, en cristal teñido del acento.
+///  - Pestaña inactiva compacta, sólo ícono.
+///  - Foco D-pad: acento sólido con brillo arriba y halo.
 class TvTabBar extends StatelessWidget {
   final TvTab selectedTab;
   final ValueChanged<TvTab> onTabChanged;
@@ -24,8 +24,8 @@ class TvTabBar extends StatelessWidget {
   final VoidCallback onFocusLeft;
   final VoidCallback onFocusPlayer;
 
-  /// Altura del indicador interno de cada píldora.
-  static const double indicatorHeight = 32;
+  /// Altura de cada píldora (como los íconos del rail).
+  static const double indicatorHeight = 40;
 
   const TvTabBar({
     super.key,
@@ -41,25 +41,14 @@ class TvTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
-
-    final baseColor = scheme.surface.withValues(alpha: 0.8);
-    final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
-
     return Padding(
       // Alineación vertical superior para sincronizar con NavigationRail M3.
       padding: const EdgeInsets.only(bottom: 8, right: 8),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
-        child: Container(
-          decoration: BoxDecoration(
-            color: baseColor,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: borderColor,
-            ),
-          ),
+        child: MoaiGlass(
+          borderRadius: 24,
           padding: const EdgeInsets.all(4),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -75,7 +64,7 @@ class TvTabBar extends StatelessWidget {
                 onKeyRight: searchFocusNode.requestFocus,
                 onKeyDown: onFocusDown,
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 5),
               _M3EFloatingTabPill(
                 title: LocaleKeys.home_tab_search.tr(),
                 icon: MoaiIcons.tvTabBuscar,
@@ -87,7 +76,7 @@ class TvTabBar extends StatelessWidget {
                 onKeyRight: groupsFocusNode.requestFocus,
                 onKeyDown: onFocusDown,
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 5),
               _M3EFloatingTabPill(
                 title: LocaleKeys.home_tab_groups.tr(),
                 icon: MoaiIcons.tvTabMarcadores,
@@ -141,20 +130,20 @@ class _M3EFloatingTabPillState extends State<_M3EFloatingTabPill> {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
 
-    final Color bg;
+    // Mismos estados que el rail: foco = acento sólido, activa = cristal
+    // teñido, resto = sólo ícono.
     final Color fg;
-
-    // Sincronizado exactamente con los tokens visuales del NavigationRail.
     if (_focused) {
-      bg = scheme.primary;
       fg = scheme.onPrimary;
     } else if (widget.isSelected) {
-      bg = scheme.primaryContainer;
-      fg = scheme.onPrimaryContainer;
+      fg = scheme.onSurface;
     } else {
-      bg = Colors.transparent;
       fg = scheme.onSurfaceVariant;
     }
+    const radius = TvTabBar.indicatorHeight / 2;
+    final padding = EdgeInsets.symmetric(
+      horizontal: widget.isSelected ? 14 : 10,
+    );
 
     return Focus(
       focusNode: widget.focusNode,
@@ -185,18 +174,11 @@ class _M3EFloatingTabPillState extends State<_M3EFloatingTabPill> {
           widget.focusNode.requestFocus();
           widget.onSelect();
         },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          height: TvTabBar.indicatorHeight,
-          padding: EdgeInsets.symmetric(
-            horizontal: widget.isSelected ? 12 : 8,
-          ),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
+        child: _buildFrame(
+          scheme,
+          radius,
+          padding,
+          Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
@@ -236,5 +218,51 @@ class _M3EFloatingTabPillState extends State<_M3EFloatingTabPill> {
       ),
     );
   }
-}
 
+  Widget _buildFrame(
+    ColorScheme scheme,
+    double radius,
+    EdgeInsets padding,
+    Widget content,
+  ) {
+    if (_focused) {
+      return Container(
+        height: TvTabBar.indicatorHeight,
+        padding: padding,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(radius),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color.lerp(scheme.primary, Colors.white, 0.22)!,
+              scheme.primary,
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: scheme.primary.withValues(alpha: 0.45),
+              blurRadius: 16,
+            ),
+          ],
+        ),
+        child: content,
+      );
+    }
+    if (widget.isSelected) {
+      return MoaiGlass(
+        height: TvTabBar.indicatorHeight,
+        borderRadius: radius,
+        tint: scheme.primary,
+        elevated: false,
+        padding: padding,
+        child: content,
+      );
+    }
+    return Container(
+      height: TvTabBar.indicatorHeight,
+      padding: padding,
+      child: content,
+    );
+  }
+}

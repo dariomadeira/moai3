@@ -16,26 +16,8 @@ class _GamepadDeviceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
 
-    final baseColor = scheme.surface.withValues(alpha: 0.8);
-    final endColor = Color.alphaBlend(
-      scheme.onSurface.withValues(alpha: 0.05),
-      baseColor,
-    );
-    final borderColor = scheme.outlineVariant.withValues(alpha: 0.2);
-
-    final effectiveDecoration = decoration ??
-        BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomRight,
-            end: Alignment.topLeft,
-            colors: [baseColor, baseColor, endColor],
-            stops: const [0.0, 0.62, 1.0],
-          ),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: borderColor,
-          ),
-        );
+    final effectiveDecoration =
+        decoration ?? moaiGlassWellDecoration(scheme, radius: 14);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -43,16 +25,13 @@ class _GamepadDeviceCard extends StatelessWidget {
       decoration: effectiveDecoration,
       child: Row(
         children: [
-          Container(
+          // Ícono suelto en el acento, sin cuadrado (como TvTile).
+          Padding(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: scheme.primaryContainer,
-              borderRadius: BorderRadius.circular(10),
-            ),
             child: Icon(
               MoaiIcons.gamepad,
               size: MoaiIconSizes.md,
-              color: scheme.onPrimaryContainer,
+              color: scheme.primary,
             ),
           ),
           const SizedBox(width: 10),
@@ -75,16 +54,20 @@ class _GamepadDeviceCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                      decoration: BoxDecoration(
-                        color: scheme.tertiaryContainer,
-                        borderRadius: BorderRadius.circular(6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1.5,
+                      ),
+                      decoration: moaiGlassChipDecoration(
+                        scheme,
+                        radius: 6,
+                        highlighted: true,
                       ),
                       child: Text(
                         LocaleKeys.common_active.tr(),
                         style: MoaiText.body(
                           context,
-                          color: scheme.onTertiaryContainer,
+                          color: scheme.primary,
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
                         ),

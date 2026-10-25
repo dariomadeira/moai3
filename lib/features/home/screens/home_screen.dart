@@ -35,10 +35,9 @@ import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/featured_movies_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/state/watch_party_provider.dart';
-import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/theme/moai_icons.dart';
-import 'package:moai3/widgets/tv_common/moai_background_image.dart';
+import 'package:moai3/widgets/tv_common/moai_ambient_background.dart';
 
 /// Shell del home — foco como moaiSmart:
 /// Shortcuts D-pad globales; → del rail llama [HomeTvAreaState.requestEntryFocus].
@@ -338,80 +337,64 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildArea() {
     return switch (_section) {
       HomeSection.home => HomeDashboardArea(
-          key: _areaKeys[HomeSection.home],
-          onExitLeft: _focusRail,
-        ),
+        key: _areaKeys[HomeSection.home],
+        onExitLeft: _focusRail,
+      ),
       HomeSection.settings => HomeSettingsArea(
-          key: _areaKeys[HomeSection.settings],
-          initialPanelIndex: _settingsPanelIndex,
-          onPanelIndexChanged: (i) => _settingsPanelIndex = i,
-          onExitLeft: _focusRail,
-        ),
+        key: _areaKeys[HomeSection.settings],
+        initialPanelIndex: _settingsPanelIndex,
+        onPanelIndexChanged: (i) => _settingsPanelIndex = i,
+        onExitLeft: _focusRail,
+      ),
       HomeSection.arcade => HomeArcadeArea(
-          key: _areaKeys[HomeSection.arcade],
-          onExitLeft: _focusRail,
-          romManager: _romManager,
-        ),
+        key: _areaKeys[HomeSection.arcade],
+        onExitLeft: _focusRail,
+        romManager: _romManager,
+      ),
       HomeSection.calendar => HomeCalendarArea(
-          key: _areaKeys[HomeSection.calendar],
-          initialPanelIndex: _calendarPanelIndex,
-          onPanelIndexChanged: (i) => _calendarPanelIndex = i,
-          onExitLeft: _focusRail,
-          onTuneChannel: (channel) {
-            context
-                .read<ChannelProvider>()
-                .selectChannel(channel);
-            _switchSection(HomeSection.tv);
-            WidgetsBinding.instance
-                .addPostFrameCallback((_) {
-                  if (mounted) {
-                    _tvAreaKey.currentState
-                        ?.selectChannel(channel);
-                    _tvAreaKey.currentState
-                        ?.requestViewerFocus();
-                  }
-                });
-          },
-        ),
+        key: _areaKeys[HomeSection.calendar],
+        initialPanelIndex: _calendarPanelIndex,
+        onPanelIndexChanged: (i) => _calendarPanelIndex = i,
+        onExitLeft: _focusRail,
+        onTuneChannel: (channel) {
+          context.read<ChannelProvider>().selectChannel(channel);
+          _switchSection(HomeSection.tv);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _tvAreaKey.currentState?.selectChannel(channel);
+              _tvAreaKey.currentState?.requestViewerFocus();
+            }
+          });
+        },
+      ),
       HomeSection.featured => HomeMoviesArea(
-          key: _areaKeys[HomeSection.featured],
-          panelTitle:
-              LocaleKeys.movies_panel_featured_title.tr(),
-          accordionIcon:
-              MoaiIcons.tvAccordionFeatured,
-          emptyMessage: LocaleKeys.movies_empty_featured
-              .tr(),
-          onExitLeft: _focusRail,
-        ),
+        key: _areaKeys[HomeSection.featured],
+        panelTitle: LocaleKeys.movies_panel_featured_title.tr(),
+        accordionIcon: MoaiIcons.tvAccordionFeatured,
+        emptyMessage: LocaleKeys.movies_empty_featured.tr(),
+        onExitLeft: _focusRail,
+      ),
       HomeSection.movies => HomeMoviesArea(
-          key: _areaKeys[HomeSection.movies],
-          section: FeaturedMoviesProvider
-              .sectionMovies,
-          panelTitle: LocaleKeys.movies_panel_movies_title
-              .tr(),
-          accordionIcon:
-              MoaiIcons.tvAccordionMovies,
-          emptyMessage: LocaleKeys.movies_empty_movies
-              .tr(),
-          onExitLeft: _focusRail,
-        ),
+        key: _areaKeys[HomeSection.movies],
+        section: FeaturedMoviesProvider.sectionMovies,
+        panelTitle: LocaleKeys.movies_panel_movies_title.tr(),
+        accordionIcon: MoaiIcons.tvAccordionMovies,
+        emptyMessage: LocaleKeys.movies_empty_movies.tr(),
+        onExitLeft: _focusRail,
+      ),
       HomeSection.series => HomeMoviesArea(
-          key: _areaKeys[HomeSection.series],
-          section: FeaturedMoviesProvider
-              .sectionSeries,
-          panelTitle: LocaleKeys.movies_panel_series_title
-              .tr(),
-          accordionIcon:
-              MoaiIcons.tvAccordionSeries,
-          emptyMessage: LocaleKeys.movies_empty_series
-              .tr(),
-          onExitLeft: _focusRail,
-        ),
+        key: _areaKeys[HomeSection.series],
+        section: FeaturedMoviesProvider.sectionSeries,
+        panelTitle: LocaleKeys.movies_panel_series_title.tr(),
+        accordionIcon: MoaiIcons.tvAccordionSeries,
+        emptyMessage: LocaleKeys.movies_empty_series.tr(),
+        onExitLeft: _focusRail,
+      ),
       HomeSection.tv => HomeTvArea(
-          key: _tvAreaKey,
-          onExitLeft: _focusRail,
-          session: _tvSession,
-        ),
+        key: _tvAreaKey,
+        onExitLeft: _focusRail,
+        session: _tvSession,
+      ),
     };
   }
 
@@ -423,7 +406,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final overlapY = context.select(
       (TvSettingsProvider s) => s.overlapPaddingY,
     );
-    final scheme = context.scheme;
 
     return DoubleBackExitScope(
       key: _doubleBackKey,
@@ -439,69 +421,46 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           },
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: scheme.brightness == Brightness.dark
-                    ? [
-                        Color.lerp(
-                          scheme.surfaceContainerHigh,
-                          scheme.primary,
-                          0.08,
-                        )!,
-                        scheme.surfaceContainerLow,
-                      ]
-                    : [
-                        scheme.surfaceContainerLowest,
-                        scheme.surfaceContainerHigh,
-                      ],
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              const Positioned.fill(
+                child: IgnorePointer(child: MoaiAmbientBackground()),
               ),
-            ),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                const Positioned.fill(
-                  child: IgnorePointer(
-                    child: MoaiBackgroundImage(MoaiBackground.screen),
-                  ),
-                ),
-                Scaffold(
-                  backgroundColor: Colors.transparent,
-                  body: SafeArea(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: overlapX,
-                        vertical: overlapY,
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          RepaintBoundary(
-                            child: TvVerticalNavRail(
-                              selected: _section,
-                              railScopeNode: _railScopeNode,
-                              railFocusNode: _railFocusNode,
-                              onSelected: _switchSection,
-                              onFocusRight: _onRailFocusRight,
+              Scaffold(
+                backgroundColor: Colors.transparent,
+                body: SafeArea(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: overlapX,
+                      vertical: overlapY,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        RepaintBoundary(
+                          child: TvVerticalNavRail(
+                            selected: _section,
+                            railScopeNode: _railScopeNode,
+                            railFocusNode: _railFocusNode,
+                            onSelected: _switchSection,
+                            onFocusRight: _onRailFocusRight,
+                          ),
+                        ),
+                        Expanded(
+                          child: RepaintBoundary(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+                              child: _buildArea(),
                             ),
                           ),
-                          Expanded(
-                            child: RepaintBoundary(
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
-                                child: _buildArea(),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

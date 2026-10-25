@@ -27,13 +27,38 @@ class _SquircleButton extends StatelessWidget {
 
     final effectiveActiveColor = activeColor ?? scheme.primary;
 
-    final bg = isPressed
-        ? effectiveActiveColor
-        : scheme.surfaceContainerHighest.withValues(alpha: 0.55);
+    final dark = scheme.brightness == Brightness.dark;
+    final line = dark ? Colors.white : scheme.onSurface;
 
-    final fg = isPressed
-        ? Colors.white
-        : scheme.onSurface;
+    final fg = isPressed ? Colors.white : scheme.onSurface;
+
+    // En reposo: tecla de cristal como el teclado en pantalla. Presionada:
+    // degradé del color del botón. El borde no cambia de ancho para que
+    // nada se mueva.
+    final decoration = isPressed
+        ? BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color.lerp(effectiveActiveColor, Colors.white, 0.18)!,
+                effectiveActiveColor,
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: effectiveActiveColor.withValues(alpha: 0.35),
+                blurRadius: 10,
+              ),
+            ],
+          )
+        : BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: line.withValues(alpha: dark ? 0.045 : 0.05),
+            border: Border.all(color: line.withValues(alpha: 0.08)),
+          );
 
     return AnimatedScale(
       scale: isPressed ? 0.90 : 1.0,
@@ -43,26 +68,10 @@ class _SquircleButton extends StatelessWidget {
         duration: const Duration(milliseconds: 90),
         width: size,
         height: h,
-        padding: size != null ? null : const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isPressed
-                ? effectiveActiveColor.withValues(alpha: 0.9)
-                : scheme.outlineVariant.withValues(alpha: 0.35),
-            width: isPressed ? 1.5 : 1.0,
-          ),
-          boxShadow: isPressed
-              ? [
-                  BoxShadow(
-                    color: effectiveActiveColor.withValues(alpha: 0.45),
-                    blurRadius: 10,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : null,
-        ),
+        padding: size != null
+            ? null
+            : const EdgeInsets.symmetric(horizontal: 10),
+        decoration: decoration,
         alignment: Alignment.center,
         child: icon != null
             ? Icon(

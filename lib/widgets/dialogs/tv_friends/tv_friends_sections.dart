@@ -30,7 +30,13 @@ extension _TvFriendsSections on _TvFriendsDialogState {
         const SizedBox(width: 6),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-          decoration: BoxDecoration(
+          decoration: MoaiGlassScope.enabledOf(context)
+              ? moaiGlassChipDecoration(
+                  scheme,
+                  radius: 8,
+                  highlighted: isHighlighted,
+                )
+              : BoxDecoration(
             color: isHighlighted
                 ? scheme.primaryContainer
                 : scheme.surfaceContainerHighest,
@@ -40,7 +46,9 @@ extension _TvFriendsSections on _TvFriendsDialogState {
             '$badgeCount',
             style: MoaiText.body(
               context,
-              color: isHighlighted
+              color: MoaiGlassScope.enabledOf(context)
+                  ? (isHighlighted ? scheme.primary : scheme.onSurfaceVariant)
+                  : isHighlighted
                   ? scheme.onPrimaryContainer
                   : scheme.onSurfaceVariant,
               fontSize: 10,
@@ -93,20 +101,8 @@ extension _TvFriendsSections on _TvFriendsDialogState {
           radius: 30,
           variant: TvButtonVariant.tonal,
           loading: _isSubmitting,
-          onPressed: _isSubmitting
-              ? null
-              : () {
-                  final text = _codeController.text.trim();
-                  if (text.isEmpty) {
-                    TvAddFriendDialog.show(context).then((added) {
-                      if (added == true && mounted) {
-                        _codeController.clear();
-                      }
-                    });
-                  } else {
-                    _handleAddFriend();
-                  }
-                },
+          // Usa siempre el código del campo (vacío: avisa y vuelve al campo).
+          onPressed: _isSubmitting ? null : _handleAddFriend,
           onArrowLeft: _codeFocus.requestFocus,
           onArrowDown: () {
             if (hasRequests) {
@@ -139,7 +135,9 @@ extension _TvFriendsSections on _TvFriendsDialogState {
 
     return Container(
       height: listHeight,
-      decoration: BoxDecoration(
+      decoration: MoaiGlassScope.enabledOf(context)
+          ? moaiGlassWellDecoration(scheme)
+          : BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.bottomRight,
           end: Alignment.topLeft,
@@ -232,7 +230,9 @@ extension _TvFriendsSections on _TvFriendsDialogState {
 
     return Container(
       height: listHeight,
-      decoration: BoxDecoration(
+      decoration: MoaiGlassScope.enabledOf(context)
+          ? moaiGlassWellDecoration(scheme)
+          : BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.bottomRight,
           end: Alignment.topLeft,

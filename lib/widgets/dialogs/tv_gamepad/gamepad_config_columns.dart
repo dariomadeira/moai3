@@ -21,7 +21,11 @@ extension _GamepadConfigColumns on _TvGamepadConfigDialogState {
             padding: const EdgeInsets.only(left: 4, bottom: 8),
             child: Row(
               children: [
-                Icon(MoaiIcons.gamepad, size: MoaiIconSizes.sm, color: scheme.primary),
+                Icon(
+                  MoaiIcons.gamepad,
+                  size: MoaiIconSizes.sm,
+                  color: scheme.primary,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   LocaleKeys.gamepad_detected_section_header.tr(),
@@ -44,12 +48,7 @@ extension _GamepadConfigColumns on _TvGamepadConfigDialogState {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: scheme.surfaceContainerHighest.withValues(
-                        alpha: 0.6,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    decoration: moaiGlassChipDecoration(scheme, radius: 14),
                     child: Icon(
                       MoaiIcons.gamepad,
                       size: MoaiIconSizes.xl,
@@ -96,15 +95,15 @@ extension _GamepadConfigColumns on _TvGamepadConfigDialogState {
           // Tarjeta informativa compacta sobre controles arcade
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHighest.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderColor.withValues(alpha: 0.15)),
-            ),
+            decoration: moaiGlassWellDecoration(scheme, radius: 12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(MoaiIcons.infoCircle, size: MoaiIconSizes.sm, color: scheme.primary),
+                Icon(
+                  MoaiIcons.infoCircle,
+                  size: MoaiIconSizes.sm,
+                  color: scheme.primary,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -144,7 +143,11 @@ extension _GamepadConfigColumns on _TvGamepadConfigDialogState {
               children: [
                 Row(
                   children: [
-                    Icon(MoaiIcons.gamepad, size: MoaiIconSizes.sm, color: scheme.primary),
+                    Icon(
+                      MoaiIcons.gamepad,
+                      size: MoaiIconSizes.sm,
+                      color: scheme.primary,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       LocaleKeys.gamepad_test_section.tr().toUpperCase(),
@@ -215,9 +218,7 @@ extension _GamepadConfigColumns on _TvGamepadConfigDialogState {
                             width: 12,
                             height: 12,
                             decoration: BoxDecoration(
-                              color: scheme.surfaceContainerHighest.withValues(
-                                alpha: 0.5,
-                              ),
+                              color: scheme.onSurface.withValues(alpha: 0.08),
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -288,11 +289,7 @@ extension _GamepadConfigColumns on _TvGamepadConfigDialogState {
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Divider(
-                    height: 1,
-                    thickness: 1,
-                    color: borderColor.withValues(alpha: 0.4),
-                  ),
+                  child: Divider(height: 1, thickness: 1, color: borderColor),
                 ),
                 // Botonera de Acción Arcade (CPS / Lucha: 6 botones)
                 Row(

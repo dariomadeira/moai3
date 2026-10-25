@@ -1,6 +1,7 @@
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/services/plugin_host_service.dart';
 import 'package:moai3/services/plugin_update_service.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -133,13 +134,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
           const SizedBox(height: 8),
           Container(
             constraints: const BoxConstraints(maxHeight: 160),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: scheme.outlineVariant.withValues(alpha: 0.2),
-              ),
-            ),
+            decoration: moaiGlassWellDecoration(scheme, radius: 12),
             child: ListView.separated(
               shrinkWrap: true,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

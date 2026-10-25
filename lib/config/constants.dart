@@ -1,7 +1,18 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 const String kAppName = 'Moai';
+
+// DESARROLLO: en false el arranque salta el login (VPN + sesión + descarga
+// del catálogo) y las pausas de la pantalla de carga, para iniciar rápido.
+// Usa el catálogo ya guardado; sin sesión, las películas pueden no
+// reproducirse. ⚠️ Volver a true antes de sacar un release (de todos modos
+// un build release siempre hace el login, ver [kStartupLoginEnabled]).
+const bool _kStartupLoginInDebug = false;
+
+/// Si el arranque hace el login. Siempre true en release.
+const bool kStartupLoginEnabled = kReleaseMode || _kStartupLoginInDebug;
 
 // Configuración de Caché de Imágenes (Optimizado para Smart TV)
 const int kImageCacheMaximumSize = 100;
@@ -67,9 +78,7 @@ String get kTurnUsername => _env('TURN_USER', '');
 String get kTurnPassword => _env('TURN_PASS', '');
 
 // Paquete local de lectura de documentos de respaldo
-String get kMoiamovDocPackage =>
-    _env('MOIAMOV_DOC_PACKAGE', '');
+String get kMoiamovDocPackage => _env('MOIAMOV_DOC_PACKAGE', '');
 
 // TMDb API Key (v4 read token o v3 key)
 String get kTmdbApiKey => _env('TMDB_API_KEY', '');
-

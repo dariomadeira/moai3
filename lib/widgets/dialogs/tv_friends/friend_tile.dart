@@ -53,20 +53,6 @@ class _FriendTileState extends State<_FriendTile> {
     final scheme = Theme.of(context).colorScheme;
     final isFocused = widget.focusNode.hasFocus;
 
-    final bg = isFocused ? scheme.primary : scheme.surfaceContainerLow;
-    final titleColor = isFocused ? scheme.onPrimary : scheme.onSurface;
-    final descColor = isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.85)
-        : scheme.onSurfaceVariant;
-    final iconBg = isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.18)
-        : scheme.primaryContainer;
-    final iconColor = isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
-
-    final borderColor = isFocused
-        ? scheme.primary
-        : scheme.outlineVariant.withValues(alpha: 0.12);
-
     final hasNickname = widget.friend.nickname != null &&
         widget.friend.nickname!.trim().isNotEmpty;
     final displayName =
@@ -102,29 +88,22 @@ class _FriendTileState extends State<_FriendTile> {
         },
         child: GestureDetector(
           onTap: widget.onDelete,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: borderColor,
-              ),
-            ),
+          // Ficha de cristal como TvTile: el foco es el borde del acento.
+          child: MoaiGlass(
+            borderRadius: 14,
+            elevated: false,
+            solid: true,
+            focused: isFocused,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             child: Row(
               children: [
-                Material(
-                  color: iconBg,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(7),
-                    child: Icon(
-                      MoaiIcons.person,
-                      size: MoaiIconSizes.md,
-                      color: iconColor,
+                Padding(
+                  padding: const EdgeInsets.all(7),
+                  child: Icon(
+                    MoaiIcons.person,
+                    size: MoaiIconSizes.md,
+                    color: scheme.primary.withValues(
+                      alpha: isFocused ? 1 : 0.75,
                     ),
                   ),
                 ),
@@ -140,7 +119,7 @@ class _FriendTileState extends State<_FriendTile> {
                         overflow: TextOverflow.ellipsis,
                         style: MoaiText.body(
                           context,
-                          color: titleColor,
+                          color: scheme.onSurface,
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
@@ -152,30 +131,26 @@ class _FriendTileState extends State<_FriendTile> {
                             widget.friend.userCode,
                             style: MoaiText.body(
                               context,
-                              color: descColor,
+                              color: scheme.onSurfaceVariant,
                               fontSize: 10.5,
                             ),
                           ),
                           const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
+                              horizontal: 5,
                               vertical: 1,
                             ),
-                            decoration: BoxDecoration(
-                              color: isFocused
-                                  ? scheme.onPrimary.withValues(alpha: 0.22)
-                                  : widget.friend.isOnline
-                                      ? scheme.primaryContainer
-                                      : scheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(4),
+                            decoration: moaiGlassChipDecoration(
+                              scheme,
+                              radius: 6,
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Container(
-                                  width: 4.5,
-                                  height: 4.5,
+                                  width: 5,
+                                  height: 5,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: widget.friend.isOnline
@@ -183,18 +158,16 @@ class _FriendTileState extends State<_FriendTile> {
                                         : scheme.outlineVariant,
                                   ),
                                 ),
-                                const SizedBox(width: 3.5),
+                                const SizedBox(width: 4),
                                 Text(
                                   widget.friend.isOnline
                                       ? LocaleKeys.friends_status_online.tr()
                                       : LocaleKeys.friends_status_offline.tr(),
                                   style: MoaiText.body(
                                     context,
-                                    color: isFocused
-                                        ? scheme.onPrimary
-                                        : widget.friend.isOnline
-                                            ? scheme.onPrimaryContainer
-                                            : scheme.onSurfaceVariant,
+                                    color: widget.friend.isOnline
+                                        ? scheme.onSurface
+                                        : scheme.onSurfaceVariant,
                                     fontSize: 8.5,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -207,14 +180,12 @@ class _FriendTileState extends State<_FriendTile> {
                             Flexible(
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
+                                  horizontal: 5,
                                   vertical: 1,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: isFocused
-                                      ? scheme.onPrimary.withValues(alpha: 0.22)
-                                      : scheme.tertiaryContainer,
-                                  borderRadius: BorderRadius.circular(4),
+                                decoration: moaiGlassChipDecoration(
+                                  scheme,
+                                  radius: 6,
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -222,9 +193,7 @@ class _FriendTileState extends State<_FriendTile> {
                                     Icon(
                                       MoaiIcons.tv,
                                       size: MoaiIconSizes.xs,
-                                      color: isFocused
-                                          ? scheme.onPrimary
-                                          : scheme.onTertiaryContainer,
+                                      color: scheme.primary,
                                     ),
                                     const SizedBox(width: 3),
                                     Flexible(
@@ -234,9 +203,7 @@ class _FriendTileState extends State<_FriendTile> {
                                         overflow: TextOverflow.ellipsis,
                                         style: MoaiText.body(
                                           context,
-                                          color: isFocused
-                                              ? scheme.onPrimary
-                                              : scheme.onTertiaryContainer,
+                                          color: scheme.onSurface,
                                           fontSize: 8.5,
                                           fontWeight: FontWeight.w700,
                                         ),
@@ -253,24 +220,27 @@ class _FriendTileState extends State<_FriendTile> {
                   ),
                 ),
                 const SizedBox(width: 6),
-                // Botón de eliminar con estilo idéntico al Administrador de Extensiones
-                Container(
+                // Borrar: OK sobre la fila elimina, así que con foco se pone
+                // rojo para avisarlo.
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 120),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 7,
                     vertical: 5,
                   ),
-                  decoration: BoxDecoration(
-                    color: isFocused
-                        ? scheme.primaryContainer
-                        : scheme.secondaryContainer.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
+                  decoration: isFocused
+                      ? BoxDecoration(
+                          color: scheme.error.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: scheme.error.withValues(alpha: 0.5),
+                          ),
+                        )
+                      : moaiGlassChipDecoration(scheme, radius: 8),
                   child: Icon(
                     MoaiIcons.delete,
                     size: MoaiIconSizes.sm,
-                    color: isFocused
-                        ? scheme.onPrimaryContainer
-                        : scheme.onSecondaryContainer,
+                    color: isFocused ? scheme.error : scheme.onSurfaceVariant,
                   ),
                 ),
               ],

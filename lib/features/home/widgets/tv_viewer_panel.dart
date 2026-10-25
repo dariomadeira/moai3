@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/state/playback_stats_controller.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 
 /// Contenedor base del panel derecho del visor TV que se extiende hasta arriba.
@@ -16,12 +17,7 @@ class TvViewerPanel extends StatelessWidget {
   final Channel? channel;
   final Widget? child;
 
-  const TvViewerPanel({
-    super.key,
-    this.header,
-    this.channel,
-    this.child,
-  });
+  const TvViewerPanel({super.key, this.header, this.channel, this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -30,41 +26,56 @@ class TvViewerPanel extends StatelessWidget {
     final baseColor = scheme.surface.withValues(alpha: 0.8);
     final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
 
+    // Sobre el fondo ambiente no hay panel: título, pills y visor quedan
+    // sueltos, alineados a los bordes de la columna (como Favoritos debajo).
+    // El título lleva un margen mínimo para alinearse a ojo con las pills.
+    final glass = MoaiGlassScope.enabledOf(context);
+    final inset = glass ? 0.0 : 16.0;
+
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (header != null)
+          Padding(
+            padding: EdgeInsets.only(
+              top: 3,
+              left: glass ? 4 : inset,
+              right: glass ? 4 : inset,
+            ),
+            child: header!,
+          ),
+        if (channel != null)
+          _buildChannelPills(context, channel!, scheme, inset: inset),
+        if (child != null)
+          Padding(
+            padding: EdgeInsets.fromLTRB(inset, 12, inset, glass ? 4 : 14),
+            child: child!,
+          ),
+      ],
+    );
+
+    if (glass) return content;
+
     return Container(
       decoration: BoxDecoration(
         color: baseColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: borderColor,
-        ),
+        border: Border.all(color: borderColor),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (header != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 3, left: 16, right: 16),
-              child: header!,
-            ),
-          if (channel != null) _buildChannelPills(context, channel!, scheme),
-          if (child != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: child!,
-            ),
-        ],
-      ),
+      child: content,
     );
   }
 
   Widget _buildChannelPills(
     BuildContext context,
     Channel ch,
-    ColorScheme scheme,
-  ) {
-    final fallbackIndex =
-        context.select((PlaybackStatsController s) => s.fallbackIndex);
+    ColorScheme scheme, {
+    required double inset,
+  }) {
+    final fallbackIndex = context.select(
+      (PlaybackStatsController s) => s.fallbackIndex,
+    );
 
     var displayServerNumber = fallbackIndex + 1;
     if (ch.fallbackUrls.isNotEmpty &&
@@ -79,7 +90,7 @@ class TvViewerPanel extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(left: 16, top: 14, right: 16),
+      padding: EdgeInsets.only(left: inset, top: 14, right: inset),
       child: Wrap(
         spacing: 6,
         runSpacing: 6,

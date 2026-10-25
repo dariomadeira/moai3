@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/widgets/tv_common/moai_background_image.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
 /// Variante semántica para los botones de acción en modales de Android TV.
@@ -73,7 +73,9 @@ class TvDialog extends StatelessWidget {
         child: Container(
           width: width,
           margin: const EdgeInsets.symmetric(horizontal: 24),
-          decoration: BoxDecoration(
+          decoration: MoaiGlassScope.enabledOf(context)
+              ? moaiDialogDecoration(scheme)
+              : BoxDecoration(
             color: baseColor,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
@@ -89,11 +91,6 @@ class TvDialog extends StatelessWidget {
           ),
           child: Stack(
             children: [
-              const Positioned.fill(
-                child: IgnorePointer(
-                  child: MoaiBackgroundImage(MoaiBackground.dialog),
-                ),
-              ),
               Padding(
                 padding: padding,
                 child: Column(
@@ -279,6 +276,44 @@ class _TvDialogButtonState extends State<TvDialogButton> {
       }
     }
 
+    // Cristal: en reposo píldora de cristal (con tinte de acento si es la
+    // principal); con foco, acento (o error) con brillo y halo.
+    final glass = MoaiGlassScope.enabledOf(context);
+    final destructive = widget.variant == TvDialogButtonVariant.destructive;
+    final Decoration decoration;
+    final Color fg;
+    if (!glass) {
+      decoration = BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+      );
+      fg = fgColor;
+    } else if (_isFocused) {
+      decoration = BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.transparent),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color.lerp(bgColor, Colors.white, 0.18)!, bgColor],
+        ),
+        boxShadow: [
+          BoxShadow(color: bgColor.withValues(alpha: 0.4), blurRadius: 16),
+        ],
+      );
+      fg = fgColor;
+    } else {
+      final primary = widget.variant == TvDialogButtonVariant.primary;
+      decoration = moaiGlassChipDecoration(
+        scheme,
+        radius: 12,
+        highlighted: primary,
+      );
+      fg = destructive
+          ? scheme.error
+          : (primary ? scheme.primary : scheme.onSurface);
+    }
+
     return Focus(
       focusNode: widget.focusNode,
       autofocus: widget.autofocus,
@@ -313,15 +348,12 @@ class _TvDialogButtonState extends State<TvDialogButton> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(12),
-          ),
+          decoration: decoration,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (widget.icon != null) ...[
-                Icon(widget.icon, size: MoaiIconSizes.md, color: fgColor),
+                Icon(widget.icon, size: MoaiIconSizes.md, color: fg),
                 const SizedBox(width: 8),
               ],
               Text(
@@ -330,7 +362,7 @@ class _TvDialogButtonState extends State<TvDialogButton> {
                   context,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: fgColor,
+                  color: fg,
                 ),
               ),
             ],

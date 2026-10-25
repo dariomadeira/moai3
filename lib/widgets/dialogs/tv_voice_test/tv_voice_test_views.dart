@@ -1,60 +1,17 @@
 part of '../tv_voice_test_dialog.dart';
 
-/// Tarjeta principal por estado (inicial, grabando, grabado), ondas, consejos y pie de hardware.
+/// Escenario central por estado (listo, grabando, grabado): orbe con anillos,
+/// onda de audio, progreso y controles; más el pie con consejo y hardware.
 extension _TvVoiceTestViews on _TvVoiceTestDialogState {
-  Widget _buildTipBanner(ColorScheme scheme) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: scheme.tertiaryContainer,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            MoaiIcons.tip,
-            size: MoaiIconSizes.md,
-            color: scheme.onTertiaryContainer,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              LocaleKeys.mic_test_tip.tr(),
-              style: MoaiText.body(
-                context,
-                fontSize: 12,
-                color: scheme.onTertiaryContainer,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  static const _maxSeconds = 6;
 
+  /// Escenario: pozo de cristal con el orbe, el estado y los botones.
   Widget _buildMainCard(ColorScheme scheme) {
-    final baseColor = scheme.surface.withValues(alpha: 0.8);
-    final endColor = Color.alphaBlend(
-      scheme.onSurface.withValues(alpha: 0.05),
-      baseColor,
-    );
-    final borderColor = scheme.outlineVariant.withValues(alpha: 0.2);
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.bottomRight,
-          end: Alignment.topLeft,
-          colors: [baseColor, baseColor, endColor],
-          stops: const [0.0, 0.62, 1.0],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: borderColor,
-        ),
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
+      decoration: moaiGlassWellDecoration(scheme),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (_isRecording)
             _buildRecordingState(scheme)
@@ -70,30 +27,19 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
   Widget _buildIdleState(ColorScheme scheme) {
     return Column(
       children: [
-        Container(
-          width: 58,
-          height: 58,
-          decoration: BoxDecoration(
-            color: scheme.primaryContainer,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            MoaiIcons.mic,
-            size: MoaiIconSizes.xl,
-            color: scheme.onPrimaryContainer,
-          ),
-        ),
-        const SizedBox(height: 12),
+        _buildOrb(scheme, color: scheme.primary, icon: MoaiIcons.mic),
+        const SizedBox(height: 14),
         Text(
           LocaleKeys.mic_test_ready_hint.tr(),
           style: MoaiText.body(
             context,
             fontSize: 13,
-            color: scheme.onSurface,
+            fontWeight: FontWeight.w500,
+            color: scheme.onSurfaceVariant,
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
         _buildActionButton(
           focusNode: _recordFocus,
           icon: MoaiIcons.record,
@@ -109,48 +55,35 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
   Widget _buildRecordingState(ColorScheme scheme) {
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                color: scheme.error,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              '0:0$_recordSeconds / 0:06',
-              style: MoaiText.display(
-                context,
-                fontSize: 20,
-                color: scheme.error,
-              ),
-            ),
-          ],
+        _buildOrb(
+          scheme,
+          color: scheme.error,
+          icon: MoaiIcons.mic,
+          pulsing: true,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         _buildWaveVisualizer(scheme, color: scheme.error),
+        const SizedBox(height: 12),
+        _buildProgress(scheme),
         const SizedBox(height: 10),
         Text(
           LocaleKeys.mic_test_recording_active.tr(),
           style: MoaiText.body(
             context,
             fontSize: 12.5,
-            color: scheme.onSurface,
+            fontWeight: FontWeight.w500,
+            color: scheme.onSurfaceVariant,
           ),
+          textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
         _buildActionButton(
           focusNode: _recordFocus,
           icon: MoaiIcons.stopCircle,
           label: LocaleKeys.mic_test_btn_stop.tr(
             namedArgs: {'seconds': '$_recordSeconds'},
           ),
-          customBg: scheme.error,
-          customFg: scheme.onError,
+          destructive: true,
           onPressed: _stopRecording,
           onKeyDown: _closeFocus.requestFocus,
         ),
@@ -165,86 +98,60 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
     return Column(
       children: [
         if (isAudioValid) ...[
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: scheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  LocaleKeys.mic_test_badge_ready.tr(),
-                  style: MoaiText.body(
-                    context,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: scheme.onPrimaryContainer,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: scheme.tertiaryContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      MoaiIcons.volume,
-                      size: MoaiIconSizes.sm,
-                      color: scheme.onTertiaryContainer,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      LocaleKeys.mic_test_badge_amplified.tr(),
-                      style: MoaiText.body(
-                        context,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: scheme.onTertiaryContainer,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          _buildOrb(
+            scheme,
+            color: scheme.primary,
+            icon: _isPlaying ? MoaiIcons.volume : MoaiIcons.checkCircle,
+            pulsing: _isPlaying,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           if (_isPlaying) ...[
-            _buildWaveVisualizer(scheme, color: scheme.tertiary),
-            const SizedBox(height: 8),
+            _buildWaveVisualizer(scheme, color: scheme.primary),
+            const SizedBox(height: 10),
             Text(
               LocaleKeys.mic_test_playing_active.tr(),
               style: MoaiText.body(
                 context,
                 fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: scheme.primary,
+                fontWeight: FontWeight.w500,
+                color: scheme.onSurfaceVariant,
               ),
+              textAlign: TextAlign.center,
             ),
           ] else ...[
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                _chip(
+                  scheme,
+                  icon: MoaiIcons.checkCircle,
+                  label: LocaleKeys.mic_test_badge_ready.tr(),
+                  highlighted: true,
+                ),
+                _chip(
+                  scheme,
+                  icon: MoaiIcons.volume,
+                  label: LocaleKeys.mic_test_badge_amplified.tr(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
             Text(
               LocaleKeys.mic_test_success_desc.tr(namedArgs: {'kb': kbStr}),
               style: MoaiText.body(
                 context,
                 fontSize: 12,
+                fontWeight: FontWeight.w500,
                 color: scheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
           ],
         ] else ...[
-          Icon(MoaiIcons.warning, size: MoaiIconSizes.xxl, color: scheme.error),
-          const SizedBox(height: 6),
+          _buildOrb(scheme, color: scheme.error, icon: MoaiIcons.warning),
+          const SizedBox(height: 14),
           Text(
             LocaleKeys.mic_test_empty_desc.tr(
               namedArgs: {'bytes': '$_recordedBytes'},
@@ -252,14 +159,14 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
             style: MoaiText.body(
               context,
               fontSize: 12,
-              color: scheme.error,
+              fontWeight: FontWeight.w500,
+              color: scheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),
         ],
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
         Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (isAudioValid) ...[
               Expanded(
@@ -270,8 +177,6 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
                       ? LocaleKeys.mic_test_btn_stop_play.tr()
                       : LocaleKeys.mic_test_btn_play.tr(),
                   isPrimary: true,
-                  customBg: _isPlaying ? scheme.tertiary : null,
-                  customFg: _isPlaying ? scheme.onTertiary : null,
                   onPressed: _togglePlayback,
                   onKeyRight: _rerecordFocus.requestFocus,
                   onKeyDown: _closeFocus.requestFocus,
@@ -298,30 +203,138 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
     );
   }
 
+  /// Orbe central: círculo de cristal teñido con el ícono; con [pulsing],
+  /// dos anillos que se expanden y desvanecen al ritmo de la onda.
+  Widget _buildOrb(
+    ColorScheme scheme, {
+    required Color color,
+    required IconData icon,
+    bool pulsing = false,
+  }) {
+    const size = 72.0;
+    const canvas = 112.0;
+
+    final core = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [color.withValues(alpha: 0.30), color.withValues(alpha: 0.14)],
+        ),
+        border: Border.all(color: color.withValues(alpha: 0.55)),
+      ),
+      child: Icon(icon, size: MoaiIconSizes.xl, color: color),
+    );
+
+    return SizedBox(
+      width: canvas,
+      height: canvas,
+      child: pulsing
+          ? AnimatedBuilder(
+              animation: _waveController,
+              builder: (context, child) {
+                final t = _waveController.value;
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    for (final phase in const [0.0, 0.5])
+                      _ring(color, (t + phase) % 1.0, size, canvas),
+                    child!,
+                  ],
+                );
+              },
+              child: core,
+            )
+          : Center(child: core),
+    );
+  }
+
+  Widget _ring(Color color, double t, double size, double canvas) {
+    final diameter = size + (canvas - size) * t;
+    return Container(
+      width: diameter,
+      height: diameter,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: color.withValues(alpha: 0.45 * (1 - t)),
+          width: 1.5,
+        ),
+      ),
+    );
+  }
+
+  /// Progreso de la grabación: contador y una línea fina que se llena en 6 s.
+  Widget _buildProgress(ColorScheme scheme) {
+    final dark = scheme.brightness == Brightness.dark;
+    return Row(
+      children: [
+        Text(
+          '0:0$_recordSeconds',
+          style: MoaiText.body(
+            context,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: scheme.error,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(end: _recordSeconds / _maxSeconds),
+              duration: const Duration(milliseconds: 900),
+              builder: (context, value, _) => LinearProgressIndicator(
+                value: value,
+                minHeight: 4,
+                color: scheme.error,
+                backgroundColor: (dark ? Colors.white : scheme.onSurface)
+                    .withValues(alpha: 0.08),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          '0:0$_maxSeconds',
+          style: MoaiText.body(
+            context,
+            fontSize: 12,
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Onda simétrica: barras finas con envolvente (más altas al centro) que
+  /// ondulan con [_waveController].
   Widget _buildWaveVisualizer(ColorScheme scheme, {required Color color}) {
+    const bars = 23;
     return AnimatedBuilder(
       animation: _waveController,
       builder: (context, _) {
-        final progress = _waveController.value;
-        const barHeights = [14.0, 26.0, 36.0, 22.0, 32.0, 18.0, 28.0];
-
+        final t = _waveController.value * 2 * math.pi;
         return SizedBox(
-          height: 40,
+          height: 36,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(barHeights.length, (index) {
-              final offset = (index * 0.18) % 1.0;
-              final factor = ((progress + offset) % 1.0);
-              final dynamicHeight =
-                  (barHeights[index] * (0.4 + 0.6 * factor)).clamp(8.0, 38.0);
-
+            children: List.generate(bars, (i) {
+              final x = (i - (bars - 1) / 2) / ((bars - 1) / 2); // -1..1
+              final envelope = math.exp(-2.2 * x * x);
+              final wave = 0.55 + 0.45 * math.sin(t + i * 0.9);
+              final height = (6 + 30 * envelope * wave).clamp(4.0, 36.0);
               return Container(
-                width: 5,
-                height: dynamicHeight,
-                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: 4,
+                height: height,
+                margin: const EdgeInsets.symmetric(horizontal: 2),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.8 + 0.2 * factor),
-                  borderRadius: BorderRadius.circular(3),
+                  color: color.withValues(alpha: 0.45 + 0.5 * envelope),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               );
             }),
@@ -331,42 +344,27 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
     );
   }
 
-  Widget _buildHardwareFooter(ColorScheme scheme) {
-    final devNames = _devices
-        .map((d) => d['name']?.toString() ?? '')
-        .where((s) => s.isNotEmpty)
-        .toList();
-
-    final infoText = devNames.isNotEmpty
-        ? devNames.join(', ')
-        : LocaleKeys.mic_test_no_devices.tr();
-
+  Widget _chip(
+    ColorScheme scheme, {
+    required IconData icon,
+    required String label,
+    bool highlighted = false,
+  }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(10),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: moaiGlassChipDecoration(scheme, highlighted: highlighted),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            MoaiIcons.tv,
-            size: MoaiIconSizes.sm,
-            color: scheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              LocaleKeys.mic_test_devices_header.tr(
-                namedArgs: {'info': infoText},
-              ),
-              style: MoaiText.body(
-                context,
-                fontSize: 11,
-                color: scheme.onSurfaceVariant,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          Icon(icon, size: MoaiIconSizes.sm, color: scheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: MoaiText.body(
+              context,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: scheme.onSurface,
             ),
           ),
         ],
@@ -374,14 +372,93 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
     );
   }
 
+  /// Pie discreto: consejo de uso y entrada de audio detectada.
+  Widget _buildInfoFooter(ColorScheme scheme) {
+    final devNames = _devices
+        .map((d) => d['name']?.toString() ?? '')
+        .where((s) => s.isNotEmpty)
+        .toSet()
+        .toList();
+    final infoText = devNames.isNotEmpty
+        ? devNames.join(', ')
+        : LocaleKeys.mic_test_no_devices.tr();
+
+    Widget line(IconData icon, String text) => Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: MoaiIconSizes.sm, color: scheme.primary),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: MoaiText.body(
+              context,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w500,
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Column(
+        children: [
+          line(MoaiIcons.tip, LocaleKeys.mic_test_tip.tr()),
+          const SizedBox(height: 6),
+          line(
+            MoaiIcons.tv,
+            LocaleKeys.mic_test_devices_header.tr(
+              namedArgs: {'info': infoText},
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Aviso de error: chip de cristal con tinte rojo.
+  Widget _buildError(ColorScheme scheme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: scheme.error.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: scheme.error.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Icon(MoaiIcons.warning, size: MoaiIconSizes.sm, color: scheme.error),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _errorMessage!,
+              style: MoaiText.body(
+                context,
+                fontSize: 12,
+                color: scheme.onSurface,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Botón del escenario: cristal en reposo (tinte de acento si es el
+  /// principal); con foco, acento (o rojo si es [destructive]) con brillo y
+  /// halo.
   Widget _buildActionButton({
     required FocusNode focusNode,
     required IconData icon,
     required String label,
     required VoidCallback onPressed,
     bool isPrimary = false,
-    Color? customBg,
-    Color? customFg,
+    bool destructive = false,
     VoidCallback? onKeyLeft,
     VoidCallback? onKeyRight,
     VoidCallback? onKeyUp,
@@ -418,41 +495,41 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
         builder: (context) {
           final isFocused = Focus.of(context).hasFocus;
           final scheme = Theme.of(context).colorScheme;
+          final accent = destructive ? scheme.error : scheme.primary;
 
-          Color bg;
-          Color fg;
-
-          if (customBg != null) {
-            if (customBg == scheme.error) {
-              bg = isFocused ? scheme.error : scheme.errorContainer;
-              fg = isFocused ? scheme.onError : scheme.onErrorContainer;
-            } else if (customBg == scheme.tertiary) {
-              bg = isFocused ? scheme.tertiary : scheme.tertiaryContainer;
-              fg = isFocused ? scheme.onTertiary : scheme.onTertiaryContainer;
-            } else {
-              bg = isFocused ? customBg : scheme.surfaceContainerHigh;
-              fg = customFg ?? (isFocused ? Colors.white : scheme.onSurfaceVariant);
-            }
-          } else if (isPrimary) {
-            bg = isFocused ? scheme.primary : scheme.primaryContainer;
-            fg = isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
+          final Decoration decoration;
+          final Color fg;
+          if (isFocused) {
+            decoration = BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.transparent),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color.lerp(accent, Colors.white, 0.18)!, accent],
+              ),
+              boxShadow: [
+                BoxShadow(color: accent.withValues(alpha: 0.4), blurRadius: 16),
+              ],
+            );
+            fg = destructive ? scheme.onError : scheme.onPrimary;
           } else {
-            bg = isFocused
-                ? scheme.surfaceContainerHighest
-                : scheme.surfaceContainerHigh;
-            fg = isFocused ? scheme.onSurface : scheme.onSurfaceVariant;
+            decoration = moaiGlassChipDecoration(
+              scheme,
+              radius: 14,
+              highlighted: isPrimary,
+            );
+            fg = destructive
+                ? scheme.error
+                : (isPrimary ? scheme.primary : scheme.onSurface);
           }
 
           return GestureDetector(
             onTap: onPressed,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 120),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              decoration: BoxDecoration(
-                color: bg,
-                borderRadius: BorderRadius.circular(12),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              decoration: decoration,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
@@ -465,7 +542,7 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
                       style: MoaiText.body(
                         context,
                         fontSize: 13,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                         color: fg,
                       ),
                       maxLines: 1,

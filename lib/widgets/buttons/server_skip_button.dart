@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
 class ServerSkipButton extends StatefulWidget {
@@ -34,6 +35,10 @@ class _ServerSkipButtonState extends State<ServerSkipButton> {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
+    final glass = MoaiGlassScope.enabledOf(context);
+    final fg = _isFocused
+        ? scheme.onPrimary
+        : (glass ? scheme.onSurface : scheme.onSurfaceVariant);
 
     return Focus(
       focusNode: widget.focusNode,
@@ -78,27 +83,24 @@ class _ServerSkipButtonState extends State<ServerSkipButton> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: _isFocused ? scheme.primary : scheme.surface,
-            borderRadius: BorderRadius.circular(10),
-          ),
+          decoration: glass
+              ? moaiGlassButtonDecoration(
+                  scheme,
+                  focused: _isFocused,
+                  radius: 10,
+                )
+              : BoxDecoration(
+                  color: _isFocused ? scheme.primary : scheme.surface,
+                  borderRadius: BorderRadius.circular(10),
+                ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                MoaiIcons.serverSkip,
-                color: _isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
-                size: MoaiIconSizes.md,
-              ),
+              Icon(MoaiIcons.serverSkip, color: fg, size: MoaiIconSizes.md),
               const SizedBox(width: 8),
               Text(
                 LocaleKeys.player_change_server.tr(),
-                style: MoaiText.body(
-                  context,
-                  color:
-                      _isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
-                  fontSize: 12,
-                ),
+                style: MoaiText.body(context, color: fg, fontSize: 12),
               ),
             ],
           ),
@@ -107,4 +109,3 @@ class _ServerSkipButtonState extends State<ServerSkipButton> {
     );
   }
 }
-

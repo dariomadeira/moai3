@@ -7,6 +7,7 @@ import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/cards/tv_list_card_leading_logo.dart';
 import 'package:moai3/widgets/cards/tv_list_card_style.dart';
 import 'package:provider/provider.dart';
@@ -85,6 +86,13 @@ class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
         ? rawTag.toUpperCase()
         : null;
 
+    // Sobre el fondo ambiente el tile es de cristal, como [ChannelGridTile].
+    final glass = MoaiGlassScope.enabledOf(context);
+    // En cristal el foco no rellena el tile: texto y etiqueta no cambian.
+    final solidFocus = isFocused && !glass;
+    final labelColor = glass ? scheme.onSurface : itemStyle.foregroundColor;
+    const padding = EdgeInsets.symmetric(horizontal: 4, vertical: 4);
+
     return SizedBox(
       width: TvLayoutConstants.viewerFavoriteTileWidth,
       child: Focus(
@@ -104,14 +112,11 @@ class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
         },
         child: GestureDetector(
           onTap: widget.onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            decoration: BoxDecoration(
-              color: itemStyle.backgroundColor,
-              borderRadius: BorderRadius.circular(10),
-              border: itemStyle.border,
-            ),
+          child: _chrome(
+            glass: glass,
+            isFocused: isFocused,
+            itemStyle: itemStyle,
+            padding: padding,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -148,7 +153,7 @@ class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
                     textAlign: TextAlign.center,
                     style: MoaiText.body(
                       context,
-                      color: itemStyle.foregroundColor,
+                      color: labelColor,
                       fontSize: 10.5,
                       fontWeight: itemStyle.fontWeight,
                     ),
@@ -163,7 +168,7 @@ class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
                         vertical: 1.5,
                       ),
                       decoration: BoxDecoration(
-                        color: isFocused
+                        color: solidFocus
                             ? itemStyle.foregroundColor.withValues(alpha: 0.2)
                             : scheme.tertiaryContainer,
                         borderRadius: BorderRadius.circular(4),
@@ -177,7 +182,7 @@ class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
                           fontWeight: FontWeight.w700,
                           height: 1.0,
                           letterSpacing: 0.4,
-                          color: isFocused
+                          color: solidFocus
                               ? itemStyle.foregroundColor
                               : scheme.onTertiaryContainer,
                         ),
@@ -190,6 +195,38 @@ class _ViewerFavoriteTileState extends State<ViewerFavoriteTile> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Fondo del tile: cristal (foco con borde del acento, favorito en
+  /// reproducción teñido) o el estilo opaco de siempre.
+  Widget _chrome({
+    required bool glass,
+    required bool isFocused,
+    required TvListCardStyle itemStyle,
+    required EdgeInsets padding,
+    required Widget child,
+  }) {
+    if (glass) {
+      return MoaiGlass(
+        borderRadius: 10,
+        elevated: false,
+        solid: true,
+        tint: widget.isSelected ? context.scheme.primary : null,
+        focused: isFocused,
+        padding: padding,
+        child: child,
+      );
+    }
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 120),
+      padding: padding,
+      decoration: BoxDecoration(
+        color: itemStyle.backgroundColor,
+        borderRadius: BorderRadius.circular(10),
+        border: itemStyle.border,
+      ),
+      child: child,
     );
   }
 }

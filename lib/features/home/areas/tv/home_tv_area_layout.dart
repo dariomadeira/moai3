@@ -19,48 +19,50 @@ extension _TvAreaLayout on HomeTvAreaState {
       onSelectChannel: _selectChannel,
     );
 
-    return Container(
-      decoration: BoxDecoration(
-        color: scheme.surface.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (alphabetActive)
-            SizedBox(
-              width: 38,
-              child: AlphabetJumpPanel(
-                letters: _search.alphabetLetters,
-                focusNodes: _search.alphabetFocusNodes,
-                onLetterTap: _onSearchAlphabetLetter,
+    // Mismo cristal que los paneles del acordeón (Grupos / Canales).
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: MoaiGlass(
+        borderRadius: 16,
+        solid: true,
+        elevated: false,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (alphabetActive)
+              SizedBox(
+                width: 38,
+                child: AlphabetJumpPanel(
+                  letters: _search.alphabetLetters,
+                  focusNodes: _search.alphabetFocusNodes,
+                  onLetterTap: _onSearchAlphabetLetter,
+                ),
+              ),
+            Expanded(
+              child: Actions(
+                actions: {
+                  DpadLeftIntent: CallbackAction<DpadLeftIntent>(
+                    onInvoke: (_) {
+                      if (_search.isAlphabetMode) return null;
+                      widget.onExitLeft();
+                      return null;
+                    },
+                  ),
+                  DpadRightIntent: CallbackAction<DpadRightIntent>(
+                    onInvoke: (_) {
+                      if (_search.isAlphabetMode) return null;
+                      _viewerFocus.requestFocus();
+                      return null;
+                    },
+                  ),
+                },
+                child: alphabetActive
+                    ? ExcludeFocus(child: searchPanel)
+                    : searchPanel,
               ),
             ),
-          Expanded(
-            child: Actions(
-              actions: {
-                DpadLeftIntent: CallbackAction<DpadLeftIntent>(
-                  onInvoke: (_) {
-                    if (_search.isAlphabetMode) return null;
-                    widget.onExitLeft();
-                    return null;
-                  },
-                ),
-                DpadRightIntent: CallbackAction<DpadRightIntent>(
-                  onInvoke: (_) {
-                    if (_search.isAlphabetMode) return null;
-                    _viewerFocus.requestFocus();
-                    return null;
-                  },
-                ),
-              },
-              child: alphabetActive
-                  ? ExcludeFocus(child: searchPanel)
-                  : searchPanel,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -162,9 +164,12 @@ extension _TvAreaLayout on HomeTvAreaState {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Padding(
+                            // 3 + 40 + 13 = 56: alto de la barra de
+                            // pestañas (48 + 8), así los paneles arrancan
+                            // a la misma altura.
                             padding: const EdgeInsets.only(
                               top: 3,
-                              bottom: 12,
+                              bottom: 13,
                               right: 8,
                             ),
                             child: SizedBox(
@@ -224,15 +229,9 @@ extension _TvAreaLayout on HomeTvAreaState {
                               onLongPressMic: () =>
                                   TvFriendsDialog.show(context),
                             ),
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                left: 16,
-                                right: 16,
-                                top: 12,
-                              ),
-                              child: TvPlayerLayoutAnchor(
-                                overlayController: _playerOverlay,
-                              ),
+                            // Los márgenes del visor los pone el panel.
+                            child: TvPlayerLayoutAnchor(
+                              overlayController: _playerOverlay,
                             ),
                           ),
                           const SizedBox(height: 8),

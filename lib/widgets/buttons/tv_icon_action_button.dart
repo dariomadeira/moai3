@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Botón de ícono redondo de las filas de listas TV (actualizar, borrar…).
 ///
@@ -59,11 +60,21 @@ class _TvIconActionButtonState extends State<TvIconActionButton> {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
+    // Cristal: tenue en reposo (la fila no se rellena al enfocarse, así que
+    // [parentFocused] no cambia colores); con foco, acento con brillo y halo.
+    final glass = MoaiGlassScope.enabledOf(context);
+    final dark = scheme.brightness == Brightness.dark;
+    final glassLine = dark ? Colors.white : scheme.onSurface;
 
     final Color bg;
     final Color fg;
 
-    if (_isFocused) {
+    if (glass) {
+      bg = _isFocused
+          ? scheme.primary
+          : glassLine.withValues(alpha: dark ? 0.06 : 0.08);
+      fg = _isFocused ? scheme.onPrimary : scheme.onSurface;
+    } else if (_isFocused) {
       if (widget.parentFocused) {
         bg = scheme.onPrimary;
         fg = scheme.primary;
@@ -112,15 +123,40 @@ class _TvIconActionButtonState extends State<TvIconActionButton> {
         scale: _isFocused ? 1.08 : 1.0,
         duration: const Duration(milliseconds: 100),
         child: Material(
-          color: bg,
+          color: glass ? Colors.transparent : bg,
           borderRadius: BorderRadius.circular(10),
-          child: InkWell(
-            onTap: widget.onPressed,
-            borderRadius: BorderRadius.circular(10),
-            child: SizedBox(
-              width: 36,
-              height: 36,
-              child: Icon(widget.icon, color: fg, size: MoaiIconSizes.md),
+          child: Ink(
+            decoration: glass
+                ? BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    border: _isFocused
+                        ? Border.all(color: Colors.transparent)
+                        : Border.all(color: glassLine.withValues(alpha: 0.14)),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: _isFocused
+                          ? [Color.lerp(bg, Colors.white, 0.18)!, bg]
+                          : [bg, bg],
+                    ),
+                    boxShadow: _isFocused
+                        ? [
+                            BoxShadow(
+                              color: bg.withValues(alpha: 0.4),
+                              blurRadius: 12,
+                            ),
+                          ]
+                        : null,
+                  )
+                : null,
+            child: InkWell(
+              onTap: widget.onPressed,
+              borderRadius: BorderRadius.circular(10),
+              child: SizedBox(
+                width: 36,
+                height: 36,
+                child: Icon(widget.icon, color: fg, size: MoaiIconSizes.md),
+              ),
             ),
           ),
         ),

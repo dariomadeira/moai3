@@ -10,11 +10,15 @@ class TvListCardLeadingIcon extends StatelessWidget {
   /// Compacto para filas de lista (itemExtent 56). False = paridad Settings.
   final bool compact;
 
+  /// Color fijo del ícono (p. ej. en cristal); si es null se deriva del foco.
+  final Color? color;
+
   const TvListCardLeadingIcon({
     super.key,
     required this.icon,
     this.isFocused = false,
     this.compact = true,
+    this.color,
   });
 
   @override
@@ -25,8 +29,9 @@ class TvListCardLeadingIcon extends StatelessWidget {
     //     : scheme.primaryContainer;
     final focusedIconColor =
         Color.lerp(scheme.onPrimary, scheme.onPrimaryContainer, 0.38) ??
-            scheme.onPrimary;
-    final iconColor = isFocused ? focusedIconColor : scheme.onPrimaryContainer;
+        scheme.onPrimary;
+    final iconColor =
+        color ?? (isFocused ? focusedIconColor : scheme.onPrimaryContainer);
 
     // Settings: padding 10 + icon 22. Compact: 6 + 18 para caber en itemExtent 56.
     final pad = compact ? 8.0 : 10.0;
@@ -44,12 +49,7 @@ class TvListCardLeadingIcon extends StatelessWidget {
         borderRadius: BorderRadius.circular(radius),
       ),
       alignment: Alignment.center,
-      child: Icon(
-        icon,
-        size: iconSize,
-        color: iconColor,
-      ),
+      child: Icon(icon, size: iconSize, color: iconColor),
     );
   }
 }
-

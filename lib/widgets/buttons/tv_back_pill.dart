@@ -4,6 +4,7 @@ import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Píldora de navegación para retroceder / Volver.
 ///
@@ -134,20 +135,67 @@ class _TvBackPillState extends State<TvBackPill> {
         child: InkWell(
           onTap: _handlePress,
           borderRadius: BorderRadius.circular(radius),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            curve: Curves.easeOutCubic,
-            width: widget.size,
-            height: widget.size,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(radius),
-            ),
-            child: Icon(widget.icon, color: iconColor, size: widget.iconSize),
-          ),
+          child: MoaiGlassScope.enabledOf(context)
+              ? _buildGlass(scheme, radius)
+              : AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  curve: Curves.easeOutCubic,
+                  width: widget.size,
+                  height: widget.size,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: bg,
+                    borderRadius: BorderRadius.circular(radius),
+                  ),
+                  child: Icon(
+                    widget.icon,
+                    color: iconColor,
+                    size: widget.iconSize,
+                  ),
+                ),
         ),
       ),
+    );
+  }
+
+  /// Estilo cristal, igual que el rail del home: círculo de cristal en
+  /// reposo y, con foco, acento con brillo arriba y halo.
+  Widget _buildGlass(ColorScheme scheme, double radius) {
+    if (!_isFocused) {
+      return MoaiGlass(
+        width: widget.size,
+        height: widget.size,
+        borderRadius: radius,
+        alignment: Alignment.center,
+        child: Icon(
+          widget.icon,
+          color: scheme.onSurface,
+          size: widget.iconSize,
+        ),
+      );
+    }
+    return Container(
+      width: widget.size,
+      height: widget.size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(radius),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color.lerp(scheme.primary, Colors.white, 0.22)!,
+            scheme.primary,
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.primary.withValues(alpha: 0.45),
+            blurRadius: 16,
+          ),
+        ],
+      ),
+      child: Icon(widget.icon, color: scheme.onPrimary, size: widget.iconSize),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/services/weather_service.dart';
 import 'package:moai3/state/weather_provider.dart';
@@ -252,10 +253,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
         height: 140,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHigh.withValues(alpha: 0.4),
-          borderRadius: BorderRadius.circular(16),
-        ),
+        decoration: moaiGlassWellDecoration(scheme),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

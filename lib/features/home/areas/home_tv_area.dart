@@ -25,6 +25,7 @@ import 'package:moai3/features/home/widgets/viewer_favorites_bar.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/dialogs/tv_friends_dialog.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/features/player/playback/channel_playback_helpers.dart';
 import 'package:moai3/features/search/controllers/home_search_controller.dart';
 import 'package:moai3/features/search/widgets/search_panel.dart';

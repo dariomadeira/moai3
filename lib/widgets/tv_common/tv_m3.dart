@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Variante visual alineada al teclado TV (fills, sin bordes).
 enum TvButtonVariant {
@@ -116,10 +117,23 @@ class _TvFocusButtonState extends State<TvFocusButton> {
     }
   }
 
+  /// Estilo cristal: en reposo cristal tenue (texto del tema, rojo si es
+  /// destructivo); con foco, acento con brillo y halo como el rail.
+  (Color bg, Color fg) _glassColors(ColorScheme scheme) {
+    final destructive = widget.variant == TvButtonVariant.destructive;
+    if (_focused) {
+      return destructive
+          ? (scheme.error, scheme.onError)
+          : (scheme.primary, scheme.onPrimary);
+    }
+    return (Colors.transparent, destructive ? scheme.error : scheme.onSurface);
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final (bg, fg) = _colors(scheme);
+    final glass = MoaiGlassScope.enabledOf(context);
+    final (bg, fg) = glass ? _glassColors(scheme) : _colors(scheme);
     final enabled = widget.onPressed != null && !widget.loading;
 
     return Focus(
@@ -178,11 +192,17 @@ class _TvFocusButtonState extends State<TvFocusButton> {
         return KeyEventResult.ignored;
       },
       child: AnimatedScale(
-        scale: _focused ? 1.02 : 1.0,
+        // En cristal el foco ya lo marcan el color y el halo; el zoom hacía que
+        // el botón invadiera el margen (p. ej. en el borde de un modal).
+        scale: _focused && !glass ? 1.02 : 1.0,
         duration: const Duration(milliseconds: 100),
         curve: Curves.easeOutCubic,
-        child: Material(
-          color: bg,
+        child: _glassFrame(
+          glass: glass,
+          scheme: scheme,
+          bg: bg,
+          child: Material(
+          color: glass ? Colors.transparent : bg,
           shadowColor: Colors.transparent,
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
@@ -237,7 +257,41 @@ class _TvFocusButtonState extends State<TvFocusButton> {
             ),
           ),
         ),
+        ),
       ),
+    );
+  }
+
+  /// Marco del botón en estilo cristal: cristal tenue en reposo y, con foco,
+  /// relleno con brillo arriba y halo. Fuera del cristal no agrega nada.
+  Widget _glassFrame({
+    required bool glass,
+    required ColorScheme scheme,
+    required Color bg,
+    required Widget child,
+  }) {
+    if (!glass) return child;
+    if (!_focused) {
+      return MoaiGlass(
+        borderRadius: widget.radius,
+        elevated: false,
+        solid: true,
+        child: child,
+      );
+    }
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(widget.radius),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color.lerp(bg, Colors.white, 0.18)!, bg],
+        ),
+        boxShadow: [
+          BoxShadow(color: bg.withValues(alpha: 0.4), blurRadius: 16),
+        ],
+      ),
+      child: child,
     );
   }
 }

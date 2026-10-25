@@ -7,6 +7,7 @@ import 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
 export 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
 import 'package:moai3/widgets/tv_input/tv_text_input_sheet.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Campo de texto para Smart TV: Select abre teclado on-screen Material.
 class TvTextField extends StatefulWidget {
@@ -223,15 +224,21 @@ class _TvTextFieldState extends State<TvTextField> {
     final interactive = widget.enabled;
 
     // Mismo lenguaje visual que SettingsActionRow: fill, icono en chip, sin trailing.
+    // En cristal, igual que TvTile: el foco es un borde (no rellena) y el
+    // ícono va suelto en el acento.
+    final glass = MoaiGlassScope.enabledOf(context);
+    final solidFocus = _focused && !glass;
     final bg = _focused ? scheme.primary : scheme.surfaceContainerLow;
-    final titleColor = _focused ? scheme.onPrimary : scheme.onSurface;
-    final valueColor = _focused
+    final titleColor = solidFocus ? scheme.onPrimary : scheme.onSurface;
+    final valueColor = solidFocus
         ? scheme.onPrimary.withValues(alpha: hasValue ? 1 : 0.85)
         : (hasValue ? scheme.onSurfaceVariant : scheme.onSurfaceVariant);
     final iconBg = _focused
         ? scheme.onPrimary.withValues(alpha: 0.18)
         : scheme.primaryContainer;
-    final iconColor = _focused ? scheme.onPrimary : scheme.onPrimaryContainer;
+    final iconColor = glass
+        ? scheme.primary.withValues(alpha: _focused ? 1 : 0.75)
+        : (_focused ? scheme.onPrimary : scheme.onPrimaryContainer);
 
     final leading = widget.leadingIcon ?? MoaiIcons.keyboard;
 
@@ -239,16 +246,16 @@ class _TvTextFieldState extends State<TvTextField> {
         ? scheme.primary
         : scheme.outlineVariant.withValues(alpha: 0.12);
 
-    final field = AnimatedContainer(
-      duration: const Duration(milliseconds: 120),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: borderColor,
-        ),
+    final iconGlyph = Padding(
+      padding: EdgeInsets.all(widget.dense ? 8 : 10),
+      child: Icon(
+        leading,
+        size: widget.dense ? MoaiIconSizes.md : MoaiIconSizes.lg,
+        color: iconColor,
       ),
-      child: Material(
+    );
+
+    final content = Material(
         color: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -256,7 +263,7 @@ class _TvTextFieldState extends State<TvTextField> {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: interactive ? _openKeyboard : null,
-          splashColor: (_focused ? scheme.onPrimary : scheme.onSurface)
+          splashColor: (solidFocus ? scheme.onPrimary : scheme.onSurface)
               .withValues(alpha: 0.1),
           child: Padding(
             padding: EdgeInsets.symmetric(
@@ -265,20 +272,16 @@ class _TvTextFieldState extends State<TvTextField> {
             ),
             child: Row(
               children: [
-                Material(
-                  color: iconBg,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.all(widget.dense ? 8 : 10),
-                    child: Icon(
-                      leading,
-                      size: widget.dense ? MoaiIconSizes.md : MoaiIconSizes.lg,
-                      color: iconColor,
+                if (glass)
+                  iconGlyph
+                else
+                  Material(
+                    color: iconBg,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    child: iconGlyph,
                   ),
-                ),
                 SizedBox(width: widget.dense ? 12 : 14),
                 Expanded(
                   child: Column(
@@ -316,8 +319,27 @@ class _TvTextFieldState extends State<TvTextField> {
             ),
           ),
         ),
-      ),
     );
+
+    final field = glass
+        ? MoaiGlass(
+            borderRadius: 16,
+            elevated: false,
+            solid: true,
+            focused: _focused,
+            child: content,
+          )
+        : AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: borderColor,
+              ),
+            ),
+            child: content,
+          );
 
     return Focus(
       focusNode: _focusNode,

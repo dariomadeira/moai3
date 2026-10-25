@@ -20,55 +20,43 @@ class _CalendarEventGridCard extends StatelessWidget {
     final scheme = context.scheme;
     final isLive = event.status == CalendarEventStatus.live;
     final isFinished = event.status == CalendarEventStatus.finished;
-    final isSoon = event.status == CalendarEventStatus.upcoming && event.isToday;
+    final isSoon =
+        event.status == CalendarEventStatus.upcoming && event.isToday;
     final sportIcon = CalendarProvider.getSubscriptionIcon(
       event.subscriptionId,
     );
 
-    final finishedLabel = LocaleKeys.calendar_status_finished.tr();
-
-    // Paleta de colores adaptativa según estado y foco con gradiente y borde sutil
-    final Color baseColor;
+    // Ficha de cristal como TvTile: el foco es el borde del acento y el texto
+    // no se invierte. El estado se lee por el chip y la intensidad del texto:
+    // en vivo va teñido del acento, terminado queda apagado.
     final Color fgColor;
-    final Color subColor;
-
-    if (isFinished) {
-      baseColor = isFocused
-          ? scheme.surfaceContainerHighest
-          : scheme.surfaceContainerLowest;
-      fgColor = isFocused ? scheme.onSurface : scheme.outline;
-      subColor = scheme.outline;
-    } else if (isFocused) {
-      baseColor = scheme.primary;
-      fgColor = scheme.onPrimary;
-      subColor = scheme.onPrimary;
-    } else if (isLive) {
-      baseColor = scheme.surfaceContainerHighest;
-      fgColor = scheme.onSurface;
-      subColor = scheme.onSurfaceVariant;
-    } else if (isSoon) {
-      baseColor = scheme.surfaceContainerHigh;
-      fgColor = scheme.onSurface;
-      subColor = scheme.onSurfaceVariant;
+    final Color iconColor;
+    if (isFinished && !isFocused) {
+      fgColor = scheme.onSurfaceVariant.withValues(alpha: 0.6);
+      iconColor = fgColor;
     } else {
-      baseColor = scheme.surfaceContainer;
       fgColor = scheme.onSurface;
-      subColor = scheme.onSurfaceVariant;
+      iconColor = isFinished
+          ? scheme.onSurfaceVariant
+          : scheme.primary.withValues(alpha: isFocused ? 1 : 0.75);
     }
+    final timeColor = isSoon || isLive ? scheme.primary : fgColor;
 
-    final Color borderColor;
-    if (isFocused) {
-      borderColor = isFinished
-          ? scheme.onSurface.withValues(alpha: 0.40)
-          : scheme.onPrimary.withValues(alpha: 0.60);
+    final Widget? chip;
+    if (isFinished) {
+      chip = _StatusChip(label: LocaleKeys.calendar_status_finished.tr());
     } else if (isLive) {
-      borderColor = scheme.primary.withValues(alpha: 0.40);
-    } else if (isFinished) {
-      borderColor = scheme.outlineVariant.withValues(alpha: 0.16);
+      chip = _StatusChip(
+        label: LocaleKeys.calendar_status_live.tr(),
+        style: _StatusChipStyle.live,
+      );
     } else if (isSoon) {
-      borderColor = scheme.outlineVariant.withValues(alpha: 0.20);
+      chip = _StatusChip(
+        label: LocaleKeys.calendar_status_upcoming_short.tr(),
+        style: _StatusChipStyle.highlighted,
+      );
     } else {
-      borderColor = scheme.outlineVariant.withValues(alpha: 0.14);
+      chip = null;
     }
 
     return SizedBox(
@@ -76,20 +64,18 @@ class _CalendarEventGridCard extends StatelessWidget {
       child: _PressScale(
         pressed: actionPressed,
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
-          decoration: BoxDecoration(
-            color: baseColor,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: borderColor),
-          ),
+        child: MoaiGlass(
+          borderRadius: 12,
+          elevated: false,
+          solid: true,
+          focused: isFocused,
+          tint: isLive ? scheme.primary : null,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Fila superior: Ícono del deporte según la suscripción + Hora + Micro-Badge en vivo M3
-              // Protegido con FittedBox para prevenir desbordamientos en cualquier ancho o transición
+              // Fila superior: ícono del deporte + hora + chip de estado.
+              // FittedBox: no desborda en ningún ancho ni transición.
               SizedBox(
                 width: double.infinity,
                 child: FittedBox(
@@ -98,99 +84,17 @@ class _CalendarEventGridCard extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        sportIcon,
-                        size: MoaiIconSizes.xs,
-                        color: isFinished ? fgColor : subColor,
-                      ),
-                      const SizedBox(width: 3.5),
+                      Icon(sportIcon, size: MoaiIconSizes.xs, color: iconColor),
+                      const SizedBox(width: 4),
                       Text(
                         event.formattedTime,
                         style: MoaiText.display(
                           context,
                           fontSize: 10.5,
-                          color: fgColor,
+                          color: timeColor,
                         ),
                       ),
-                      if (isFinished) ...[
-                        const SizedBox(width: 5),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 1.5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isFocused
-                                ? scheme.onSurface.withValues(alpha: 0.18)
-                                : scheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            finishedLabel,
-                            style: MoaiText.body(
-                              context,
-                              fontSize: 8,
-                              fontWeight: FontWeight.w800,
-                              color: isFocused
-                                  ? scheme.onSurface
-                                  : scheme.onSurfaceVariant,
-                              letterSpacing: 0.4,
-                            ),
-                          ),
-                        ),
-                      ] else if (isLive) ...[
-                        const SizedBox(width: 5),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 1.5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isFocused
-                                ? scheme.surface
-                                : scheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            LocaleKeys.calendar_status_live.tr(),
-                            style: MoaiText.body(
-                              context,
-                              fontSize: 8,
-                              fontWeight: FontWeight.w800,
-                              color: isFocused
-                                  ? scheme.primary
-                                  : scheme.onPrimaryContainer,
-                              letterSpacing: 0.4,
-                            ),
-                          ),
-                        ),
-                      ] else if (isSoon) ...[
-                        const SizedBox(width: 5),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 1.5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isFocused
-                                ? scheme.onPrimary.withValues(alpha: 0.2)
-                                : scheme.primary.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            LocaleKeys.calendar_status_upcoming_short.tr(),
-                            style: MoaiText.body(
-                              context,
-                              fontSize: 8,
-                              fontWeight: FontWeight.w800,
-                              color: isFocused
-                                  ? scheme.onPrimary
-                                  : scheme.primary,
-                              letterSpacing: 0.4,
-                            ),
-                          ),
-                        ),
-                      ],
+                      if (chip != null) ...[const SizedBox(width: 5), chip],
                     ],
                   ),
                 ),
@@ -216,6 +120,81 @@ class _CalendarEventGridCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+enum _StatusChipStyle { neutral, highlighted, live }
+
+/// Micro-etiqueta de estado de la tarjeta (FIN / PRONTO / EN VIVO).
+class _StatusChip extends StatelessWidget {
+  final String label;
+  final _StatusChipStyle style;
+
+  const _StatusChip({
+    required this.label,
+    this.style = _StatusChipStyle.neutral,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    final isLive = style == _StatusChipStyle.live;
+
+    final decoration = switch (style) {
+      _StatusChipStyle.neutral => moaiGlassChipDecoration(scheme, radius: 5),
+      _StatusChipStyle.highlighted => moaiGlassChipDecoration(
+        scheme,
+        radius: 5,
+        highlighted: true,
+      ),
+      // En vivo: pleno del acento, lo único sólido de la grilla.
+      _StatusChipStyle.live => BoxDecoration(
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: Colors.transparent),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color.lerp(scheme.primary, Colors.white, 0.18)!,
+            scheme.primary,
+          ],
+        ),
+      ),
+    };
+
+    final color = switch (style) {
+      _StatusChipStyle.neutral => scheme.onSurfaceVariant,
+      _StatusChipStyle.highlighted => scheme.primary,
+      _StatusChipStyle.live => scheme.onPrimary,
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+      decoration: decoration,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isLive) ...[
+            Container(
+              width: 5,
+              height: 5,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 3),
+          ],
+          Text(
+            label,
+            style: MoaiText.body(
+              context,
+              fontSize: 8,
+              fontWeight: FontWeight.w800,
+              color: color,
+              letterSpacing: 0.4,
+            ),
+          ),
+        ],
       ),
     );
   }

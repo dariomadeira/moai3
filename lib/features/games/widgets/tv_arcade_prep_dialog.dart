@@ -1,6 +1,7 @@
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/features/games/models/arcade_netplay_state.dart';
 import 'package:moai3/features/games/services/arcade_netplay_service.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -139,10 +140,7 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
           // Mensaje explicativo
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
+            decoration: moaiGlassWellDecoration(scheme, radius: 12),
             child: Row(
               children: [
                 Icon(
@@ -185,17 +183,19 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
     required BuildContext context,
   }) {
     final scheme = Theme.of(context).colorScheme;
+    // "Pozo" de cristal; al terminar, el borde toma el color del paso.
+    final well = moaiGlassWellDecoration(scheme, radius: 14);
 
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDone ? activeColor.withValues(alpha: 0.4) : scheme.outlineVariant.withValues(alpha: 0.2),
-          width: 1.2,
-        ),
-      ),
+      decoration: isDone
+          ? well.copyWith(
+              border: Border.all(
+                color: activeColor.withValues(alpha: 0.4),
+                width: 1.2,
+              ),
+            )
+          : well,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -243,7 +243,7 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
             child: LinearProgressIndicator(
               value: progress.clamp(0.0, 1.0),
               minHeight: 6,
-              backgroundColor: scheme.surfaceContainerHighest,
+              backgroundColor: (scheme.brightness == Brightness.dark ? Colors.white : scheme.onSurface).withValues(alpha: 0.10),
               valueColor: AlwaysStoppedAnimation<Color>(activeColor),
             ),
           ),

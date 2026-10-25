@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Tarjeta visual cinematográfica 16:9 para la pantalla de detalle de películas en Smart TV.
 class TvMovieHeroCard extends StatefulWidget {
@@ -96,6 +97,18 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final glass = MoaiGlassScope.enabledOf(context);
+    final frame = BoxDecoration(
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: _isFocused
+            ? scheme.primary
+            : glass
+            ? Colors.white.withValues(alpha: 0.14)
+            : scheme.outlineVariant.withValues(alpha: 0.35),
+        width: _isFocused ? (glass ? 2 : 2.5) : 1.0,
+      ),
+    );
 
     return Focus(
       focusNode: widget.focusNode,
@@ -138,17 +151,12 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
           curve: Curves.easeOutCubic,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: _isFocused
-                    ? scheme.primary
-                    : scheme.outlineVariant.withValues(alpha: 0.35),
-                width: _isFocused ? 2.5 : 1.0,
-              ),
-            ),
+            // En cristal el borde va pintado encima de la imagen (como en
+            // [MoaiGlass]): no ocupa lugar y el foco no mueve la foto.
+            decoration: glass ? null : frame,
+            foregroundDecoration: glass ? frame : null,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(glass ? 16 : 14),
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -181,25 +189,31 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
                         horizontal: 14,
                         vertical: 7,
                       ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        color: _isFocused
-                            ? scheme.primary
-                            : Colors.black.withValues(alpha: 0.55),
-                        border: Border.all(
-                          color: _isFocused
-                              ? Colors.white
-                              : Colors.white.withValues(alpha: 0.32),
-                          width: _isFocused ? 1.5 : 1.0,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.35),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
+                      decoration: glass && _isFocused
+                          ? moaiGlassButtonDecoration(
+                              scheme,
+                              focused: true,
+                              radius: 20,
+                            )
+                          : BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              color: _isFocused
+                                  ? scheme.primary
+                                  : Colors.black.withValues(alpha: 0.55),
+                              border: Border.all(
+                                color: _isFocused
+                                    ? Colors.white
+                                    : Colors.white.withValues(alpha: 0.32),
+                                width: _isFocused ? 1.5 : 1.0,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.35),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -220,7 +234,9 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
                               style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w600,
-                                color: _isFocused ? scheme.onPrimary : Colors.white,
+                                color: _isFocused
+                                    ? scheme.onPrimary
+                                    : Colors.white,
                                 letterSpacing: 0.2,
                               ),
                             ),
@@ -228,7 +244,9 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
                             Icon(
                               MoaiIcons.vodPlay,
                               size: MoaiIconSizes.sm,
-                              color: _isFocused ? scheme.onPrimary : Colors.white,
+                              color: _isFocused
+                                  ? scheme.onPrimary
+                                  : Colors.white,
                             ),
                             const SizedBox(width: 6),
                             Text(
@@ -236,7 +254,9 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
                               style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w600,
-                                color: _isFocused ? scheme.onPrimary : Colors.white,
+                                color: _isFocused
+                                    ? scheme.onPrimary
+                                    : Colors.white,
                                 letterSpacing: 0.2,
                               ),
                             ),
@@ -255,10 +275,14 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
   }
 
   Widget _buildImageCarousel(ColorScheme scheme) {
+    // Sin imagen: en cristal un "pozo" tenue en vez de un bloque opaco.
+    final emptyColor = MoaiGlassScope.enabledOf(context)
+        ? Colors.white.withValues(alpha: 0.04)
+        : scheme.surfaceContainerHigh;
     final images = _effectiveImages;
     if (images.isEmpty) {
       return Container(
-        color: scheme.surfaceContainerHigh,
+        color: emptyColor,
         child: Center(
           child: Icon(
             MoaiIcons.vodMovie,
@@ -282,7 +306,7 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
         width: double.infinity,
         height: double.infinity,
         placeholder: (_, _) => Container(
-          color: scheme.surfaceContainerHigh,
+          color: emptyColor,
           child: Center(
             child: Icon(
               MoaiIcons.vodMovie,
@@ -292,7 +316,7 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
           ),
         ),
         errorWidget: (_, _, _) => Container(
-          color: scheme.surfaceContainerHigh,
+          color: emptyColor,
           child: Center(
             child: Icon(
               MoaiIcons.vodMovie,

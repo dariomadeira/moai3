@@ -12,6 +12,7 @@ import 'package:moai3/widgets/lists/tv_fixed_window_viewport.dart';
 import 'package:moai3/widgets/lists/tv_windowed_grid.dart';
 import 'package:moai3/widgets/tv_input/tv_input.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Panel Buscar: header compacto propio + grilla 2×3 (como Canales).
 class SearchPanel extends StatefulWidget {
@@ -46,8 +47,7 @@ class SearchPanel extends StatefulWidget {
   State<SearchPanel> createState() => SearchPanelState();
 }
 
-class SearchPanelState extends State<SearchPanel>
-    implements FocusSelectable {
+class SearchPanelState extends State<SearchPanel> implements FocusSelectable {
   static const int _windowSize = 9;
   static const int _crossAxisCount = 3;
   static const int _rowCount = _windowSize ~/ _crossAxisCount;
@@ -107,7 +107,7 @@ class SearchPanelState extends State<SearchPanel>
         oldWidget.selectedChannel?.id != widget.selectedChannel?.id;
     final listChanged =
         !identical(oldWidget.searchResults, widget.searchResults) ||
-            oldWidget.searchResults.length != widget.searchResults.length;
+        oldWidget.searchResults.length != widget.searchResults.length;
     if ((selChanged || listChanged) && widget.searchResults.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -125,12 +125,7 @@ class SearchPanelState extends State<SearchPanel>
     final hasQuery = widget.queryController.text.isNotEmpty;
 
     return Container(
-      padding: const EdgeInsets.only(
-        left: 12,
-        right: 12,
-        top: 4,
-        bottom: 6,
-      ),
+      padding: const EdgeInsets.only(left: 12, right: 12, top: 4, bottom: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -181,49 +176,49 @@ class SearchPanelState extends State<SearchPanel>
                     ),
                   )
                 : widget.searchResults.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              MoaiIcons.clear,
-                              size: MoaiIconSizes.xxl,
-                              color: scheme.onSurfaceVariant
-                                  .withValues(alpha: 0.7),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              LocaleKeys.search_no_results.tr(),
-                              textAlign: TextAlign.center,
-                              style: MoaiText.body(
-                                context,
-                                color: scheme.onSurfaceVariant,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          MoaiIcons.clear,
+                          size: MoaiIconSizes.xxl,
+                          color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
                         ),
-                      )
-                    : LayoutBuilder(
-                        builder: (context, constraints) {
-                          final dynamicRowExtent =
-                              (constraints.maxHeight / _rowCount)
-                                  .floorToDouble()
-                                  .clamp(92.0, 108.0);
-                          return TvFixedWindowViewport(
-                            slotCount: _rowCount,
-                            slotExtent: dynamicRowExtent,
-                            child: TvWindowedGrid<Channel>(
-                              key: _listKey,
-                              items: widget.searchResults,
-                              windowSize: _windowSize,
-                              crossAxisCount: _crossAxisCount,
-                              initialGlobalIndex: _selectedIndex,
-                              itemExtent: dynamicRowExtent,
-                              showScrollDots: true,
-                              onFocusUpFromFirst: _focusInputFromFirstResult,
-                              itemBuilder: (
+                        const SizedBox(height: 8),
+                        Text(
+                          LocaleKeys.search_no_results.tr(),
+                          textAlign: TextAlign.center,
+                          style: MoaiText.body(
+                            context,
+                            color: scheme.onSurfaceVariant,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      final dynamicRowExtent =
+                          (constraints.maxHeight / _rowCount)
+                              .floorToDouble()
+                              .clamp(92.0, 108.0);
+                      return TvFixedWindowViewport(
+                        slotCount: _rowCount,
+                        slotExtent: dynamicRowExtent,
+                        child: TvWindowedGrid<Channel>(
+                          key: _listKey,
+                          items: widget.searchResults,
+                          windowSize: _windowSize,
+                          crossAxisCount: _crossAxisCount,
+                          initialGlobalIndex: _selectedIndex,
+                          itemExtent: dynamicRowExtent,
+                          showScrollDots: true,
+                          onFocusUpFromFirst: _focusInputFromFirstResult,
+                          itemBuilder:
+                              (
                                 context,
                                 channel,
                                 focusNode,
@@ -248,10 +243,10 @@ class SearchPanelState extends State<SearchPanel>
                                   onTap: () => widget.onSelectChannel(channel),
                                 );
                               },
-                            ),
-                          );
-                        },
-                      ),
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -306,9 +301,7 @@ class _SearchPanelChrome extends StatelessWidget {
                 onFocusUp: onFocusUp,
                 onFocusDown: onFocusDown,
                 // Con X visible: → va al clear, no al panel Países.
-                onFocusRight: hasQuery
-                    ? clearFocusNode.requestFocus
-                    : null,
+                onFocusRight: hasQuery ? clearFocusNode.requestFocus : null,
                 onSubmitted: (_) => onFocusDown(),
               ),
             ),
@@ -329,8 +322,8 @@ class _SearchPanelChrome extends StatelessWidget {
           resultsCapped
               ? LocaleKeys.search_results_capped.tr()
               : showFilterHint
-                  ? LocaleKeys.search_hint_with_filter.tr()
-                  : LocaleKeys.search_hint_open_keyboard.tr(),
+              ? LocaleKeys.search_hint_with_filter.tr()
+              : LocaleKeys.search_hint_open_keyboard.tr(),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: MoaiText.body(
@@ -407,26 +400,48 @@ class _SearchClearButtonState extends State<_SearchClearButton> {
       },
       child: GestureDetector(
         onTap: widget.onClear,
-        child: AnimatedScale(
-          scale: _isFocused ? 1.1 : 1.0,
-          duration: const Duration(milliseconds: 200),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: _isFocused ? scheme.primary : scheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(
-              MoaiIcons.close,
-              color: _isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
-              size: MoaiIconSizes.md,
-            ),
-          ),
-        ),
+        // Como el botón de volver: círculo de cristal en reposo y, con
+        // foco, acento con brillo arriba y halo (sin escala).
+        child: _isFocused
+            ? Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color.lerp(scheme.primary, Colors.white, 0.22)!,
+                      scheme.primary,
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: scheme.primary.withValues(alpha: 0.45),
+                      blurRadius: 16,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  MoaiIcons.close,
+                  color: scheme.onPrimary,
+                  size: MoaiIconSizes.md,
+                ),
+              )
+            : MoaiGlass(
+                width: 40,
+                height: 40,
+                elevated: false,
+                alignment: Alignment.center,
+                child: Icon(
+                  MoaiIcons.close,
+                  color: scheme.onSurfaceVariant,
+                  size: MoaiIconSizes.md,
+                ),
+              ),
       ),
     );
   }
 }
-
