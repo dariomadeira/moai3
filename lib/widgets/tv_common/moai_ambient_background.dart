@@ -30,10 +30,19 @@ class _MoaiAmbientBackgroundState extends State<MoaiAmbientBackground>
   _AmbientPalette? _to;
   ui.Image? _grain;
 
+  /// Textura de grano compartida por todos los fondos: se genera una vez y
+  /// vive lo que dure la app (cada pantalla tiene su propio fondo).
+  static Future<ui.Image>? _sharedGrain;
+
   @override
   void initState() {
     super.initState();
-    _buildGrain();
+    _loadGrain();
+  }
+
+  Future<void> _loadGrain() async {
+    final image = await (_sharedGrain ??= _buildGrain());
+    if (mounted) setState(() => _grain = image);
   }
 
   @override
@@ -53,7 +62,7 @@ class _MoaiAmbientBackgroundState extends State<MoaiAmbientBackground>
     }
   }
 
-  Future<void> _buildGrain() async {
+  static Future<ui.Image> _buildGrain() {
     const size = 128;
     final rnd = math.Random(42);
     final pixels = Uint8List(size * size * 4);
@@ -72,18 +81,13 @@ class _MoaiAmbientBackgroundState extends State<MoaiAmbientBackground>
       ui.PixelFormat.rgba8888,
       completer.complete,
     );
-    final image = await completer.future;
-    if (!mounted) {
-      image.dispose();
-      return;
-    }
-    setState(() => _grain = image);
+    return completer.future;
   }
 
   @override
   void dispose() {
+    // El grano es compartido: no se libera acá.
     _blend.dispose();
-    _grain?.dispose();
     super.dispose();
   }
 

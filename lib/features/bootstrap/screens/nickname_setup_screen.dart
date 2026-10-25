@@ -37,12 +37,10 @@ class NicknameSetupScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: scheme.surface,
+        backgroundColor: Colors.transparent,
         // Mismo fondo ambiente que el resto de la app.
         body: Stack(
           children: [

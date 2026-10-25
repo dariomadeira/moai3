@@ -88,7 +88,7 @@ class _OverlapConfigScreenState extends State<OverlapConfigScreen> {
     return PopScope(
       canPop: !widget.isFirstRun,
       child: Scaffold(
-        backgroundColor: scheme.surface,
+        backgroundColor: Colors.transparent,
         body: Stack(
           children: [
             const Positioned.fill(child: MoaiAmbientBackground()),

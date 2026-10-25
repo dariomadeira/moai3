@@ -430,7 +430,7 @@ class _LoadingScreenState extends State<LoadingScreen>
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: scheme.surface,
+      backgroundColor: Colors.transparent,
       // El fondo es el ambiente (estático); sólo el logo late con la
       // animación (SPEC-50 §6.1). El viejo degradado pulsante quedaba tapado
       // por el ambiente y repintaba la pantalla entera en cada frame.

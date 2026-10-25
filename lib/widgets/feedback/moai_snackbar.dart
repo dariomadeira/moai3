@@ -269,7 +269,17 @@ class _MoaiSnackBarBodyState extends State<_MoaiSnackBarBody> {
 
     final body = DecoratedBox(
       decoration: glass
-          ? moaiDialogDecoration(scheme)
+          // Sombra más chica que la del diálogo: el snack se anima al entrar
+          // y una sombra amplia cuesta en cada frame (Chromecast).
+          ? moaiDialogDecoration(scheme).copyWith(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            )
           : BoxDecoration(
               color: widget.backgroundColor,
               borderRadius: BorderRadius.circular(20),

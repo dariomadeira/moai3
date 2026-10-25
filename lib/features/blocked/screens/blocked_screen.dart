@@ -24,7 +24,7 @@ class BlockedScreen extends StatelessWidget {
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: colorScheme.surface,
+        backgroundColor: Colors.transparent,
         // Mismo fondo ambiente que el resto de la app.
         body: Stack(
           children: [
