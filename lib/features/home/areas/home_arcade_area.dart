@@ -96,12 +96,7 @@ class _HomeArcadeAreaState extends HomeAreaState<HomeArcadeArea> {
           widget.romManager.activeRomFilename?.toLowerCase(),
       orElse: () => installed.first,
     );
-    if (active.name.isNotEmpty &&
-        active.name.toLowerCase() !=
-            active.filename.toLowerCase().replaceAll('.zip', '')) {
-      return active.name;
-    }
-    return widget.romManager.nameFromFilename(active.filename);
+    return widget.romManager.displayNameOf(active);
   }
 
   void _onConfigGamepad() {
@@ -238,7 +233,8 @@ class _HomeArcadeAreaState extends HomeAreaState<HomeArcadeArea> {
                   TvSettingsActionRow(
                     focusNode: _playTogetherFocus,
                     label: LocaleKeys.arcade_action_play_together.tr(),
-                    description: LocaleKeys.arcade_action_play_together_desc.tr(),
+                    description: LocaleKeys.arcade_action_play_together_desc
+                        .tr(),
                     icon: MoaiIcons.friends,
                     onPressed: _onPlayTogether,
                     onKeyLeft: widget.onExitLeft,

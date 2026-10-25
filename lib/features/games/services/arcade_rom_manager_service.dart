@@ -42,12 +42,16 @@ class ArcadeRomManagerService extends ChangeNotifier {
   Future<void> initialize() async {
     _activeRomFilename = (await _prefs()).readOptionalString(_activeRomKey);
     await refreshInstalledRoms();
-    unawaited(fetchCatalog().catchError((e) {
-      if (kDebugMode) {
-        debugPrint('[ArcadeRomManagerService] Error pre-cargando catálogo: $e');
-      }
-      return false;
-    }));
+    unawaited(
+      fetchCatalog().catchError((e) {
+        if (kDebugMode) {
+          debugPrint(
+            '[ArcadeRomManagerService] Error pre-cargando catálogo: $e',
+          );
+        }
+        return false;
+      }),
+    );
   }
 
   /// Consulta las ROMs presentes en el almacenamiento interno de la app.
@@ -178,7 +182,9 @@ class ArcadeRomManagerService extends ChangeNotifier {
     try {
       final String romDir =
           await _channel.invokeMethod('getRomDirectory') as String? ?? '';
-      if (romDir.isEmpty) throw Exception(LocaleKeys.arcade_err_internal_dir.tr());
+      if (romDir.isEmpty) {
+        throw Exception(LocaleKeys.arcade_err_internal_dir.tr());
+      }
 
       final targetFile = File('$romDir/$filename');
       final tempFile = File('$romDir/$filename.part');
@@ -307,6 +313,27 @@ class ArcadeRomManagerService extends ChangeNotifier {
     return item.localPath;
   }
 
+  /// ROM activa lista para jugar (instalada y con archivo), o null.
+  ArcadeRomItem? get activeRom {
+    if (getActiveRomPath() == null) return null;
+    final active = _activeRomFilename!.toLowerCase();
+    return _installedRoms.firstWhere(
+      (r) => r.filename.toLowerCase() == active,
+      orElse: () => _installedRoms.first,
+    );
+  }
+
+  /// Nombre para mostrar de una ROM: el del catálogo si es un nombre real,
+  /// si no uno armado desde el archivo.
+  String displayNameOf(ArcadeRomItem rom) {
+    if (rom.name.isNotEmpty &&
+        rom.name.toLowerCase() !=
+            rom.filename.toLowerCase().replaceAll('.zip', '')) {
+      return rom.name;
+    }
+    return nameFromFilename(rom.filename);
+  }
+
   String nameFromFilename(String filename) {
     final clean = filename.toLowerCase().trim();
     final catalogMatch = _catalog
@@ -328,7 +355,9 @@ class ArcadeRomManagerService extends ChangeNotifier {
       return known[clean]!;
     }
     final base = clean.replaceAll('.zip', '');
-    return base.isNotEmpty ? base.toUpperCase() : LocaleKeys.arcade_game_unknown.tr();
+    return base.isNotEmpty
+        ? base.toUpperCase()
+        : LocaleKeys.arcade_game_unknown.tr();
   }
 
   void _updateCatalogInstalledFlags() {

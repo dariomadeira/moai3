@@ -263,7 +263,14 @@ abstract class  LocaleKeys {
   static const groups_name_hint = 'groups_name_hint';
   static const groups_name_label = 'groups_name_label';
   static const groups_name_required = 'groups_name_required';
+  static const home_arcade_change_game = 'home_arcade_change_game';
   static const home_channels_count = 'home_channels_count';
+  static const home_events_count = 'home_events_count';
+  static const home_events_count_one = 'home_events_count_one';
+  static const home_events_empty = 'home_events_empty';
+  static const home_events_empty_desc = 'home_events_empty_desc';
+  static const home_events_subscribe = 'home_events_subscribe';
+  static const home_events_today = 'home_events_today';
   static const home_exit_double_back = 'home_exit_double_back';
   static const home_greeting_afternoon = 'home_greeting_afternoon';
   static const home_greeting_morning = 'home_greeting_morning';

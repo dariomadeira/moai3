@@ -26,6 +26,7 @@ import 'package:moai3/focus/tv_shortcuts.dart';
 import 'package:moai3/widgets/feedback/notification_helper.dart';
 import 'package:moai3/focus/settings_panel_layout.dart';
 import 'package:moai3/models/calendar_event.dart';
+import 'package:moai3/models/channel.dart';
 import 'package:moai3/services/arcade_plugin_service.dart';
 import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/modal_route_tracker.dart';
@@ -279,19 +280,34 @@ class _HomeScreenState extends State<HomeScreen> {
     await showCalendarEventDetails(
       context,
       event,
-      onTuneChannel: (channel) {
-        context.read<ChannelProvider>().selectChannel(channel);
-        _switchSection(HomeSection.tv);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          _tvAreaKey.currentState?.selectChannel(channel);
-          _tvAreaKey.currentState?.requestViewerFocus();
-        });
-      },
+      onTuneChannel: _tuneFromEvent,
     );
     if (!mounted) return;
     _openingLiveSnackDialog = false;
     _liveSnackBusy = false;
+  }
+
+  /// Sintoniza un canal elegido en el detalle de un evento y pasa al visor.
+  void _tuneFromEvent(Channel channel) {
+    context.read<ChannelProvider>().selectChannel(channel);
+    _switchSection(HomeSection.tv);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _tvAreaKey.currentState?.selectChannel(channel);
+      _tvAreaKey.currentState?.requestViewerFocus();
+    });
+  }
+
+  /// Abre Agenda › Suscripciones con el foco en la lista.
+  void _openCalendarSubscriptions() {
+    _calendarPanelIndex = 1;
+    _switchSection(HomeSection.calendar);
+    // Después del foco al rail que pide [_switchSection].
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _railFocusNode.unfocus();
+      _areaKeys[HomeSection.calendar]?.currentState?.requestEntryFocus();
+    });
   }
 
   @override
@@ -339,6 +355,9 @@ class _HomeScreenState extends State<HomeScreen> {
       HomeSection.home => HomeDashboardArea(
         key: _areaKeys[HomeSection.home],
         onExitLeft: _focusRail,
+        onTuneChannel: _tuneFromEvent,
+        onOpenSubscriptions: _openCalendarSubscriptions,
+        romManager: _romManager,
       ),
       HomeSection.settings => HomeSettingsArea(
         key: _areaKeys[HomeSection.settings],
@@ -356,16 +375,7 @@ class _HomeScreenState extends State<HomeScreen> {
         initialPanelIndex: _calendarPanelIndex,
         onPanelIndexChanged: (i) => _calendarPanelIndex = i,
         onExitLeft: _focusRail,
-        onTuneChannel: (channel) {
-          context.read<ChannelProvider>().selectChannel(channel);
-          _switchSection(HomeSection.tv);
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              _tvAreaKey.currentState?.selectChannel(channel);
-              _tvAreaKey.currentState?.requestViewerFocus();
-            }
-          });
-        },
+        onTuneChannel: _tuneFromEvent,
       ),
       HomeSection.featured => HomeMoviesArea(
         key: _areaKeys[HomeSection.featured],
