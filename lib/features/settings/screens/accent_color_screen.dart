@@ -15,10 +15,8 @@ import 'package:moai3/widgets/buttons/tv_back_pill.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 import 'package:moai3/widgets/tv_common/moai_ambient_background.dart';
-enum _AccentScreenItemType {
-  colorDotsSelector,
-  autoAccentSwitch,
-}
+
+enum _AccentScreenItemType { colorDotsSelector, autoAccentSwitch }
 
 /// Pantalla de configuración de color de acento.
 /// Contiene un listado tipo ventana (máx. 6 ítems, como en el resto de Ajustes)
@@ -75,219 +73,206 @@ class _AccentColorScreenState extends State<AccentColorScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: scheme.brightness == Brightness.dark
-                ? [
-                    Color.lerp(
-                      scheme.surfaceContainerHigh,
-                      scheme.primary,
-                      0.08,
-                    )!,
-                    scheme.surfaceContainerLow,
-                  ]
-                : [scheme.surfaceContainerLowest, scheme.surfaceContainerHigh],
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(child: MoaiAmbientBackground()),
           ),
-        ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            const Positioned.fill(
-              child: IgnorePointer(
-                child: MoaiAmbientBackground(),
+          SafeArea(
+            top: false,
+            bottom: false,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: overlapX,
+                vertical: overlapY,
               ),
-            ),
-            SafeArea(
-              top: false,
-              bottom: false,
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: overlapX,
-                  vertical: overlapY,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(
-                      width: 54,
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 9),
-                          TvBackPill(
-                            focusNode: _backFocusNode,
-                            onKeyRight: _focusList,
-                            onKeyDown: _focusList,
-                          ),
-                          const Spacer(),
-                        ],
-                      ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: 54,
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 9),
+                        TvBackPill(
+                          focusNode: _backFocusNode,
+                          onKeyRight: _focusList,
+                          onKeyDown: _focusList,
+                        ),
+                        const Spacer(),
+                      ],
                     ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
-                        child: TvAccordionRowPreview(
-                          panelCount: 1,
-                          activeIndex: 0,
-                          colors: [scheme.surface.withValues(alpha: 0.8)],
-                          titles: [LocaleKeys.settings_general_accent.tr()],
-                          icons: const [MoaiIcons.palette],
-                          onPanelTap: (_) {},
-                          tabBuilder: (index, isExpanded) {
-                            return Padding(
-                              padding: const EdgeInsets.only(
-                                bottom: 14,
-                                top: 14,
-                              ),
-                              child: Column(
-                                children: [
-                                  const Spacer(),
-                                  RotatedBox(
-                                    quarterTurns: 3,
-                                    child: Text(
-                                      LocaleKeys.settings_general_accent.tr(),
-                                      maxLines: 1,
-                                      softWrap: false,
-                                      overflow: TextOverflow.fade,
-                                      style: MoaiText.display(
-                                        context,
-                                        color: scheme.onSurface.withValues(
-                                          alpha: 0.7,
-                                        ),
-                                        fontSize: 12,
-                                        letterSpacing: 1.0,
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+                      child: TvAccordionRowPreview(
+                        panelCount: 1,
+                        activeIndex: 0,
+                        colors: [scheme.surface.withValues(alpha: 0.8)],
+                        titles: [LocaleKeys.settings_general_accent.tr()],
+                        icons: const [MoaiIcons.palette],
+                        onPanelTap: (_) {},
+                        tabBuilder: (index, isExpanded) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 14, top: 14),
+                            child: Column(
+                              children: [
+                                const Spacer(),
+                                RotatedBox(
+                                  quarterTurns: 3,
+                                  child: Text(
+                                    LocaleKeys.settings_general_accent.tr(),
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    overflow: TextOverflow.fade,
+                                    style: MoaiText.display(
+                                      context,
+                                      color: scheme.onSurface.withValues(
+                                        alpha: 0.7,
                                       ),
+                                      fontSize: 12,
+                                      letterSpacing: 1.0,
                                     ),
                                   ),
-                                  const SizedBox(height: 6),
-                                  Icon(
-                                    MoaiIcons.palette,
-                                    size: MoaiIconSizes.md,
-                                    color: scheme.onSurfaceVariant.withValues(
-                                      alpha: 0.85,
-                                    ),
+                                ),
+                                const SizedBox(height: 6),
+                                Icon(
+                                  MoaiIcons.palette,
+                                  size: MoaiIconSizes.md,
+                                  color: scheme.onSurfaceVariant.withValues(
+                                    alpha: 0.85,
                                   ),
-                                ],
-                              ),
-                            );
-                          },
-                          buildExpandedContent: (index, title) {
-                            return Container(
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  TvPanelHeader(
-                                    title: LocaleKeys.settings_general_accent.tr(),
-                                    subtitle:
-                                        LocaleKeys.settings_general_accent_desc.tr(),
-                                    padding: EdgeInsets.zero,
-                                  ),
-                                  const SizedBox(height: 14),
-                                  Expanded(
-                                    child: LayoutBuilder(
-                                      builder: (context, constraints) {
-                                        final targetHeight =
-                                            (_windowSize * _itemExtent).clamp(
-                                          0.0,
-                                          constraints.maxHeight,
-                                        );
-                                        return Align(
-                                          alignment: Alignment.bottomCenter,
-                                          child: SizedBox(
-                                            height: targetHeight,
-                                            child: Align(
-                                              alignment: Alignment.topCenter,
-                                              child: TvWindowedList<
-                                                  _AccentScreenItemType>(
-                                                key: _listKey,
-                                                items: items,
-                                                itemExtent: _itemExtent,
-                                                showScrollDots: true,
-                                                initialGlobalIndex:
-                                                    _selectedItemIndex,
-                                                onFocusedGlobalIndex: (idx) {
-                                                  _selectedItemIndex = idx;
-                                                },
-                                                onFocusUpFromFirst: _backFocusNode.requestFocus,
-                                                itemBuilder: (
-                                                  context,
-                                                  item,
-                                                  focusNode,
-                                                  local,
-                                                  global,
-                                                  onKeyUp,
-                                                  onKeyDown,
-                                                ) {
-                                                  switch (item) {
-                                                    case _AccentScreenItemType
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        buildExpandedContent: (index, title) {
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                TvPanelHeader(
+                                  title: LocaleKeys.settings_general_accent
+                                      .tr(),
+                                  subtitle: LocaleKeys
+                                      .settings_general_accent_desc
+                                      .tr(),
+                                  padding: EdgeInsets.zero,
+                                ),
+                                const SizedBox(height: 14),
+                                Expanded(
+                                  child: LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      final targetHeight =
+                                          (_windowSize * _itemExtent).clamp(
+                                            0.0,
+                                            constraints.maxHeight,
+                                          );
+                                      return Align(
+                                        alignment: Alignment.bottomCenter,
+                                        child: SizedBox(
+                                          height: targetHeight,
+                                          child: Align(
+                                            alignment: Alignment.topCenter,
+                                            child: TvWindowedList<_AccentScreenItemType>(
+                                              key: _listKey,
+                                              items: items,
+                                              itemExtent: _itemExtent,
+                                              showScrollDots: true,
+                                              initialGlobalIndex:
+                                                  _selectedItemIndex,
+                                              onFocusedGlobalIndex: (idx) {
+                                                _selectedItemIndex = idx;
+                                              },
+                                              onFocusUpFromFirst:
+                                                  _backFocusNode.requestFocus,
+                                              itemBuilder:
+                                                  (
+                                                    context,
+                                                    item,
+                                                    focusNode,
+                                                    local,
+                                                    global,
+                                                    onKeyUp,
+                                                    onKeyDown,
+                                                  ) {
+                                                    switch (item) {
+                                                      case _AccentScreenItemType
                                                           .colorDotsSelector:
-                                                      return Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                          vertical: 3,
-                                                        ),
-                                                        child:
-                                                            _AccentColorSelectorTile(
-                                                          focusNode: focusNode,
-                                                          selectedIndex:
-                                                              selectedIndex,
-                                                          onChanged: theme.setAccentColorIndex,
-                                                          onKeyLeft: _backFocusNode.requestFocus,
-                                                          onKeyUp: onKeyUp,
-                                                          onKeyDown: onKeyDown,
-                                                        ),
-                                                      );
-                                                    case _AccentScreenItemType
+                                                        return Padding(
+                                                          padding:
+                                                              const EdgeInsets.symmetric(
+                                                                vertical: 3,
+                                                              ),
+                                                          child: _AccentColorSelectorTile(
+                                                            focusNode:
+                                                                focusNode,
+                                                            selectedIndex:
+                                                                selectedIndex,
+                                                            onChanged: theme
+                                                                .setAccentColorIndex,
+                                                            onKeyLeft:
+                                                                _backFocusNode
+                                                                    .requestFocus,
+                                                            onKeyUp: onKeyUp,
+                                                            onKeyDown:
+                                                                onKeyDown,
+                                                          ),
+                                                        );
+                                                      case _AccentScreenItemType
                                                           .autoAccentSwitch:
-                                                      return Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                          vertical: 3,
-                                                        ),
-                                                        child:
-                                                            TvSettingsSwitchRow(
-                                                          focusNode: focusNode,
-                                                          icon: MoaiIcons.autoAccent,
-                                                          label:
-                                                              LocaleKeys.settings_general_auto_accent
-                                                                  .tr(),
-                                                          description:
-                                                              LocaleKeys.settings_general_auto_accent_desc
-                                                                  .tr(),
-                                                          value: isAutoAccent,
-                                                          onChanged: theme.setAutoAccent,
-                                                          onKeyLeft: _backFocusNode.requestFocus,
-                                                          onKeyUp: onKeyUp,
-                                                          onKeyDown: onKeyDown,
-                                                        ),
-                                                      );
-                                                  }
-                                                },
-                                              ),
+                                                        return Padding(
+                                                          padding:
+                                                              const EdgeInsets.symmetric(
+                                                                vertical: 3,
+                                                              ),
+                                                          child: TvSettingsSwitchRow(
+                                                            focusNode:
+                                                                focusNode,
+                                                            icon: MoaiIcons
+                                                                .autoAccent,
+                                                            label: LocaleKeys
+                                                                .settings_general_auto_accent
+                                                                .tr(),
+                                                            description: LocaleKeys
+                                                                .settings_general_auto_accent_desc
+                                                                .tr(),
+                                                            value: isAutoAccent,
+                                                            onChanged: theme
+                                                                .setAutoAccent,
+                                                            onKeyLeft:
+                                                                _backFocusNode
+                                                                    .requestFocus,
+                                                            onKeyUp: onKeyUp,
+                                                            onKeyDown:
+                                                                onKeyDown,
+                                                          ),
+                                                        );
+                                                    }
+                                                  },
                                             ),
                                           ),
-                                        );
-                                      },
-                                    ),
+                                        ),
+                                      );
+                                    },
                                   ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -321,8 +306,8 @@ class _AccentColorSelectorTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorName = selectedIndex >= 0 &&
-            selectedIndex < MoaiAccentColors.labelKeys.length
+    final colorName =
+        selectedIndex >= 0 && selectedIndex < MoaiAccentColors.labelKeys.length
         ? MoaiAccentColors.labelKeys[selectedIndex].tr()
         : '';
 
@@ -366,43 +351,40 @@ class _AccentColorSelectorTile extends StatelessWidget {
       trailingBuilder: (context, isFocused) {
         return Row(
           mainAxisSize: MainAxisSize.min,
-          children: List.generate(
-            MoaiAccentColors.seeds.length,
-            (i) {
-              final isSelected = i == selectedIndex;
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2.5),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 140),
-                  width: isSelected ? 22 : 16,
-                  height: isSelected ? 22 : 16,
-                  decoration: BoxDecoration(
-                    color: MoaiAccentColors.seeds[i],
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isSelected
-                          ? Colors.white
-                          : Colors.transparent,
-                      width: isSelected ? 2.0 : 0.0,
-                    ),
+          children: List.generate(MoaiAccentColors.seeds.length, (i) {
+            final isSelected = i == selectedIndex;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2.5),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 140),
+                width: isSelected ? 22 : 16,
+                height: isSelected ? 22 : 16,
+                decoration: BoxDecoration(
+                  color: MoaiAccentColors.seeds[i],
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected ? Colors.white : Colors.transparent,
+                    width: isSelected ? 2.0 : 0.0,
                   ),
-                  child: isSelected
-                      ? Center(
-                          child: Icon(
-                            MoaiIcons.check,
-                            size: MoaiIconSizes.xs,
-                            color: ThemeData.estimateBrightnessForColor(
-                                        MoaiAccentColors.seeds[i]) ==
-                                    Brightness.dark
-                                ? Colors.white
-                                : Colors.black,
-                          ),
-                        )
-                      : null,
                 ),
-              );
-            },
-          ),
+                child: isSelected
+                    ? Center(
+                        child: Icon(
+                          MoaiIcons.check,
+                          size: MoaiIconSizes.xs,
+                          color:
+                              ThemeData.estimateBrightnessForColor(
+                                    MoaiAccentColors.seeds[i],
+                                  ) ==
+                                  Brightness.dark
+                              ? Colors.white
+                              : Colors.black,
+                        ),
+                      )
+                    : null,
+              ),
+            );
+          }),
         );
       },
     );

@@ -50,7 +50,9 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   }
 
   Future<void> _loadProgress() async {
-    final progress = await MovieProgressService.getProgress(widget.movie.contentId);
+    final progress = await MovieProgressService.getProgress(
+      widget.movie.contentId,
+    );
     if (mounted) {
       setState(() => _watchProgress = progress);
     }
@@ -76,7 +78,8 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
       if (!mounted) return;
 
       if (stream == null || stream.directHlsUrl.isEmpty) {
-        final errorMsg = MoiamovApiService.instance.lastResolutionError ??
+        final errorMsg =
+            MoiamovApiService.instance.lastResolutionError ??
             LocaleKeys.movies_error_stream_connect.tr();
         MoaiSnackBar.showError(
           context,
@@ -86,7 +89,9 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
         return;
       }
 
-      final savedProgress = await MovieProgressService.getProgress(widget.movie.contentId);
+      final savedProgress = await MovieProgressService.getProgress(
+        widget.movie.contentId,
+      );
       if (!mounted) return;
 
       await Navigator.of(context).push(
@@ -109,7 +114,9 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
       if (mounted) {
         MoaiSnackBar.showError(
           context,
-          message: LocaleKeys.movies_error_play_start.tr(namedArgs: {'error': '$e'}),
+          message: LocaleKeys.movies_error_play_start.tr(
+            namedArgs: {'error': '$e'},
+          ),
           duration: const Duration(seconds: 4),
         );
       }
@@ -138,222 +145,211 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: scheme.brightness == Brightness.dark
-                ? [
-                    Color.lerp(
-                      scheme.surfaceContainerHigh,
-                      scheme.primary,
-                      0.08,
-                    )!,
-                    scheme.surfaceContainerLow,
-                  ]
-                : [scheme.surfaceContainerLowest, scheme.surfaceContainerHigh],
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(child: MoaiAmbientBackground()),
           ),
-        ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            const Positioned.fill(
-              child: IgnorePointer(
-                child: MoaiAmbientBackground(),
+          SafeArea(
+            top: false,
+            bottom: false,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: overlapX,
+                vertical: overlapY,
               ),
-            ),
-            SafeArea(
-              top: false,
-              bottom: false,
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: overlapX,
-                  vertical: overlapY,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(
-                      width: 54,
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 9),
-                          TvBackPill(
-                            focusNode: _backFocusNode,
-                            onKeyRight: _heroFocusNode.requestFocus,
-                            onKeyDown: _heroFocusNode.requestFocus,
-                            onPressed: () => Navigator.of(context).maybePop(),
-                          ),
-                          const Spacer(),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
-                        child: TvAccordionRowPreview(
-                          panelCount: 1,
-                          activeIndex: 0,
-                          colors: [scheme.surface.withValues(alpha: 0.85)],
-                          titles: [LocaleKeys.movies_detail_tab.tr()],
-                          icons: const [MoaiIcons.vodPoster],
-                          onPanelTap: (_) {},
-                          tabBuilder: (index, isExpanded) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              child: Column(
-                                children: [
-                                  const Spacer(),
-                                  RotatedBox(
-                                    quarterTurns: 3,
-                                    child: Text(
-                                      LocaleKeys.movies_detail_tab.tr(),
-                                      maxLines: 1,
-                                      softWrap: false,
-                                      overflow: TextOverflow.fade,
-                                      style: MoaiText.display(
-                                        context,
-                                        color: scheme.onSurface.withValues(
-                                          alpha: 0.7,
-                                        ),
-                                        fontSize: 12,
-                                        letterSpacing: 1.0,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Icon(
-                                    MoaiIcons.vodPoster,
-                                    size: MoaiIconSizes.md,
-                                    color: scheme.onSurfaceVariant.withValues(
-                                      alpha: 0.85,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                          buildExpandedContent: (index, title) {
-                            final ambientUrl = movie.ambientBackdrop;
-
-                            return ClipRRect(
-                              borderRadius: const BorderRadius.only(
-                                topRight: Radius.circular(15),
-                                bottomRight: Radius.circular(15),
-                              ),
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  // Imagen ambiental difuminada en la esquina superior derecha
-                                  // (solo si hay más de 1 imagen para no duplicar con la tarjeta de abajo)
-                                  if (ambientUrl != null &&
-                                      ambientUrl.isNotEmpty)
-                                    Positioned(
-                                      top: 0,
-                                      right: 0,
-                                      width: 525,
-                                      height: 285,
-                                      child: IgnorePointer(
-                                        child: _buildAmbientBackdrop(
-                                          context,
-                                          ambientUrl,
-                                        ),
-                                      ),
-                                    ),
-
-                                  // Contenido en primer plano
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 18,
-                                      vertical: 14,
-                                    ),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        // Columna Izquierda: Información de la película y acciones
-                                        Expanded(
-                                          flex: 6,
-                                          child: _buildInfoColumn(
-                                            context,
-                                            scheme,
-                                            movie,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 24),
-                                        // Columna Derecha: Backdrop 16:9 alineado arriba con Play central
-                                        Expanded(
-                                          flex: 5,
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.stretch,
-                                            children: [
-                                              const Spacer(),
-                                              AspectRatio(
-                                                aspectRatio: 16 / 9,
-                                                child: TvMovieHeroCard(
-                                                  focusNode: _heroFocusNode,
-                                                  imageUrl:
-                                                      movie
-                                                          .stageImages
-                                                          .isNotEmpty
-                                                      ? movie.stageImages.first
-                                                      : movie.effectiveBackdrop,
-                                                  imageUrls: movie.stageImages,
-                                                  movieTitle: movie.name,
-                                                  isLoading: _isLoadingStream,
-                                                  playLabel: (_watchProgress?.canResume == true)
-                                                      ? LocaleKeys.movies_resume.tr()
-                                                      : LocaleKeys.movies_play.tr(),
-                                                  onPressed: _onPlayPressed,
-                                                  onArrowLeft: _backFocusNode.requestFocus,
-                                                  onArrowDown: _favFocusNode.requestFocus,
-                                                  onArrowUp: _backFocusNode.requestFocus,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 12),
-                                              Align(
-                                                alignment:
-                                                    Alignment.centerRight,
-                                                child: TvFocusButton(
-                                                  focusNode: _favFocusNode,
-                                                  label: _isFavorite
-                                                      ? LocaleKeys.movies_in_favorites.tr()
-                                                      : LocaleKeys.movies_favorite.tr(),
-                                                  icon: _isFavorite
-                                                      ? MoaiIcons.vodRatingFilled
-                                                      : MoaiIcons.vodRating,
-                                                  variant: _isFavorite
-                                                      ? TvButtonVariant.tonal
-                                                      : TvButtonVariant.surface,
-                                                  height: 38,
-                                                  fontSize: 13,
-                                                  radius: 20,
-                                                  onPressed: _toggleFavorite,
-                                                  onArrowLeft: _backFocusNode.requestFocus,
-                                                  onArrowUp: _heroFocusNode.requestFocus,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: 54,
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 9),
+                        TvBackPill(
+                          focusNode: _backFocusNode,
+                          onKeyRight: _heroFocusNode.requestFocus,
+                          onKeyDown: _heroFocusNode.requestFocus,
+                          onPressed: () => Navigator.of(context).maybePop(),
                         ),
+                        const Spacer(),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+                      child: TvAccordionRowPreview(
+                        panelCount: 1,
+                        activeIndex: 0,
+                        colors: [scheme.surface.withValues(alpha: 0.85)],
+                        titles: [LocaleKeys.movies_detail_tab.tr()],
+                        icons: const [MoaiIcons.vodPoster],
+                        onPanelTap: (_) {},
+                        tabBuilder: (index, isExpanded) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            child: Column(
+                              children: [
+                                const Spacer(),
+                                RotatedBox(
+                                  quarterTurns: 3,
+                                  child: Text(
+                                    LocaleKeys.movies_detail_tab.tr(),
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    overflow: TextOverflow.fade,
+                                    style: MoaiText.display(
+                                      context,
+                                      color: scheme.onSurface.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                      fontSize: 12,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Icon(
+                                  MoaiIcons.vodPoster,
+                                  size: MoaiIconSizes.md,
+                                  color: scheme.onSurfaceVariant.withValues(
+                                    alpha: 0.85,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        buildExpandedContent: (index, title) {
+                          final ambientUrl = movie.ambientBackdrop;
+
+                          return ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              topRight: Radius.circular(15),
+                              bottomRight: Radius.circular(15),
+                            ),
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                // Imagen ambiental difuminada en la esquina superior derecha
+                                // (solo si hay más de 1 imagen para no duplicar con la tarjeta de abajo)
+                                if (ambientUrl != null && ambientUrl.isNotEmpty)
+                                  Positioned(
+                                    top: 0,
+                                    right: 0,
+                                    width: 525,
+                                    height: 285,
+                                    child: IgnorePointer(
+                                      child: _buildAmbientBackdrop(
+                                        context,
+                                        ambientUrl,
+                                      ),
+                                    ),
+                                  ),
+
+                                // Contenido en primer plano
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 14,
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      // Columna Izquierda: Información de la película y acciones
+                                      Expanded(
+                                        flex: 6,
+                                        child: _buildInfoColumn(
+                                          context,
+                                          scheme,
+                                          movie,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 24),
+                                      // Columna Derecha: Backdrop 16:9 alineado arriba con Play central
+                                      Expanded(
+                                        flex: 5,
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            const Spacer(),
+                                            AspectRatio(
+                                              aspectRatio: 16 / 9,
+                                              child: TvMovieHeroCard(
+                                                focusNode: _heroFocusNode,
+                                                imageUrl:
+                                                    movie.stageImages.isNotEmpty
+                                                    ? movie.stageImages.first
+                                                    : movie.effectiveBackdrop,
+                                                imageUrls: movie.stageImages,
+                                                movieTitle: movie.name,
+                                                isLoading: _isLoadingStream,
+                                                playLabel:
+                                                    (_watchProgress
+                                                            ?.canResume ==
+                                                        true)
+                                                    ? LocaleKeys.movies_resume
+                                                          .tr()
+                                                    : LocaleKeys.movies_play
+                                                          .tr(),
+                                                onPressed: _onPlayPressed,
+                                                onArrowLeft:
+                                                    _backFocusNode.requestFocus,
+                                                onArrowDown:
+                                                    _favFocusNode.requestFocus,
+                                                onArrowUp:
+                                                    _backFocusNode.requestFocus,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 12),
+                                            Align(
+                                              alignment: Alignment.centerRight,
+                                              child: TvFocusButton(
+                                                focusNode: _favFocusNode,
+                                                label: _isFavorite
+                                                    ? LocaleKeys
+                                                          .movies_in_favorites
+                                                          .tr()
+                                                    : LocaleKeys.movies_favorite
+                                                          .tr(),
+                                                icon: _isFavorite
+                                                    ? MoaiIcons.vodRatingFilled
+                                                    : MoaiIcons.vodRating,
+                                                variant: _isFavorite
+                                                    ? TvButtonVariant.tonal
+                                                    : TvButtonVariant.surface,
+                                                height: 38,
+                                                fontSize: 13,
+                                                radius: 20,
+                                                onPressed: _toggleFavorite,
+                                                onArrowLeft:
+                                                    _backFocusNode.requestFocus,
+                                                onArrowUp:
+                                                    _heroFocusNode.requestFocus,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -481,9 +477,12 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                   color: scheme.primary.withValues(alpha: 0.2),
                   foreground: scheme.primary,
                   icon: MoaiIcons.vodResume,
-                  label: LocaleKeys.movies_watched_percent.tr(namedArgs: {
-                    'percent': '${(_watchProgress!.progressPercentage * 100).toInt()}',
-                  }),
+                  label: LocaleKeys.movies_watched_percent.tr(
+                    namedArgs: {
+                      'percent':
+                          '${(_watchProgress!.progressPercentage * 100).toInt()}',
+                    },
+                  ),
                 ),
           ],
         ),

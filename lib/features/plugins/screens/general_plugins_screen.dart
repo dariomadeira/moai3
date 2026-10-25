@@ -45,8 +45,12 @@ class GeneralPluginsScreen extends StatefulWidget {
 
 class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
   final ArcadePluginService _arcadePlugin = ArcadePluginService.instance;
-  final FocusNode _backFocusNode = FocusNode(debugLabel: 'general_plugins_back');
-  final FocusNode _emptyFocusNode = FocusNode(debugLabel: 'general_plugins_empty');
+  final FocusNode _backFocusNode = FocusNode(
+    debugLabel: 'general_plugins_back',
+  );
+  final FocusNode _emptyFocusNode = FocusNode(
+    debugLabel: 'general_plugins_empty',
+  );
 
   final GlobalKey<TvWindowedListState<_GeneralPluginItem>> _availableListKey =
       GlobalKey<TvWindowedListState<_GeneralPluginItem>>();
@@ -54,17 +58,21 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
   int _selectedAvailableIndex = 0;
 
   // Focus nodes para plugin instalado (update & remove)
-  final FocusNode _installedUpdateFocus = FocusNode(debugLabel: 'arcade_update_focus');
-  final FocusNode _installedRemoveFocus = FocusNode(debugLabel: 'arcade_remove_focus');
+  final FocusNode _installedUpdateFocus = FocusNode(
+    debugLabel: 'arcade_update_focus',
+  );
+  final FocusNode _installedRemoveFocus = FocusNode(
+    debugLabel: 'arcade_remove_focus',
+  );
 
   List<_GeneralPluginItem> get _availablePlugins => [
-        _GeneralPluginItem(
-          id: 'arcade_fbneo',
-          name: LocaleKeys.plugins_arcade_available_name.tr(),
-          description: LocaleKeys.plugins_arcade_available_desc.tr(),
-          isArcade: true,
-        ),
-      ];
+    _GeneralPluginItem(
+      id: 'arcade_fbneo',
+      name: LocaleKeys.plugins_arcade_available_name.tr(),
+      description: LocaleKeys.plugins_arcade_available_desc.tr(),
+      isArcade: true,
+    ),
+  ];
 
   @override
   void initState() {
@@ -88,7 +96,10 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
 
   void _focusAvailableList() {
     if (_availablePlugins.isEmpty) return;
-    final index = _selectedAvailableIndex.clamp(0, _availablePlugins.length - 1);
+    final index = _selectedAvailableIndex.clamp(
+      0,
+      _availablePlugins.length - 1,
+    );
     _availableListKey.currentState?.ensureVisible(index);
   }
 
@@ -130,162 +141,145 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: scheme.brightness == Brightness.dark
-                ? [
-                    Color.lerp(
-                      scheme.surfaceContainerHigh,
-                      scheme.primary,
-                      0.08,
-                    )!,
-                    scheme.surfaceContainerLow,
-                  ]
-                : [scheme.surfaceContainerLowest, scheme.surfaceContainerHigh],
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(child: MoaiAmbientBackground()),
           ),
-        ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            const Positioned.fill(
-              child: IgnorePointer(
-                child: MoaiAmbientBackground(),
+          SafeArea(
+            top: false,
+            bottom: false,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: overlapX,
+                vertical: overlapY,
               ),
-            ),
-            SafeArea(
-              top: false,
-              bottom: false,
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: overlapX,
-                  vertical: overlapY,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(
-                      width: 54,
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 9),
-                          TvBackPill(
-                            focusNode: _backFocusNode,
-                            onKeyRight: () {
-                              if (isInstalled) {
-                                _installedRemoveFocus.requestFocus();
-                              } else {
-                                _focusAvailableList();
-                              }
-                            },
-                            onKeyDown: () {
-                              if (isInstalled) {
-                                _installedRemoveFocus.requestFocus();
-                              } else {
-                                _focusAvailableList();
-                              }
-                            },
-                          ),
-                          const Spacer(),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
-                        child: TvAccordionRowPreview(
-                          panelCount: 1,
-                          activeIndex: 0,
-                          colors: [scheme.surface.withValues(alpha: 0.8)],
-                          titles: [LocaleKeys.settings_general_plugins_title.tr()],
-                          icons: const [MoaiIcons.tvViewerPillPlugin],
-                          onPanelTap: (_) {},
-                          tabBuilder: (index, isExpanded) {
-                            return Padding(
-                              padding: const EdgeInsets.only(
-                                bottom: 14,
-                                top: 14,
-                              ),
-                              child: Column(
-                                children: [
-                                  const Spacer(),
-                                  RotatedBox(
-                                    quarterTurns: 3,
-                                    child: Text(
-                                      LocaleKeys.settings_general_plugins_title.tr(),
-                                      maxLines: 1,
-                                      softWrap: false,
-                                      overflow: TextOverflow.fade,
-                                      style: MoaiText.display(
-                                        context,
-                                        color: scheme.onSurface.withValues(
-                                          alpha: 0.7,
-                                        ),
-                                        fontSize: 12,
-                                        letterSpacing: 1.0,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Icon(
-                                    MoaiIcons.tvViewerPillPlugin,
-                                    size: MoaiIconSizes.md,
-                                    color: scheme.onSurfaceVariant.withValues(
-                                      alpha: 0.85,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: 54,
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 9),
+                        TvBackPill(
+                          focusNode: _backFocusNode,
+                          onKeyRight: () {
+                            if (isInstalled) {
+                              _installedRemoveFocus.requestFocus();
+                            } else {
+                              _focusAvailableList();
+                            }
                           },
-                          buildExpandedContent: (index, title) {
-                            return Container(
-                              padding: const EdgeInsets.all(10),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: TvPanelHeader(
-                                          title: LocaleKeys.plugins_admin_title.tr(),
-                                          subtitle: LocaleKeys.plugins_admin_subtitle.tr(),
-                                          padding: EdgeInsets.zero,
-                                        ),
-                                      ),
-                                      if (totalInstalledCount > 0) ...[
-                                        const SizedBox(width: 12),
-                                        TvMetaPill(
-                                          icon: MoaiIcons.tvViewerPillPlugin,
-                                          label: LocaleKeys.plugins_count_single
-                                              .tr(namedArgs: {'count': '1'}),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                  const SizedBox(height: 22),
-                                  Expanded(
-                                    child: _buildTwoColumnLayout(
-                                      context,
-                                      scheme,
-                                      isInstalled,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
+                          onKeyDown: () {
+                            if (isInstalled) {
+                              _installedRemoveFocus.requestFocus();
+                            } else {
+                              _focusAvailableList();
+                            }
                           },
                         ),
+                        const Spacer(),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+                      child: TvAccordionRowPreview(
+                        panelCount: 1,
+                        activeIndex: 0,
+                        colors: [scheme.surface.withValues(alpha: 0.8)],
+                        titles: [
+                          LocaleKeys.settings_general_plugins_title.tr(),
+                        ],
+                        icons: const [MoaiIcons.tvViewerPillPlugin],
+                        onPanelTap: (_) {},
+                        tabBuilder: (index, isExpanded) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 14, top: 14),
+                            child: Column(
+                              children: [
+                                const Spacer(),
+                                RotatedBox(
+                                  quarterTurns: 3,
+                                  child: Text(
+                                    LocaleKeys.settings_general_plugins_title
+                                        .tr(),
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    overflow: TextOverflow.fade,
+                                    style: MoaiText.display(
+                                      context,
+                                      color: scheme.onSurface.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                      fontSize: 12,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Icon(
+                                  MoaiIcons.tvViewerPillPlugin,
+                                  size: MoaiIconSizes.md,
+                                  color: scheme.onSurfaceVariant.withValues(
+                                    alpha: 0.85,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        buildExpandedContent: (index, title) {
+                          return Container(
+                            padding: const EdgeInsets.all(10),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TvPanelHeader(
+                                        title: LocaleKeys.plugins_admin_title
+                                            .tr(),
+                                        subtitle: LocaleKeys
+                                            .plugins_admin_subtitle
+                                            .tr(),
+                                        padding: EdgeInsets.zero,
+                                      ),
+                                    ),
+                                    if (totalInstalledCount > 0) ...[
+                                      const SizedBox(width: 12),
+                                      TvMetaPill(
+                                        icon: MoaiIcons.tvViewerPillPlugin,
+                                        label: LocaleKeys.plugins_count_single
+                                            .tr(namedArgs: {'count': '1'}),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 22),
+                                Expanded(
+                                  child: _buildTwoColumnLayout(
+                                    context,
+                                    scheme,
+                                    isInstalled,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

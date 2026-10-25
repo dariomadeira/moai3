@@ -28,18 +28,16 @@ part 'arcade_games/installed_rom_tile.dart';
 class ArcadeGamesScreen extends StatefulWidget {
   final ArcadeRomManagerService romManager;
 
-  const ArcadeGamesScreen({
-    super.key,
-    required this.romManager,
-  });
+  const ArcadeGamesScreen({super.key, required this.romManager});
 
   @override
   State<ArcadeGamesScreen> createState() => _ArcadeGamesScreenState();
 }
 
 class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
-  final TextEditingController _urlController =
-      TextEditingController(text: ArcadeRomManagerService.defaultManifestUrl);
+  final TextEditingController _urlController = TextEditingController(
+    text: ArcadeRomManagerService.defaultManifestUrl,
+  );
   final FocusNode _backFocusNode = FocusNode(debugLabel: 'games_rail_back');
   final FocusNode _urlFocus = FocusNode(debugLabel: 'games_url');
   final FocusNode _refreshFocus = FocusNode(debugLabel: 'games_refresh');
@@ -79,14 +77,19 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
     final installed = widget.romManager.installedRoms;
     while (_installedDeleteFocuses.length < installed.length) {
       _installedDeleteFocuses.add(
-        FocusNode(debugLabel: 'installed_del_${_installedDeleteFocuses.length}'),
+        FocusNode(
+          debugLabel: 'installed_del_${_installedDeleteFocuses.length}',
+        ),
       );
     }
   }
 
   void _focusCatalogList() {
     if (widget.romManager.catalog.isEmpty) return;
-    final index = _selectedCatalogIndex.clamp(0, widget.romManager.catalog.length - 1);
+    final index = _selectedCatalogIndex.clamp(
+      0,
+      widget.romManager.catalog.length - 1,
+    );
     _catalogListKey.currentState?.ensureVisible(index);
   }
 
@@ -127,194 +130,181 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: scheme.brightness == Brightness.dark
-                ? [
-                    Color.lerp(
-                      scheme.surfaceContainerHigh,
-                      scheme.primary,
-                      0.08,
-                    )!,
-                    scheme.surfaceContainerLow,
-                  ]
-                : [scheme.surfaceContainerLowest, scheme.surfaceContainerHigh],
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(child: MoaiAmbientBackground()),
           ),
-        ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            const Positioned.fill(
-              child: IgnorePointer(
-                child: MoaiAmbientBackground(),
+          SafeArea(
+            top: false,
+            bottom: false,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: overlapX,
+                vertical: overlapY,
               ),
-            ),
-            SafeArea(
-              top: false,
-              bottom: false,
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: overlapX,
-                  vertical: overlapY,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(
-                      width: 54,
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 9),
-                          TvBackPill(
-                            focusNode: _backFocusNode,
-                            onKeyRight: _urlFocus.requestFocus,
-                            onKeyDown: hasInstalled
-                                ? () => _installedDeleteFocuses.first.requestFocus()
-                                : _emptyFocusNode.requestFocus,
-                          ),
-                          const Spacer(),
-                        ],
-                      ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: 54,
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 9),
+                        TvBackPill(
+                          focusNode: _backFocusNode,
+                          onKeyRight: _urlFocus.requestFocus,
+                          onKeyDown: hasInstalled
+                              ? () =>
+                                    _installedDeleteFocuses.first.requestFocus()
+                              : _emptyFocusNode.requestFocus,
+                        ),
+                        const Spacer(),
+                      ],
                     ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
-                        child: TvAccordionRowPreview(
-                          panelCount: 1,
-                          activeIndex: 0,
-                          colors: [scheme.surface.withValues(alpha: 0.8)],
-                          titles: [LocaleKeys.arcade_action_select_game.tr()],
-                          icons: const [MoaiIcons.arcadeRomItem],
-                          onPanelTap: (_) {},
-                          tabBuilder: (index, isExpanded) {
-                            return Padding(
-                              padding: const EdgeInsets.only(
-                                bottom: 14,
-                                top: 14,
-                              ),
-                              child: Column(
-                                children: [
-                                  const Spacer(),
-                                  RotatedBox(
-                                    quarterTurns: 3,
-                                    child: Text(
-                                      LocaleKeys.arcade_action_select_game.tr(),
-                                      maxLines: 1,
-                                      softWrap: false,
-                                      overflow: TextOverflow.fade,
-                                      style: MoaiText.display(
-                                        context,
-                                        color: scheme.onSurface.withValues(
-                                          alpha: 0.7,
-                                        ),
-                                        fontSize: 12,
-                                        letterSpacing: 1.0,
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+                      child: TvAccordionRowPreview(
+                        panelCount: 1,
+                        activeIndex: 0,
+                        colors: [scheme.surface.withValues(alpha: 0.8)],
+                        titles: [LocaleKeys.arcade_action_select_game.tr()],
+                        icons: const [MoaiIcons.arcadeRomItem],
+                        onPanelTap: (_) {},
+                        tabBuilder: (index, isExpanded) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 14, top: 14),
+                            child: Column(
+                              children: [
+                                const Spacer(),
+                                RotatedBox(
+                                  quarterTurns: 3,
+                                  child: Text(
+                                    LocaleKeys.arcade_action_select_game.tr(),
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    overflow: TextOverflow.fade,
+                                    style: MoaiText.display(
+                                      context,
+                                      color: scheme.onSurface.withValues(
+                                        alpha: 0.7,
                                       ),
+                                      fontSize: 12,
+                                      letterSpacing: 1.0,
                                     ),
                                   ),
-                                  const SizedBox(height: 6),
-                                  Icon(
-                                    MoaiIcons.arcadeRomItem,
-                                    size: MoaiIconSizes.md,
-                                    color: scheme.onSurfaceVariant.withValues(
-                                      alpha: 0.85,
-                                    ),
+                                ),
+                                const SizedBox(height: 6),
+                                Icon(
+                                  MoaiIcons.arcadeRomItem,
+                                  size: MoaiIconSizes.md,
+                                  color: scheme.onSurfaceVariant.withValues(
+                                    alpha: 0.85,
                                   ),
-                                ],
-                              ),
-                            );
-                          },
-                          buildExpandedContent: (index, title) {
-                            return Container(
-                              padding: const EdgeInsets.all(10),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: TvPanelHeader(
-                                          title: LocaleKeys.arcade_games_title.tr(),
-                                          subtitle: LocaleKeys.arcade_games_subtitle.tr(),
-                                          padding: EdgeInsets.zero,
-                                        ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        buildExpandedContent: (index, title) {
+                          return Container(
+                            padding: const EdgeInsets.all(10),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TvPanelHeader(
+                                        title: LocaleKeys.arcade_games_title
+                                            .tr(),
+                                        subtitle: LocaleKeys
+                                            .arcade_games_subtitle
+                                            .tr(),
+                                        padding: EdgeInsets.zero,
                                       ),
-                                      if (installedCount > 0) ...[
-                                        const SizedBox(width: 12),
-                                        TvMetaPill(
-                                          icon: MoaiIcons.arcadeRomInstalledBadge,
-                                          label: installedCount == 1
-                                              ? LocaleKeys.arcade_installed_count_single
+                                    ),
+                                    if (installedCount > 0) ...[
+                                      const SizedBox(width: 12),
+                                      TvMetaPill(
+                                        icon: MoaiIcons.arcadeRomInstalledBadge,
+                                        label: installedCount == 1
+                                            ? LocaleKeys
+                                                  .arcade_installed_count_single
                                                   .tr(namedArgs: {'count': '1'})
-                                              : LocaleKeys.arcade_installed_count_plural
-                                                  .tr(namedArgs: {
-                                                  'count': installedCount.toString(),
-                                                }),
-                                        ),
-                                      ],
+                                            : LocaleKeys
+                                                  .arcade_installed_count_plural
+                                                  .tr(
+                                                    namedArgs: {
+                                                      'count': installedCount
+                                                          .toString(),
+                                                    },
+                                                  ),
+                                      ),
                                     ],
-                                  ),
-                                  const SizedBox(height: 14),
-                                  _buildUrlRow(context, scheme, hasInstalled),
-                                  if (widget.romManager.errorMessage != null) ...[
-                                    const SizedBox(height: 10),
-                                    Material(
-                                      color: scheme.errorContainer,
-                                      borderRadius: BorderRadius.circular(14),
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 14,
-                                          vertical: 8,
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              MoaiIcons.error,
-                                              color: scheme.onErrorContainer,
-                                              size: MoaiIconSizes.md,
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Expanded(
-                                              child: Text(
-                                                widget.romManager.errorMessage!.tr(),
-                                                style: MoaiText.body(
-                                                  context,
-                                                  color: scheme.onErrorContainer,
-                                                  fontSize: 12,
-                                                ),
+                                  ],
+                                ),
+                                const SizedBox(height: 14),
+                                _buildUrlRow(context, scheme, hasInstalled),
+                                if (widget.romManager.errorMessage != null) ...[
+                                  const SizedBox(height: 10),
+                                  Material(
+                                    color: scheme.errorContainer,
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 8,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            MoaiIcons.error,
+                                            color: scheme.onErrorContainer,
+                                            size: MoaiIconSizes.md,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              widget.romManager.errorMessage!
+                                                  .tr(),
+                                              style: MoaiText.body(
+                                                context,
+                                                color: scheme.onErrorContainer,
+                                                fontSize: 12,
                                               ),
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                  ],
-                                  const SizedBox(height: 22),
-                                  Expanded(
-                                    child: _buildTwoColumnLayout(
-                                      context,
-                                      scheme,
-                                      installed,
-                                      catalog,
-                                      hasInstalled,
                                     ),
                                   ),
                                 ],
-                              ),
-                            );
-                          },
-                        ),
+                                const SizedBox(height: 22),
+                                Expanded(
+                                  child: _buildTwoColumnLayout(
+                                    context,
+                                    scheme,
+                                    installed,
+                                    catalog,
+                                    hasInstalled,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

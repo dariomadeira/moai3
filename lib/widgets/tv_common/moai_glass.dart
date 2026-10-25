@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Superficie de "cristal pulido": relleno translúcido con degradado, brillo
@@ -151,6 +152,19 @@ class _GlassRim extends Decoration {
   @override
   BoxPainter createBoxPainter([VoidCallback? onChanged]) =>
       _GlassRimPainter(this);
+
+  // Sin igualdad cada rebuild crea un borde "distinto" y fuerza a repintar
+  // la pieza aunque no haya cambiado (p. ej. todos los ítems de una lista).
+  @override
+  bool operator ==(Object other) =>
+      other is _GlassRim &&
+      other.radius == radius &&
+      other.rimWidth == rimWidth &&
+      other.sheen == sheen &&
+      listEquals(other.rim, rim);
+
+  @override
+  int get hashCode => Object.hash(radius, rimWidth, sheen, Object.hashAll(rim));
 }
 
 class _GlassRimPainter extends BoxPainter {

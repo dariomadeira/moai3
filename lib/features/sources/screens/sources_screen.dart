@@ -74,17 +74,17 @@ class _SourcesScreenState extends State<SourcesScreen> {
       'https://raw.githubusercontent.com/dariomadeira/moaiplug_daddylive/refs/heads/main/manifest.json';
 
   static List<_PresetPlugin> get _presetPlugins => [
-        _PresetPlugin(
-          name: LocaleKeys.sources_preset_ar_name.tr(),
-          description: LocaleKeys.sources_preset_ar_desc.tr(),
-          url: _arUrl,
-        ),
-        _PresetPlugin(
-          name: LocaleKeys.sources_preset_daddylive_name.tr(),
-          description: LocaleKeys.sources_preset_daddylive_desc.tr(),
-          url: _daddyliveUrl,
-        ),
-      ];
+    _PresetPlugin(
+      name: LocaleKeys.sources_preset_ar_name.tr(),
+      description: LocaleKeys.sources_preset_ar_desc.tr(),
+      url: _arUrl,
+    ),
+    _PresetPlugin(
+      name: LocaleKeys.sources_preset_daddylive_name.tr(),
+      description: LocaleKeys.sources_preset_daddylive_desc.tr(),
+      url: _daddyliveUrl,
+    ),
+  ];
 
   @override
   void initState() {
@@ -175,194 +175,171 @@ class _SourcesScreenState extends State<SourcesScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: scheme.brightness == Brightness.dark
-                ? [
-                    Color.lerp(
-                      scheme.surfaceContainerHigh,
-                      scheme.primary,
-                      0.08,
-                    )!,
-                    scheme.surfaceContainerLow,
-                  ]
-                : [scheme.surfaceContainerLowest, scheme.surfaceContainerHigh],
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(child: MoaiAmbientBackground()),
           ),
-        ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            const Positioned.fill(
-              child: IgnorePointer(
-                child: MoaiAmbientBackground(),
+          SafeArea(
+            top: false,
+            bottom: false,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: overlapX,
+                vertical: overlapY,
               ),
-            ),
-            SafeArea(
-              top: false,
-              bottom: false,
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: overlapX,
-                  vertical: overlapY,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(
-                      width: 54,
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 9),
-                          TvBackPill(
-                            focusNode: _backFocusNode,
-                            onKeyRight: _urlFocus.requestFocus,
-                            onKeyDown: hasSources
-                                ? () => _tileFocuses.first.requestFocus()
-                                : _emptyFocusNode.requestFocus,
-                          ),
-                          const Spacer(),
-                        ],
-                      ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: 54,
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 9),
+                        TvBackPill(
+                          focusNode: _backFocusNode,
+                          onKeyRight: _urlFocus.requestFocus,
+                          onKeyDown: hasSources
+                              ? () => _tileFocuses.first.requestFocus()
+                              : _emptyFocusNode.requestFocus,
+                        ),
+                        const Spacer(),
+                      ],
                     ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
-                        child: TvAccordionRowPreview(
-                          panelCount: 1,
-                          activeIndex: 0,
-                          colors: [scheme.surface.withValues(alpha: 0.8)],
-                          titles: [LocaleKeys.settings_general_sources.tr()],
-                          icons: const [MoaiIcons.extension],
-                          onPanelTap: (_) {},
-                          tabBuilder: (index, isExpanded) {
-                            return Padding(
-                              padding: const EdgeInsets.only(
-                                bottom: 14,
-                                top: 14,
-                              ),
-                              child: Column(
-                                children: [
-                                  const Spacer(),
-                                  RotatedBox(
-                                    quarterTurns: 3,
-                                    child: Text(
-                                      LocaleKeys.settings_general_sources.tr(),
-                                      maxLines: 1,
-                                      softWrap: false,
-                                      overflow: TextOverflow.fade,
-                                      style: MoaiText.display(
-                                        context,
-                                        color: scheme.onSurface.withValues(
-                                          alpha: 0.7,
-                                        ),
-                                        fontSize: 12,
-                                        letterSpacing: 1.0,
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+                      child: TvAccordionRowPreview(
+                        panelCount: 1,
+                        activeIndex: 0,
+                        colors: [scheme.surface.withValues(alpha: 0.8)],
+                        titles: [LocaleKeys.settings_general_sources.tr()],
+                        icons: const [MoaiIcons.extension],
+                        onPanelTap: (_) {},
+                        tabBuilder: (index, isExpanded) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 14, top: 14),
+                            child: Column(
+                              children: [
+                                const Spacer(),
+                                RotatedBox(
+                                  quarterTurns: 3,
+                                  child: Text(
+                                    LocaleKeys.settings_general_sources.tr(),
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    overflow: TextOverflow.fade,
+                                    style: MoaiText.display(
+                                      context,
+                                      color: scheme.onSurface.withValues(
+                                        alpha: 0.7,
                                       ),
+                                      fontSize: 12,
+                                      letterSpacing: 1.0,
                                     ),
                                   ),
-                                  const SizedBox(height: 6),
-                                  Icon(
-                                    MoaiIcons.extension,
-                                    size: MoaiIconSizes.md,
-                                    color: scheme.onSurfaceVariant.withValues(
-                                      alpha: 0.85,
-                                    ),
+                                ),
+                                const SizedBox(height: 6),
+                                Icon(
+                                  MoaiIcons.extension,
+                                  size: MoaiIconSizes.md,
+                                  color: scheme.onSurfaceVariant.withValues(
+                                    alpha: 0.85,
                                   ),
-                                ],
-                              ),
-                            );
-                          },
-                          buildExpandedContent: (index, title) {
-                            return Container(
-                              padding: const EdgeInsets.all(10),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: TvPanelHeader(
-                                          title: LocaleKeys.sources_title.tr(),
-                                          subtitle: LocaleKeys.sources_subtitle.tr(),
-                                          padding: EdgeInsets.zero,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        buildExpandedContent: (index, title) {
+                          return Container(
+                            padding: const EdgeInsets.all(10),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TvPanelHeader(
+                                        title: LocaleKeys.sources_title.tr(),
+                                        subtitle: LocaleKeys.sources_subtitle
+                                            .tr(),
+                                        padding: EdgeInsets.zero,
+                                      ),
+                                    ),
+                                    if (totalChannels > 0) ...[
+                                      const SizedBox(width: 12),
+                                      TvMetaPill(
+                                        icon: MoaiIcons.tvSourcesTotalChannels,
+                                        label: _formatChannelsCount(
+                                          totalChannels,
                                         ),
                                       ),
-                                      if (totalChannels > 0) ...[
-                                        const SizedBox(width: 12),
-                                        TvMetaPill(
-                                          icon: MoaiIcons.tvSourcesTotalChannels,
-                                          label: _formatChannelsCount(
-                                            totalChannels,
-                                          ),
-                                        ),
-                                      ],
                                     ],
-                                  ),
-                                  const SizedBox(height: 14),
-                                  _buildInputBar(context, scheme, controller),
-                                  if (controller.error != null) ...[
-                                    const SizedBox(height: 10),
-                                    Material(
-                                      color: scheme.errorContainer,
-                                      borderRadius: BorderRadius.circular(14),
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 14,
-                                          vertical: 8,
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              MoaiIcons.error,
-                                              color: scheme.onErrorContainer,
-                                              size: MoaiIconSizes.md,
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Expanded(
-                                              child: Text(
-                                                controller.error!.tr(
-                                                  namedArgs:
-                                                      controller.errorNamedArgs,
-                                                ),
-                                                style: MoaiText.body(
-                                                  context,
-                                                  color:
-                                                      scheme.onErrorContainer,
-                                                  fontSize: 12,
-                                                ),
+                                  ],
+                                ),
+                                const SizedBox(height: 14),
+                                _buildInputBar(context, scheme, controller),
+                                if (controller.error != null) ...[
+                                  const SizedBox(height: 10),
+                                  Material(
+                                    color: scheme.errorContainer,
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 8,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            MoaiIcons.error,
+                                            color: scheme.onErrorContainer,
+                                            size: MoaiIconSizes.md,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              controller.error!.tr(
+                                                namedArgs:
+                                                    controller.errorNamedArgs,
+                                              ),
+                                              style: MoaiText.body(
+                                                context,
+                                                color: scheme.onErrorContainer,
+                                                fontSize: 12,
                                               ),
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                  ],
-                                  const SizedBox(height: 22),
-                                  Expanded(
-                                    child: _buildTwoColumnLayout(
-                                      context,
-                                      scheme,
-                                      controller,
-                                      sources,
-                                      totalSources,
                                     ),
                                   ),
                                 ],
-                              ),
-                            );
-                          },
-                        ),
+                                const SizedBox(height: 22),
+                                Expanded(
+                                  child: _buildTwoColumnLayout(
+                                    context,
+                                    scheme,
+                                    controller,
+                                    sources,
+                                    totalSources,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

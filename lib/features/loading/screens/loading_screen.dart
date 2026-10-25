@@ -431,58 +431,39 @@ class _LoadingScreenState extends State<LoadingScreen>
 
     return Scaffold(
       backgroundColor: scheme.surface,
-      // Solo el gradiente y el logo dependen de la animación; el resto se
-      // construye una vez y se pasa como child (SPEC-50 §6.1).
-      body: AnimatedBuilder(
-        animation: _pulseController,
-        builder: (context, content) {
-          return DecoratedBox(
-            decoration: BoxDecoration(
-              color: scheme.surface,
-              gradient: RadialGradient(
-                radius: 0.95,
-                colors: [
-                  scheme.primary.withValues(alpha: _glowAnimation.value),
-                  scheme.surfaceContainerLowest.withValues(alpha: 0.2),
-                  scheme.surface,
-                ],
-                stops: const [0.0, 0.55, 1.0],
+      // El fondo es el ambiente (estático); sólo el logo late con la
+      // animación (SPEC-50 §6.1). El viejo degradado pulsante quedaba tapado
+      // por el ambiente y repintaba la pantalla entera en cada frame.
+      body: SizedBox.expand(
+        child: Stack(
+          children: [
+            const Positioned.fill(
+              child: IgnorePointer(child: MoaiAmbientBackground()),
+            ),
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                child: _isLoading
+                    ? _buildLoadingState(context, scheme)
+                    : _buildErrorState(context, scheme),
               ),
             ),
-            child: content,
-          );
-        },
-        child: SizedBox.expand(
-          child: Stack(
-            children: [
-              const Positioned.fill(
-                child: IgnorePointer(child: MoaiAmbientBackground()),
-              ),
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                  child: _isLoading
-                      ? _buildLoadingState(context, scheme)
-                      : _buildErrorState(context, scheme),
-                ),
-              ),
-              Positioned(
-                bottom: 24,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: Text(
-                    'v${AppInfo.version}',
-                    style: MoaiText.body(
-                      context,
-                      fontSize: 12,
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
-                    ),
+            Positioned(
+              bottom: 24,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Text(
+                  'v${AppInfo.version}',
+                  style: MoaiText.body(
+                    context,
+                    fontSize: 12,
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
