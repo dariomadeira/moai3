@@ -1,6 +1,6 @@
 # SPEC-39: Catálogo Películas/Series (Moiamov) y Ajustes de Actualización
 
-> **Estado**: Vigente (rama `performance`)  
+> **Estado**: Vigente (rama `cristal`)  
 > **Área**: Features / Catálogo VOD + Arranque  
 > **Archivos de Referencia**:  
 > - `lib/features/settings/widgets/settings_movies_series_panel.dart`  
@@ -117,9 +117,12 @@ Verificación del dispositivo en Supabase
 
 `kVpnNodes` (`vpn_nodes.dart`) lista los perfiles con su proveedor y país de salida esperado: `mx_01..04` (Proton, MX) y `jp_01..02` (VPN Gate, JP). El servicio de catálogo acepta ambas salidas.
 
-`VpnNodeRanking` guarda por nodo, en preferencias (`vpn_node_ranking`), una nota 0–1, el tiempo promedio hasta la sesión lista y el último uso.
+`VpnNodeRanking` guarda por nodo, en preferencias (`vpn_node_ranking_v2`), una nota 0–1, el tiempo promedio hasta la sesión lista y el último uso. (v2: el historial anterior contaba los cortes de red como fallas del nodo y castigaba siempre al primero de cada arranque; se empezó de cero.)
 
-- **Nota:** `0,7 × anterior + 0,3 × resultado` (1 sirvió / 0 falló). Nodo nuevo: 0,5.
+- **Nota:** `0,7 × anterior + 0,3 × resultado` según `VpnAttempt`: `success` 1, `failure` 0, `transient` 0,5 (empate). Nodo nuevo: 0,5.
+- **Corte pasajero (`transient`):** la red no contestó apenas subió el túnel (pasa con cualquier nodo); no dice si el nodo es bueno o malo.
+  - Salida: `checkExit` hace hasta 3 rondas de 4 s (1 s entre rondas) preguntando a Cloudflare e ip-api en paralelo. Sin respuesta → `VpnConnectResult.unverified` → `transient`.
+  - Sesión: si `ensureSession` falla por red (`lastSessionNetworkFailure`), se reintenta una vez con el mismo nodo (1,5 s después); si sigue fallando → `transient`. Un rechazo del portal es `failure`.
 - **Sirvió:** conectó, salida del país esperado, login OK y, si tocaba, bajaron las secciones que faltaban.
 - **Orden:** por nota; con diferencia < 0,05 gana el más rápido.
 - **Exploración:** ~10 % de los arranques, el nodo usado hace más tiempo (o nunca) va primero.
@@ -151,6 +154,10 @@ Verificación del dispositivo en Supabase
 ### Persistencia de catálogo
 - Directorio app: `…/catalog/{masnew_movies,masnew_featured,masnew_series}.json`.  
 - Solo se escribe con descargas en vivo.
+- Descifrado, parseo y guardado corren en otro isolate (`MoiamovCatalogStore.processDownload` / `load`, ver SPEC-44 §3); la clave se pasa como argumento porque el isolate no ve `.env`.
+
+### Arranque rápido en debug
+`_kStartupLoginInDebug` (`lib/config/constants.dart`): en `false`, un build debug salta VPN, sesión y descarga y usa el catálogo guardado (las películas pueden no reproducirse). Un release **siempre** hace el login (`kStartupLoginEnabled = kReleaseMode || _kStartupLoginInDebug`).
 
 ---
 
