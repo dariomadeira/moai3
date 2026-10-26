@@ -101,9 +101,8 @@ class _HomeSettingsAreaState extends HomeAreaState<HomeSettingsArea> {
           return SettingsTvPanel(
             focusNode: focusNode,
             onKeyLeft: widget.onExitLeft,
-            onKeyRight: () => _selectPanel(
-              SettingsPanelLayout.configMoviesSeriesPanelIndex,
-            ),
+            onKeyRight: () =>
+                _selectPanel(SettingsPanelLayout.configMoviesSeriesPanelIndex),
           );
         }
 
@@ -120,9 +119,8 @@ class _HomeSettingsAreaState extends HomeAreaState<HomeSettingsArea> {
         if (SettingsPanelLayout.isConfigAgendaPanel(index)) {
           return SettingsAgendaPanel(
             focusNode: focusNode,
-            onKeyLeft: () => _selectPanel(
-              SettingsPanelLayout.configMoviesSeriesPanelIndex,
-            ),
+            onKeyLeft: () =>
+                _selectPanel(SettingsPanelLayout.configMoviesSeriesPanelIndex),
             onKeyRight: () =>
                 _selectPanel(SettingsPanelLayout.watchPartyPanelIndex),
           );
@@ -143,8 +141,7 @@ class _HomeSettingsAreaState extends HomeAreaState<HomeSettingsArea> {
             focusNode: focusNode,
             onKeyLeft: () =>
                 _selectPanel(SettingsPanelLayout.watchPartyPanelIndex),
-            onKeyRight: () =>
-                _selectPanel(SettingsPanelLayout.aboutPanelIndex),
+            onKeyRight: () => _selectPanel(SettingsPanelLayout.aboutPanelIndex),
           );
         }
 

@@ -661,7 +661,6 @@ class VodPlayInfo {
       subtitles: rawSubtitles,
     );
   }
-
 }
 
 /// Datos finales de reproducción listos para inicializar el motor de video

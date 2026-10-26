@@ -43,6 +43,45 @@ void main() {
       final result = WeatherLocationSearchResult.fromJson(json);
       expect(result.displayName, equals('Cordoba'));
     });
+
+    test('Open-Meteo encuentra Quines (San Luis) y lo pone primero', () {
+      // Respuesta real (recortada) de geocoding-api.open-meteo.com para
+      // "Quines": el buscador de WeatherAPI sólo devuelve el de España.
+      final body = jsonEncode({
+        'results': [
+          {
+            'name': 'Quinés',
+            'latitude': 42.28168,
+            'longitude': -8.19743,
+            'country': 'España',
+            'admin1': 'Comunidad Autónoma de Galicia',
+            'admin2': 'Provincia de Ourense',
+          },
+          {
+            'name': 'Quines',
+            'latitude': -32.23282,
+            'longitude': -65.80507,
+            'country': 'Argentina',
+            'admin1': 'Provincia de San Luis',
+            'admin2': 'Departamento de Ayacucho',
+          },
+        ],
+      });
+
+      final results = WeatherService.parseOpenMeteoSearch(body);
+
+      expect(results, hasLength(2));
+      final quines = results.first;
+      expect(quines.displayName, equals('Quines, San Luis'));
+      expect(quines.subtitle, equals('Ayacucho, San Luis, Argentina'));
+      // Sin id de WeatherAPI: el clima se pide por coordenadas.
+      expect(quines.queryKey, equals('-32.23282,-65.80507'));
+      expect(results.last.country, equals('España'));
+    });
+
+    test('Open-Meteo sin resultados devuelve lista vacía', () {
+      expect(WeatherService.parseOpenMeteoSearch('{}'), isEmpty);
+    });
   });
 
   group('WeatherProvider Location Mode Tests', () {
@@ -58,9 +97,9 @@ void main() {
       expect(provider.isAutoLocation, isTrue);
       expect(provider.customLocationName, isNull);
       expect(provider.locationDisplayName, 'weather_auto_network');
-      final translations = jsonDecode(
-        File('assets/translations/es.json').readAsStringSync(),
-      ) as Map<String, dynamic>;
+      final translations =
+          jsonDecode(File('assets/translations/es.json').readAsStringSync())
+              as Map<String, dynamic>;
       expect(translations['weather_auto_network'], contains('Automático'));
       provider.dispose();
     });

@@ -30,11 +30,7 @@ Widget _wrap(
             FeaturedMoviesProvider()..setAvailableSections(catalogSections),
       ),
     ],
-    child: MaterialApp(
-      home: Scaffold(
-        body: child,
-      ),
-    ),
+    child: MaterialApp(home: Scaffold(body: child)),
   );
 }
 
@@ -43,49 +39,51 @@ void main() {
 
   group('TvVerticalNavRail', () {
     testWidgets(
-        'muestra iconos Reicon en destinos circulares sin label vertical',
-        (tester) async {
-      final scopeNode = FocusScopeNode();
-      final focusNode = FocusNode();
+      'muestra iconos Reicon en destinos circulares sin label vertical',
+      (tester) async {
+        final scopeNode = FocusScopeNode();
+        final focusNode = FocusNode();
 
-      await tester.pumpWidget(
-        _wrap(
-          TvVerticalNavRail(
-            selected: HomeSection.home,
-            railScopeNode: scopeNode,
-            railFocusNode: focusNode,
-            onSelected: (_) {},
-            onFocusRight: () {},
+        await tester.pumpWidget(
+          _wrap(
+            TvVerticalNavRail(
+              selected: HomeSection.home,
+              railScopeNode: scopeNode,
+              railFocusNode: focusNode,
+              onSelected: (_) {},
+              onFocusRight: () {},
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byIcon(MoaiIcons.railHomeSelected), findsOneWidget);
-      expect(find.byIcon(MoaiIcons.railTv), findsOneWidget);
-      expect(find.byIcon(MoaiIcons.railFeatured), findsOneWidget);
-      expect(find.byIcon(MoaiIcons.railMovies), findsOneWidget);
-      expect(find.byIcon(MoaiIcons.railSeries), findsOneWidget);
-      expect(find.byIcon(MoaiIcons.railCalendar), findsOneWidget);
-      expect(find.byIcon(MoaiIcons.railSettings), findsOneWidget);
-      expect(find.byIcon(MoaiIcons.railArcade), findsNothing);
-      expect(find.byIcon(MoaiIcons.railArcadeSelected), findsNothing);
+        expect(find.byIcon(MoaiIcons.railHomeSelected), findsOneWidget);
+        expect(find.byIcon(MoaiIcons.railTv), findsOneWidget);
+        expect(find.byIcon(MoaiIcons.railFeatured), findsOneWidget);
+        expect(find.byIcon(MoaiIcons.railMovies), findsOneWidget);
+        expect(find.byIcon(MoaiIcons.railSeries), findsOneWidget);
+        expect(find.byIcon(MoaiIcons.railCalendar), findsOneWidget);
+        expect(find.byIcon(MoaiIcons.railSettings), findsOneWidget);
+        expect(find.byIcon(MoaiIcons.railArcade), findsNothing);
+        expect(find.byIcon(MoaiIcons.railArcadeSelected), findsNothing);
 
-      // Ya no muestra texto vertical
-      expect(find.text('home_rail_home_title'), findsNothing);
-      expect(find.text('home_rail_tv_title'), findsNothing);
-      expect(find.text('home_rail_featured_title'), findsNothing);
-      expect(find.text('home_rail_movies_title'), findsNothing);
-      expect(find.text('home_rail_series_title'), findsNothing);
-      expect(find.text('home_rail_calendar_title'), findsNothing);
-      expect(find.text('home_rail_settings_title'), findsNothing);
+        // Ya no muestra texto vertical
+        expect(find.text('home_rail_home_title'), findsNothing);
+        expect(find.text('home_rail_tv_title'), findsNothing);
+        expect(find.text('home_rail_featured_title'), findsNothing);
+        expect(find.text('home_rail_movies_title'), findsNothing);
+        expect(find.text('home_rail_series_title'), findsNothing);
+        expect(find.text('home_rail_calendar_title'), findsNothing);
+        expect(find.text('home_rail_settings_title'), findsNothing);
 
-      scopeNode.dispose();
-      focusNode.dispose();
-    });
+        scopeNode.dispose();
+        focusNode.dispose();
+      },
+    );
 
-    testWidgets('fuera del Inicio: TvBottomWeatherPill arriba (top: 8)',
-        (tester) async {
+    testWidgets('fuera del Inicio: TvBottomWeatherPill arriba (top: 8)', (
+      tester,
+    ) async {
       final scopeNode = FocusScopeNode();
       final focusNode = FocusNode();
 
@@ -149,80 +147,87 @@ void main() {
     });
 
     testWidgets(
-        'D-pad sin Arcade recorre Inicio -> TV -> Destacados -> Películas -> Series -> Agenda -> Ajustes',
-        (tester) async {
-      var selected = HomeSection.home;
-      final scopeNode = FocusScopeNode();
-      final focusNode = FocusNode();
+      'D-pad sin Arcade recorre Inicio -> TV -> Destacados -> Películas -> Series -> Agenda -> Descuentos -> Ajustes',
+      (tester) async {
+        var selected = HomeSection.home;
+        final scopeNode = FocusScopeNode();
+        final focusNode = FocusNode();
 
-      await tester.pumpWidget(
-        _wrap(
-          StatefulBuilder(
-            builder: (context, setState) {
-              return TvVerticalNavRail(
-                selected: selected,
-                railScopeNode: scopeNode,
-                railFocusNode: focusNode,
-                onSelected: (i) => setState(() => selected = i),
-                onFocusRight: () {},
-              );
-            },
+        await tester.pumpWidget(
+          _wrap(
+            StatefulBuilder(
+              builder: (context, setState) {
+                return TvVerticalNavRail(
+                  selected: selected,
+                  railScopeNode: scopeNode,
+                  railFocusNode: focusNode,
+                  onSelected: (i) => setState(() => selected = i),
+                  onFocusRight: () {},
+                );
+              },
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      focusNode.requestFocus();
-      await tester.pumpAndSettle();
+        focusNode.requestFocus();
+        await tester.pumpAndSettle();
 
-      // Inicio (0) -> TV (1)
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.pumpAndSettle();
-      await tester.sendKeyEvent(LogicalKeyboardKey.select);
-      await tester.pumpAndSettle();
-      expect(selected, HomeSection.values[1]);
+        // Inicio (0) -> TV (1)
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(LogicalKeyboardKey.select);
+        await tester.pumpAndSettle();
+        expect(selected, HomeSection.values[1]);
 
-      // TV -> Destacados (2)
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.pumpAndSettle();
-      await tester.sendKeyEvent(LogicalKeyboardKey.select);
-      await tester.pumpAndSettle();
-      expect(selected, HomeSection.values[2]);
+        // TV -> Destacados (2)
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(LogicalKeyboardKey.select);
+        await tester.pumpAndSettle();
+        expect(selected, HomeSection.values[2]);
 
-      // Destacados -> Películas (3)
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.pumpAndSettle();
-      await tester.sendKeyEvent(LogicalKeyboardKey.select);
-      await tester.pumpAndSettle();
-      expect(selected, HomeSection.values[3]);
+        // Destacados -> Películas (3)
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(LogicalKeyboardKey.select);
+        await tester.pumpAndSettle();
+        expect(selected, HomeSection.values[3]);
 
-      // Películas -> Series (4)
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.pumpAndSettle();
-      await tester.sendKeyEvent(LogicalKeyboardKey.select);
-      await tester.pumpAndSettle();
-      expect(selected, HomeSection.values[4]);
+        // Películas -> Series (4)
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(LogicalKeyboardKey.select);
+        await tester.pumpAndSettle();
+        expect(selected, HomeSection.values[4]);
 
-      // Series -> Agenda (5)
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.pumpAndSettle();
-      await tester.sendKeyEvent(LogicalKeyboardKey.select);
-      await tester.pumpAndSettle();
-      expect(selected, HomeSection.values[5]);
+        // Series -> Agenda (5)
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(LogicalKeyboardKey.select);
+        await tester.pumpAndSettle();
+        expect(selected, HomeSection.values[5]);
 
-      // Agenda -> Ajustes (7)
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.pumpAndSettle();
-      await tester.sendKeyEvent(LogicalKeyboardKey.select);
-      await tester.pumpAndSettle();
-      expect(selected, HomeSection.values[7]);
+        // Agenda -> Descuentos
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(LogicalKeyboardKey.select);
+        await tester.pumpAndSettle();
+        expect(selected, HomeSection.discounts);
 
-      scopeNode.dispose();
-      focusNode.dispose();
-    });
+        // Descuentos -> Ajustes (sin Arcade)
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(LogicalKeyboardKey.select);
+        await tester.pumpAndSettle();
+        expect(selected, HomeSection.settings);
 
-    testWidgets(
-        'sin login o catálogo oculta Destacados, Películas y Series; '
+        scopeNode.dispose();
+        focusNode.dispose();
+      },
+    );
+
+    testWidgets('sin login o catálogo oculta Destacados, Películas y Series; '
         'con catálogo parcial muestra solo lo que bajó', (tester) async {
       var selected = HomeSection.tv;
       final scopeNode = FocusScopeNode();

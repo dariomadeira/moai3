@@ -27,7 +27,8 @@ class VoiceMessageRecord {
       audioUrl: json['audio_url'] as String? ?? '',
       durationMs: (json['duration_ms'] as num?)?.toInt() ?? 0,
       createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'].toString())?.toLocal() ?? DateTime.now()
+          ? DateTime.tryParse(json['created_at'].toString())?.toLocal() ??
+                DateTime.now()
           : DateTime.now(),
     );
   }

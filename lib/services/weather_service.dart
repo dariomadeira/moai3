@@ -142,6 +142,10 @@ class WeatherLocationSearchResult {
   final double lat;
   final double lon;
 
+  /// Departamento o partido (sólo de Open-Meteo), para distinguir pueblos
+  /// con el mismo nombre.
+  final String area;
+
   const WeatherLocationSearchResult({
     required this.id,
     required this.name,
@@ -149,7 +153,32 @@ class WeatherLocationSearchResult {
     required this.country,
     required this.lat,
     required this.lon,
+    this.area = '',
   });
+
+  /// De la búsqueda de Open-Meteo (GeoNames), que conoce pueblos que la de
+  /// WeatherAPI no (p. ej. Quines, San Luis). Sin id de WeatherAPI: el clima
+  /// se pide por coordenadas.
+  factory WeatherLocationSearchResult.fromOpenMeteo(Map<String, dynamic> json) {
+    String clean(Object? s) => (s?.toString() ?? '')
+        .replaceFirst(
+          RegExp(r'^(Provincia|Departamento) del? ', caseSensitive: false),
+          '',
+        )
+        .trim();
+    return WeatherLocationSearchResult(
+      id: 0,
+      name: json['name']?.toString() ?? '',
+      region: clean(json['admin1']),
+      country: json['country']?.toString() ?? '',
+      lat: (json['latitude'] as num?)?.toDouble() ?? 0.0,
+      lon: (json['longitude'] as num?)?.toDouble() ?? 0.0,
+      area: clean(json['admin2']),
+    );
+  }
+
+  /// Es de Argentina (va primero en la búsqueda).
+  bool get isArgentina => country == 'Argentina';
 
   static String _sanitize(String input) {
     if (input.isEmpty || !input.contains('Ã')) return input;
@@ -168,6 +197,7 @@ class WeatherLocationSearchResult {
       country: _sanitize(json['country'] as String? ?? ''),
       lat: (json['lat'] as num?)?.toDouble() ?? 0.0,
       lon: (json['lon'] as num?)?.toDouble() ?? 0.0,
+      area: _sanitize(json['area'] as String? ?? ''),
     );
   }
 
@@ -179,6 +209,7 @@ class WeatherLocationSearchResult {
       'country': country,
       'lat': lat,
       'lon': lon,
+      if (area.isNotEmpty) 'area': area,
     };
   }
 
@@ -193,9 +224,13 @@ class WeatherLocationSearchResult {
     return name;
   }
 
-  /// Detalle secundario con provincia y país (ej: "Córdoba, Argentina").
+  /// Detalle secundario con departamento, provincia y país (ej: "Ayacucho,
+  /// San Luis, Argentina").
   String get subtitle {
     final parts = <String>[];
+    if (area.isNotEmpty && area.toLowerCase() != name.toLowerCase()) {
+      parts.add(area);
+    }
     if (region.isNotEmpty) parts.add(region);
     if (country.isNotEmpty) parts.add(country);
     return parts.join(', ');
@@ -210,6 +245,10 @@ class WeatherService {
   /// cruzan la medianoche.
   static const String _baseUrl = 'https://api.weatherapi.com/v1/forecast.json';
   static const String _searchUrl = 'https://api.weatherapi.com/v1/search.json';
+
+  /// Buscador de localidades de Open-Meteo (gratis, sin clave).
+  static const String _geocodingUrl =
+      'https://geocoding-api.open-meteo.com/v1/search';
 
   String get _apiKey => kWeatherApiKey;
 
@@ -249,12 +288,62 @@ class WeatherService {
     return null;
   }
 
-  /// Busca sugerencias de localidades en tiempo real a partir del texto ingresado.
+  /// Busca localidades para el texto ingresado: primero en Open-Meteo, que
+  /// tiene los pueblos chicos (el buscador de WeatherAPI no encuentra, p. ej.,
+  /// Quines en San Luis); si falla o no encuentra nada, en WeatherAPI.
   Future<List<WeatherLocationSearchResult>> searchLocations(
     String query,
   ) async {
     final trimmed = query.trim();
     if (trimmed.length < 2) return const [];
+    final found = await _searchOpenMeteo(trimmed);
+    if (found.isNotEmpty) return found;
+    return _searchWeatherApi(trimmed);
+  }
+
+  Future<List<WeatherLocationSearchResult>> _searchOpenMeteo(
+    String query,
+  ) async {
+    try {
+      final url = Uri.parse(
+        '$_geocodingUrl?name=${Uri.encodeQueryComponent(query)}'
+        '&count=10&language=es&format=json',
+      );
+      final client = HttpClient()
+        ..connectionTimeout = const Duration(seconds: 6);
+      final request = await client.getUrl(url);
+      request.headers.set('Accept', 'application/json');
+      final response = await request.close();
+      if (response.statusCode != 200) return const [];
+      final body = await response.transform(utf8.decoder).join();
+      return parseOpenMeteoSearch(body);
+    } catch (e) {
+      debugPrint('[WeatherService] Error al buscar en Open-Meteo: $e');
+      return const [];
+    }
+  }
+
+  /// Resultados de Open-Meteo, los de Argentina primero (sin cambiar el
+  /// orden de relevancia dentro de cada grupo).
+  @visibleForTesting
+  static List<WeatherLocationSearchResult> parseOpenMeteoSearch(String body) {
+    final data = json.decode(body);
+    final results = data is Map<String, dynamic> ? data['results'] : null;
+    if (results is! List) return const [];
+    final all = [
+      for (final r in results)
+        if (r is Map<String, dynamic>)
+          WeatherLocationSearchResult.fromOpenMeteo(r),
+    ];
+    return [
+      ...all.where((r) => r.isArgentina),
+      ...all.where((r) => !r.isArgentina),
+    ];
+  }
+
+  Future<List<WeatherLocationSearchResult>> _searchWeatherApi(
+    String trimmed,
+  ) async {
     if (_apiKey.isEmpty) {
       debugPrint(
         '[WeatherService] WEATHER_API_KEY vacía; se omite la búsqueda',

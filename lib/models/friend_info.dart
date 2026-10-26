@@ -16,7 +16,7 @@ class Friendship {
       friendDeviceId: json['friend_device_id'] as String,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String)?.toLocal() ??
-              DateTime.now()
+                DateTime.now()
           : DateTime.now(),
     );
   }
@@ -105,10 +105,13 @@ class FriendInfo {
   /// Si no coincide el ID pero ambos tienen nombre, compara nombres normalizados (ej. 'ESPN').
   bool isWatchingSameChannel(String? myChannelId, [String? myChannelName]) {
     if (!isOnline) return false;
-    if (currentChannelId == null || currentChannelId!.trim().isEmpty) return false;
+    if (currentChannelId == null || currentChannelId!.trim().isEmpty)
+      return false;
 
     // 1. Coincidencia exacta de ID
-    if (myChannelId != null && myChannelId.isNotEmpty && currentChannelId == myChannelId) {
+    if (myChannelId != null &&
+        myChannelId.isNotEmpty &&
+        currentChannelId == myChannelId) {
       return true;
     }
 
@@ -128,7 +131,10 @@ class FriendInfo {
     return name
         .trim()
         .toLowerCase()
-        .replaceAll(RegExp(r'\b(hd|fhd|sd|4k|argentina|arg)\b', caseSensitive: false), '')
+        .replaceAll(
+          RegExp(r'\b(hd|fhd|sd|4k|argentina|arg)\b', caseSensitive: false),
+          '',
+        )
         .replaceAll(RegExp(r'[^a-z0-9]'), '');
   }
 

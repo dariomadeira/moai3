@@ -14,7 +14,10 @@ extension _TvAreaGroups on HomeTvAreaState {
         scheme.surface.withValues(alpha: 0.8),
         scheme.surface.withValues(alpha: 0.8),
       ],
-      titles: [LocaleKeys.home_panel_groups.tr(), LocaleKeys.home_panel_channels.tr()],
+      titles: [
+        LocaleKeys.home_panel_groups.tr(),
+        LocaleKeys.home_panel_channels.tr(),
+      ],
       icons: const [MoaiIcons.tvTabMarcadores, MoaiIcons.tvAccordionCanales],
       alphabetModePanelIndex: _groups.alphabetModePanelIndex,
       alphabetPanelBuilder: (_) => AlphabetJumpPanel(

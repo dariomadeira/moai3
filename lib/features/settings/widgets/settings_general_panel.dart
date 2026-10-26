@@ -60,6 +60,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       _SettingsGeneralItemType.plugins,
       _SettingsGeneralItemType.overscan,
       _SettingsGeneralItemType.weatherLocation,
+      _SettingsGeneralItemType.discountBanks,
       _SettingsGeneralItemType.darkMode,
       _SettingsGeneralItemType.accentColor,
       _SettingsGeneralItemType.muteUiSounds,

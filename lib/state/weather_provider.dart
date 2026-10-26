@@ -36,8 +36,38 @@ class WeatherProvider extends ChangeNotifier {
     _restoreCachedData();
     if (enableTimer) {
       refresh();
-      _timer = Timer.periodic(_refreshInterval, (_) => refresh());
+      _startTimer();
     }
+  }
+
+  DateTime? _lastRefresh;
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(_refreshInterval, (_) => refresh());
+  }
+
+  bool _paused = false;
+
+  /// La app pasó a segundo plano: no se pide el clima hasta [resume]. Sin
+  /// refresco periódico (tests) no hace nada.
+  void pause() {
+    if (_timer == null) return;
+    _paused = true;
+    _timer!.cancel();
+    _timer = null;
+  }
+
+  /// Volvió a primer plano: si el clima quedó viejo lo pide ya, y retoma el
+  /// refresco periódico.
+  void resume() {
+    if (!_paused) return;
+    _paused = false;
+    final last = _lastRefresh;
+    if (last == null || DateTime.now().difference(last) >= _refreshInterval) {
+      refresh();
+    }
+    _startTimer();
   }
 
   WeatherData? get weather => _weather;
@@ -125,6 +155,7 @@ class WeatherProvider extends ChangeNotifier {
 
   /// Consulta el clima actual (por IP o por localidad configurada) en segundo plano.
   Future<void> refresh() async {
+    _lastRefresh = DateTime.now();
     _isLoading = true;
     if (!_isDisposed) notifyListeners();
 

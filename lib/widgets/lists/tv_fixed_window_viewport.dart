@@ -23,17 +23,16 @@ class TvFixedWindowViewport extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final targetHeight =
-            (slotCount * slotExtent).clamp(0.0, constraints.maxHeight);
+        final targetHeight = (slotCount * slotExtent).clamp(
+          0.0,
+          constraints.maxHeight,
+        );
         return Align(
           alignment: alignment,
           child: SizedBox(
             height: targetHeight,
             width: double.infinity,
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: child,
-            ),
+            child: Align(alignment: Alignment.topCenter, child: child),
           ),
         );
       },

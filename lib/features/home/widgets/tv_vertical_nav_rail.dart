@@ -261,6 +261,12 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
             : MoaiIcons.railCalendar;
         labelKey = LocaleKeys.home_rail_calendar_title;
         break;
+      case HomeSection.discounts:
+        iconData = isSelected
+            ? MoaiIcons.railDiscountsSelected
+            : MoaiIcons.railDiscounts;
+        labelKey = LocaleKeys.home_rail_discounts_title;
+        break;
       case HomeSection.arcade:
         iconData = isSelected
             ? MoaiIcons.railArcadeSelected

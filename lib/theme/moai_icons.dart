@@ -72,6 +72,10 @@ abstract final class MoaiIcons {
   /// Rail «Agenda» (seleccionado).
   static const railCalendarSelected = ReiconFilledIcons.calendar;
 
+  /// Rail «Descuentos» (sin seleccionar / seleccionado).
+  static const railDiscounts = ReiconIcons.percentTag;
+  static const railDiscountsSelected = ReiconFilledIcons.percentTag;
+
   /// Rail «Arcade» (sin seleccionar).
   static const railArcade = ReiconIcons.gamepad;
 
@@ -822,6 +826,21 @@ abstract final class MoaiIcons {
 
   /// Bancos y billeteras del usuario, para los descuentos.
   static const discountBanks = ReiconIcons.wallet3;
+
+  /// "Mis comercios" (dónde compra el usuario).
+  static const discountMerchants = ReiconIcons.shop;
+
+  /// Localidad del usuario (la del clima), en Descuentos.
+  static const discountLocation = ReiconIcons.location2;
+
+  /// Filtro "Mis comercios / Todos" y de rubro en la semana de descuentos.
+  static const discountFilter = ReiconIcons.filter;
+
+  /// Rubros de descuentos.
+  static const discountRubroSuper = ReiconIcons.cartShopping;
+  static const discountRubroMayoristas = ReiconIcons.truck;
+  static const discountRubroFarmacias = ReiconIcons.pills;
+  static const discountRubroCombustible = ReiconIcons.gasStation;
 
   /// Puntaje de la película.
   static const vodRatingFilled = ReiconFilledIcons.star;

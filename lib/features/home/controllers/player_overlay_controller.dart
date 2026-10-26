@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:moai3/utils/safe_change_notifier.dart';
 
 /// Tracks the 16:9 placeholder bounds and fullscreen state for the TV player overlay.
@@ -64,4 +64,3 @@ class PlayerOverlayController extends ChangeNotifier with SafeChangeNotifier {
     return pendingInitialFocus && !isLoadingChannels && hasValidRect;
   }
 }
-

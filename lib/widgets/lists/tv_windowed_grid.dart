@@ -12,6 +12,7 @@ class TvWindowedGrid<T> extends StatefulWidget {
   final int crossAxisCount;
   final int windowSize;
   final int initialGlobalIndex;
+
   /// Alto de cada fila (tile + gap vertical).
   final double itemExtent;
   final double crossAxisSpacing;
@@ -35,7 +36,8 @@ class TvWindowedGrid<T> extends StatefulWidget {
     VoidCallback onKeyDown,
     bool Function() onKeyLeft,
     bool Function() onKeyRight,
-  ) itemBuilder;
+  )
+  itemBuilder;
 
   const TvWindowedGrid({
     super.key,
@@ -165,8 +167,10 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
       for (final n in _nodes) {
         n.dispose();
       }
-      _nodes =
-          List.generate(windowSize, (i) => FocusNode(debugLabel: 'grid_$i'));
+      _nodes = List.generate(
+        windowSize,
+        (i) => FocusNode(debugLabel: 'grid_$i'),
+      );
     }
     if (!identical(oldWidget.items, widget.items) ||
         oldWidget.items.length != widget.items.length ||

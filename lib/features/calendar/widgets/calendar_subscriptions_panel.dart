@@ -64,12 +64,7 @@ class CalendarSubscriptionsPanelState
         }
       },
       child: Container(
-        padding: const EdgeInsets.only(
-          left: 4,
-          right: 12,
-          top: 8,
-          bottom: 8,
-        ),
+        padding: const EdgeInsets.only(left: 4, right: 12, top: 8, bottom: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -82,8 +77,10 @@ class CalendarSubscriptionsPanelState
                   ? const SizedBox.shrink()
                   : LayoutBuilder(
                       builder: (context, constraints) {
-                        final targetHeight = (_windowSize * _itemExtent)
-                            .clamp(0.0, constraints.maxHeight);
+                        final targetHeight = (_windowSize * _itemExtent).clamp(
+                          0.0,
+                          constraints.maxHeight,
+                        );
                         return Align(
                           alignment: Alignment.bottomCenter,
                           child: SizedBox(
@@ -101,32 +98,34 @@ class CalendarSubscriptionsPanelState
                                 onFocusedGlobalIndex: (idx) {
                                   _selectedIndex = idx;
                                 },
-                                itemBuilder: (
-                                  context,
-                                  sub,
-                                  focusNode,
-                                  local,
-                                  global,
-                                  onKeyUp,
-                                  onKeyDown,
-                                ) {
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 4),
-                                    child: TvSettingsSwitchRow(
-                                      focusNode: focusNode,
-                                      icon: sub.icon,
-                                      label: sub.name.tr(),
-                                      description: sub.description?.tr(),
-                                      value: sub.isSubscribed,
-                                      onChanged: (_) => calendar
-                                          .toggleSubscription(sub.id),
-                                      onKeyLeft: widget.onKeyLeft,
-                                      onKeyUp: onKeyUp,
-                                      onKeyDown: onKeyDown,
-                                    ),
-                                  );
-                                },
+                                itemBuilder:
+                                    (
+                                      context,
+                                      sub,
+                                      focusNode,
+                                      local,
+                                      global,
+                                      onKeyUp,
+                                      onKeyDown,
+                                    ) {
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 4,
+                                        ),
+                                        child: TvSettingsSwitchRow(
+                                          focusNode: focusNode,
+                                          icon: sub.icon,
+                                          label: sub.name.tr(),
+                                          description: sub.description?.tr(),
+                                          value: sub.isSubscribed,
+                                          onChanged: (_) => calendar
+                                              .toggleSubscription(sub.id),
+                                          onKeyLeft: widget.onKeyLeft,
+                                          onKeyUp: onKeyUp,
+                                          onKeyDown: onKeyDown,
+                                        ),
+                                      );
+                                    },
                               ),
                             ),
                           ),

@@ -39,17 +39,20 @@ class DeviceRecord {
       isActive: json['is_active'] as bool? ?? true,
       blockReason: json['block_reason'] as String?,
       online: json['online'] as bool? ?? false,
-      lastSeen: json['last_seen'] != null 
-          ? DateTime.tryParse(json['last_seen'].toString())?.toLocal() 
+      lastSeen: json['last_seen'] != null
+          ? DateTime.tryParse(json['last_seen'].toString())?.toLocal()
           : null,
       firstSeen: json['first_seen'] != null
-          ? DateTime.tryParse(json['first_seen'].toString())?.toLocal() ?? DateTime.now()
+          ? DateTime.tryParse(json['first_seen'].toString())?.toLocal() ??
+                DateTime.now()
           : DateTime.now(),
       createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'].toString())?.toLocal() ?? DateTime.now()
+          ? DateTime.tryParse(json['created_at'].toString())?.toLocal() ??
+                DateTime.now()
           : DateTime.now(),
       updatedAt: json['updated_at'] != null
-          ? DateTime.tryParse(json['updated_at'].toString())?.toLocal() ?? DateTime.now()
+          ? DateTime.tryParse(json['updated_at'].toString())?.toLocal() ??
+                DateTime.now()
           : DateTime.now(),
       currentChannelId: json['current_channel_id'] as String?,
       currentChannelName: json['current_channel_name'] as String?,
@@ -67,7 +70,8 @@ class DeviceRecord {
       'online': online,
       if (lastSeen != null) 'last_seen': lastSeen!.toUtc().toIso8601String(),
       if (currentChannelId != null) 'current_channel_id': currentChannelId,
-      if (currentChannelName != null) 'current_channel_name': currentChannelName,
+      if (currentChannelName != null)
+        'current_channel_name': currentChannelName,
     };
   }
 }

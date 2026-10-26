@@ -65,12 +65,16 @@ class Channel {
     }
 
     final streamUrl = json['streamUrl'] as String?;
-    if (streamUrl != null && streamUrl.isNotEmpty && !urls.contains(streamUrl)) {
+    if (streamUrl != null &&
+        streamUrl.isNotEmpty &&
+        !urls.contains(streamUrl)) {
       urls.insert(0, streamUrl);
     }
 
     final legacyUrl = json['url'] as String?;
-    if (legacyUrl != null && legacyUrl.isNotEmpty && !urls.contains(legacyUrl)) {
+    if (legacyUrl != null &&
+        legacyUrl.isNotEmpty &&
+        !urls.contains(legacyUrl)) {
       urls.add(legacyUrl);
     }
 
@@ -109,4 +113,3 @@ class Channel {
     };
   }
 }
-

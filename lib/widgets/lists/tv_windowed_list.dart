@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Tipo de indicador de scroll para listas TV por ventana.
 enum TvScrollIndicator { none, dots, arrows }
@@ -31,6 +32,11 @@ class TvWindowedList<T> extends StatefulWidget {
 
   /// Si es false, no toma el foco al montarse (el rail lo conserva hasta →).
   final bool focusOnMount;
+
+  /// Alto del lugar de cada flecha (arriba y abajo) con
+  /// [TvScrollIndicator.arrows]: quien da el alto de la lista lo suma dos
+  /// veces.
+  static const double arrowAreaHeight = 22;
   final Widget Function(
     BuildContext context,
     T item,
@@ -324,7 +330,10 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
     }
 
     final count = _visibleCount;
-    final needed = count * widget.itemExtent;
+    final arrows = effectiveIndicator == TvScrollIndicator.arrows;
+    final needed =
+        count * widget.itemExtent +
+        (arrows ? 2 * TvWindowedList.arrowAreaHeight : 0);
 
     final list = Column(
       mainAxisSize: MainAxisSize.min,
@@ -349,26 +358,27 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
 
     Widget content = list;
 
-    if (effectiveIndicator == TvScrollIndicator.arrows) {
+    if (arrows) {
+      // Las flechas van en su propio lugar arriba y abajo, nunca encima de
+      // los ítems (como en la grilla semanal de Agenda y Descuentos).
       final scheme = Theme.of(context).colorScheme;
-      content = Stack(
-        alignment: Alignment.center,
+      content = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          SizedBox(
+            height: TvWindowedList.arrowAreaHeight,
+            child: canScrollUp
+                ? _buildArrowPill(context, scheme, isUp: true)
+                : null,
+          ),
           list,
-          if (canScrollUp)
-            Positioned(
-              top: 4,
-              child: IgnorePointer(
-                child: _buildArrowPill(context, scheme, isUp: true),
-              ),
-            ),
-          if (canScrollDown)
-            Positioned(
-              bottom: 4,
-              child: IgnorePointer(
-                child: _buildArrowPill(context, scheme, isUp: false),
-              ),
-            ),
+          SizedBox(
+            height: TvWindowedList.arrowAreaHeight,
+            child: canScrollDown
+                ? _buildArrowPill(context, scheme, isUp: false)
+                : null,
+          ),
         ],
       );
     } else if (effectiveIndicator == TvScrollIndicator.dots && pageCount > 1) {
@@ -432,16 +442,16 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
     ColorScheme scheme, {
     required bool isUp,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-      decoration: BoxDecoration(
-        color: scheme.tertiaryContainer,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Icon(
-        isUp ? MoaiIcons.chevronUp : MoaiIcons.chevronDown,
-        size: MoaiIconSizes.sm,
-        color: scheme.onTertiaryContainer,
+    // El mismo chip que las flechas de la grilla semanal.
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: moaiGlassChipDecoration(scheme, highlighted: true),
+        child: Icon(
+          isUp ? MoaiIcons.chevronUp : MoaiIcons.chevronDown,
+          size: MoaiIconSizes.xs,
+          color: scheme.primary,
+        ),
       ),
     );
   }

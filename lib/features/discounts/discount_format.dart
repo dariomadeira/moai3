@@ -1,4 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/widgets.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/models/discount_models.dart';
 import 'package:moai3/utils/moai_formats.dart';
@@ -43,6 +45,62 @@ abstract final class DiscountFormat {
     if (d.cardBrands.length >= 5) return LocaleKeys.discounts_any_card.tr();
     return d.cardBrands.join(', ');
   }
+
+  /// Nombre del rubro ("Supermercados", "Farmacias"…).
+  static String rubro(DiscountRubro r) => switch (r) {
+    DiscountRubro.supermercados => LocaleKeys.discounts_rubro_super.tr(),
+    DiscountRubro.mayoristas => LocaleKeys.discounts_rubro_mayoristas.tr(),
+    DiscountRubro.farmacias => LocaleKeys.discounts_rubro_farmacias.tr(),
+    DiscountRubro.combustible => LocaleKeys.discounts_rubro_combustible.tr(),
+  };
+
+  /// Qué entra en el rubro ("Coto, Carrefour, Día…").
+  static String rubroDescription(DiscountRubro r) => switch (r) {
+    DiscountRubro.supermercados => LocaleKeys.discounts_rubro_super_desc.tr(),
+    DiscountRubro.mayoristas => LocaleKeys.discounts_rubro_mayoristas_desc.tr(),
+    DiscountRubro.farmacias => LocaleKeys.discounts_rubro_farmacias_desc.tr(),
+    DiscountRubro.combustible =>
+      LocaleKeys.discounts_rubro_combustible_desc.tr(),
+  };
+
+  /// Ícono del rubro.
+  static IconData rubroIcon(DiscountRubro r) => switch (r) {
+    DiscountRubro.supermercados => MoaiIcons.discountRubroSuper,
+    DiscountRubro.mayoristas => MoaiIcons.discountRubroMayoristas,
+    DiscountRubro.farmacias => MoaiIcons.discountRubroFarmacias,
+    DiscountRubro.combustible => MoaiIcons.discountRubroCombustible,
+  };
+
+  /// Qué días vale: `Todos los días` o `LUN, MIÉ`.
+  static String weekdays(Discount d) {
+    if (d.weekdays.isEmpty || d.weekdays.length == 7) {
+      return LocaleKeys.discounts_every_day.tr();
+    }
+    return (d.weekdays.toList()..sort())
+        .map(MoaiFormats.weekdayShort)
+        .join(', ');
+  }
+
+  /// Vigencia: `Hasta 31/10/2026`, `Desde 01/11/2026` o vacío.
+  static String validity(Discount d) {
+    if (d.stop != null) {
+      return LocaleKeys.discounts_until.tr(
+        namedArgs: {'date': MoaiFormats.date(d.stop!)},
+      );
+    }
+    if (d.start != null) {
+      return LocaleKeys.discounts_from.tr(
+        namedArgs: {'date': MoaiFormats.date(d.start!)},
+      );
+    }
+    return '';
+  }
+
+  /// Dónde se paga: en el local, en línea o ambos.
+  static String where(Discount d) => [
+    if (d.instore) LocaleKeys.discounts_instore.tr(),
+    if (d.online) LocaleKeys.discounts_online.tr(),
+  ].join(' · ');
 
   /// `Hoy`, `Mañana` o `MIÉ 28 Oct`.
   static String day(DateTime day, DateTime today) {

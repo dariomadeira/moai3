@@ -56,8 +56,8 @@ Todas las decisiones de diseño, contratos de plugins, modelos de datos y flujos
   *Relleno primary vs borde en canales; clicks UI con SoundPool y mute por preferencia.*
 - [SPEC-42: Inicio (tablero de tarjetas)](features/home_dashboard.md)  
   *Reloj, logo en el rail, tarjetas Clima/Eventos/Descuentos/Seguir viendo/Interesantes/Adelantos/Arcade: orden, colores y condiciones.*
-- [SPEC-43: Descuentos en supermercados (MODO)](features/discounts.md)  
-  *Bancos y billeteras del usuario, API pública de MODO con caché diario, semana de descuentos y detalle por día.*
+- [SPEC-43: Descuentos (MODO)](features/discounts.md)  
+  *Sección del rail: bancos y billeteras, Mis comercios, rubros (súper, mayoristas, farmacias, combustible) y provincia; API pública de MODO con caché diario, semana de hoy a +6 y detalle. Tarjeta resumen en el Inicio.*
 - [SPEC-44: Biblioteca de películas y reproducción](features/movie_library_and_playback.md)  
   *Zonas de progreso, Interesantes → Seguir viendo → vista, Titan Ranger, audio/subtítulos globales, catálogo en isolate e imágenes.*
 

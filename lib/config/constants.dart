@@ -9,7 +9,7 @@ const String kAppName = 'Moai';
 // Usa el catálogo ya guardado; sin sesión, las películas pueden no
 // reproducirse. ⚠️ Volver a true antes de sacar un release (de todos modos
 // un build release siempre hace el login, ver [kStartupLoginEnabled]).
-const bool _kStartupLoginInDebug = false;
+const bool _kStartupLoginInDebug = true;
 
 /// Si el arranque hace el login. Siempre true en release.
 const bool kStartupLoginEnabled = kReleaseMode || _kStartupLoginInDebug;

@@ -14,6 +14,7 @@ import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/features/home/widgets/home_continue_card.dart';
 import 'package:moai3/features/home/widgets/home_discounts_card.dart';
 import 'package:moai3/features/home/widgets/home_events_card.dart';
+import 'package:moai3/features/home/widgets/home_friends_card.dart';
 import 'package:moai3/features/home/widgets/home_movie_list_card.dart';
 // EN PAUSA (cielo del momento): import 'package:moai3/features/home/widgets/home_sky.dart';
 import 'package:moai3/features/home/widgets/home_trailers_card.dart';
@@ -59,6 +60,9 @@ class HomeDashboardArea extends StatefulWidget {
   /// Ir a Agenda › Suscripciones (botón del widget de eventos sin eventos).
   final VoidCallback? onOpenSubscriptions;
 
+  /// Ir a Descuentos (tarjeta de descuentos): a un día o a Configurar.
+  final void Function({int dayIndex, bool settings})? onOpenDiscounts;
+
   /// ROMs del Arcade: el widget de Arcade muestra la activa.
   final ArcadeRomManagerService romManager;
 
@@ -68,6 +72,7 @@ class HomeDashboardArea extends StatefulWidget {
     required this.romManager,
     this.onTuneChannel,
     this.onOpenSubscriptions,
+    this.onOpenDiscounts,
   });
 
   @override
@@ -124,11 +129,14 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     required bool moviesVisible,
     required bool hasTrailers,
     required bool hasEventsToday,
+    required bool watchPartyEnabled,
   }) => [
     _HomeWidget.weather,
     // Sin nada por ver hoy (en curso o por empezar), no ocupa lugar.
     if (hasEventsToday) _HomeWidget.events,
     _HomeWidget.discounts,
+    // Amigos conectados y su canal: sólo con Miremos Juntos activado.
+    if (watchPartyEnabled) _HomeWidget.friends,
     if (moviesVisible && _continue.isNotEmpty) _HomeWidget.continueWatching,
     if (moviesVisible) _HomeWidget.watchlist,
     if (moviesVisible && hasTrailers) _HomeWidget.trailers,
@@ -194,6 +202,9 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     if (!canInvite && _arcadeAction == HomeArcadeAction.invite) {
       _arcadeAction = HomeArcadeAction.start;
     }
+    final watchPartyEnabled = context.select(
+      (WatchPartyProvider? w) => w?.enabled ?? false,
+    );
     // Ajustes › Películas y series puede apagar la tarjeta de adelantos.
     final showTrailers = context.select(
       (TvSettingsProvider? s) => s?.showHomeTrailers ?? true,
@@ -297,6 +308,7 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
                                 focusOnMount: false,
                                 items: _visibleWidgets(
                                   hasEventsToday: hasEventsToday,
+                                  watchPartyEnabled: watchPartyEnabled,
                                   moviesVisible: moviesVisible,
                                   hasTrailers:
                                       showTrailers && trailers.isNotEmpty,
@@ -355,8 +367,17 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     switch (item) {
       case _HomeWidget.events:
         return _buildEventsItem(focusNode, onKeyUp, onKeyDown);
+      case _HomeWidget.friends:
+        return HomeFriendsItem(
+          focusNode: focusNode,
+          onKeyLeft: widget.onExitLeft,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+          onTuneChannel: widget.onTuneChannel,
+        );
       case _HomeWidget.discounts:
         return HomeDiscountsItem(
+          onOpen: widget.onOpenDiscounts,
           focusNode: focusNode,
           onKeyLeft: widget.onExitLeft,
           onKeyUp: onKeyUp,
@@ -452,6 +473,7 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
       case _HomeWidget.continueWatching:
       case _HomeWidget.watchlist:
       case _HomeWidget.discounts:
+      case _HomeWidget.friends:
         // Las arman sus ítems, que además manejan ←/→, OK y mantener OK.
         return const SizedBox.shrink();
       case _HomeWidget.trailers:
@@ -568,6 +590,7 @@ enum _HomeWidget {
   weather,
   events,
   discounts,
+  friends,
   continueWatching,
   watchlist,
   trailers,

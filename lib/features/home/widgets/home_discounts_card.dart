@@ -11,10 +11,10 @@ import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/tv_common/tv_press_detector.dart';
 
-/// Tarjeta "Descuentos" del Inicio con su manejo de teclas: la semana de
-/// descuentos en supermercados con los bancos del usuario, para planear las
-/// compras. ←/→ recorren el botón "Mis bancos" y los 7 días; OK abre los
-/// bancos o todos los descuentos del día elegido.
+/// Tarjeta "Descuentos" del Inicio con su manejo de teclas: resumen de la
+/// semana con los bancos, comercios y rubros del usuario. ←/→ recorren el
+/// botón "Configurar" y los 7 días; OK abre la sección Descuentos en ese
+/// día o en Configurar.
 class HomeDiscountsItem extends StatefulWidget {
   const HomeDiscountsItem({
     super.key,
@@ -22,6 +22,7 @@ class HomeDiscountsItem extends StatefulWidget {
     required this.onKeyLeft,
     required this.onKeyUp,
     required this.onKeyDown,
+    this.onOpen,
     this.now,
   });
 
@@ -29,6 +30,9 @@ class HomeDiscountsItem extends StatefulWidget {
   final VoidCallback onKeyLeft;
   final VoidCallback onKeyUp;
   final VoidCallback onKeyDown;
+
+  /// Abre la sección Descuentos en el día [dayIndex] o en Configurar.
+  final void Function({int dayIndex, bool settings})? onOpen;
 
   /// Hoy (tests); sin él, la fecha del aparato.
   final DateTime Function()? now;
@@ -56,12 +60,18 @@ class _HomeDiscountsItemState extends State<HomeDiscountsItem> {
 
   DateTime get _today => (widget.now ?? DateTime.now)();
 
-  void _press(List<DayDiscounts> week) {
+  void _press() {
+    final open = widget.onOpen;
     if (_index == _banksButton || !_service.hasSelectedBanks) {
-      TvDiscountBanksDialog.show(context);
+      // Sin la sección (tests), los bancos directo.
+      if (open == null) {
+        TvDiscountBanksDialog.show(context);
+      } else {
+        open(settings: true);
+      }
       return;
     }
-    TvDiscountsDayDialog.show(context, week[_index]);
+    open?.call(dayIndex: _index);
   }
 
   @override
@@ -73,7 +83,7 @@ class _HomeDiscountsItemState extends State<HomeDiscountsItem> {
         return TvPressDetector(
           focusNode: widget.focusNode,
           onFocusChange: (f) => setState(() => _focused = f),
-          onPress: () => _press(week),
+          onPress: _press,
           onLeft: () {
             if (_index > _banksButton) {
               setState(() => _index--);
@@ -92,7 +102,7 @@ class _HomeDiscountsItemState extends State<HomeDiscountsItem> {
           onUp: widget.onKeyUp,
           onDown: widget.onKeyDown,
           child: GestureDetector(
-            onTap: () => _press(week),
+            onTap: _press,
             child: HomeDiscountsCard(
               week: week,
               today: _today,
@@ -264,7 +274,7 @@ class _Summary extends StatelessWidget {
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
-                  LocaleKeys.discounts_my_banks.tr(),
+                  LocaleKeys.discounts_configure.tr(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: MoaiText.body(

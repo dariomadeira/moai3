@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:moai3/features/discounts/discount_format.dart';
 import 'package:moai3/features/discounts/widgets/discount_dialogs.dart';
+import 'package:moai3/features/discounts/widgets/discounts_week_panel.dart';
 import 'package:moai3/features/home/widgets/home_discounts_card.dart';
 import 'package:moai3/models/discount_models.dart';
 import 'package:moai3/services/discounts_service.dart';
@@ -213,7 +214,10 @@ void main() {
   });
 
   group('tarjeta del Inicio en el TV', () {
-    Future<void> pumpCard(WidgetTester tester) async {
+    Future<void> pumpCard(
+      WidgetTester tester, {
+      void Function({int dayIndex, bool settings})? onOpen,
+    }) async {
       useSpanishTranslations();
       tester.view.physicalSize = const Size(1920, 1080);
       tester.view.devicePixelRatio = 2.0;
@@ -232,6 +236,7 @@ void main() {
                   onKeyLeft: () {},
                   onKeyUp: () {},
                   onKeyDown: () {},
+                  onOpen: onOpen,
                   now: () => DateTime(2026, 10, 26), // lunes
                 ),
               ),
@@ -261,25 +266,169 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('con bancos: la semana entra y OK abre el día', (tester) async {
+    testWidgets('con bancos: la semana entra y OK abre ese día', (
+      tester,
+    ) async {
       final service = DiscountsService.instance;
       await tester.runAsync(() async {
         await service.ensureLoaded();
         await service.toggleBank(nacion);
       });
       service.debugSetDiscounts([Discount.fromModoCard(modoCard())!]);
-      await pumpCard(tester);
+      final opened = <int>[];
+      await pumpCard(
+        tester,
+        onOpen: ({int dayIndex = 0, bool settings = false}) =>
+            opened.add(settings ? -1 : dayIndex),
+      );
 
       expect(find.text('Hoy'), findsOneWidget);
       expect(find.text('Coto'), findsOneWidget); // el martes
       expect(tester.takeException(), isNull);
 
-      // → al martes y OK: el detalle del día.
+      // → al martes y OK: la sección en ese día.
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
       await tester.pump();
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
-      expect(find.byType(TvDiscountsDayDialog), findsOneWidget);
+      await tester.pump();
+      expect(opened, [1]);
+    });
+  });
+
+  group('rubros, provincias y Mis comercios', () {
+    test('el rubro sale del número de MODO y del nombre', () {
+      expect(
+        Discount.rubroOf('Farmacia Selma', ['15']),
+        DiscountRubro.farmacias,
+      );
+      expect(Discount.rubroOf('YPF', ['5']), DiscountRubro.combustible);
+      expect(Discount.rubroOf('Makro', ['1']), DiscountRubro.mayoristas);
+      expect(Discount.rubroOf('Coto', ['1']), DiscountRubro.supermercados);
+      // De una búsqueda, sin rubro conocido: se descarta.
+      expect(Discount.rubroOf('Sorteo del Millón', ['0']), isNull);
+    });
+
+    test('los beneficios corporativos no son promos para cualquiera', () {
+      final card = modoCard(merchant: 'Beneficio Farmacia Mori', percent: 100);
+      card['benefit'] = <String, dynamic>{
+        ...card['benefit'] as Map<String, dynamic>,
+        'scope': 'Beneficios',
+      };
+      expect(Discount.fromModoCard(card), isNull);
+    });
+
+    test('de una búsqueda quedan sólo las del rubro buscado', () {
+      final page = jsonEncode({
+        'cards': [
+          modoCard(id: 'f', merchant: 'Farmacias Vilela'),
+          modoCard(id: 's', merchant: 'Sorteo del Millón'),
+        ],
+      });
+      final list = parseModoRubroPages([(DiscountRubro.farmacias, page)]);
+      expect(list.map((d) => d.merchant), ['Farmacias Vilela']);
+    });
+
+    test('una promo que nombra otra provincia no vale en la mía', () {
+      final d = Discount.fromModoCard(
+        modoCard(merchant: 'Supermercados de Mendoza'),
+      )!;
+      expect(d.provinces, {'Mendoza'});
+      expect(d.availableIn('San Luis'), isFalse);
+      expect(d.availableIn('Mendoza'), isTrue);
+      expect(d.availableIn(null), isTrue);
+      expect(provinceOf('San Luis'), 'San Luis');
+      expect(provinceOf('Sao Paulo'), isNull);
+    });
+
+    test('con Mis comercios se ven esos y los genéricos', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = DiscountsService.instance;
+      service.resetForTest(
+        client: MockClient((_) async => http.Response('[]', 500)),
+        directory: await Directory.systemTemp.createTemp('descuentos'),
+      );
+      await service.ensureLoaded();
+      await service.toggleBank(nacion);
+      service.debugSetDiscounts([
+        Discount.fromModoCard(modoCard(id: '1'))!, // Coto
+        Discount.fromModoCard(modoCard(id: '2', merchant: 'Vea'))!,
+        Discount.fromModoCard(
+          modoCard(id: '3', merchant: 'Comercios adheridos'),
+        )!,
+      ]);
+
+      // Sin comercios marcados, todos.
+      expect(service.discountsOn(tuesday), hasLength(3));
+      expect(service.merchants.map((m) => m.name), ['Coto', 'Vea']);
+
+      await service.toggleMerchant('coto');
+      expect(service.discountsOn(tuesday).map((d) => d.merchant), {
+        'Coto',
+        'Comercios adheridos',
+      });
+
+      // "Todos los comercios" los vuelve a mostrar.
+      await service.setOnlyMine(false);
+      expect(service.discountsOn(tuesday), hasLength(3));
+
+      // Sin el rubro, nada.
+      await service.toggleRubro(DiscountRubro.supermercados);
+      expect(service.discountsOn(tuesday), isEmpty);
+    });
+  });
+
+  group('semana de Descuentos en el TV', () {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      DiscountsService.instance.resetForTest(
+        client: MockClient((_) async => http.Response('[]', 500)),
+        directory: await Directory.systemTemp.createTemp('descuentos'),
+      );
+    });
+
+    testWidgets('entra en el TV y OK abre el detalle', (tester) async {
+      useSpanishTranslations();
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() => tester.view.reset());
+      final service = DiscountsService.instance;
+      await tester.runAsync(() async {
+        await service.ensureLoaded();
+        await service.toggleBank(nacion);
+      });
+      service.debugSetDiscounts([Discount.fromModoCard(modoCard())!]);
+      final focus = FocusNode();
+      addTearDown(focus.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 780,
+              height: 480,
+              child: DiscountsWeekPanel(
+                focusNode: focus,
+                onKeyLeft: () {},
+                onKeyRight: () {},
+                now: () => DateTime(2026, 10, 26), // lunes
+              ),
+            ),
+          ),
+        ),
+      );
+      focus.requestFocus();
+      await tester.pump();
+      // Como la Agenda: día de la semana y número.
+      expect(find.text('LUN'), findsOneWidget);
+      expect(find.text('Coto'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      // → al martes y OK: el detalle con sus condiciones.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      // Sin pumpAndSettle: el botón de actualizar puede quedar girando.
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(find.byType(TvDiscountDetailDialog), findsOneWidget);
       expect(find.textContaining('Tope \$7.500 por mes'), findsOneWidget);
     });
   });

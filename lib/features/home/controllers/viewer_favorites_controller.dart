@@ -68,4 +68,3 @@ class ViewerFavoritesController {
     focusNodes.clear();
   }
 }
-

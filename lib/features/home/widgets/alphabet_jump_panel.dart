@@ -41,8 +41,7 @@ class _AlphabetDeleteCardState extends State<AlphabetDeleteCard> {
         onFocusChange: (focus) => setState(() => _isFocused = focus),
         onKeyEvent: (node, event) {
           final key = event.logicalKey;
-          final isActionButton =
-              TvKeyHandler.isActionKey(key);
+          final isActionButton = TvKeyHandler.isActionKey(key);
 
           if (event is KeyDownEvent || event is KeyRepeatEvent) {
             // Nunca L/R: no cambiar de panel con filtro activo.
@@ -123,8 +122,9 @@ class AlphabetJumpPanel extends StatelessWidget {
         builder: (context, constraints) {
           final maxH = constraints.maxHeight;
           const extent = TvLayoutConstants.alphabetItemHeight;
-          final computedWindowSize =
-              (maxH > 0 && maxH.isFinite) ? (maxH / extent).floor().clamp(4, 30) : 10;
+          final computedWindowSize = (maxH > 0 && maxH.isFinite)
+              ? (maxH / extent).floor().clamp(4, 30)
+              : 10;
 
           // Ventana según alto disponible; si hay menos letras, centra el bloque.
           return Align(
@@ -132,27 +132,36 @@ class AlphabetJumpPanel extends StatelessWidget {
               items: items,
               windowSize: computedWindowSize,
               itemExtent: extent,
-              itemBuilder: (context, item, focusNode, localIndex, globalIndex, onKeyUp, onKeyDown) {
-                if (showDeleteTile && globalIndex == 0) {
-                  return AlphabetDeleteCard(
-                    key: const ValueKey('alpha-delete'),
-                    focusNode: focusNode,
-                    onTap: onDeleteTap ?? () {},
-                    onKeyUp: onKeyUp,
-                    onKeyDown: onKeyDown,
-                  );
-                }
+              itemBuilder:
+                  (
+                    context,
+                    item,
+                    focusNode,
+                    localIndex,
+                    globalIndex,
+                    onKeyUp,
+                    onKeyDown,
+                  ) {
+                    if (showDeleteTile && globalIndex == 0) {
+                      return AlphabetDeleteCard(
+                        key: const ValueKey('alpha-delete'),
+                        focusNode: focusNode,
+                        onTap: onDeleteTap ?? () {},
+                        onKeyUp: onKeyUp,
+                        onKeyDown: onKeyDown,
+                      );
+                    }
 
-                final letter = item;
-                return AlphabetLetterCard(
-                  key: ValueKey('alpha-$letter'),
-                  letter: letter,
-                  focusNode: focusNode,
-                  onTap: () => onLetterTap(letter),
-                  onKeyUp: onKeyUp,
-                  onKeyDown: onKeyDown,
-                );
-              },
+                    final letter = item;
+                    return AlphabetLetterCard(
+                      key: ValueKey('alpha-$letter'),
+                      letter: letter,
+                      focusNode: focusNode,
+                      onTap: () => onLetterTap(letter),
+                      onKeyUp: onKeyUp,
+                      onKeyDown: onKeyDown,
+                    );
+                  },
             ),
           );
         },
@@ -160,4 +169,3 @@ class AlphabetJumpPanel extends StatelessWidget {
     );
   }
 }
-

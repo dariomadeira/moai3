@@ -1,4 +1,4 @@
-﻿class ChannelGroup {
+class ChannelGroup {
   final String id;
   final String name;
   final String icon;
@@ -23,7 +23,7 @@
       type: json['type'] as String? ?? '',
       channelIds:
           (json['channelIds'] as List?)?.map((e) => e.toString()).toList() ??
-              [],
+          [],
     );
   }
 
@@ -37,4 +37,3 @@
     };
   }
 }
-

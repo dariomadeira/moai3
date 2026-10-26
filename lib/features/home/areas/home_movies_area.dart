@@ -33,9 +33,7 @@ class HomeMoviesArea extends StatefulWidget {
     required this.onExitLeft,
   });
 
-  static const icons = [
-    MoaiIcons.tvAccordionFeatured,
-  ];
+  static const icons = [MoaiIcons.tvAccordionFeatured];
 
   @override
   State<HomeMoviesArea> createState() => HomeMoviesAreaState();
@@ -173,11 +171,9 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
     if (movie.isSeries) {
       return;
     }
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => MovieDetailScreen(movie: movie),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => MovieDetailScreen(movie: movie)));
   }
 
   @override
@@ -185,16 +181,21 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
     final scheme = Theme.of(context).colorScheme;
     // Sólo lo de esta sección: si otra carga (p. ej. el Inicio pide Películas
     // para los adelantos), la grilla no se reconstruye.
-    final (categories, isLoading, loadedOnce, errorMessage, errorDetail) =
-        context.select(
-          (FeaturedMoviesProvider p) => (
-            p.categoriesFor(widget.section),
-            p.isLoadingFor(widget.section),
-            p.loadedOnceFor(widget.section),
-            p.errorMessageFor(widget.section),
-            p.errorDetailFor(widget.section),
-          ),
-        );
+    final (
+      categories,
+      isLoading,
+      loadedOnce,
+      errorMessage,
+      errorDetail,
+    ) = context.select(
+      (FeaturedMoviesProvider p) => (
+        p.categoriesFor(widget.section),
+        p.isLoadingFor(widget.section),
+        p.loadedOnceFor(widget.section),
+        p.errorMessageFor(widget.section),
+        p.errorDetailFor(widget.section),
+      ),
+    );
 
     final title = widget.panelTitle.isNotEmpty
         ? widget.panelTitle
@@ -223,12 +224,14 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(MoaiIcons.error, size: MoaiIconSizes.hero, color: scheme.error),
+                Icon(
+                  MoaiIcons.error,
+                  size: MoaiIconSizes.hero,
+                  color: scheme.error,
+                ),
                 const SizedBox(height: 12),
                 Text(
-                  errorMessage.tr(namedArgs: {
-                    'error': errorDetail ?? '',
-                  }),
+                  errorMessage.tr(namedArgs: {'error': errorDetail ?? ''}),
                   style: TextStyle(color: scheme.error),
                 ),
                 const SizedBox(height: 12),
@@ -256,7 +259,8 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
             final availableWidth = constraints.maxWidth;
             const double uniformGap = 12.0;
             const double horizontalPadding = 14.0;
-            final netWidth = availableWidth -
+            final netWidth =
+                availableWidth -
                 (horizontalPadding * 2) -
                 ((_crossAxisCount - 1) * uniformGap);
             final colWidth = (netWidth / _crossAxisCount).clamp(100.0, 400.0);
@@ -276,11 +280,7 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
               behavior: const ScrollBehavior().copyWith(scrollbars: false),
               child: ListView.builder(
                 controller: _scrollController,
-                padding: const EdgeInsets.only(
-                  right: 14,
-                  top: 8,
-                  bottom: 8,
-                ),
+                padding: const EdgeInsets.only(right: 14, top: 8, bottom: 8),
                 // Las filas vecinas quedan armadas: ↑/↓ siempre encuentran la
                 // tarjeta a enfocar.
                 scrollCacheExtent: ScrollCacheExtent.pixels(cardHeight * 2.5),
@@ -327,11 +327,7 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
   ) {
     return Container(
       key: _getCategoryHeaderKey(catIdx),
-      padding: EdgeInsets.only(
-        left: 4,
-        top: catIdx == 0 ? 6 : 20,
-        bottom: 12,
-      ),
+      padding: EdgeInsets.only(left: 4, top: catIdx == 0 ? 6 : 20, bottom: 12),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -431,8 +427,7 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
                           (prevCat.movies.length + _crossAxisCount - 1) ~/
                           _crossAxisCount;
                       final lastRow = prevTotalRows - 1;
-                      final lastRowMovies =
-                          _getChunk(prevCat.movies, lastRow);
+                      final lastRowMovies = _getChunk(prevCat.movies, lastRow);
                       final targetCol = c.clamp(0, lastRowMovies.length - 1);
                       _focusCard(catIdx - 1, lastRow, targetCol);
                     }
@@ -453,8 +448,7 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
               ),
             ] else
               const Expanded(child: SizedBox.shrink()),
-            if (c < _crossAxisCount - 1)
-              SizedBox(width: uniformGap),
+            if (c < _crossAxisCount - 1) SizedBox(width: uniformGap),
           ],
         ],
       ),

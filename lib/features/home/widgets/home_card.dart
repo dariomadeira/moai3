@@ -11,6 +11,7 @@ abstract final class HomeCardColors {
   static const Color trailers = Color(0xFFF43F5E);
   static const Color arcade = Color(0xFF14B8A6);
   static const Color discounts = Color(0xFFEAB308);
+  static const Color friends = Color(0xFF3B82F6);
 }
 
 /// Tarjeta del Inicio: cristal sólido con el halo de su color arriba a la

@@ -8,6 +8,7 @@
 > - `lib/features/home/widgets/home_card.dart` (`HomeCard`, `HomeCardColors`)  
 > - `lib/features/home/widgets/home_weather_card.dart`  
 > - `lib/features/home/widgets/home_events_card.dart`  
+> - `lib/features/home/widgets/home_friends_card.dart`  
 > - `lib/features/home/widgets/home_discounts_card.dart` (ver SPEC-43)  
 > - `lib/features/home/widgets/home_movie_list_card.dart`, `home_continue_card.dart`, `home_watchlist_card.dart`, `home_movie_strip.dart`  
 > - `lib/features/home/widgets/home_trailers_card.dart`  
@@ -20,7 +21,7 @@
 
 ## 1. Propósito
 
-El Inicio es un tablero vertical de tarjetas con lo que importa hoy: clima, eventos, descuentos, películas para retomar o ver después, adelantos y el arcade. Cada tarjeta se maneja con el control remoto sin salir del Inicio.
+El Inicio es un tablero vertical de tarjetas con lo que importa hoy: clima, eventos, amigos conectados, descuentos, películas para retomar o ver después, adelantos y el arcade. Cada tarjeta se maneja con el control remoto sin salir del Inicio.
 
 ## 2. Encabezado y rail
 
@@ -37,30 +38,36 @@ Lista con ventana de **4 tarjetas visibles** (`_windowSize = 4`; alto = alto dis
 | 1 | Clima | siempre | según el tiempo (`weatherKindOf`) |
 | 2 | Eventos | hay eventos de hoy sin terminar | `events` F97316 |
 | 3 | Descuentos | siempre (sin bancos pide elegirlos) | `discounts` EAB308 |
-| 4 | Seguir viendo | hay películas empezadas | `continueWatching` 22C55E |
-| 5 | Interesantes | Películas está en el rail | `watchlist` A855F7 |
-| 6 | Adelantos | Ajuste "Adelantos en el Inicio" activo **y** hay adelantos | `trailers` F43F5E |
-| 7 | Arcade | siempre | `arcade` 14B8A6 |
+| 4 | Amigos | Miremos Juntos activado (`WatchPartyProvider.enabled`) | `friends` 3B82F6 |
+| 5 | Seguir viendo | hay películas empezadas | `continueWatching` 22C55E |
+| 6 | Interesantes | Películas está en el rail | `watchlist` A855F7 |
+| 7 | Adelantos | Ajuste "Adelantos en el Inicio" activo **y** hay adelantos | `trailers` F43F5E |
+| 8 | Arcade | siempre | `arcade` 14B8A6 |
 
 `HomeCard`: cristal sólido (`MoaiGlass`) con un halo radial fijo del color de la tarjeta arriba a la izquierda (alfa 0,14 oscuro / 0,18 claro). Es un degradado estático: no agrega trabajo por cuadro.
 
 ### 3.1 Clima
-Ícono animado (56) a la izquierda, temperatura (40), condición, máx/mín, sensación y lluvia; a la derecha la tira por hora. El lugar es `WeatherProvider.placeName`: con ubicación automática muestra la **región**, no el barrio que devuelve la geolocalización por IP (antes salía "Liberdade").
+Ícono animado (56) a la izquierda, temperatura (40), condición, máx/mín, sensación y lluvia; a la derecha la tira por hora. El lugar es `WeatherProvider.placeName`: con ubicación automática muestra la **región**, no el barrio que devuelve la geolocalización por IP (antes salía "Liberdade"). La ubicación automática sale de la IP (cae donde el proveedor tiene el nodo, no en el pueblo); para eso está la localidad elegida a mano. Su búsqueda usa **Open-Meteo** (`geocoding-api.open-meteo.com`, GeoNames, sin clave; Argentina primero), porque el buscador de WeatherAPI no tiene pueblos chicos (para "Quines" sólo daba el de España); si falla, cae al de WeatherAPI. El clima se sigue pidiendo a WeatherAPI, por coordenadas.
 
 ### 3.2 Eventos
 Sólo eventos de hoy no terminados (`CalendarProvider`). El ticker del calendario notifica cuando cambia el estado de un evento (`todayStatusKey()`), así la tarjeta pasa de "próximo" a "en vivo" o se oculta sola. Al cambiar el día se recargan los eventos. La competición va en la fila de arriba ("· Liga Profesional") para que no desborde.
 
-### 3.3 Seguir viendo / Interesantes
+### 3.3 Amigos
+Sólo con **Miremos Juntos** activado. A la izquierda "Miremos juntos · Amigos" y cuántos están conectados (con foco: "OK: ir a su canal"); a la derecha los amigos **conectados** en fila con ventana (como Eventos), cada uno con su nombre y el canal que mira (`displayChannelName`: los de adultos no se muestran) o "No está mirando TV". Sin nadie conectado la izquierda dice "Nadie está conectado". Si mira lo mismo que yo, la tarjeta va teñida con el chip "Con vos". Sin amigos conectados: "Ninguno de tus amigos está conectado ahora."
+
+←/→ eligen el amigo y **OK sintoniza su canal** (`onTuneChannel`, el mismo camino que el detalle de un evento), así quedan en el mismo canal y pueden hablar. El canal se busca en la lista propia por id y, si viene de otra extensión, por nombre normalizado (`HomeFriendsItem.channelOf`). Si el amigo no mira nada o el canal no está en la lista, un aviso lo dice.
+
+### 3.4 Seguir viendo / Interesantes
 Ambas usan `HomeMovieListCard`: resumen y botón a la izquierda, tira de portadas 16:9 a la derecha (`HomeMovieStrip`) con barra de progreso flotante (separada 8 del borde inferior).
 
 - **Seguir viendo**: películas empezadas (ver SPEC-44). OK la retoma donde quedó. **Mantener OK** en una película o el botón "Marcar todas" la(s) marca como vista(s), con confirmación.
 - **Interesantes**: películas guardadas para después; OK abre el detalle; botón "Quitar todas".
 - Una película está en **un solo lugar**: Interesantes → Seguir viendo → vista.
 
-### 3.4 Adelantos
+### 3.5 Adelantos
 Fila de adelantos del catálogo (ya no aparecen en la grilla de Películas). Se puede ocultar en **Ajustes › Películas y series › Adelantos en el Inicio** (`TvSettingsProvider.showHomeTrailers`, clave `home_show_trailers`, por defecto `true`).
 
-### 3.5 Arcade
+### 3.6 Arcade
 Juego listo con acciones **Jugar**, **Cambiar** e **Invitar**. "Invitar" sólo aparece si hay amigos en línea (`WatchPartyProvider.hasOnlineFriends`) y abre la partida a distancia (`ArcadeLauncher.playTogether`, SPEC-38). Si los amigos se desconectan, la selección vuelve a "Jugar".
 
 ## 4. Fondo de cielo (EN PAUSA)
@@ -73,4 +80,4 @@ Juego listo con acciones **Jugar**, **Cambiar** e **Invitar**. "Invitar" sólo a
 - Sin eventos hoy, la tarjeta de Eventos no se renderiza.
 - Con el ajuste de adelantos apagado, la tarjeta de Adelantos no aparece.
 - En el Inicio el rail muestra el logo; en otra sección, la pill de hora y clima.
-- Tests: `home_dashboard_area_test`, `home_clock_test`, `home_arcade_card_test`, `tv_vertical_nav_rail_test`, `home_sky_test`, `weather_location_test`.
+- Tests: `home_dashboard_area_test`, `home_clock_test`, `home_arcade_card_test`, `home_friends_card_test`, `tv_vertical_nav_rail_test`, `home_sky_test`, `weather_location_test`.

@@ -18,8 +18,9 @@ class CollapsedPanelTabPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final textColor =
-        hasFocus ? scheme.primary : scheme.onSurface.withValues(alpha: 0.7);
+    final textColor = hasFocus
+        ? scheme.primary
+        : scheme.onSurface.withValues(alpha: 0.7);
     final iconColor = hasFocus
         ? scheme.primary
         : scheme.onSurfaceVariant.withValues(alpha: 0.85);

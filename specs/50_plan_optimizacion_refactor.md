@@ -336,7 +336,7 @@ Regla: una ubicación nueva usa el semántico. Los 44 duplicados se colapsan al 
 
 ### 5.1. `enum HomeSection` compartido
 Las secciones están duplicadas como `int` en `home_screen.dart:52-59` y `tv_vertical_nav_rail.dart:35-42` →
-`enum HomeSection { home, tv, featured, movies, series, calendar, arcade, settings }`, usado por el rail, `HomeScreen` y la sección inicial.
+`enum HomeSection { home, tv, featured, movies, series, calendar, discounts, arcade, settings }` (Descuentos se sumó el 2026-10-26, SPEC-43), usado por el rail, `HomeScreen` y la sección inicial.
 
 ### 5.2. Todas las áreas implementan `HomeAreaState`
 Hoy solo `HomeTvArea` lo hace. `HomeScreen` tiene 14 FocusNodes de otras áreas (Ajustes ×6, Agenda ×2, Arcade ×4) y cadenas de `if` en `_onRailFocusRight` / `_interceptBack`.
@@ -415,7 +415,7 @@ Extraer a `BootstrapController` solo lo que no es catálogo: verificación de pr
 ## 9. Fase 6 — Optimización e Interfaz Más Rápida
 
 ### 6.1. Menos rebuilds
-- `WatchPartyProvider.loadFriends()` corre cada 15 s y siempre notifica: comparar (ids + online + canal) y notificar solo si cambió. Con Realtime activo (`_subscribeToDevicesRealtime`), bajar el polling de respaldo a 60 s.
+- `WatchPartyProvider.loadFriends()` corre cada 15 s y siempre notifica: comparar (ids + online + canal) y notificar solo si cambió. Con Realtime activo (`_subscribeToDevicesRealtime`), bajar el polling de respaldo a 60 s. **Hecho (2026-10-26):** sondeo de respaldo a 60 s; además, al pasar a segundo plano (`AppLifecycleListener` en `HomeScreen`, `onHide`/`onShow`) la presencia pasa a offline, `WatchPartyProvider.pause()` corta sondeo y Realtime y `WeatherProvider.pause()` el refresco; al volver se retoman (el clima se pide ya si tiene más de 30 min).
 - `context.watch` amplio → `context.select`: `watch_party_overlay.dart:177,179,228` (encima del video, prioridad), `tv_watch_party_header_bar.dart:90-91`, `home_arcade_area.dart:144`, `settings_about_panel.dart:79`, `settings_tv_panel.dart:52`, `settings_general_panel.dart:54,192,232`, `settings_agenda_panel.dart:46-47`, `calendar_events_panel.dart:463`, `calendar_subscriptions_panel.dart:43`.
 - `HomeTvArea._onStateChanged` (`home_tv_area.dart:244`) arma y compara listas de ids de todos los canales en cada notificación: `channelsVersion` / `groupsVersion` / `favoritesVersion` enteros y un listener por provider.
 - `LoadingScreen` (`loading_screen.dart:459`): `AnimatedBuilder` reconstruye todo a 60 fps; lo estático va al `child:` y el gradiente a su propio `RepaintBoundary`.

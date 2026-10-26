@@ -15,6 +15,7 @@ import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/features/calendar/widgets/calendar_event_details_dialog.dart';
 import 'package:moai3/utils/moai_formats.dart';
+import 'package:moai3/widgets/week/tv_week_grid.dart';
 
 part 'calendar_events/calendar_events_keys.dart';
 part 'calendar_events/calendar_header_button.dart';
@@ -214,7 +215,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                       case _HeaderAction.refresh:
                         return Padding(
                           padding: const EdgeInsets.only(right: 6),
-                          child: _HeaderButton(
+                          child: TvWeekHeaderButton(
                             icon: MoaiIcons.refresh,
                             tooltip: LocaleKeys.calendar_refresh.tr(),
                             isFocused: isFocused,
@@ -229,7 +230,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                       case _HeaderAction.prev:
                         return Padding(
                           padding: const EdgeInsets.only(right: 6),
-                          child: _HeaderButton(
+                          child: TvWeekHeaderButton(
                             icon: MoaiIcons.chevronLeft,
                             tooltip: LocaleKeys.calendar_week_nav_prev.tr(),
                             isFocused: isFocused,
@@ -243,7 +244,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                       case _HeaderAction.current:
                         return Padding(
                           padding: const EdgeInsets.only(right: 6),
-                          child: _HeaderButton(
+                          child: TvWeekHeaderButton(
                             icon: MoaiIcons.calendarToday,
                             label: LocaleKeys.calendar_week_current.tr(),
                             isFocused: isFocused,
@@ -255,7 +256,7 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                           ),
                         );
                       case _HeaderAction.next:
-                        return _HeaderButton(
+                        return TvWeekHeaderButton(
                           icon: MoaiIcons.chevronRight,
                           tooltip: LocaleKeys.calendar_week_nav_next.tr(),
                           isFocused: isFocused,

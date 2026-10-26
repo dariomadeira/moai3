@@ -48,7 +48,8 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
   @override
   void initState() {
     super.initState();
-    _micFocusNode = widget.micFocusNode ?? FocusNode(debugLabel: 'TvWatchPartyHeaderMic');
+    _micFocusNode =
+        widget.micFocusNode ?? FocusNode(debugLabel: 'TvWatchPartyHeaderMic');
     _micFocusNode.addListener(_onFocusChange);
   }
 
@@ -79,10 +80,9 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
     final coordinator = context.watch<WatchPartyVoiceCoordinator?>();
 
     final hasFriendsInChannel = watchPartyEnabled && friendsInChannel;
-    final isRecording = watchPartyEnabled &&
-        (coordinator?.isRecording ?? false);
-    final isPlaying = watchPartyEnabled &&
-        (coordinator?.isPlaying ?? false);
+    final isRecording =
+        watchPartyEnabled && (coordinator?.isRecording ?? false);
+    final isPlaying = watchPartyEnabled && (coordinator?.isPlaying ?? false);
     final speakerName = coordinator?.currentSpeakerName;
 
     final showYellowMic = hasFriendsInChannel;
@@ -98,80 +98,80 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
 
     return SizedBox(
       height: 40,
-        child: Row(
-          children: [
-            if (hasChannelName) ...[
-              Expanded(
-                child: Text(
-                  channelName.trim(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: MoaiText.display(
-                    context,
-                    color: scheme.onSurface,
-                    fontSize: 28,
-                  ),
+      child: Row(
+        children: [
+          if (hasChannelName) ...[
+            Expanded(
+              child: Text(
+                channelName.trim(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: MoaiText.display(
+                  context,
+                  color: scheme.onSurface,
+                  fontSize: 28,
                 ),
               ),
-              const SizedBox(width: 8),
-            ],
-            // 1. Audio Entrante ("{amigo} hablando...")
-            if (isPlaying) ...[
-              ExcludeFocus(
-                child: AnimatedSize(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOut,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: scheme.primary,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          MoaiIcons.voice,
-                          color: scheme.onPrimary,
-                          size: MoaiIconSizes.sm,
-                        ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 150),
-                            child: Text(
-                              speakerName != null
-                                  ? LocaleKeys.watch_party_friend_speaking.tr(namedArgs: {'name': speakerName})
-                                  : LocaleKeys.watch_party_listening_audio.tr(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: MoaiText.body(
-                                context,
-                                color: scheme.onPrimary,
-                                fontSize: 12,
-                              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          // 1. Audio Entrante ("{amigo} hablando...")
+          if (isPlaying) ...[
+            ExcludeFocus(
+              child: AnimatedSize(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: scheme.primary,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        MoaiIcons.voice,
+                        color: scheme.onPrimary,
+                        size: MoaiIconSizes.sm,
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 150),
+                          child: Text(
+                            speakerName != null
+                                ? LocaleKeys.watch_party_friend_speaking.tr(
+                                    namedArgs: {'name': speakerName},
+                                  )
+                                : LocaleKeys.watch_party_listening_audio.tr(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: MoaiText.body(
+                              context,
+                              color: scheme.onPrimary,
+                              fontSize: 12,
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(width: 6),
-            ],
-
-            // 2. Botón de Micrófono (Enfocable por D-Pad)
-            if (showYellowMic)
-              _buildMicPill(
-                context,
-                coordinator,
-                isRecording,
-                scheme,
-              ),
+            ),
+            const SizedBox(width: 6),
           ],
-        ),
-      );
+
+          // 2. Botón de Micrófono (Enfocable por D-Pad)
+          if (showYellowMic)
+            _buildMicPill(context, coordinator, isRecording, scheme),
+        ],
+      ),
+    );
   }
 
   Widget _buildMicPill(
@@ -247,7 +247,8 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
             return KeyEventResult.handled;
           }
         } else if (event is KeyDownEvent) {
-          if (key == LogicalKeyboardKey.escape || key == LogicalKeyboardKey.goBack) {
+          if (key == LogicalKeyboardKey.escape ||
+              key == LogicalKeyboardKey.goBack) {
             if (isRecording) {
               coordinator?.cancelRecording();
               return KeyEventResult.handled;
@@ -298,14 +299,15 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
                 const SizedBox(width: 6),
                 Text(
                   '${remainingSeconds}s',
-                  style: MoaiText.body(
-                    context,
-                    color: foregroundColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ).copyWith(
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
+                  style:
+                      MoaiText.body(
+                        context,
+                        color: foregroundColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ).copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                 ),
               ],
             ],

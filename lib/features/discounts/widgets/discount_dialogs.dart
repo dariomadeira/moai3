@@ -7,30 +7,125 @@ import 'package:moai3/models/discount_models.dart';
 import 'package:moai3/services/discounts_service.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/utils/text_normalize.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
-import 'package:moai3/widgets/tv_common/moai_glass.dart';
-import 'package:moai3/widgets/tv_common/tv_press_detector.dart';
+import 'package:moai3/widgets/tv_input/tv_text_field.dart';
 
 /// "Mis bancos y billeteras": cuáles tiene el usuario, para mostrarle sólo
 /// los descuentos que puede usar. Cada fila se prende y apaga con OK.
-class TvDiscountBanksDialog extends StatefulWidget {
-  const TvDiscountBanksDialog({super.key});
-
+abstract final class TvDiscountBanksDialog {
   static Future<void> show(BuildContext context) => showTvGeneralDialog<void>(
     context: context,
     barrierLabel: 'DiscountBanks',
-    builder: (_) => const TvDiscountBanksDialog(),
+    builder: (_) => _TvDiscountToggleDialog(
+      icon: MoaiIcons.discountBanks,
+      title: LocaleKeys.discounts_banks_title.tr(),
+      subtitle: LocaleKeys.discounts_banks_desc.tr(),
+      searchLabel: LocaleKeys.discounts_banks_search.tr(),
+      noResults: LocaleKeys.discounts_banks_no_results.tr(),
+      unavailable: LocaleKeys.discounts_banks_unavailable.tr(),
+      items: (s) => [
+        for (final b in s.banks)
+          _ToggleItem(id: b.id, label: b.name, icon: MoaiIcons.discountBanks),
+      ],
+      selected: (s) => s.selectedBankIds,
+      toggle: (s, id) => s.toggleBank(id),
+      clear: (s) => s.clearBanks(),
+    ),
   );
-
-  @override
-  State<TvDiscountBanksDialog> createState() => _TvDiscountBanksDialogState();
 }
 
-class _TvDiscountBanksDialogState extends State<TvDiscountBanksDialog> {
-  final _done = FocusNode(debugLabel: 'discount_banks_done');
+/// "Mis comercios": dónde compra el usuario, de los que tienen promos.
+/// Con alguno marcado, la semana muestra sólo esos (y las promos sin
+/// comercio puntual, como "Comercios adheridos").
+abstract final class TvDiscountMerchantsDialog {
+  static Future<void> show(BuildContext context) => showTvGeneralDialog<void>(
+    context: context,
+    barrierLabel: 'DiscountMerchants',
+    builder: (_) => _TvDiscountToggleDialog(
+      icon: MoaiIcons.discountMerchants,
+      title: LocaleKeys.discounts_merchants_title.tr(),
+      subtitle: LocaleKeys.discounts_merchants_desc.tr(),
+      searchLabel: LocaleKeys.discounts_merchants_search.tr(),
+      noResults: LocaleKeys.discounts_merchants_no_results.tr(),
+      unavailable: LocaleKeys.discounts_merchants_unavailable.tr(),
+      items: (s) => [
+        for (final m in s.merchants)
+          _ToggleItem(
+            id: m.key,
+            label: m.name,
+            description: DiscountFormat.rubro(m.rubro),
+            icon: DiscountFormat.rubroIcon(m.rubro),
+          ),
+      ],
+      selected: (s) => s.selectedMerchantKeys,
+      toggle: (s, id) => s.toggleMerchant(id),
+      clear: (s) => s.clearMerchants(),
+    ),
+  );
+}
+
+class _ToggleItem {
+  const _ToggleItem({
+    required this.id,
+    required this.label,
+    required this.icon,
+    this.description,
+  });
+
+  final String id;
+  final String label;
+  final String? description;
+  final IconData icon;
+}
+
+/// Lista para marcar y desmarcar (bancos, comercios) con buscador arriba y
+/// "Desmarcar todo" / "Listo" abajo.
+class _TvDiscountToggleDialog extends StatefulWidget {
+  const _TvDiscountToggleDialog({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.searchLabel,
+    required this.noResults,
+    required this.unavailable,
+    required this.items,
+    required this.selected,
+    required this.toggle,
+    required this.clear,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String searchLabel;
+  final String noResults;
+
+  /// Sin nada para elegir (no se pudo bajar).
+  final String unavailable;
+  final List<_ToggleItem> Function(DiscountsService) items;
+  final Set<String> Function(DiscountsService) selected;
+  final Future<void> Function(DiscountsService, String id) toggle;
+  final Future<void> Function(DiscountsService) clear;
+
+  @override
+  State<_TvDiscountToggleDialog> createState() =>
+      _TvDiscountToggleDialogState();
+}
+
+class _TvDiscountToggleDialogState extends State<_TvDiscountToggleDialog> {
+  final _search = FocusNode(debugLabel: 'discount_toggle_search');
+  final _clear = FocusNode(debugLabel: 'discount_toggle_clear');
+  final _done = FocusNode(debugLabel: 'discount_toggle_done');
+  final _searchController = TextEditingController();
+  final _listKey = GlobalKey<TvWindowedListState<_ToggleItem>>();
   static const _itemExtent = 70.0;
-  static const _window = 4;
+  // Listas largas (bancos, comercios): 3 a la vista y flechas en su propio
+  // lugar arriba y abajo.
+  static const _window = 3;
+
+  String _query = '';
 
   @override
   void initState() {
@@ -38,13 +133,34 @@ class _TvDiscountBanksDialogState extends State<TvDiscountBanksDialog> {
     final service = DiscountsService.instance;
     service.ensureLoaded();
     // Sin lista todavía (primera vez o sin internet antes): pedirla.
-    if (service.banks.isEmpty) service.refresh(force: true);
+    if (widget.items(service).isEmpty) service.refresh(force: true);
   }
 
   @override
   void dispose() {
+    _search.dispose();
+    _clear.dispose();
     _done.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  List<_ToggleItem> _filter(List<_ToggleItem> items) {
+    final q = normalizeText(_query);
+    if (q.isEmpty) return items;
+    return [
+      for (final i in items)
+        if (normalizeText(i.label).contains(q)) i,
+    ];
+  }
+
+  /// ↑ desde los botones: al último de la lista, o al buscador si no hay.
+  void _upFromActions(int count) {
+    if (count > 0) {
+      _listKey.currentState?.ensureVisible(count - 1);
+    } else {
+      _search.requestFocus();
+    }
   }
 
   @override
@@ -53,70 +169,115 @@ class _TvDiscountBanksDialogState extends State<TvDiscountBanksDialog> {
     return ListenableBuilder(
       listenable: service,
       builder: (context, _) {
-        final banks = service.banks;
-        if (banks.isEmpty) {
+        final all = widget.items(service);
+        final items = _filter(all);
+        final selected = widget.selected(service);
+        if (all.isEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted && !_done.hasFocus) _done.requestFocus();
           });
         }
+        final emptyText = all.isEmpty
+            ? (service.isLoading
+                  ? LocaleKeys.discounts_loading.tr()
+                  : widget.unavailable)
+            : widget.noResults;
         return TvDialog(
           width: 520,
-          icon: MoaiIcons.discountBanks,
-          title: LocaleKeys.discounts_banks_title.tr(),
-          subtitle: LocaleKeys.discounts_banks_desc.tr(),
-          content: SizedBox(
-            height: _window * _itemExtent,
-            child: banks.isEmpty
-                ? Center(
-                    child: Text(
-                      service.isLoading
-                          ? LocaleKeys.discounts_loading.tr()
-                          : LocaleKeys.discounts_banks_unavailable.tr(),
-                      textAlign: TextAlign.center,
-                      style: MoaiText.body(
-                        context,
-                        color: context.scheme.onSurfaceVariant,
-                        fontSize: 14,
-                      ),
-                    ),
-                  )
-                : TvWindowedList<DiscountBank>(
-                    items: banks,
-                    windowSize: _window,
-                    itemExtent: _itemExtent,
-                    showScrollDots: true,
-                    onFocusDownFromLast: _done.requestFocus,
-                    itemBuilder:
-                        (
-                          context,
-                          bank,
-                          focusNode,
-                          local,
-                          global,
-                          onKeyUp,
-                          onKeyDown,
-                        ) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: TvSettingsSwitchRow(
-                            focusNode: focusNode,
-                            icon: MoaiIcons.discountBanks,
-                            label: bank.name,
-                            value: service.selectedBankIds.contains(bank.id),
-                            onChanged: (_) => service.toggleBank(bank.id),
-                            onKeyLeft: () {},
-                            onKeyUp: onKeyUp,
-                            onKeyDown: onKeyDown,
+          icon: widget.icon,
+          title: widget.title,
+          subtitle: widget.subtitle,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (all.isNotEmpty) ...[
+                TvTextField(
+                  controller: _searchController,
+                  focusNode: _search,
+                  label: widget.searchLabel,
+                  hint: LocaleKeys.search_field_hint.tr(),
+                  textInputAction: TvTextInputAction.search,
+                  dense: true,
+                  leadingIcon: MoaiIcons.keyboard,
+                  onChanged: (q) => setState(() => _query = q),
+                  onSubmitted: (q) => setState(() => _query = q),
+                  onFocusDown: () => items.isNotEmpty
+                      ? _listKey.currentState?.ensureVisible(0)
+                      : _clear.requestFocus(),
+                ),
+                const SizedBox(height: 12),
+              ],
+              SizedBox(
+                height:
+                    _window * _itemExtent + 2 * TvWindowedList.arrowAreaHeight,
+                child: items.isEmpty
+                    ? Center(
+                        child: Text(
+                          emptyText,
+                          textAlign: TextAlign.center,
+                          style: MoaiText.body(
+                            context,
+                            color: context.scheme.onSurfaceVariant,
+                            fontSize: 14,
                           ),
                         ),
-                  ),
+                      )
+                    : TvWindowedList<_ToggleItem>(
+                        key: _listKey,
+                        items: items,
+                        windowSize: _window,
+                        itemExtent: _itemExtent,
+                        showScrollArrows: true,
+                        onFocusUpFromFirst: _search.requestFocus,
+                        onFocusDownFromLast: _done.requestFocus,
+                        itemBuilder:
+                            (
+                              context,
+                              item,
+                              focusNode,
+                              local,
+                              global,
+                              onKeyUp,
+                              onKeyDown,
+                            ) => Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: TvSettingsSwitchRow(
+                                focusNode: focusNode,
+                                icon: item.icon,
+                                label: item.label,
+                                description: item.description,
+                                value: selected.contains(item.id),
+                                onChanged: (_) =>
+                                    widget.toggle(service, item.id),
+                                onKeyLeft: () {},
+                                onKeyUp: onKeyUp,
+                                onKeyDown: onKeyDown,
+                              ),
+                            ),
+                      ),
+              ),
+            ],
           ),
           actions: [
+            if (all.isNotEmpty)
+              TvDialogButton(
+                label: LocaleKeys.discounts_banks_clear.tr(),
+                focusNode: _clear,
+                onPressed: () => widget.clear(service),
+                onKeyRight: _done.requestFocus,
+                onKeyUp: () => _upFromActions(items.length),
+              ),
             TvDialogButton(
               label: LocaleKeys.discounts_done.tr(),
               variant: TvDialogButtonVariant.primary,
               focusNode: _done,
-              autofocus: banks.isEmpty,
+              autofocus: all.isEmpty,
               onPressed: () => Navigator.of(context).pop(),
+              onKeyLeft: all.isNotEmpty ? _clear.requestFocus : null,
+              onKeyUp: all.isNotEmpty
+                  ? () => _upFromActions(items.length)
+                  : null,
             ),
           ],
         );
@@ -125,175 +286,118 @@ class _TvDiscountBanksDialogState extends State<TvDiscountBanksDialog> {
   }
 }
 
-/// Todos los descuentos de un día con los bancos del usuario, con sus
-/// condiciones (tope, tarjetas, vigencia). ↑/↓ los recorren.
-class TvDiscountsDayDialog extends StatelessWidget {
-  const TvDiscountsDayDialog({
-    super.key,
-    required this.day,
-    required this.discounts,
-  });
-
-  final DayDiscounts day;
-  final List<Discount> discounts;
-
-  static Future<void> show(BuildContext context, DayDiscounts day) =>
-      showTvGeneralDialog<void>(
-        context: context,
-        barrierLabel: 'DiscountsDay',
-        builder: (_) =>
-            TvDiscountsDayDialog(day: day, discounts: day.discounts),
-      );
-
-  static const _itemExtent = 76.0;
-  static const _window = 4;
-
-  @override
-  Widget build(BuildContext context) {
-    final title = LocaleKeys.discounts_day_title.tr(
-      namedArgs: {'day': DiscountFormat.day(day.day, DateTime.now())},
-    );
-    return TvDialog(
-      width: 560,
-      icon: MoaiIcons.discounts,
-      title: title,
-      subtitle: LocaleKeys.discounts_day_desc.tr(),
-      content: SizedBox(
-        height: _window * _itemExtent,
-        child: discounts.isEmpty
-            ? Center(
-                child: Text(
-                  LocaleKeys.discounts_none_day.tr(),
-                  style: MoaiText.body(
-                    context,
-                    color: context.scheme.onSurfaceVariant,
-                    fontSize: 14,
-                  ),
-                ),
-              )
-            : TvWindowedList<Discount>(
-                items: discounts,
-                windowSize: _window,
-                itemExtent: _itemExtent,
-                showScrollDots: true,
-                itemBuilder:
-                    (
-                      context,
-                      discount,
-                      focusNode,
-                      local,
-                      global,
-                      onKeyUp,
-                      onKeyDown,
-                    ) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 3),
-                      child: _DiscountRow(
-                        discount: discount,
-                        focusNode: focusNode,
-                        onUp: onKeyUp,
-                        onDown: onKeyDown,
-                      ),
-                    ),
-              ),
-      ),
-    );
-  }
-}
-
-/// Un descuento: porcentaje grande, comercio y condiciones.
-class _DiscountRow extends StatefulWidget {
-  const _DiscountRow({
-    required this.discount,
-    required this.focusNode,
-    required this.onUp,
-    required this.onDown,
-  });
+/// Un descuento con todas sus condiciones: cuánto, dónde, con qué banco y
+/// tarjetas, qué días y hasta cuándo.
+class TvDiscountDetailDialog extends StatefulWidget {
+  const TvDiscountDetailDialog({super.key, required this.discount});
 
   final Discount discount;
-  final FocusNode focusNode;
-  final VoidCallback onUp;
-  final VoidCallback onDown;
+
+  static Future<void> show(BuildContext context, Discount discount) =>
+      showTvGeneralDialog<void>(
+        context: context,
+        barrierLabel: 'DiscountDetail',
+        builder: (_) => TvDiscountDetailDialog(discount: discount),
+      );
 
   @override
-  State<_DiscountRow> createState() => _DiscountRowState();
+  State<TvDiscountDetailDialog> createState() => _TvDiscountDetailDialogState();
 }
 
-class _DiscountRowState extends State<_DiscountRow> {
-  late bool _focused = widget.focusNode.hasFocus;
+class _TvDiscountDetailDialogState extends State<TvDiscountDetailDialog> {
+  final _close = FocusNode(debugLabel: 'discount_detail_close');
+
+  @override
+  void dispose() {
+    _close.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
     final d = widget.discount;
-    final details = [
-      d.bankLabel,
-      DiscountFormat.cap(d),
-      DiscountFormat.cards(d),
+    final province = DiscountsService.instance.province;
+    final rows = <(IconData, String)>[
+      (DiscountFormat.rubroIcon(d.rubro), DiscountFormat.rubro(d.rubro)),
+      if (d.bankLabel.isNotEmpty) (MoaiIcons.discountBanks, d.bankLabel),
+      (MoaiIcons.discounts, DiscountFormat.cap(d)),
+      if (DiscountFormat.cards(d).isNotEmpty)
+        (MoaiIcons.discountBanks, DiscountFormat.cards(d)),
       if (d.installments > 0)
-        LocaleKeys.discounts_installments.tr(
-          namedArgs: {'n': '${d.installments}'},
+        (
+          MoaiIcons.discounts,
+          LocaleKeys.discounts_installments.tr(
+            namedArgs: {'n': '${d.installments}'},
+          ),
         ),
-    ].where((s) => s.trim().isNotEmpty).join('  ·  ');
+      (MoaiIcons.calendarEvents, DiscountFormat.weekdays(d)),
+      if (DiscountFormat.validity(d).isNotEmpty)
+        (MoaiIcons.calendarEvents, DiscountFormat.validity(d)),
+      if (DiscountFormat.where(d).isNotEmpty)
+        (MoaiIcons.discountMerchants, DiscountFormat.where(d)),
+      if (d.mentions(province))
+        (
+          MoaiIcons.discountLocation,
+          LocaleKeys.discounts_in_your_province.tr(
+            namedArgs: {'province': province!},
+          ),
+        ),
+    ];
 
-    return TvPressDetector(
-      focusNode: widget.focusNode,
-      onFocusChange: (f) => setState(() => _focused = f),
-      onUp: widget.onUp,
-      onDown: widget.onDown,
-      child: MoaiGlass(
-        borderRadius: 12,
-        elevated: false,
-        solid: true,
-        focused: _focused,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 64,
-              child: Text(
-                DiscountFormat.headline(d),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: MoaiText.display(
-                  context,
-                  color: scheme.primary,
-                  fontSize: 22,
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return TvDialog(
+      width: 520,
+      icon: DiscountFormat.rubroIcon(d.rubro),
+      title: '${DiscountFormat.headline(d)} · ${d.merchant.trim()}',
+      subtitle: d.benefit,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final (icon, text) in rows)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
                 children: [
-                  Text(
-                    d.merchant,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: MoaiText.body(
-                      context,
-                      color: scheme.onSurface,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  Icon(
+                    icon,
+                    size: MoaiIconSizes.sm,
+                    color: context.scheme.primary,
                   ),
-                  Text(
-                    details,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: MoaiText.body(
-                      context,
-                      color: scheme.onSurfaceVariant,
-                      fontSize: 11.5,
-                      height: 1.25,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      text,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: MoaiText.body(
+                        context,
+                        color: context.scheme.onSurface,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          const SizedBox(height: 8),
+          Text(
+            LocaleKeys.discounts_day_desc.tr(),
+            style: MoaiText.body(
+              context,
+              color: context.scheme.onSurfaceVariant,
+              fontSize: 12,
+            ),
+          ),
+        ],
       ),
+      actions: [
+        TvDialogButton(
+          label: LocaleKeys.common_close.tr(),
+          focusNode: _close,
+          autofocus: true,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
     );
   }
 }

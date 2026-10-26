@@ -2,11 +2,7 @@ import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/services/calendar/argentina_time.dart';
 import 'package:moai3/utils/moai_formats.dart';
 
-enum CalendarEventStatus {
-  upcoming,
-  live,
-  finished,
-}
+enum CalendarEventStatus { upcoming, live, finished }
 
 /// Representa un evento o partido programado en el calendario deportivo.
 class CalendarEvent {
@@ -38,7 +34,10 @@ class CalendarEvent {
     LocaleKeys.f1_type_p3,
     LocaleKeys.f1_type_practices,
   };
-  static const _sprintSessions = {LocaleKeys.f1_type_sprint, LocaleKeys.f1_type_sprint_shootout};
+  static const _sprintSessions = {
+    LocaleKeys.f1_type_sprint,
+    LocaleKeys.f1_type_sprint_shootout,
+  };
 
   /// Retorna la duración estimada del evento según el deporte y tipo de sesión.
   ///
@@ -68,7 +67,9 @@ class CalendarEvent {
     }
 
     // 2. NFL / Fútbol Americano
-    if (sub.contains('nfl') || sub.contains('football') || sub.contains('american')) {
+    if (sub.contains('nfl') ||
+        sub.contains('football') ||
+        sub.contains('american')) {
       // Un partido de NFL dura típicamente entre 3h y 3h30 (reloj parado, pausas)
       return const Duration(minutes: 210);
     }

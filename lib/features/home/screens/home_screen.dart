@@ -12,6 +12,9 @@ import 'package:moai3/features/home/areas/home_area.dart';
 import 'package:moai3/features/home/areas/home_arcade_area.dart';
 import 'package:moai3/features/home/areas/home_calendar_area.dart';
 import 'package:moai3/features/home/areas/home_dashboard_area.dart';
+import 'package:moai3/features/home/areas/home_discounts_area.dart';
+import 'package:moai3/models/discount_models.dart';
+import 'package:moai3/services/discounts_service.dart';
 import 'package:moai3/features/home/areas/home_movies_area.dart';
 import 'package:moai3/features/home/areas/home_settings_area.dart';
 import 'package:moai3/features/home/areas/home_tv_area.dart';
@@ -36,6 +39,7 @@ import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/featured_movies_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/state/watch_party_provider.dart';
+import 'package:moai3/state/weather_provider.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/widgets/tv_common/moai_ambient_background.dart';
@@ -73,6 +77,9 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Panel abierto de Agenda y Ajustes, para reabrirlo al volver.
   int _calendarPanelIndex = 0;
   int _settingsPanelIndex = SettingsPanelLayout.configTvPanelIndex;
+  int _discountsPanelIndex = 0;
+  int _discountsDayIndex = 0;
+  WeatherProvider? _weatherForDiscounts;
 
   /// Moai arranca siempre en el Inicio.
   HomeSection _section = HomeSection.home;
@@ -83,6 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
   CalendarEvent? _currentSnackEvent;
   Timer? _modalClosedCooldownTimer;
   late final PresenceCoordinator _presence;
+  late final AppLifecycleListener _lifecycle;
 
   /// Navegación de TV que se conserva al ir a otras secciones y volver.
   final _tvSession = TvBrowserSession();
@@ -99,6 +107,13 @@ class _HomeScreenState extends State<HomeScreen> {
       onBlocked: (reason) {
         if (mounted) context.go('/blocked', extra: reason);
       },
+    );
+    _weatherForDiscounts = context.read<WeatherProvider?>()
+      ?..addListener(_syncDiscountsProvince);
+    _syncDiscountsProvince();
+    _lifecycle = AppLifecycleListener(
+      onHide: _onAppHidden,
+      onShow: _onAppShown,
     );
     ModalRouteTracker.instance.addListener(_onModalTrackerChanged);
     ArcadePluginService.instance.addListener(_onArcadePluginChanged);
@@ -158,6 +173,20 @@ class _HomeScreenState extends State<HomeScreen> {
             duration: const Duration(seconds: 25),
           );
         });
+  }
+
+  /// Se fue a otra app o entrada del TV: offline para los amigos y sin
+  /// pedidos de fondo (amigos, latido, clima) hasta volver.
+  void _onAppHidden() {
+    _presence.setMode(PresenceMode.offline);
+    context.read<WatchPartyProvider>().pause();
+    context.read<WeatherProvider?>()?.pause();
+  }
+
+  void _onAppShown() {
+    context.read<WatchPartyProvider>().resume();
+    context.read<WeatherProvider?>()?.resume();
+    _updatePresenceForSection(_section);
   }
 
   void _updatePresenceForSection(HomeSection index) {
@@ -313,8 +342,30 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  /// Abre Descuentos desde la tarjeta del Inicio: en el día [dayIndex] de
+  /// la semana o, con [settings], en Configurar.
+  void _openDiscounts({int dayIndex = 0, bool settings = false}) {
+    _discountsPanelIndex = settings ? 1 : 0;
+    _discountsDayIndex = dayIndex;
+    if (_section == HomeSection.discounts) setState(() {});
+    _switchSection(HomeSection.discounts);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _railFocusNode.unfocus();
+      _areaKeys[HomeSection.discounts]?.currentState?.requestEntryFocus();
+    });
+  }
+
+  /// La provincia del clima filtra las promos que nombran otra.
+  void _syncDiscountsProvince() {
+    final weather = context.read<WeatherProvider?>()?.weather;
+    DiscountsService.instance.province = provinceOf(weather?.region);
+  }
+
   @override
   void dispose() {
+    _weatherForDiscounts?.removeListener(_syncDiscountsProvince);
+    _lifecycle.dispose();
     _presence.dispose();
     _tvSession.dispose();
     ModalRouteTracker.instance.removeListener(_onModalTrackerChanged);
@@ -361,6 +412,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onExitLeft: _focusRail,
         onTuneChannel: _tuneFromEvent,
         onOpenSubscriptions: _openCalendarSubscriptions,
+        onOpenDiscounts: _openDiscounts,
         romManager: _romManager,
       ),
       HomeSection.settings => HomeSettingsArea(
@@ -373,6 +425,13 @@ class _HomeScreenState extends State<HomeScreen> {
         key: _areaKeys[HomeSection.arcade],
         onExitLeft: _focusRail,
         romManager: _romManager,
+      ),
+      HomeSection.discounts => HomeDiscountsArea(
+        key: _areaKeys[HomeSection.discounts],
+        initialPanelIndex: _discountsPanelIndex,
+        initialDayIndex: _discountsDayIndex,
+        onPanelIndexChanged: (i) => _discountsPanelIndex = i,
+        onExitLeft: _focusRail,
       ),
       HomeSection.calendar => HomeCalendarArea(
         key: _areaKeys[HomeSection.calendar],

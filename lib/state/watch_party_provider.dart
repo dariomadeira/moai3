@@ -32,6 +32,9 @@ class WatchPartyProvider extends ChangeNotifier {
   RealtimeChannel? _presenceRealtimeChannel;
   bool _isDisposed = false;
 
+  /// En segundo plano (ver [pause]).
+  bool _paused = false;
+
   WatchPartyProvider({
     required this.preferences,
     required this.service,
@@ -429,12 +432,36 @@ class WatchPartyProvider extends ChangeNotifier {
 
   void _startPresenceTimer() {
     _presenceRefreshTimer?.cancel();
-    // Consultar presencia cada 15 segundos mientras la app esté abierta y la función activa
-    _presenceRefreshTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+    // Los cambios de amigos llegan por Realtime; el sondeo sólo cubre lo que
+    // se pierda si se corta. Cada 60 s mientras la app está a la vista.
+    _presenceRefreshTimer = Timer.periodic(const Duration(seconds: 60), (_) {
       if (_enabled) {
         loadFriends();
       }
     });
+  }
+
+  /// La app pasó a segundo plano: sin sondeo ni Realtime hasta [resume]
+  /// (para los amigos queda desconectada, SPEC-22 RB-03).
+  void pause() {
+    if (_paused) return;
+    _paused = true;
+    _presenceRefreshTimer?.cancel();
+    _presenceRefreshTimer = null;
+    _unsubscribeFromDevicesRealtime();
+    _unsubscribeFromPresenceRealtime();
+  }
+
+  /// Volvió a primer plano: retoma lo que [pause] cortó y pone al día la
+  /// lista de amigos.
+  void resume() {
+    if (!_paused) return;
+    _paused = false;
+    if (!_enabled) return;
+    unawaited(loadFriends());
+    _startPresenceTimer();
+    _subscribeToDevicesRealtime();
+    _subscribeToPresenceRealtime();
   }
 
   void _subscribeToDevicesRealtime() {

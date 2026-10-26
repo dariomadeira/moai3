@@ -44,16 +44,16 @@ class _CalendarEventGridCard extends StatelessWidget {
 
     final Widget? chip;
     if (isFinished) {
-      chip = _StatusChip(label: LocaleKeys.calendar_status_finished.tr());
+      chip = TvWeekStatusChip(label: LocaleKeys.calendar_status_finished.tr());
     } else if (isLive) {
-      chip = _StatusChip(
+      chip = TvWeekStatusChip(
         label: LocaleKeys.calendar_status_live.tr(),
-        style: _StatusChipStyle.live,
+        style: TvWeekChipStyle.live,
       );
     } else if (isSoon) {
-      chip = _StatusChip(
+      chip = TvWeekStatusChip(
         label: LocaleKeys.calendar_status_upcoming_short.tr(),
-        style: _StatusChipStyle.highlighted,
+        style: TvWeekChipStyle.highlighted,
       );
     } else {
       chip = null;
@@ -120,81 +120,6 @@ class _CalendarEventGridCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-enum _StatusChipStyle { neutral, highlighted, live }
-
-/// Micro-etiqueta de estado de la tarjeta (FIN / PRONTO / EN VIVO).
-class _StatusChip extends StatelessWidget {
-  final String label;
-  final _StatusChipStyle style;
-
-  const _StatusChip({
-    required this.label,
-    this.style = _StatusChipStyle.neutral,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    final isLive = style == _StatusChipStyle.live;
-
-    final decoration = switch (style) {
-      _StatusChipStyle.neutral => moaiGlassChipDecoration(scheme, radius: 5),
-      _StatusChipStyle.highlighted => moaiGlassChipDecoration(
-        scheme,
-        radius: 5,
-        highlighted: true,
-      ),
-      // En vivo: pleno del acento, lo único sólido de la grilla.
-      _StatusChipStyle.live => BoxDecoration(
-        borderRadius: BorderRadius.circular(5),
-        border: Border.all(color: Colors.transparent),
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color.lerp(scheme.primary, Colors.white, 0.18)!,
-            scheme.primary,
-          ],
-        ),
-      ),
-    };
-
-    final color = switch (style) {
-      _StatusChipStyle.neutral => scheme.onSurfaceVariant,
-      _StatusChipStyle.highlighted => scheme.primary,
-      _StatusChipStyle.live => scheme.onPrimary,
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-      decoration: decoration,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (isLive) ...[
-            Container(
-              width: 5,
-              height: 5,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 3),
-          ],
-          Text(
-            label,
-            style: MoaiText.body(
-              context,
-              fontSize: 8,
-              fontWeight: FontWeight.w800,
-              color: color,
-              letterSpacing: 0.4,
-            ),
-          ),
-        ],
       ),
     );
   }
