@@ -80,6 +80,7 @@ class CalendarProvider extends ChangeNotifier {
   Timer? _statusTicker;
   int _lastKnownTodayCount = -1;
   int _lastKnownDay = -1;
+  String _lastKnownTodayStatus = '';
   final _liveDetector = LiveEventDetector();
   int _snackDurationSeconds = defaultSnackDurationSeconds;
   final StreamController<List<CalendarEvent>> _liveEventsController =
@@ -123,23 +124,41 @@ class CalendarProvider extends ChangeNotifier {
     final now = ArgentinaTime.now();
     _lastKnownDay = now.day;
     _lastKnownTodayCount = todayEventCount;
+    _lastKnownTodayStatus = todayStatusKey();
 
+    // Cada minuto: si cambió el día, la cantidad de eventos de hoy o el
+    // estado de alguno (empezó o terminó), avisa para que las pantallas
+    // (p. ej. la tarjeta del Inicio) se actualicen solas.
     _statusTicker = Timer.periodic(const Duration(seconds: 60), (_) {
       final currentNow = ArgentinaTime.now();
       final currentCount = todayEventCount;
+      final currentStatus = todayStatusKey();
 
       final dayChanged = currentNow.day != _lastKnownDay;
       final countChanged = currentCount != _lastKnownTodayCount;
+      final statusChanged = currentStatus != _lastKnownTodayStatus;
 
       _checkNewLiveEvents();
 
-      if (dayChanged || countChanged) {
+      // Día nuevo: los eventos se bajan al arrancar; con el TV prendido días
+      // hay que volver a pedirlos para enterarse de los nuevos.
+      if (dayChanged) unawaited(refreshEvents(force: true));
+
+      if (dayChanged || countChanged || statusChanged) {
         _lastKnownDay = currentNow.day;
         _lastKnownTodayCount = currentCount;
+        _lastKnownTodayStatus = currentStatus;
         _notify();
       }
     });
   }
+
+  /// Estado de los eventos de hoy (por empezar, en curso, terminado), en
+  /// orden: cambia cuando alguno empieza o termina.
+  @visibleForTesting
+  String todayStatusKey() => getEventsForDay(
+    ArgentinaTime.now(),
+  ).map((e) => e.status.index).join();
 
   /// Evalúa si hay eventos recién iniciados en las suscripciones activas y los emite agrupados.
   @visibleForTesting

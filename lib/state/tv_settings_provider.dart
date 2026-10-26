@@ -31,6 +31,48 @@ enum CatalogUpdateFrequency {
   }
 }
 
+/// Idioma del audio para películas y series. Los streams traen varios audios
+/// juntos (p. ej. "spa,spa,eng"); se elige uno para todo en vez de cambiarlo
+/// en cada película.
+enum MovieAudioLanguage {
+  spanish('spanish'),
+  english('english'),
+
+  /// El que no es español (el de la filmación); si sólo hay español, ése.
+  original('original');
+
+  const MovieAudioLanguage(this.storageValue);
+  final String storageValue;
+
+  static const MovieAudioLanguage defaultValue = MovieAudioLanguage.spanish;
+
+  static MovieAudioLanguage fromStorage(String? raw) {
+    for (final value in MovieAudioLanguage.values) {
+      if (value.storageValue == raw) return value;
+    }
+    return defaultValue;
+  }
+}
+
+/// Subtítulos de películas y series: uno para todo, como el audio.
+enum MovieSubtitleLanguage {
+  off('off'),
+  spanish('spanish'),
+  english('english');
+
+  const MovieSubtitleLanguage(this.storageValue);
+  final String storageValue;
+
+  static const MovieSubtitleLanguage defaultValue = MovieSubtitleLanguage.off;
+
+  static MovieSubtitleLanguage fromStorage(String? raw) {
+    for (final value in MovieSubtitleLanguage.values) {
+      if (value.storageValue == raw) return value;
+    }
+    return defaultValue;
+  }
+}
+
 /// Provider responsable de los ajustes físicos de la TV (calibración overscan y logs en pantalla).
 class TvSettingsProvider extends ChangeNotifier {
   static const String _showTvLogKey = 'show_tv_log';
@@ -40,8 +82,11 @@ class TvSettingsProvider extends ChangeNotifier {
   static const String _hasOverlapConfigKey = 'has_overlap_config';
   static const String _parentalPinKey = 'parental_pin';
   static const String _uiSoundsDisabledKey = 'ui_sounds_disabled';
+  static const String _showHomeTrailersKey = 'home_show_trailers';
   static const String _catalogUpdateFrequencyKey = 'catalog_update_frequency';
   static const String _startupTvTabKey = 'startup_tv_tab';
+  static const String _movieAudioLanguageKey = 'movie_audio_language';
+  static const String _movieSubtitleLanguageKey = 'movie_subtitle_language';
 
   static const MethodChannel _deviceChannel =
       PlatformChannels.device;
@@ -54,8 +99,11 @@ class TvSettingsProvider extends ChangeNotifier {
   late double _overlapPaddingY;
   late bool _hasOverlapConfig;
   late bool _uiSoundsDisabled;
+  late bool _showHomeTrailers;
   late CatalogUpdateFrequency _catalogUpdateFrequency;
   late TvTab _startupTvTab;
+  late MovieAudioLanguage _movieAudioLanguage;
+  late MovieSubtitleLanguage _movieSubtitleLanguage;
 
   String? _parentalPin;
   bool _isAdultUnlocked = false;
@@ -72,11 +120,21 @@ class TvSettingsProvider extends ChangeNotifier {
     _uiSoundsDisabled = _prefs.readPreferenceBool(
       _uiSoundsDisabledKey,
     );
+    _showHomeTrailers = _prefs.readPreferenceBool(
+      _showHomeTrailersKey,
+      defaultValue: true,
+    );
     _catalogUpdateFrequency = CatalogUpdateFrequency.fromStorage(
       _prefs.readOptionalString(_catalogUpdateFrequencyKey),
     );
     _startupTvTab = TvTab.fromStorage(
       _prefs.readOptionalString(_startupTvTabKey),
+    );
+    _movieAudioLanguage = MovieAudioLanguage.fromStorage(
+      _prefs.readOptionalString(_movieAudioLanguageKey),
+    );
+    _movieSubtitleLanguage = MovieSubtitleLanguage.fromStorage(
+      _prefs.readOptionalString(_movieSubtitleLanguageKey),
     );
     _parentalPin = _prefs.readOptionalString(_parentalPinKey);
     _isAdultUnlocked = false; // Siempre bloqueado al iniciar
@@ -93,8 +151,16 @@ class TvSettingsProvider extends ChangeNotifier {
   /// Si es true, no se reproducen los WAV de clicks D-pad de la interfaz.
   bool get uiSoundsDisabled => _uiSoundsDisabled;
 
+  /// La tarjeta "Adelantos" del Inicio (Ajustes › Películas y series). Se
+  /// ve salvo que se apague.
+  bool get showHomeTrailers => _showHomeTrailers;
+
   /// Cada cuánto el arranque intenta sync cuando la actualización está activa.
   CatalogUpdateFrequency get catalogUpdateFrequency => _catalogUpdateFrequency;
+
+  MovieAudioLanguage get movieAudioLanguage => _movieAudioLanguage;
+
+  MovieSubtitleLanguage get movieSubtitleLanguage => _movieSubtitleLanguage;
 
   /// Decide si el arranque debe intentar VPN+sync según fecha y frecuencia.
   ///
@@ -171,6 +237,13 @@ class TvSettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setShowHomeTrailers(bool value) async {
+    if (_showHomeTrailers == value) return;
+    _showHomeTrailers = value;
+    await _prefs.saveBool(_showHomeTrailersKey, value);
+    notifyListeners();
+  }
+
   Future<void> setUiSoundsDisabled(bool value) async {
     if (_uiSoundsDisabled == value) return;
     _uiSoundsDisabled = value;
@@ -183,6 +256,20 @@ class TvSettingsProvider extends ChangeNotifier {
     if (_catalogUpdateFrequency == value) return;
     _catalogUpdateFrequency = value;
     await _prefs.saveString(_catalogUpdateFrequencyKey, value.storageValue);
+    notifyListeners();
+  }
+
+  Future<void> setMovieAudioLanguage(MovieAudioLanguage value) async {
+    if (_movieAudioLanguage == value) return;
+    _movieAudioLanguage = value;
+    await _prefs.saveString(_movieAudioLanguageKey, value.storageValue);
+    notifyListeners();
+  }
+
+  Future<void> setMovieSubtitleLanguage(MovieSubtitleLanguage value) async {
+    if (_movieSubtitleLanguage == value) return;
+    _movieSubtitleLanguage = value;
+    await _prefs.saveString(_movieSubtitleLanguageKey, value.storageValue);
     notifyListeners();
   }
 

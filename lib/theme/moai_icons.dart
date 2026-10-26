@@ -813,10 +813,17 @@ abstract final class MoaiIcons {
   /// Pestaña del detalle de la película.
   static const vodPoster = ReiconIcons.clapperboardOpen;
 
-  /// Favorito (no marcado).
-  static const vodRating = ReiconIcons.star;
+  /// "Interesantes": el mismo en la tarjeta del Inicio, sus opciones y el
+  /// botón del detalle (marcada o no).
+  static const vodWatchlist = ReiconIcons.ticket;
 
-  /// Favorito (marcado).
+  /// Descuentos en comercios (tarjeta del Inicio).
+  static const discounts = ReiconIcons.percentTag;
+
+  /// Bancos y billeteras del usuario, para los descuentos.
+  static const discountBanks = ReiconIcons.wallet3;
+
+  /// Puntaje de la película.
   static const vodRatingFilled = ReiconFilledIcons.star;
 
   /// Fecha de estreno.
@@ -834,11 +841,11 @@ abstract final class MoaiIcons {
   /// Continuar viendo.
   static const vodResume = ReiconIcons.history;
 
-  /// Adelantar 10 s.
-  static const vodSkipForward = ReiconIcons.forward10S;
+  /// Buscar hacia adelante (el salto puede ser de cualquier tamaño).
+  static const vodSkipForward = ReiconIcons.fastForward;
 
-  /// Retroceder 10 s.
-  static const vodSkipBack = ReiconIcons.rewind10S;
+  /// Buscar hacia atrás.
+  static const vodSkipBack = ReiconIcons.rewind;
 
   /// Pista de audio.
   static const vodAudio = ReiconIcons.volumeUp;

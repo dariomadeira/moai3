@@ -60,7 +60,34 @@ void main() {
     });
   });
 
+  group('TvSettingsProvider - Idioma del audio', () {
+    test('por defecto español y se recuerda el elegido', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await AppPreferences.init();
+      final provider = TvSettingsProvider(prefs);
+      expect(provider.movieAudioLanguage, MovieAudioLanguage.spanish);
+
+      await provider.setMovieAudioLanguage(MovieAudioLanguage.original);
+      expect(
+        TvSettingsProvider(prefs).movieAudioLanguage,
+        MovieAudioLanguage.original,
+      );
+    });
+  });
+
   group('TvSettingsProvider - Catalog Update Frequency', () {
+    test('la tarjeta de adelantos se ve por defecto y se puede apagar', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await AppPreferences.init();
+      final settings = TvSettingsProvider(prefs);
+      expect(settings.showHomeTrailers, isTrue);
+
+      await settings.setShowHomeTrailers(false);
+      expect(settings.showHomeTrailers, isFalse);
+      // Se recuerda al volver a abrir.
+      expect(TvSettingsProvider(prefs).showHomeTrailers, isFalse);
+    });
+
     test('defaults to weekly update frequency on clean install', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await AppPreferences.init();

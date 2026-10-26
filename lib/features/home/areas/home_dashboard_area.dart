@@ -10,23 +10,43 @@ import 'package:moai3/features/games/arcade_launcher.dart';
 import 'package:moai3/features/games/screens/arcade_games_screen.dart';
 import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
 import 'package:moai3/features/home/widgets/home_arcade_card.dart';
+import 'package:moai3/features/home/widgets/home_clock.dart';
+import 'package:moai3/features/home/widgets/home_continue_card.dart';
+import 'package:moai3/features/home/widgets/home_discounts_card.dart';
 import 'package:moai3/features/home/widgets/home_events_card.dart';
+import 'package:moai3/features/home/widgets/home_movie_list_card.dart';
+// EN PAUSA (cielo del momento): import 'package:moai3/features/home/widgets/home_sky.dart';
+import 'package:moai3/features/home/widgets/home_trailers_card.dart';
+import 'package:moai3/features/home/widgets/home_watchlist_card.dart';
 import 'package:moai3/features/home/widgets/home_weather_card.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/models/calendar_event.dart';
+import 'package:moai3/features/movies/movie_playback.dart';
+import 'package:moai3/features/movies/screens/movie_detail_screen.dart';
 import 'package:moai3/models/channel.dart';
+import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/services/arcade_plugin_service.dart';
 import 'package:moai3/services/calendar/argentina_time.dart';
+import 'package:moai3/services/movie_library.dart';
+import 'package:moai3/services/movie_progress_service.dart';
+import 'package:moai3/services/movie_watchlist_service.dart';
 import 'package:moai3/state/calendar_provider.dart';
+import 'package:moai3/state/featured_movies_provider.dart';
+import 'package:moai3/state/tv_settings_provider.dart';
+import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/state/weather_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
+import 'package:moai3/widgets/tv_common/tv_press_detector.dart';
 import 'package:provider/provider.dart';
+
+part 'home_dashboard_movies.dart';
 
 /// Área de Inicio (Dashboard).
 /// Panel único a ancho completo con estilo de acordeón TV.
@@ -54,7 +74,8 @@ class HomeDashboardArea extends StatefulWidget {
   State<HomeDashboardArea> createState() => HomeDashboardAreaState();
 }
 
-class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea> {
+class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
+    with _HomeMovieCards {
   late final _focus = FocusRequester(isMounted: () => mounted);
   final FocusNode _panelFocusNode = FocusNode(
     debugLabel: 'home_dashboard_panel',
@@ -71,8 +92,10 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea> {
   DateTime _now = DateTime.now();
 
   /// Cada widget ocupa el doble que un ítem de Ajustes (70): 132 de card + 8.
-  static const double _itemExtent = 140;
-  static const int _windowSize = 3;
+  /// Siempre se ven 4 tarjetas: cada una ocupa la cuarta parte del lugar
+  /// (en el TV, unos 107 puntos), como mucho [_maxItemExtent].
+  static const int _windowSize = 4;
+  static const double _maxItemExtent = 140;
 
   @override
   void initState() {
@@ -81,17 +104,34 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea> {
     // El widget de Arcade aparece/desaparece con el plugin y la ROM activa.
     ArcadePluginService.instance.addListener(_onArcadeChanged);
     widget.romManager.addListener(_onArcadeChanged);
+    MovieWatchlistService.instance.addListener(_onWatchlistChanged);
+    unawaited(_loadContinue());
+  }
+
+  void _onWatchlistChanged() {
+    if (mounted) setState(() {});
   }
 
   void _onArcadeChanged() {
     if (mounted) setState(() {});
   }
 
-  /// Widgets visibles, en orden. Arcade sólo con el plugin instalado y una
-  /// ROM activa lista para jugar.
-  List<_HomeWidget> get _visibleWidgets => [
+  /// Widgets visibles, en orden. "Seguir viendo", "Interesantes" y
+  /// "Adelantos" sólo si Películas está en el rail ([moviesVisible]); "Seguir
+  /// viendo" y "Adelantos" además si tienen algo. Arcade sólo con el plugin
+  /// instalado y una ROM activa lista para jugar.
+  List<_HomeWidget> _visibleWidgets({
+    required bool moviesVisible,
+    required bool hasTrailers,
+    required bool hasEventsToday,
+  }) => [
     _HomeWidget.weather,
-    _HomeWidget.events,
+    // Sin nada por ver hoy (en curso o por empezar), no ocupa lugar.
+    if (hasEventsToday) _HomeWidget.events,
+    _HomeWidget.discounts,
+    if (moviesVisible && _continue.isNotEmpty) _HomeWidget.continueWatching,
+    if (moviesVisible) _HomeWidget.watchlist,
+    if (moviesVisible && hasTrailers) _HomeWidget.trailers,
     if (ArcadePluginService.instance.isInstalled &&
         widget.romManager.activeRom != null)
       _HomeWidget.arcade,
@@ -126,6 +166,7 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea> {
   void dispose() {
     ArcadePluginService.instance.removeListener(_onArcadeChanged);
     widget.romManager.removeListener(_onArcadeChanged);
+    MovieWatchlistService.instance.removeListener(_onWatchlistChanged);
     _hourTimer?.cancel();
     _panelFocusNode.dispose();
     super.dispose();
@@ -134,6 +175,43 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea> {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
+    // Misma condición que el ítem Películas del rail (login y catálogo).
+    // Eventos de hoy en curso o por empezar: sin ninguno, la tarjeta no se
+    // muestra. Se recalcula cuando el calendario avisa (también cuando un
+    // evento empieza o termina).
+    final hasEventsToday = context.select(
+      (CalendarProvider? c) =>
+          c != null &&
+          c
+              .getEventsForDay(ArgentinaTime.now())
+              .any((e) => e.status != CalendarEventStatus.finished),
+    );
+    // Con amigos conectados la tarjeta de Arcade ofrece "Invitar"; si el
+    // último se desconecta con "Invitar" elegido, vuelve a "Jugar".
+    final canInvite = context.select(
+      (WatchPartyProvider? w) => w?.hasOnlineFriends ?? false,
+    );
+    if (!canInvite && _arcadeAction == HomeArcadeAction.invite) {
+      _arcadeAction = HomeArcadeAction.start;
+    }
+    // Ajustes › Películas y series puede apagar la tarjeta de adelantos.
+    final showTrailers = context.select(
+      (TvSettingsProvider? s) => s?.showHomeTrailers ?? true,
+    );
+    final moviesVisible = context.select(
+      (FeaturedMoviesProvider? p) =>
+          p?.isSectionAvailable(FeaturedMoviesProvider.sectionMovies) ?? false,
+    );
+    final trailers = context.select(
+      (FeaturedMoviesProvider? p) =>
+          p?.trailersFor(FeaturedMoviesProvider.sectionMovies) ??
+          const <MovieItem>[],
+    );
+    // EN PAUSA (cielo del momento, ver más abajo): el cielo seguía al tiempo.
+    // final weatherCode = context.select<WeatherProvider?, int?>(
+    //   (w) => w?.weather?.conditionCode,
+    // );
+    if (moviesVisible) _ensureMoviesLoaded();
 
     return TvAccordionRowPreview(
       panelCount: 1,
@@ -156,93 +234,205 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea> {
           onFocusChange: (hasFocus) {
             if (hasFocus) _listKey.currentState?.ensureVisible(_selectedIndex);
           },
-          child: Container(
-            padding: const EdgeInsets.only(
-              left: 4,
-              right: 12,
-              top: 8,
-              bottom: 8,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TvPanelHeader(title: greetingKey(_now).tr(), subtitle: ''),
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final targetHeight = (_windowSize * _itemExtent).clamp(
-                        0.0,
-                        constraints.maxHeight,
-                      );
-                      return Align(
-                        alignment: Alignment.topCenter,
-                        child: SizedBox(
-                          height: targetHeight,
-                          child: TvWindowedList<_HomeWidget>(
-                            key: _listKey,
-                            // La entrada de foco la decide el área (rail →).
-                            focusOnMount: false,
-                            items: _visibleWidgets,
-                            windowSize: _windowSize,
-                            itemExtent: _itemExtent,
-                            showScrollDots: true,
-                            initialGlobalIndex: _selectedIndex,
-                            onFocusedGlobalIndex: (idx) => _selectedIndex = idx,
-                            itemBuilder:
-                                (
-                                  context,
-                                  item,
-                                  focusNode,
-                                  local,
-                                  global,
-                                  onKeyUp,
-                                  onKeyDown,
-                                ) => Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 4,
-                                  ),
-                                  child: item == _HomeWidget.events
-                                      ? _buildEventsItem(
-                                          focusNode,
-                                          onKeyUp,
-                                          onKeyDown,
-                                        )
-                                      : _HomeWidgetItem(
-                                          focusNode: focusNode,
-                                          onKeyLeft: widget.onExitLeft,
-                                          onKeyUp: onKeyUp,
-                                          onKeyDown: onKeyDown,
-                                          onPress: item == _HomeWidget.arcade
-                                              ? _runArcadeAction
-                                              : null,
-                                          onLeft: item == _HomeWidget.arcade
-                                              ? () => _moveArcadeAction(-1)
-                                              : null,
-                                          onRight: item == _HomeWidget.arcade
-                                              ? () => _moveArcadeAction(1)
-                                              : null,
-                                          builder: (isFocused) =>
-                                              _buildWidget(item, isFocused),
-                                        ),
-                                ),
+          child: Stack(
+            children: [
+              // EN PAUSA: "cielo del momento", la foto del cielo de esta hora
+              // y este tiempo detrás del saludo y las tarjetas
+              // (HomeSkyBackdrop, fotos en assets/images/home_sky/). Se sacó
+              // hasta revisarla: en tema claro las fotos se veían lavadas y
+              // en oscuro "noche con lluvia" y "tormenta" molestaban. Para
+              // volver: descomentar esto, `weatherCode` arriba y la carpeta
+              // en pubspec.yaml.
+              // Positioned.fill(
+              //   child: ClipRRect(
+              //     borderRadius: const BorderRadius.only(
+              //       topRight: Radius.circular(15),
+              //       bottomRight: Radius.circular(15),
+              //     ),
+              //     child: HomeSkyBackdrop(time: _now, weatherCode: weatherCode),
+              //   ),
+              // ),
+              Container(
+                padding: const EdgeInsets.only(
+                  left: 4,
+                  right: 12,
+                  top: 8,
+                  bottom: 8,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Saludo a la izquierda y la hora a la derecha: en el
+                    // Inicio el reloj del rail no se ve.
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TvPanelHeader(
+                            title: greetingKey(_now).tr(),
+                            subtitle: LocaleKeys.home_panel_home_subtitle.tr(),
                           ),
                         ),
-                      );
-                    },
-                  ),
+                        const Padding(
+                          padding: EdgeInsets.only(right: 8),
+                          child: HomeClock(),
+                        ),
+                      ],
+                    ),
+                    Expanded(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final itemExtent =
+                              (constraints.maxHeight / _windowSize).clamp(
+                                0.0,
+                                _maxItemExtent,
+                              );
+                          final targetHeight = _windowSize * itemExtent;
+                          return Align(
+                            alignment: Alignment.topCenter,
+                            child: SizedBox(
+                              height: targetHeight,
+                              child: TvWindowedList<_HomeWidget>(
+                                key: _listKey,
+                                // La entrada de foco la decide el área (rail →).
+                                focusOnMount: false,
+                                items: _visibleWidgets(
+                                  hasEventsToday: hasEventsToday,
+                                  moviesVisible: moviesVisible,
+                                  hasTrailers:
+                                      showTrailers && trailers.isNotEmpty,
+                                ),
+                                windowSize: _windowSize,
+                                itemExtent: itemExtent,
+                                showScrollDots: true,
+                                initialGlobalIndex: _selectedIndex,
+                                onFocusedGlobalIndex: (idx) =>
+                                    _selectedIndex = idx,
+                                itemBuilder:
+                                    (
+                                      context,
+                                      item,
+                                      focusNode,
+                                      local,
+                                      global,
+                                      onKeyUp,
+                                      onKeyDown,
+                                    ) => Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 4,
+                                      ),
+                                      child: _buildItem(
+                                        item,
+                                        focusNode,
+                                        onKeyUp,
+                                        onKeyDown,
+                                        trailers,
+                                      ),
+                                    ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
     );
   }
 
+  /// Cada tarjeta con su manejo de teclas.
+  Widget _buildItem(
+    _HomeWidget item,
+    FocusNode focusNode,
+    VoidCallback onKeyUp,
+    VoidCallback onKeyDown,
+    List<MovieItem> trailers,
+  ) {
+    switch (item) {
+      case _HomeWidget.events:
+        return _buildEventsItem(focusNode, onKeyUp, onKeyDown);
+      case _HomeWidget.discounts:
+        return HomeDiscountsItem(
+          focusNode: focusNode,
+          onKeyLeft: widget.onExitLeft,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+        );
+      case _HomeWidget.continueWatching:
+        return _MovieListItem(
+          focusNode: focusNode,
+          movies: _continue,
+          selectedIndex: _continueIndex,
+          onSelect: (i) => setState(() => _continueIndex = i),
+          onKeyLeft: widget.onExitLeft,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+          onOpen: _resumeMovie,
+          onRemove: _confirmMarkWatched,
+          onClearAll: _confirmMarkAllWatched,
+          buildCard: (selected, focused) => HomeContinueCard(
+            movies: _continue,
+            selectedIndex: selected,
+            isFocused: focused,
+            watched: _continueWatched,
+            loadingId: _resumingId,
+          ),
+        );
+      case _HomeWidget.watchlist:
+        final movies = MovieWatchlistService.instance.movies;
+        return _MovieListItem(
+          focusNode: focusNode,
+          movies: movies,
+          selectedIndex: _watchlistIndex,
+          onSelect: (i) => setState(() => _watchlistIndex = i),
+          onKeyLeft: widget.onExitLeft,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+          onOpen: _openMovie,
+          onRemove: _confirmRemoveFromWatchlist,
+          onClearAll: _confirmClearWatchlist,
+          buildCard: (selected, focused) => HomeWatchlistCard(
+            movies: movies,
+            selectedIndex: selected,
+            isFocused: focused,
+          ),
+        );
+      case _HomeWidget.trailers:
+        return _TrailersItem(
+          focusNode: focusNode,
+          trailers: trailers,
+          selectedIndex: _trailerIndex,
+          onSelect: (i) => setState(() => _trailerIndex = i),
+          onKeyLeft: widget.onExitLeft,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+          onOpen: _openMovie,
+        );
+      case _HomeWidget.weather:
+      case _HomeWidget.arcade:
+        final arcade = item == _HomeWidget.arcade;
+        return _HomeWidgetItem(
+          focusNode: focusNode,
+          onKeyLeft: widget.onExitLeft,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+          onPress: arcade ? _runArcadeAction : null,
+          onLeft: arcade ? () => _moveArcadeAction(-1) : null,
+          onRight: arcade ? () => _moveArcadeAction(1) : null,
+          builder: (isFocused) => _buildWidget(item, isFocused),
+        );
+    }
+  }
+
   Widget _buildWidget(_HomeWidget item, bool isFocused) {
     switch (item) {
       case _HomeWidget.weather:
-        final weather = context.watch<WeatherProvider?>()?.weather;
+        final weatherProvider = context.watch<WeatherProvider?>();
+        final weather = weatherProvider?.weather;
         if (weather == null) {
           return const MoaiGlass(
             borderRadius: HomeWeatherCard.radius,
@@ -254,9 +444,18 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea> {
           weather: weather,
           now: _now,
           isFocused: isFocused,
+          place: weatherProvider?.placeName,
         );
       case _HomeWidget.events:
         // Lo arma [_buildEventsItem], que además maneja ←/→ y OK.
+        return const SizedBox.shrink();
+      case _HomeWidget.continueWatching:
+      case _HomeWidget.watchlist:
+      case _HomeWidget.discounts:
+        // Las arman sus ítems, que además manejan ←/→, OK y mantener OK.
+        return const SizedBox.shrink();
+      case _HomeWidget.trailers:
+        // Lo arma [_TrailersItem], que además maneja ←/→ y OK.
         return const SizedBox.shrink();
       case _HomeWidget.arcade:
         final rom = widget.romManager.activeRom;
@@ -269,21 +468,28 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea> {
           ].where((s) => s.trim().isNotEmpty).join('  ·  '),
           selectedAction: _arcadeAction,
           isFocused: isFocused,
+          canInvite: _canInvite,
         );
     }
   }
 
   /// ←/→ en el widget de Arcade. Devuelve si se movió (← desde la primera
   /// acción sale al rail).
+  /// Hay algún amigo conectado: la tarjeta de Arcade ofrece "Invitar".
+  bool get _canInvite =>
+      context.read<WatchPartyProvider?>()?.hasOnlineFriends ?? false;
+
   bool _moveArcadeAction(int delta) {
     final next = _arcadeAction.index + delta;
-    if (next < 0 || next >= HomeArcadeAction.values.length) return false;
+    // Sin amigos conectados, "Invitar" no está.
+    final count = HomeArcadeAction.values.length - (_canInvite ? 0 : 1);
+    if (next < 0 || next >= count) return false;
     setState(() => _arcadeAction = HomeArcadeAction.values[next]);
     return true;
   }
 
-  /// OK en el widget de Arcade: como "Iniciar juego" y "Seleccionar juego"
-  /// del área de Arcade.
+  /// OK en el widget de Arcade: como "Iniciar juego", "Seleccionar juego" y
+  /// "Jugar juntos" del área de Arcade.
   void _runArcadeAction() {
     switch (_arcadeAction) {
       case HomeArcadeAction.start:
@@ -297,6 +503,8 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea> {
             builder: (_) => ArcadeGamesScreen(romManager: widget.romManager),
           ),
         );
+      case HomeArcadeAction.invite:
+        ArcadeLauncher.playTogether(context, widget.romManager);
     }
   }
 
@@ -356,7 +564,15 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea> {
 }
 
 /// Widgets de información del Inicio, en el orden de la lista.
-enum _HomeWidget { weather, events, arcade }
+enum _HomeWidget {
+  weather,
+  events,
+  discounts,
+  continueWatching,
+  watchlist,
+  trailers,
+  arcade,
+}
 
 /// Ítem enfocable de la lista del Inicio: maneja las flechas y avisa al
 /// [builder] si tiene el foco.

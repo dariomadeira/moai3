@@ -1,16 +1,18 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/features/home/widgets/home_card.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
-/// Acciones del widget de Arcade, en orden (←/→ las recorren).
-enum HomeArcadeAction { start, change }
+/// Acciones del widget de Arcade, en orden (←/→ las recorren). "Invitar"
+/// sólo está con algún amigo conectado.
+enum HomeArcadeAction { start, change, invite }
 
 /// Widget de Arcade del Inicio, en franja como [HomeWeatherCard]: el juego
-/// cargado y dos acciones, encenderlo o cambiarlo. El foco y la acción
-/// elegida los maneja el Inicio.
+/// cargado y sus acciones: jugar, cambiarlo o invitar a un amigo conectado
+/// ([canInvite]). El foco y la acción elegida los maneja el Inicio.
 ///
 /// Sólo se muestra con el Arcade instalado y una ROM activa; eso lo decide
 /// el Inicio.
@@ -21,7 +23,11 @@ class HomeArcadeCard extends StatelessWidget {
     this.details = '',
     this.selectedAction = HomeArcadeAction.start,
     this.isFocused = false,
+    this.canInvite = false,
   });
+
+  /// Hay algún amigo conectado: se ofrece "Invitar".
+  final bool canInvite;
 
   final String romName;
 
@@ -37,12 +43,10 @@ class HomeArcadeCard extends StatelessWidget {
     final scheme = context.scheme;
     final muted = scheme.onSurfaceVariant;
 
-    return MoaiGlass(
-      borderRadius: radius,
-      elevated: false,
-      solid: true,
+    return HomeCard(
+      glow: HomeCardColors.arcade,
       // El foco lo marca la acción elegida, no la tarjeta (como en Eventos).
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
       child: Row(
         children: [
           // Mismo bloque de resumen que Clima y Eventos.
@@ -126,17 +130,27 @@ class HomeArcadeCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 16),
+          // Rótulos cortos: con "Invitar" son tres y el nombre del juego
+          // necesita lugar.
           _ActionButton(
             icon: MoaiIcons.arcadeActionStartGame,
-            label: LocaleKeys.arcade_action_start_game.tr(),
+            label: LocaleKeys.home_arcade_play.tr(),
             focused: isFocused && selectedAction == HomeArcadeAction.start,
           ),
           const SizedBox(width: 10),
           _ActionButton(
             icon: MoaiIcons.arcadeActionSelectGame,
-            label: LocaleKeys.home_arcade_change_game.tr(),
+            label: LocaleKeys.home_arcade_change.tr(),
             focused: isFocused && selectedAction == HomeArcadeAction.change,
           ),
+          if (canInvite) ...[
+            const SizedBox(width: 10),
+            _ActionButton(
+              icon: MoaiIcons.friends,
+              label: LocaleKeys.home_arcade_invite.tr(),
+              focused: isFocused && selectedAction == HomeArcadeAction.invite,
+            ),
+          ],
         ],
       ),
     );

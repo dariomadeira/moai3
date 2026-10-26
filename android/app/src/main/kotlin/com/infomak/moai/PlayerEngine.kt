@@ -8,9 +8,13 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
 import androidx.media3.common.PlaybackException
+import androidx.media3.common.Tracks
+import androidx.media3.common.text.CueGroup
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
@@ -124,6 +128,20 @@ class PlayerEngine {
                 }
                 "getPosition" -> result.success(entries[handle]?.player?.currentPosition ?: 0L)
                 "getDuration" -> result.success(entries[handle]?.player?.duration ?: 0L)
+                "getBufferedPosition" ->
+                    result.success(entries[handle]?.player?.bufferedPosition ?: 0L)
+                // Posición, duración y buffer en una sola llamada: el
+                // reproductor de películas las pide seguido.
+                "getStatus" -> {
+                    val p = entries[handle]?.player
+                    result.success(
+                        mapOf(
+                            "position" to (p?.currentPosition ?: 0L),
+                            "duration" to (p?.duration ?: 0L),
+                            "buffered" to (p?.bufferedPosition ?: 0L),
+                        )
+                    )
+                }
                 "dispose" -> {
                     Log.i(TAG, "dispose handle=$handle")
                     entries.remove(handle)?.dispose()
@@ -222,6 +240,14 @@ class PlayerEntry(
         val title = args["title"] as? String
         val artist = args["artist"] as? String
         val artwork = args["artwork"] as? String
+        // Idioma de audio preferido (p. ej. "spa", "eng"): las películas traen
+        // varios audios en el mismo stream y ExoPlayer elige según esto.
+        val preferredAudio = args["preferredAudioLanguage"] as? String
+        // Subtítulo externo (SRT/VTT) elegido en Flutter; el texto vuelve por
+        // el evento "cues" y lo dibuja Flutter (no hay vista de ExoPlayer).
+        val subtitleUrl = args["subtitleUrl"] as? String
+        val subtitleMime = args["subtitleMimeType"] as? String
+        val subtitleLanguage = args["subtitleLanguage"] as? String
 
         Log.i(PlayerEngine.TAG,
             "buildAndPlay: url=${url.take(160)}${if (url.length > 160) "..." else ""} " +
@@ -253,6 +279,18 @@ class PlayerEntry(
             .setUri(Uri.parse(url))
             .setMediaMetadata(mediaMetadata)
         if (!mimeType.isNullOrEmpty()) mediaBuilder.setMimeType(mimeType)
+        if (!subtitleUrl.isNullOrEmpty()) {
+            mediaBuilder.setSubtitleConfigurations(
+                listOf(
+                    MediaItem.SubtitleConfiguration.Builder(Uri.parse(subtitleUrl))
+                        .setMimeType(subtitleMime ?: MimeTypes.APPLICATION_SUBRIP)
+                        .setLanguage(subtitleLanguage)
+                        .setSelectionFlags(C.SELECTION_FLAG_DEFAULT or C.SELECTION_FLAG_FORCED)
+                        .build()
+                )
+            )
+            Log.i(PlayerEngine.TAG, "subtítulo=$subtitleLanguage ${subtitleUrl.take(90)}")
+        }
 
         val isInlineDrm = !drmUri.isNullOrEmpty() && (drmUri.startsWith("data:") || drmUri.startsWith("inline:"))
 
@@ -291,8 +329,19 @@ class PlayerEntry(
             provider
         }
 
+        // Películas (piden idioma): los TS traen varios audios y ExoPlayer en
+        // HLS toma el primero; el filtro pone primero el pedido.
+        val mediaDsFactory: DataSource.Factory =
+            if (!preferredAudio.isNullOrEmpty()) {
+                DataSource.Factory {
+                    TsAudioSwapDataSource(dsFactory.createDataSource(), preferredAudio)
+                }
+            } else {
+                dsFactory
+            }
+
         val mediaSourceFactory = DefaultMediaSourceFactory(context)
-            .setDataSourceFactory(dsFactory)
+            .setDataSourceFactory(mediaDsFactory)
             .setDrmSessionManagerProvider(drmProvider)
             // En vivo un segmento o playlist puede tardar o fallar una vez sin
             // que el canal esté caído: se reintenta como el player web (6).
@@ -306,6 +355,8 @@ class PlayerEntry(
 
         // Arranque igual de rápido (1 s), pero con hasta 30 s de colchón: con
         // segmentos de 6 s, 5 s de máximo dejaba cortar ante cualquier demora.
+        // Tope de 40 MB pasados los 15 s mínimos: en 720p sobra, y un 4K (unos
+        // 90 MB en 30 s) no se come la RAM del Chromecast.
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
                 15_000,
@@ -313,6 +364,7 @@ class PlayerEntry(
                 1_000,
                 3_000
             )
+            .setTargetBufferBytes(40 * 1024 * 1024)
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
 
@@ -329,6 +381,21 @@ class PlayerEntry(
 
         newPlayer.setVideoSurface(surface)
         newPlayer.setVideoScalingMode(C.VIDEO_SCALING_MODE_SCALE_TO_FIT)
+        if (!preferredAudio.isNullOrEmpty()) {
+            newPlayer.trackSelectionParameters = newPlayer.trackSelectionParameters
+                .buildUpon()
+                .setPreferredAudioLanguage(preferredAudio)
+                .build()
+            Log.i(PlayerEngine.TAG, "audio preferido=$preferredAudio handle=$id")
+        }
+        if (!subtitleUrl.isNullOrEmpty()) {
+            newPlayer.trackSelectionParameters = newPlayer.trackSelectionParameters
+                .buildUpon()
+                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+                .setPreferredTextLanguage(subtitleLanguage)
+                .setSelectUndeterminedTextLanguage(true)
+                .build()
+        }
 
         newPlayer.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
@@ -352,6 +419,38 @@ class PlayerEntry(
                 Log.d(PlayerEngine.TAG, "playing=$playing handle=$id")
                 setKeepScreenOn(playing)
                 emit("playing", playing)
+            }
+
+            override fun onCues(cueGroup: CueGroup) {
+                // Texto del subtítulo de este momento ("" para borrarlo).
+                val text = cueGroup.cues
+                    .mapNotNull { it.text?.toString()?.trim() }
+                    .filter { it.isNotEmpty() }
+                    .joinToString("\n")
+                emit("cues", text)
+            }
+
+            override fun onTracksChanged(tracks: Tracks) {
+                // Audios del stream (idioma, nombre y cuál suena): Flutter
+                // los muestra y quedan en el log para conocer qué trae cada
+                // película.
+                val audios = mutableListOf<Map<String, Any?>>()
+                for (group in tracks.groups) {
+                    if (group.type != C.TRACK_TYPE_AUDIO) continue
+                    for (i in 0 until group.length) {
+                        val format = group.getTrackFormat(i)
+                        audios.add(
+                            mapOf(
+                                "language" to format.language,
+                                "label" to format.label,
+                                "selected" to group.isTrackSelected(i),
+                            )
+                        )
+                    }
+                }
+                if (audios.isEmpty()) return
+                Log.i(PlayerEngine.TAG, "audios=$audios handle=$id")
+                emit("audioTracks", audios)
             }
 
             override fun onRenderedFirstFrame() {
@@ -408,8 +507,8 @@ class PlayerEntry(
     }
 
     private fun appContext(): Context {
-        // El contexto de la Activity es suficiente para ExoPlayer.
-        return FlutterActivityHolder.current
+        // El de la aplicación: el reproductor no retiene la Activity.
+        return FlutterActivityHolder.current?.applicationContext
             ?: throw IllegalStateException("Sin contexto de Activity")
     }
 

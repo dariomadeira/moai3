@@ -35,8 +35,13 @@ void main() {
   });
 
   test('no hay claves sin uso', () {
+    // dart format puede partir `LocaleKeys\n    .clave` en dos líneas.
+    final used = RegExp(r'LocaleKeys\s*\.\s*(\w+)')
+        .allMatches(allCode)
+        .map((m) => m[1]!)
+        .toSet();
     final unused = translations
-        .where((k) => !allCode.contains('LocaleKeys.$k'))
+        .where((k) => !used.contains(k))
         .toList()
       ..sort();
     expect(unused, isEmpty);

@@ -2,19 +2,17 @@ import 'package:moai3/platform/platform_channels.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:pointycastle/block/desede_engine.dart';
-import 'package:pointycastle/block/modes/ecb.dart';
-import 'package:pointycastle/digests/md5.dart';
-import 'package:pointycastle/padded_block_cipher/padded_block_cipher_impl.dart';
-import 'package:pointycastle/paddings/pkcs7.dart';
-import 'package:pointycastle/pointycastle.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/constants.dart';
 import '../models/movie_models.dart';
+import 'moiamov_catalog_store.dart';
+import 'moiamov_crypto.dart';
 import 'titan_ranger_service.dart';
+import 'titan_vod_preparer.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 
@@ -81,11 +79,41 @@ class MoiamovApiService {
   /// Cierra las descargas en curso para que el arranque no siga esperando.
   void cancelActiveRequests() {
     _syncCancelled = true;
+    _vodHttp = null;
     for (final client in _liveClients.toList()) {
       try {
         client.close(force: true);
       } catch (_) {}
     }
+  }
+
+  /// Servidores a los que ya se les aceptó un certificado no válido.
+  static final Set<String> _badCertHosts = {};
+
+  /// Acepta un certificado no válido del portal (algunos servidores lo
+  /// tienen vencido o autofirmado) y lo deja una vez en el log por servidor:
+  /// así se sabe cuáles lo necesitan para limitarlo a esos.
+  static bool _acceptPortalCert(X509Certificate cert, String host, int port) {
+    if (_badCertHosts.add(host)) {
+      logLine('⚠️ Certificado no válido aceptado: $host (${cert.issuer})');
+    }
+    return true;
+  }
+
+  HttpClient? _vodHttp;
+
+  /// Cliente de los pedidos de reproducción, compartido para no negociar TLS
+  /// en cada uno. Las conexiones ociosas se cierran a los 20 s; cancelar las
+  /// descargas lo cierra y el próximo pedido abre otro.
+  HttpClient get _vodClient {
+    final existing = _vodHttp;
+    if (existing != null) return existing;
+    final client = HttpClient()
+      ..badCertificateCallback = _acceptPortalCert
+      ..connectionTimeout = const Duration(seconds: 14)
+      ..idleTimeout = const Duration(seconds: 20);
+    _trackClient(client);
+    return _vodHttp = client;
   }
 
   void _trackClient(HttpClient client) {
@@ -99,87 +127,9 @@ class MoiamovApiService {
     } catch (_) {}
   }
 
-  static Uint8List _customBase64Decode(String str) {
-    const pem =
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-    final pemMap = List<int>.filled(256, -1);
-    for (int i = 0; i < pem.length; i++) {
-      pemMap[pem.codeUnitAt(i)] = i;
-    }
-
-    final bytes = latin1.encode(str);
-    final out = <int>[];
-    int idx = 0;
-    while (idx < bytes.length) {
-      final buf = <int>[];
-      while (idx < bytes.length && buf.length < 4) {
-        final b = bytes[idx++];
-        if (b != 10 && b != 13) {
-          buf.add(b);
-        }
-      }
-      if (buf.length == 4) {
-        final b0 = pemMap[buf[0]];
-        final b1 = pemMap[buf[1]];
-        final b2 = pemMap[buf[2]];
-        final b3 = pemMap[buf[3]];
-        if (buf[2] == 61) {
-          out.add(((b0 << 2) & 0xFC) | ((b1 >> 4) & 0x03));
-        } else if (buf[3] == 61) {
-          out.add(((b0 << 2) & 0xFC) | ((b1 >> 4) & 0x03));
-          out.add(((b1 << 4) & 0xF0) | ((b2 >> 2) & 0x0F));
-        } else {
-          out.add(((b0 << 2) & 0xFC) | ((b1 >> 4) & 0x03));
-          out.add(((b1 << 4) & 0xF0) | ((b2 >> 2) & 0x0F));
-          out.add(((b2 << 6) & 0xC0) | (b3 & 0x3F));
-        }
-      }
-    }
-    return Uint8List.fromList(out);
-  }
-
-  static String _toHexString(String str) {
-    final sb = StringBuffer();
-    for (int i = 0; i < str.length; i++) {
-      sb.write(str.codeUnitAt(i).toRadixString(16));
-    }
-    return sb.toString();
-  }
-
-  static String _fromHexString(String hex) {
-    final sb = StringBuffer();
-    for (int i = 0; i < hex.length; i += 2) {
-      final str = hex.substring(i, i + 2);
-      sb.writeCharCode(int.parse(str, radix: 16));
-    }
-    return sb.toString();
-  }
-
-  /// Descifra cadenas o documentos cifrados con Triple DES (ECB + PKCS7)
-  static String decryptDocument(String hexData, {String? key}) {
-    key ??= localDocumentKey;
-    final base64Str = _fromHexString(hexData);
-    var keyBytes = _customBase64Decode(key);
-    if (keyBytes.length > 24) {
-      keyBytes = Uint8List.fromList(keyBytes.sublist(0, 24));
-    }
-
-    final cipher = PaddedBlockCipherImpl(
-      PKCS7Padding(),
-      ECBBlockCipher(DESedeEngine()),
-    );
-    cipher.init(
-      false,
-      PaddedBlockCipherParameters<CipherParameters, CipherParameters>(
-        KeyParameter(keyBytes),
-        null,
-      ),
-    );
-
-    final inputBytes = _customBase64Decode(base64Str);
-    final decryptedBytes = cipher.process(inputBytes);
-    return utf8.decode(decryptedBytes, allowMalformed: true);
-  }
+  /// Descifra cadenas o documentos cifrados con Triple DES (ECB + PKCS7).
+  static String decryptDocument(String hexData, {String? key}) =>
+      MoiamovCrypto.decrypt(hexData, key ?? localDocumentKey);
 
   /// Cifra el payload en texto plano con Triple DES (ECB + PKCS7) y lo convierte a Hex
   /// replicando exactamente fc.b.b de la app oficial.
@@ -204,29 +154,7 @@ class MoiamovApiService {
     mergedMap.putIfAbsent('drmId', () => '');
     mergedMap.putIfAbsent('sdkVer', () => 34);
 
-    final plainJson = jsonEncode(mergedMap);
-
-    var keyBytes = _customBase64Decode(portalKey);
-    if (keyBytes.length > 24) {
-      keyBytes = Uint8List.fromList(keyBytes.sublist(0, 24));
-    }
-
-    final cipher = PaddedBlockCipherImpl(
-      PKCS7Padding(),
-      ECBBlockCipher(DESedeEngine()),
-    );
-    cipher.init(
-      true,
-      PaddedBlockCipherParameters<CipherParameters, CipherParameters>(
-        KeyParameter(keyBytes),
-        null,
-      ),
-    );
-
-    final inputBytes = utf8.encode(plainJson);
-    final encryptedBytes = cipher.process(Uint8List.fromList(inputBytes));
-    final base64Enc = base64.encode(encryptedBytes);
-    return _toHexString(base64Enc);
+    return MoiamovCrypto.encrypt(jsonEncode(mergedMap), portalKey);
   }
 
   String _cleanUrl(String rawUrl) {
@@ -276,6 +204,7 @@ class MoiamovApiService {
       final resp = await req.close().timeout(timeout);
       final body = await resp.transform(utf8.decoder).join().timeout(timeout);
       if (resp.statusCode != 200) {
+        _portalRejections++;
         logLine('⚠️ HTTP ${resp.statusCode} en $url');
         return null;
       }
@@ -372,6 +301,7 @@ class MoiamovApiService {
     final decoded = jsonDecode(body);
     if (decoded is! Map<String, dynamic>) return null;
     if (decoded['returnCode']?.toString() != '0') {
+      _portalRejections++;
       logLine(
         'snToken rechazado: ${decoded['returnCode']} (${decoded['errorMessage']})',
       );
@@ -395,38 +325,11 @@ class MoiamovApiService {
     return <String, dynamic>{...data, '_token': token};
   }
 
-  /// MD5 en hex minúscula (replica AbstractC5097i.m20666a del APK).
-  static String _md5Hex(String input) {
-    final digest = MD5Digest();
-    final bytes = digest.process(Uint8List.fromList(utf8.encode(input)));
-    final sb = StringBuffer();
-    for (final b in bytes) {
-      sb.write((b & 0xff).toRadixString(16).padLeft(2, '0'));
-    }
-    return sb.toString().toLowerCase();
-  }
+  static String _md5Hex(String input) => MoiamovCrypto.md5Hex(input);
 
-  /// Cifra un texto con la clave indicada usando 3DES/ECB/PKCS7 y lo devuelve
-  /// en hex(base64(cipher)), igual que AbstractC4310b.m18077b del APK.
-  static String _encryptWithKey(String plain, String key) {
-    var keyBytes = _customBase64Decode(key);
-    if (keyBytes.length > 24) {
-      keyBytes = Uint8List.fromList(keyBytes.sublist(0, 24));
-    }
-    final cipher = PaddedBlockCipherImpl(
-      PKCS7Padding(),
-      ECBBlockCipher(DESedeEngine()),
-    );
-    cipher.init(
-      true,
-      PaddedBlockCipherParameters<CipherParameters, CipherParameters>(
-        KeyParameter(keyBytes),
-        null,
-      ),
-    );
-    final enc = cipher.process(Uint8List.fromList(utf8.encode(plain)));
-    return _toHexString(base64.encode(enc));
-  }
+  /// 3DES con la clave indicada, como AbstractC4310b.m18077b del APK.
+  static String _encryptWithKey(String plain, String key) =>
+      MoiamovCrypto.encrypt(plain, key);
 
   /// Descifra el campo `data` de una respuesta del portal. El server SIEMPRE
   /// devuelve `data` como hex del payload 3DES (igual que el cliente oficial).
@@ -530,9 +433,31 @@ class MoiamovApiService {
   /// Flujo guest (equipo SIN SN), replicado del APK: v3/snToken -> v8/active.
   /// terminalAuth solo aplica a boxes con SN y NO se usa acá para no saturar al
   /// servidor (menos requests = menos cortes TLS por la VPN).
+  /// Rechazos explícitos del portal (contestó que no). Sirve para saber si
+  /// una sesión fallida fue un rechazo o un corte de red.
+  int _portalRejections = 0;
+
+  /// La última sesión que falló fue sólo por la red (tiempos agotados,
+  /// conexión cortada en el TLS): un corte pasajero, típico apenas sube la
+  /// VPN. Si el portal la rechazó explícitamente, es false.
+  bool lastSessionNetworkFailure = false;
+
   Future<bool> activateDeviceSession({
     String? serverUrl,
     Duration timeout = const Duration(seconds: 8),
+  }) async {
+    final rejectionsBefore = _portalRejections;
+    final ok = await _activateDeviceSession(
+      serverUrl: serverUrl,
+      timeout: timeout,
+    );
+    lastSessionNetworkFailure = !ok && _portalRejections == rejectionsBefore;
+    return ok;
+  }
+
+  Future<bool> _activateDeviceSession({
+    String? serverUrl,
+    required Duration timeout,
   }) async {
     final fp = await _deviceFingerprint();
     logLine(
@@ -553,7 +478,7 @@ class MoiamovApiService {
       if (_syncCancelled) return false;
       final baseUrl = _cleanUrl(host);
       final ioClient = HttpClient()
-        ..badCertificateCallback = ((cert, h, p) => true)
+        ..badCertificateCallback = _acceptPortalCert
         ..connectionTimeout = timeout;
       _trackClient(ioClient);
       try {
@@ -611,6 +536,7 @@ class MoiamovApiService {
         final rc = actDecoded['returnCode']?.toString() ?? '';
         final em = actDecoded['errorMessage']?.toString() ?? '';
         if (rc == 'portal100024' || em.contains('黑名单') || em.contains('区域')) {
+          _portalRejections++;
           logLine(
             '🚫 La salida de red fue rechazada. Reintentá con otro nodo.',
           );
@@ -621,6 +547,7 @@ class MoiamovApiService {
         if (_applyActiveResult(actDecoded)) {
           return true;
         }
+        _portalRejections++;
         logLine('active rechazado: $rc ($em)');
       } catch (e) {
         logLine('Sesión: excepción en $host: $e');
@@ -672,7 +599,7 @@ class MoiamovApiService {
         logLine('getNextColumns $sectionLabel: código "$code" → $host');
 
         final ioClient = HttpClient()
-          ..badCertificateCallback = ((cert, h, p) => true)
+          ..badCertificateCallback = _acceptPortalCert
           ..connectionTimeout = timeout;
         _trackClient(ioClient);
 
@@ -703,9 +630,9 @@ class MoiamovApiService {
           request.write(encryptedBody);
 
           final response = await request.close().timeout(timeout);
-          final responseBody = await response
-              .transform(utf8.decoder)
-              .join()
+          // Los bytes tal cual: pasarlos a texto también va en el otro hilo.
+          final body = await response
+              .fold(BytesBuilder(copy: false), (b, chunk) => b..add(chunk))
               .timeout(timeout);
 
           if (response.statusCode != 200) {
@@ -713,53 +640,55 @@ class MoiamovApiService {
             continue;
           }
 
-          final decoded = jsonDecode(responseBody);
-          if (decoded is! Map<String, dynamic>) continue;
-          final returnCode = decoded['returnCode']?.toString();
-          final errMsg = decoded['errorMessage'];
+          // El catálogo pesa cientos de KB cifrados en 3DES. Leerlo,
+          // descifrarlo, contarlo y guardarlo va todo en otro hilo: acá
+          // vuelve sólo un resumen y la pantalla no se traba. La clave y la
+          // ruta se leen desde acá (allá no hay .env ni path_provider).
+          final key = portalKey;
+          final savePath = await _store.pathFor(section);
+          final bytes = body.takeBytes();
+          final download = await Isolate.run(
+            () => MoiamovCatalogStore.processDownload(
+              bytes,
+              key: key,
+              savePath: savePath,
+            ),
+          );
+          final returnCode = download.returnCode;
+          if (returnCode == null) continue;
+          final errMsg = download.errorMessage;
           logLine(
             '↳ returnCode=$returnCode${errMsg != null ? ' ($errMsg)' : ''}',
           );
+          if (download.decryptError != null) {
+            logLine(
+              '⚠️ No se pudo descifrar data del server: ${download.decryptError}',
+            );
+          }
 
-          if (returnCode == '0' ||
-              returnCode == '0000' ||
-              returnCode == '200') {
-            final innerData = _decodeData(decoded['data']);
-            List? rawList;
-            if (innerData is Map<String, dynamic> &&
-                innerData['recommendList'] is List) {
-              rawList = innerData['recommendList'];
-            } else if (decoded['recommendList'] is List) {
-              rawList = decoded['recommendList'];
-            }
-
-            if (rawList != null) {
-              final list = rawList
-                  .whereType<Map<String, dynamic>>()
-                  .map(CategoryColumn.fromJson)
-                  .where((cat) => cat.movies.isNotEmpty)
-                  .toList();
-
-              if (list.isNotEmpty) {
-                final total = list.fold(0, (sum, c) => sum + c.movies.length);
-                logLine(
-                  '✅ EN VIVO: $total títulos en ${list.length} categorías ($sectionLabel)',
-                );
-                final result = CatalogResult(
-                  categories: list,
-                  isFromNetwork: true,
-                  source: CatalogSource.liveApi,
-                  statusMessage:
-                      '$sectionLabel ACTUALIZADO EN VIVO ($total títulos en ${list.length} categorías)',
-                );
-                _cachedCatalog = result;
-                await _persistLiveCatalog(section, rawList);
-                return result;
-              }
+          if (download.ok) {
+            if (download.titles > 0) {
+              final total = download.titles;
+              final cats = download.categories;
               logLine(
-                '⚠️ Respuesta OK pero sin títulos ($sectionLabel / $code).',
+                '✅ EN VIVO: $total títulos en $cats categorías ($sectionLabel)',
+              );
+              if (download.saved) {
+                logLine('Guardada última descarga de $section.');
+              }
+              // Sólo dice que bajó: las películas se arman al abrir la
+              // sección, desde el disco (antes se armaban acá y se tiraban).
+              return CatalogResult(
+                categories: const [],
+                isFromNetwork: true,
+                source: CatalogSource.liveApi,
+                statusMessage:
+                    '$sectionLabel ACTUALIZADO EN VIVO ($total títulos en $cats categorías)',
               );
             }
+            logLine(
+              '⚠️ Respuesta OK pero sin títulos ($sectionLabel / $code).',
+            );
           } else if (returnCode == 'aaa100028') {
             logLine('⚠️ Sesión no válida (aaa100028) en $host');
             if (!_reactivationTried) {
@@ -793,104 +722,28 @@ class MoiamovApiService {
     return _emptyCatalog(sectionLabel);
   }
 
-  static const Set<String> _persistableSections = {
-    'masnew_movies',
-    'masnew_featured',
-    'masnew_series',
-  };
-
-  Directory? _catalogDirectoryOverride;
+  /// El catálogo guardado en disco.
+  late final MoiamovCatalogStore _store = MoiamovCatalogStore(logLine);
 
   /// Carpeta de prueba. En la app se usa el directorio privado de soporte.
   @visibleForTesting
-  void debugSetCatalogDirectory(Directory? directory) {
-    _catalogDirectoryOverride = directory;
-  }
-
-  Future<Directory> _catalogDirectory() async {
-    final override = _catalogDirectoryOverride;
-    if (override != null) return override;
-    final support = await getApplicationSupportDirectory();
-    final dir = Directory('${support.path}/catalog');
-    if (!dir.existsSync()) {
-      dir.createSync(recursive: true);
-    }
-    return dir;
-  }
-
-  Future<void> _persistLiveCatalog(String section, List rawList) async {
-    if (!_persistableSections.contains(section)) return;
-    try {
-      final dir = await _catalogDirectory();
-      final file = File('${dir.path}/$section.json');
-      final payload = jsonEncode({'recommendList': rawList});
-      await file.writeAsString(payload, flush: true);
-      logLine('Guardada última descarga de $section.');
-    } catch (e) {
-      logLine('No se pudo guardar $section: $e');
-    }
-  }
-
-  static const String _catalogDateKey = 'moiamov_catalog_date';
+  void debugSetCatalogDirectory(Directory? directory) =>
+      _store.debugSetDirectory(directory);
 
   /// Fecha del catálogo: se guarda solo cuando bajan las 3 secciones.
   /// Null si todavía no hubo una descarga completa.
-  Future<DateTime?> lastSavedCatalogAt() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_catalogDateKey);
-      return raw == null ? null : DateTime.tryParse(raw);
-    } catch (e) {
-      logLine('No se pudo leer la fecha del catálogo: $e');
-      return null;
-    }
-  }
+  Future<DateTime?> lastSavedCatalogAt() => _store.lastSavedAt();
 
-  Future<void> saveCatalogDate(DateTime date) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_catalogDateKey, date.toIso8601String());
-  }
+  Future<void> saveCatalogDate(DateTime date) => _store.saveDate(date);
 
   /// Secciones que tienen una descarga guardada en disco.
-  Future<Set<String>> savedSections() async {
-    final saved = <String>{};
-    try {
-      final dir = await _catalogDirectory();
-      for (final section in _persistableSections) {
-        final file = File('${dir.path}/$section.json');
-        if (file.existsSync() && file.lengthSync() >= 50) saved.add(section);
-      }
-    } catch (e) {
-      logLine('No se pudo revisar el catálogo guardado: $e');
-    }
-    return saved;
-  }
+  Future<Set<String>> savedSections() => _store.savedSections();
 
   /// Lee la última descarga en vivo guardada por esta app.
   Future<CatalogResult?> loadPersistedCatalog(String section) async {
-    if (!_persistableSections.contains(section)) return null;
-    try {
-      final dir = await _catalogDirectory();
-      final file = File('${dir.path}/$section.json');
-      if (!file.existsSync() || file.lengthSync() < 50) return null;
-
-      final decoded = jsonDecode(await file.readAsString());
-      final result = _catalogFromRecommendList(
-        decoded,
-        source: CatalogSource.savedCatalog,
-        isFromNetwork: false,
-        statusMessage: _savedStatusMessage(section),
-      );
-      if (result == null) return null;
-      logLine(
-        'Última descarga guardada: ${result.totalMovies} títulos ($section).',
-      );
-      _cachedCatalog = result;
-      return result;
-    } catch (e) {
-      logLine('No se pudo leer la copia guardada de $section: $e');
-      return null;
-    }
+    final result = await _store.load(section);
+    if (result != null) _cachedCatalog = result;
+    return result;
   }
 
   CatalogResult _emptyCatalog(String sectionLabel) {
@@ -903,41 +756,8 @@ class MoiamovApiService {
     );
   }
 
-  String _savedStatusMessage(String section) {
-    final sectionLabel = _sectionLabel(section);
-    return LocaleKeys.movies_catalog_from_saved.tr(
-      namedArgs: {'section': sectionLabel},
-    );
-  }
-
-  static String _sectionLabel(String section) => switch (section) {
-        'masnew_featured' => LocaleKeys.movies_panel_featured_title.tr(),
-        'masnew_series' => LocaleKeys.movies_panel_series_title.tr(),
-        _ => LocaleKeys.movies_panel_movies_title.tr(),
-      };
-
-  CatalogResult? _catalogFromRecommendList(
-    Object? decoded, {
-    required CatalogSource source,
-    required bool isFromNetwork,
-    required String statusMessage,
-  }) {
-    if (decoded is! Map<String, dynamic> || decoded['recommendList'] is! List) {
-      return null;
-    }
-    final list = (decoded['recommendList'] as List)
-        .whereType<Map<String, dynamic>>()
-        .map(CategoryColumn.fromJson)
-        .where((cat) => cat.movies.isNotEmpty)
-        .toList();
-    if (list.isEmpty) return null;
-    return CatalogResult(
-      categories: list,
-      isFromNetwork: isFromNetwork,
-      source: source,
-      statusMessage: statusMessage,
-    );
-  }
+  static String _sectionLabel(String section) =>
+      MoiamovCatalogStore.sectionLabel(section);
 
   /// Consulta las calidades, audios y subtítulos disponibles de una película (v10).
   Future<VodPlayInfo?> startPlayVOD({
@@ -954,10 +774,9 @@ class MoiamovApiService {
 
     for (final host in candidateHosts) {
       final baseUrl = _cleanUrl(host);
-      final ioClient = HttpClient()
-        ..badCertificateCallback = ((cert, h, p) => true)
-        ..connectionTimeout = timeout;
-      _trackClient(ioClient);
+      // Cliente compartido: reusa la conexión TLS entre los pedidos de
+      // una reproducción (startPlayVOD → getSlbInfo).
+      final ioClient = _vodClient;
 
       try {
         final payload = <String, dynamic>{
@@ -989,7 +808,10 @@ class MoiamovApiService {
         if (returnCode == '0' || returnCode == '0000' || returnCode == '200') {
           final data = _decodeData(decoded['data']);
           if (data is Map<String, dynamic>) {
-            logLine('📦 startPlayVOD data completa: ${jsonEncode(data)}');
+            // Trae licencias y tokens: sólo en debug.
+            if (kDebugMode) {
+              logLine('📦 startPlayVOD data completa: ${jsonEncode(data)}');
+            }
             final info = VodPlayInfo.fromJson(data);
             logLine(
               '✅ startPlayVOD éxito: "${info.name}" (${info.qualities.length} calidades, ${info.subtitles.length} subs)',
@@ -1010,8 +832,6 @@ class MoiamovApiService {
         }
       } catch (e) {
         logLine('⚠️ Error en startPlayVOD ($host): $e');
-      } finally {
-        _releaseClient(ioClient);
       }
     }
     return null;
@@ -1037,10 +857,9 @@ class MoiamovApiService {
 
     for (final host in candidateHosts) {
       final baseUrl = _cleanUrl(host);
-      final ioClient = HttpClient()
-        ..badCertificateCallback = ((cert, h, p) => true)
-        ..connectionTimeout = timeout;
-      _trackClient(ioClient);
+      // Cliente compartido: reusa la conexión TLS entre los pedidos de
+      // una reproducción (startPlayVOD → getSlbInfo).
+      final ioClient = _vodClient;
 
       try {
         logLine(
@@ -1146,8 +965,6 @@ class MoiamovApiService {
         }
       } catch (e) {
         logLine('⚠️ Error en getSlbInfo ($host): $e');
-      } finally {
-        _releaseClient(ioClient);
       }
     }
     return null;
@@ -1172,10 +989,9 @@ class MoiamovApiService {
 
     for (final host in candidateHosts) {
       final baseUrl = _cleanUrl(host);
-      final ioClient = HttpClient()
-        ..badCertificateCallback = ((cert, h, p) => true)
-        ..connectionTimeout = timeout;
-      _trackClient(ioClient);
+      // Cliente compartido: reusa la conexión TLS entre los pedidos de
+      // una reproducción (startPlayVOD → getSlbInfo).
+      final ioClient = _vodClient;
 
       try {
         final candidateLiveCodes = <String>[
@@ -1232,8 +1048,6 @@ class MoiamovApiService {
         }
       } catch (e) {
         logLine('⚠️ Error en getSlbInfoRaw ($host): $e');
-      } finally {
-        _releaseClient(ioClient);
       }
     }
     return null;
@@ -1244,6 +1058,21 @@ class MoiamovApiService {
   /// - Jerarquía estricta de subtítulos en español (Latino > Neutro > España)
   /// - Audio en español prioritario
   /// - Calidad según preferencia (1080p / 720p)
+  /// La mejor calidad para la TV: 1080p si está; 4K sólo si no hay otra
+  /// alta (un Chromecast HD no lo decodifica y el buffer pesa el triple);
+  /// si no, la primera.
+  @visibleForTesting
+  static VodQualityOption pickBestQuality(List<VodQualityOption> qualities) {
+    bool has(VodQualityOption q, String tag) =>
+        q.quality.toUpperCase().contains(tag);
+    for (final tag in const ['1080', '4K', '2160']) {
+      for (final q in qualities) {
+        if (has(q, tag)) return q;
+      }
+    }
+    return qualities.first;
+  }
+
   Future<ResolvedPlayStream?> resolveMovieStream({
     required MovieItem movie,
     String preferredQuality = 'max',
@@ -1262,7 +1091,7 @@ class MoiamovApiService {
       logLine('↻ Obteniendo snToken para asociar dispositivo...');
       final fp = await _deviceFingerprint();
       final ioClient = HttpClient()
-        ..badCertificateCallback = ((c, h, p) => true);
+        ..badCertificateCallback = _acceptPortalCert;
       _trackClient(ioClient);
       try {
         final sn = await _fetchSnToken(
@@ -1326,12 +1155,7 @@ class MoiamovApiService {
         orElse: () => playInfo!.qualities.first,
       );
     } else {
-      selectedQuality = playInfo.qualities.firstWhere(
-        (q) =>
-            q.quality.toUpperCase().contains('1080') ||
-            q.quality.toUpperCase().contains('4K'),
-        orElse: () => playInfo!.qualities.first,
-      );
+      selectedQuality = pickBestQuality(playInfo.qualities);
     }
 
     // 3. Selección de Audio (PLAN §3.Paso 2.B)
@@ -1345,16 +1169,17 @@ class MoiamovApiService {
       return null;
     }
 
-    // 4. Selección de Subtítulos (PLAN §3.Paso 2.A)
-    final bestSub = playInfo.bestSpanishSubtitle;
+    // 4. Subtítulos: van todos; el reproductor elige según el ajuste.
+    final subtitles = [
+      for (final s in playInfo.subtitles)
+        if (s.url.isNotEmpty) s,
+    ];
     logLine(
       '🔊 Pista elegida: ${selectedQuality.quality} - ${selectedSource.audioInfo} (Media ID: ${selectedSource.mediaContentId})',
     );
-    if (bestSub != null) {
-      logLine(
-        '💬 Subtítulo en español elegido: "${bestSub.name}" (${bestSub.language}) [URL: ${bestSub.url}]',
-      );
-    }
+    logLine(
+      '💬 Subtítulos: ${subtitles.isEmpty ? 'ninguno' : subtitles.map((s) => s.language).join(', ')}',
+    );
 
     // 5. Resolución con Titan Ranger (Alternativa B) o getSlbInfo
     String? streamUrl = selectedSource.directUrl;
@@ -1374,110 +1199,21 @@ class MoiamovApiService {
             timeout: timeout,
           );
 
-          if (slbData != null && slbData['cdn_list'] is List) {
-            final cdnList = slbData['cdn_list'] as List;
-            final entries = TitanRangerService.mapSlbEntries(cdnList);
-            final readyEntries = entries
-                .where(
-                  (e) =>
-                      (e['tag'] as String).isNotEmpty &&
-                      (e['sign_type'] as String).isNotEmpty,
-                )
-                .length;
-
-            await TitanRangerService.init();
-
-            // `android_id` real (Settings.System). El snField NO es el android_id.
-            final androidId = await TitanRangerService.getAndroidId();
-            final rawPlayParams = slbData['play_params'];
-            final playParams = rawPlayParams is String
-                ? rawPlayParams
-                : (rawPlayParams == null ? '' : jsonEncode(rawPlayParams));
-            final effectivePortalKey = portalKey.isNotEmpty
-                ? portalKey
-                : '2b494e53756c664c2f44465245733572';
-
-            logLine(
-              '🛡️ [Titan Ranger] ${entries.length} entries ($readyEntries con link/sign_type), '
-              'androidId=${androidId.isNotEmpty ? "OK" : "vacío"}, portalKey=${portalKey.isNotEmpty ? "OK" : "default"}',
-            );
-
-            await TitanRangerService.setEnv(
-              app: apkPackage.isNotEmpty ? apkPackage : 'com.android.msandroid',
-              appVer: apkVer.isNotEmpty ? apkVer : '50503',
+          if (slbData != null) {
+            final prepared = await TitanVodPreparer.prepare(
+              slbData: slbData,
+              movie: movie,
+              quality: selectedQuality,
+              source: selectedSource,
+              app: apkPackage,
+              appVer: apkVer,
               userId: _currentUserId,
-              devId: _deviceMac.isNotEmpty ? _deviceMac : '02:00:00:00:00:00',
-              communicationKey: effectivePortalKey,
-              params: playParams,
-              androidId: androidId,
+              devId: _deviceMac,
+              portalKey: portalKey,
+              log: logLine,
             );
-
-            await TitanRangerService.setEntries(entries);
-            // Deja que Ranger procese SetEntries antes de iniciar PrepareProgram.
-            // La app oficial encola ambas llamadas en el mismo handler nativo.
-            await Future<void>.delayed(const Duration(milliseconds: 400));
-
-            final programPayload = {
-              'name': movie.contentId,
-              'buss': 'vod',
-              'title': movie.name,
-              'episode': '1',
-              'from': 'detail',
-              'cause': 'user',
-              'media': selectedSource.mediaContentId,
-              'medias': [
-                {
-                  'name': selectedSource.mediaContentId,
-                  'license': selectedSource.license ?? '',
-                  'lang': selectedSource.audioInfo,
-                  'quality': selectedQuality.quality,
-                  'vcodec': selectedSource.encodeFormat ?? 'h265',
-                  'format':
-                      selectedSource.videoFormat ??
-                      selectedSource.videoType ??
-                      'ts',
-                },
-              ],
-              'start': 0,
-            };
-
-            logLine(
-              '🛡️ [Titan Ranger] Despachando PrepareProgram para: "${movie.name}"...',
-            );
-            final statusResult = await TitanRangerService.prepareProgram(
-              // La app oficial pasa program.getName() (ID del programa) como
-              // "name" y program.getBuss() ("vod") como "extra".
-              name: programPayload['name']!.toString(),
-              program: programPayload,
-              extra: 'vod',
-            );
-
-            if (statusResult != null && statusResult['play_url'] != null) {
-              final resolvedPlayUrl = statusResult['play_url']
-                  .toString()
-                  .trim();
-              if (resolvedPlayUrl.startsWith('mem://') ||
-                  resolvedPlayUrl.startsWith('ijkhttphook:')) {
-                // Ranger resolvió, pero ese esquema requiere el proxy/datasource
-                // nativo de IJK (servidor /playinfo + titan_port), no ExoPlayer.
-                logLine(
-                  '⚠️ [Titan Ranger] play_url con esquema no reproducible por ExoPlayer: $resolvedPlayUrl',
-                );
-                lastResolutionError =
-                    LocaleKeys.movies_error_internal_stream.tr(
-                      namedArgs: {'scheme': resolvedPlayUrl.split(':').first},
-                    );
-              } else if (resolvedPlayUrl.isNotEmpty) {
-                logLine(
-                  '🎉 [Titan Ranger] Stream URL resuelta por libranger-jni: $resolvedPlayUrl',
-                );
-                streamUrl = resolvedPlayUrl;
-              }
-            } else {
-              logLine(
-                '⚠️ [Titan Ranger] No se obtuvo play_url nativo de Ranger',
-              );
-            }
+            if (prepared.error != null) lastResolutionError = prepared.error;
+            if (prepared.playUrl != null) streamUrl = prepared.playUrl;
           }
         } catch (e) {
           logLine('⚠️ [Titan Ranger] Excepción durante resolución nativa: $e');
@@ -1505,8 +1241,7 @@ class MoiamovApiService {
       streamUrl: streamUrl,
       quality: selectedQuality.quality,
       audioInfo: selectedSource.audioInfo,
-      subtitleUrl: bestSub?.url,
-      subtitleName: bestSub?.name,
+      subtitles: subtitles,
       headers: {
         'User-Agent':
             'Mozilla/5.0 (Linux; Android 10; TV) Mobile Safari/537.36',

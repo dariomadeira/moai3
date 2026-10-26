@@ -60,6 +60,10 @@ void main() {
   }
 
   Future<void> pumpHome(WidgetTester tester) async {
+    // Arranca en el Inicio, armado para 1080p.
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
     SharedPreferences.setMockInitialValues({
       'device_id': 'tv-1',
       'user_code': 'MOAI-0001',
@@ -113,20 +117,28 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
   }
 
-  testWidgets('back desde el rail fuera de TV vuelve a TV', (tester) async {
+  testWidgets('arranca en el Inicio', (tester) async {
+    await pumpHome(tester);
+    expect(isSelected(tester, 'home_rail_home_title'), isTrue);
+    expect(isSelected(tester, 'home_rail_tv_title'), isFalse);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('back desde el rail fuera del Inicio vuelve al Inicio', (
+    tester,
+  ) async {
     await pumpHome(tester);
 
-    // Rail: TV → Agenda (Destacados, Películas, Series, Agenda) y entrar.
-    final rail = find.bySemanticsLabel('home_rail_tv_title');
-    expect(rail, findsOneWidget);
     await tester.tap(find.bySemanticsLabel('home_rail_calendar_title'));
     await tester.pump(const Duration(milliseconds: 500));
     expect(isSelected(tester, 'home_rail_calendar_title'), isTrue);
 
-    // Back con el foco en el rail → vuelve a TV.
+    // Back con el foco en el rail → vuelve al Inicio.
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pump(const Duration(milliseconds: 500));
-    expect(isSelected(tester, 'home_rail_tv_title'), isTrue);
+    expect(isSelected(tester, 'home_rail_home_title'), isTrue);
     expect(isSelected(tester, 'home_rail_calendar_title'), isFalse);
 
     await tester.pumpWidget(const SizedBox());
@@ -206,6 +218,8 @@ void main() {
 
   testWidgets('TV conserva la pestaña al ir a la Agenda y volver', (tester) async {
     await pumpHome(tester);
+    await tester.tap(find.bySemanticsLabel('home_rail_tv_title'));
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(find.byIcon(MoaiIcons.tvTabBuscar));
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.byIcon(MoaiIcons.tvTabBuscarSelected), findsOneWidget);

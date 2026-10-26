@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../config/constants.dart';
 import '../models/movie_models.dart';
+import 'package:moai3/services/new_release_ranker.dart';
 import 'package:moai3/utils/text_normalize.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
@@ -14,13 +15,15 @@ class TmdbTrendingService {
 
   TmdbTrendingService._internal();
 
-  List<Map<String, dynamic>>? _cachedTmdbMovies;
+  static const _ranker = NewReleaseRanker();
+
+  List<TmdbMovie>? _cachedTmdbMovies;
   DateTime? _lastFetchTime;
 
-
-  /// Consulta tendencias y estrenos de la semana en TMDb.
-  /// Guarda en caché en memoria por 4 horas para no hacer peticiones de más.
-  Future<List<Map<String, dynamic>>> fetchTrendingMovies({Duration timeout = const Duration(seconds: 4)}) async {
+  /// Candidatas a estreno: tendencias de la semana, en cines ahora y lo
+  /// estrenado en el último año y medio con votos suficientes. Las consultas
+  /// van en paralelo. Guarda en caché en memoria por 4 horas.
+  Future<List<TmdbMovie>> fetchTrendingMovies({Duration timeout = const Duration(seconds: 4)}) async {
     final now = DateTime.now();
     if (_cachedTmdbMovies != null &&
         _lastFetchTime != null &&
@@ -34,135 +37,117 @@ class TmdbTrendingService {
       return _cachedTmdbMovies ?? const [];
     }
 
-    final client = HttpClient();
-    final collected = <Map<String, dynamic>>[];
-    final seenIds = <int>{};
-
-    final urls = [
-      'https://api.themoviedb.org/3/trending/movie/week?language=es-MX&page=1',
-      'https://api.themoviedb.org/3/trending/movie/week?language=es-MX&page=2',
-      'https://api.themoviedb.org/3/movie/now_playing?language=es-MX&page=1',
+    final since = now.subtract(_ranker.maxAge);
+    String day(DateTime d) =>
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    const base = 'https://api.themoviedb.org/3';
+    final discover =
+        '$base/discover/movie?language=es-MX&sort_by=popularity.desc'
+        '&include_adult=false&vote_count.gte=50'
+        '&primary_release_date.gte=${day(since)}&primary_release_date.lte=${day(now)}';
+    final urls = <(String, bool)>[
+      ('$base/movie/now_playing?language=es-MX&page=1', true),
+      ('$base/movie/now_playing?language=es-MX&page=2', true),
+      ('$base/trending/movie/week?language=es-MX&page=1', false),
+      ('$base/trending/movie/week?language=es-MX&page=2', false),
+      for (var page = 1; page <= 5; page++) ('$discover&page=$page', false),
     ];
 
-    for (final url in urls) {
-      try {
-        final isBearer = token.startsWith('ey');
-        final targetUri = isBearer
-            ? Uri.parse(url)
-            : Uri.parse(url).replace(queryParameters: {
-                ...Uri.parse(url).queryParameters,
-                'api_key': token,
-              });
-        final request = await client.getUrl(targetUri).timeout(timeout);
-        request.headers.set(HttpHeaders.acceptHeader, 'application/json');
-        if (isBearer) {
-          request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
-        }
-
-        final response = await request.close().timeout(timeout);
-        if (response.statusCode == 200) {
-          final body = await response.transform(utf8.decoder).join().timeout(timeout);
-          final json = jsonDecode(body);
-          if (json is Map<String, dynamic> && json['results'] is List) {
-            for (final item in json['results']) {
-              if (item is Map<String, dynamic>) {
-                final id = item['id'] as int? ?? 0;
-                if (id > 0 && seenIds.add(id)) {
-                  collected.add(item);
-                }
-              }
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('⚠️ [TMDB] Error consultando $url: $e');
-      }
-    }
-
+    final client = HttpClient();
+    final pages = await Future.wait([
+      for (final (url, inTheaters) in urls)
+        _fetchPage(client, url, token, timeout, inTheaters: inTheaters),
+    ]);
     client.close();
 
-    if (collected.isNotEmpty) {
-      _cachedTmdbMovies = collected;
+    final byId = <int, TmdbMovie>{};
+    for (final movie in pages.expand((p) => p)) {
+      byId.update(movie.id, (seen) => seen.mergedWith(movie), ifAbsent: () => movie);
+    }
+
+    if (byId.isNotEmpty) {
+      _cachedTmdbMovies = byId.values.toList();
       _lastFetchTime = now;
-      debugPrint('✅ [TMDB] Recibidas ${collected.length} películas en tendencia desde TMDb');
+      debugPrint('✅ [TMDB] Recibidas ${byId.length} películas candidatas a estreno desde TMDb');
     }
 
     return _cachedTmdbMovies ?? const [];
   }
 
-  /// Cruza la lista de TMDb con las películas de Moiamov y construye la fila destacada.
-  /// Si faltan títulos para llegar a [targetCount] (10), completa con los estrenos
-  /// teatrales y más recientes del propio catálogo.
+  Future<List<TmdbMovie>> _fetchPage(
+    HttpClient client,
+    String url,
+    String token,
+    Duration timeout, {
+    required bool inTheaters,
+  }) async {
+    try {
+      final isBearer = token.startsWith('ey');
+      final targetUri = isBearer
+          ? Uri.parse(url)
+          : Uri.parse(url).replace(queryParameters: {
+              ...Uri.parse(url).queryParameters,
+              'api_key': token,
+            });
+      final request = await client.getUrl(targetUri).timeout(timeout);
+      request.headers.set(HttpHeaders.acceptHeader, 'application/json');
+      if (isBearer) {
+        request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
+      }
+
+      final response = await request.close().timeout(timeout);
+      if (response.statusCode != 200) return const [];
+      final body = await response.transform(utf8.decoder).join().timeout(timeout);
+      final json = jsonDecode(body);
+      if (json is! Map<String, dynamic> || json['results'] is! List) return const [];
+      return [
+        for (final item in json['results'] as List)
+          if (item is Map<String, dynamic>)
+            ?TmdbMovie.fromJson(item, inTheaters: inTheaters),
+      ];
+    } catch (e) {
+      debugPrint('⚠️ [TMDB] Error consultando $url: $e');
+      return const [];
+    }
+  }
+
+  /// Arma la fila "Estrenos de cartelera" de Películas: las candidatas de
+  /// TMDb que están en el catálogo, sólo nuevas y ordenadas por
+  /// [NewReleaseRanker]. Si no llegan a 10 completa con la categoría de
+  /// estrenos de cine del proveedor ("… teatrales"); nunca con títulos
+  /// viejos (el año del catálogo es de cuándo se subió, no del estreno).
   Future<CategoryColumn> buildTrendingRow({
     required List<MovieItem> allCatalogMovies,
     required List<CategoryColumn> existingCategories,
-    int targetCount = 10,
   }) async {
-    final tmdbList = await fetchTrendingMovies();
-    final matchedMovies = <MovieItem>[];
-    final matchedIds = <String>{};
+    final candidates = await fetchTrendingMovies();
+    final now = DateTime.now();
+    final theatrical = [
+      for (final cat in existingCategories)
+        if (normalizeText(cat.columnName).contains('teatrales')) ...cat.movies,
+    ];
+    final movies = _ranker.rank(
+      candidates: candidates,
+      catalog: allCatalogMovies,
+      theatrical: theatrical,
+      now: now,
+    );
 
-    // 1. Emparejar con títulos de TMDb
-    for (final tm in tmdbList) {
-      if (matchedMovies.length >= targetCount) break;
-
-      final tmTitle = normalizeText(tm['title']?.toString());
-      final tmOrig = normalizeText(tm['original_title']?.toString());
-
-      for (final lm in allCatalogMovies) {
-        if (matchedIds.contains(lm.contentId)) continue;
-        if (lm.isTrailer) continue; // No incluir trailers en la fila de películas
-
-        final lmName = normalizeText(lm.name);
-        final lmAlias = normalizeText(lm.alias);
-
-        final isMatch = (tmTitle.isNotEmpty && (tmTitle == lmName || tmTitle == lmAlias || (tmTitle.length > 6 && lmName.contains(tmTitle)))) ||
-            (tmOrig.isNotEmpty && (tmOrig == lmName || tmOrig == lmAlias || (tmOrig.length > 6 && lmAlias.contains(tmOrig))));
-
-        if (isMatch) {
-          matchedIds.add(lm.contentId);
-          matchedMovies.add(lm);
-          break;
-        }
-      }
-    }
-
-    debugPrint('🎬 [TMDB] Coincidencias directas con catálogo: ${matchedMovies.length}');
-
-    // 2. Si faltan títulos para llegar a 10, completar con los estrenos de "2026 Peliculas teatrales"
-    // o las más recientes de 2026/2025
-    if (matchedMovies.length < targetCount) {
-      for (final cat in existingCategories) {
-        final catName = normalizeText(cat.columnName);
-        if (catName.contains('teatrales') || catName.contains('2026')) {
-          for (final m in cat.movies) {
-            if (matchedMovies.length >= targetCount) break;
-            if (m.isTrailer) continue;
-            if (matchedIds.add(m.contentId)) {
-              matchedMovies.add(m);
-            }
-          }
-        }
-      }
-    }
-
-    // 3. Respaldo final si todavía no alcanzara 10: las más nuevas del catálogo por fecha
-    if (matchedMovies.length < targetCount) {
-      final sortedByDate = List<MovieItem>.from(allCatalogMovies)
-        ..sort((a, b) => (b.year ?? '').compareTo(a.year ?? ''));
-      for (final m in sortedByDate) {
-        if (matchedMovies.length >= targetCount) break;
-        if (m.isTrailer) continue;
-        if (matchedIds.add(m.contentId)) {
-          matchedMovies.add(m);
-        }
-      }
-    }
+    final matched =_ranker.match(candidates: candidates, catalog: allCatalogMovies);
+    final fresh = matched.where((m) => _ranker.score(m.$1, now) != null).length;
+    debugPrint(
+      '🎬 [TMDB] En el catálogo: ${matched.length} de ${candidates.length} '
+      '(nuevas: $fresh); el resto de la fila es relleno de estrenos de cine',
+    );
+    debugPrint(
+      '🎬 [TMDB] Estrenos en la fila (${movies.length}): '
+      '${movies.map((m) => '${m.name} (${m.year})').join(' · ')}',
+    );
 
     return CategoryColumn(
       columnId: 88888,
       columnName: LocaleKeys.movies_category_new_releases.tr(),
-      movies: matchedMovies.take(targetCount).toList(),
+      movies: movies,
     );
   }
 }

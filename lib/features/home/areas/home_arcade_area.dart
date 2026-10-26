@@ -4,14 +4,11 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/features/games/arcade_launcher.dart';
 import 'package:moai3/features/games/screens/arcade_games_screen.dart';
-import 'package:moai3/features/games/services/arcade_netplay_service.dart';
 import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
-import 'package:moai3/features/games/widgets/tv_arcade_select_friend_dialog.dart';
 import 'package:moai3/features/home/areas/home_area.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/focus/focus_requester.dart';
-import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/widgets/dialogs/tv_gamepad_config_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
@@ -103,48 +100,8 @@ class _HomeArcadeAreaState extends HomeAreaState<HomeArcadeArea> {
     TvGamepadConfigDialog.show(context);
   }
 
-  void _onPlayTogether() {
-    final path = widget.romManager.getActiveRomPath();
-    if (path == null || widget.romManager.installedRoms.isEmpty) {
-      MoaiSnackBar.show(
-        context,
-        message: LocaleKeys.arcade_no_game_installed_snack.tr(),
-        icon: MoaiIcons.info,
-      );
-      return;
-    }
-
-    final activeRom = widget.romManager.installedRoms.firstWhere(
-      (r) =>
-          r.filename.toLowerCase() ==
-          widget.romManager.activeRomFilename?.toLowerCase(),
-      orElse: () => widget.romManager.installedRoms.first,
-    );
-
-    final identity = context.read<DeviceIdentityService>();
-    final myDeviceId = identity.getOrCreateDeviceId();
-    final myNickname =
-        context.read<WatchPartyProvider?>()?.myNickname ??
-        LocaleKeys.arcade_player_default.tr();
-
-    TvArcadeSelectFriendDialog.show(
-      context,
-      onFriendSelected: (friend) async {
-        final ok = await ArcadeNetplayService.instance.inviteFriend(
-          myDeviceId: myDeviceId,
-          myNickname: myNickname,
-          peerDeviceId: friend.deviceId,
-          peerNickname: friend.displayName,
-          rom: activeRom,
-          romManager: widget.romManager,
-        );
-
-        if (ok && mounted) {
-          unawaited(ArcadeLauncher.prepareAndPlay(context, widget.romManager));
-        }
-      },
-    );
-  }
+  void _onPlayTogether() =>
+      ArcadeLauncher.playTogether(context, widget.romManager);
 
   @override
   Widget build(BuildContext context) {

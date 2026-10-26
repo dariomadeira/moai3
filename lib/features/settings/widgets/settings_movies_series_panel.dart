@@ -1,7 +1,11 @@
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/features/settings/widgets/settings_audio_language_row.dart';
 import 'package:moai3/features/settings/widgets/settings_catalog_frequency_row.dart';
+import 'package:moai3/features/settings/widgets/settings_subtitle_language_row.dart';
+import 'package:moai3/features/settings/widgets/settings_widgets.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
@@ -10,6 +14,9 @@ import 'package:provider/provider.dart';
 import 'package:moai3/utils/moai_formats.dart';
 
 enum _SettingsMoviesSeriesItemType {
+  audioLanguage,
+  subtitleLanguage,
+  homeTrailers,
   catalogFrequency,
 }
 
@@ -151,6 +158,50 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
     required VoidCallback onKeyDown,
   }) {
     switch (item) {
+      case _SettingsMoviesSeriesItemType.audioLanguage:
+        final language =
+            context.watch<TvSettingsProvider>().movieAudioLanguage;
+        return SettingsAudioLanguageRow(
+          focusNode: focusNode,
+          selected: language,
+          onKeyLeft: widget.onKeyLeft,
+          onKeyRight: widget.onKeyRight,
+          onChanged: (value) {
+            context.read<TvSettingsProvider>().setMovieAudioLanguage(value);
+          },
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+        );
+      case _SettingsMoviesSeriesItemType.subtitleLanguage:
+        final subtitles =
+            context.watch<TvSettingsProvider>().movieSubtitleLanguage;
+        return SettingsSubtitleLanguageRow(
+          focusNode: focusNode,
+          selected: subtitles,
+          onKeyLeft: widget.onKeyLeft,
+          onKeyRight: widget.onKeyRight,
+          onChanged: (value) {
+            context.read<TvSettingsProvider>().setMovieSubtitleLanguage(value);
+          },
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+        );
+      case _SettingsMoviesSeriesItemType.homeTrailers:
+        final show = context.watch<TvSettingsProvider>().showHomeTrailers;
+        return TvSettingsSwitchRow(
+          focusNode: focusNode,
+          icon: MoaiIcons.vodTrailer,
+          label: LocaleKeys.settings_movies_home_trailers.tr(),
+          description: LocaleKeys.settings_movies_home_trailers_desc.tr(),
+          value: show,
+          onChanged: (value) {
+            context.read<TvSettingsProvider>().setShowHomeTrailers(value);
+          },
+          onKeyLeft: widget.onKeyLeft,
+          onKeyRight: widget.onKeyRight,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+        );
       case _SettingsMoviesSeriesItemType.catalogFrequency:
         final frequency =
             context.watch<TvSettingsProvider>().catalogUpdateFrequency;

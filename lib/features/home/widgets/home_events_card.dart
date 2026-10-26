@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/features/home/widgets/home_card.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/state/calendar_provider.dart';
@@ -41,13 +42,11 @@ class HomeEventsCard extends StatelessWidget {
     final scheme = context.scheme;
     final hasEvents = events.isNotEmpty;
 
-    return MoaiGlass(
-      borderRadius: radius,
-      elevated: false,
-      solid: true,
+    return HomeCard(
+      glow: HomeCardColors.events,
       // Con eventos el foco lo lleva el evento elegido, no la tarjeta.
       focused: isFocused && !hasEvents,
-      padding: const EdgeInsets.fromLTRB(20, 12, 12, 12),
+      padding: const EdgeInsets.fromLTRB(20, 10, 12, 10),
       child: Row(
         children: [
           SizedBox(width: 214, child: _Summary(count: events.length)),
@@ -109,14 +108,18 @@ class _Summary extends StatelessWidget {
               color: scheme.primary,
             ),
             const SizedBox(width: 10),
-            Text(
-              LocaleKeys.home_events_today.tr(),
-              style: MoaiText.display(
-                context,
-                color: scheme.onSurface,
-                fontSize: 34,
-                fontWeight: FontWeight.w500,
-                height: 1.3,
+            Flexible(
+              child: Text(
+                LocaleKeys.home_events_today.tr(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: MoaiText.display(
+                  context,
+                  color: scheme.onSurface,
+                  fontSize: 34,
+                  fontWeight: FontWeight.w500,
+                  height: 1.3,
+                ),
               ),
             ),
           ],
@@ -269,7 +272,26 @@ class _EventTile extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const Spacer(),
+              // La competición va junto a la hora: con 4 tarjetas en el
+              // Inicio no entra como tercera línea debajo del título.
+              Expanded(
+                child: event.competition.isEmpty
+                    ? const SizedBox.shrink()
+                    : Padding(
+                        padding: const EdgeInsets.only(left: 6, right: 6),
+                        child: Text(
+                          '· ${event.competition}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: MoaiText.body(
+                            context,
+                            color: scheme.onSurfaceVariant,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+              ),
               if (chip != null)
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -306,18 +328,6 @@ class _EventTile extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          if (event.competition.isNotEmpty)
-            Text(
-              event.competition,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: MoaiText.body(
-                context,
-                color: scheme.onSurfaceVariant,
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
         ],
       ),
     );

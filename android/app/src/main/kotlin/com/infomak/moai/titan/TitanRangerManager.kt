@@ -36,6 +36,41 @@ class TitanRangerManager(private val context: Context) {
                 "setEntries" -> handleSetEntries(call, result)
                 "prepareProgram" -> handlePrepareProgram(call, result)
                 "stopProgram" -> handleStopProgram(call, result)
+                "seek" -> {
+                    // Responde cuando Ranger terminó: recién ahí salta el
+                    // reproductor.
+                    NativeJni.c().seek(
+                        call.argument<Int>("instanceId") ?: 0,
+                        call.argument<String>("name") ?: "",
+                        (call.argument<Number>("moment"))?.toLong() ?: 0L,
+                    ) { mainHandler.post { result.success(true) } }
+                }
+                "playerOperation" -> {
+                    NativeJni.c().onPlayerOperation(
+                        call.argument<Int>("instanceId") ?: 0,
+                        call.argument<String>("operation") ?: "",
+                        call.argument<String>("data") ?: "",
+                    )
+                    result.success(true)
+                }
+                "playerEvent" -> {
+                    NativeJni.c().onPlayerEvent(
+                        call.argument<Int>("instanceId") ?: 0,
+                        call.argument<String>("event") ?: "",
+                        call.argument<Int>("err") ?: 0,
+                        call.argument<Int>("extra") ?: 0,
+                        (call.argument<Number>("data"))?.toLong() ?: 0L,
+                    )
+                    result.success(true)
+                }
+                "playBuffer" -> {
+                    NativeJni.c().onPlayBuffer(
+                        call.argument<Int>("instanceId") ?: 0,
+                        (call.argument<Number>("progress"))?.toLong() ?: 0L,
+                        (call.argument<Number>("buffer"))?.toLong() ?: 0L,
+                    )
+                    result.success(true)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -230,8 +265,8 @@ class TitanRangerManager(private val context: Context) {
     }
 
     private fun handleStopProgram(call: MethodCall, result: MethodChannel.Result) {
-        val instanceId = call.argument<Int>("instanceId") ?: 1
-        val name = call.argument<String>("name") ?: "vod"
+        val instanceId = call.argument<Int>("instanceId") ?: 0
+        val name = call.argument<String>("name") ?: ""
         try {
             NativeJni.c().stopProgram(instanceId, name)
             result.success(true)

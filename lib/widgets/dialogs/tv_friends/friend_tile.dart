@@ -81,7 +81,9 @@ class _FriendTileState extends State<_FriendTile> {
             return KeyEventResult.handled;
           }
           if (TvKeyHandler.isActionKey(key)) {
-            widget.onDelete();
+            // Sólo un OK nuevo: las repeticiones de un OK que se mantuvo
+            // para abrir el panel (micrófono de Miremos juntos) no borran.
+            if (event is KeyDownEvent) widget.onDelete();
             return KeyEventResult.handled;
           }
           return KeyEventResult.ignored;

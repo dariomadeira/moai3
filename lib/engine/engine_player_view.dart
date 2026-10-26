@@ -8,11 +8,17 @@ class EnginePlayerView extends StatelessWidget {
   final bool showBuffering;
   final BoxFit fit;
 
+  /// Detrás del video: se ve en las franjas cuando [fit] no lo estira a
+  /// toda la pantalla (p. ej. una película más ancha que 16:9). Por defecto,
+  /// el color de superficie del tema.
+  final Color? background;
+
   const EnginePlayerView({
     super.key,
     required this.controller,
     this.showBuffering = false,
     this.fit = BoxFit.cover,
+    this.background,
   });
 
   @override
@@ -29,7 +35,7 @@ class EnginePlayerView extends StatelessWidget {
     }
 
     return ColoredBox(
-      color: scheme.surface,
+      color: background ?? scheme.surface,
       child: Stack(
         fit: StackFit.expand,
         children: [

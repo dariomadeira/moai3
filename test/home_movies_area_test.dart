@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/features/home/areas/home_movies_area.dart';
 import 'package:moai3/models/movie_models.dart';
@@ -213,6 +214,64 @@ void main() {
         find.text('No hay series disponibles en el catálogo.'),
         findsOneWidget,
       );
+    });
+  });
+
+  group('grilla perezosa', () {
+    /// Una categoría de 60 películas (12 filas) en una pantalla de TV.
+    Future<GlobalKey<HomeMoviesAreaState>> pumpBigGrid(
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() => tester.view.reset());
+      final key = GlobalKey<HomeMoviesAreaState>();
+      final provider = _FakeFeaturedMoviesProvider([
+        CategoryColumn(
+          columnId: 1,
+          columnName: 'Muchas',
+          movies: List.generate(
+            60,
+            (i) => MovieItem(contentId: 'm$i', name: 'Película $i'),
+          ),
+        ),
+      ]);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ChangeNotifierProvider<FeaturedMoviesProvider>.value(
+              value: provider,
+              child: HomeMoviesArea(key: key, onExitLeft: () {}),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return key;
+    }
+
+    testWidgets('no arma todas las tarjetas de una categoría grande', (
+      tester,
+    ) async {
+      await pumpBigGrid(tester);
+      expect(find.text('Película 0'), findsOneWidget);
+      // Las últimas filas no se arman hasta acercarse.
+      expect(find.text('Película 59'), findsNothing);
+    });
+
+    testWidgets('↓ baja fila por fila hasta la última', (tester) async {
+      final key = await pumpBigGrid(tester);
+      key.currentState!.focusGrid();
+      await tester.pumpAndSettle();
+      for (var i = 0; i < 11; i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+      }
+      expect(
+        FocusManager.instance.primaryFocus?.debugLabel,
+        'movie_card_0_11_0',
+      );
+      expect(find.text('Película 55'), findsOneWidget);
     });
   });
 }

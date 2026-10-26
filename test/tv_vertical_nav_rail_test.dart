@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/features/home/widgets/tv_bottom_weather_pill.dart';
@@ -83,7 +84,7 @@ void main() {
       focusNode.dispose();
     });
 
-    testWidgets('renderiza TvBottomWeatherPill en la parte superior (top: 8)',
+    testWidgets('fuera del Inicio: TvBottomWeatherPill arriba (top: 8)',
         (tester) async {
       final scopeNode = FocusScopeNode();
       final focusNode = FocusNode();
@@ -91,7 +92,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           TvVerticalNavRail(
-            selected: HomeSection.home,
+            selected: HomeSection.tv,
             railScopeNode: scopeNode,
             railFocusNode: focusNode,
             onSelected: (_) {},
@@ -110,6 +111,38 @@ void main() {
       final positionedWidget = tester.widget<Positioned>(positionedFinder);
       expect(positionedWidget.top, 8.0);
       expect(positionedWidget.bottom, isNull);
+
+      scopeNode.dispose();
+      focusNode.dispose();
+    });
+
+    testWidgets('en el Inicio va el logo en lugar del reloj y el clima', (
+      tester,
+    ) async {
+      final scopeNode = FocusScopeNode();
+      final focusNode = FocusNode();
+
+      await tester.pumpWidget(
+        _wrap(
+          TvVerticalNavRail(
+            selected: HomeSection.home,
+            railScopeNode: scopeNode,
+            railFocusNode: focusNode,
+            onSelected: (_) {},
+            onFocusRight: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TvBottomWeatherPill), findsNothing);
+      final logo = find.byType(SvgPicture);
+      expect(logo, findsOneWidget);
+      // Girado: se lee de abajo hacia arriba, como las pestañas.
+      expect(
+        find.ancestor(of: logo, matching: find.byType(RotatedBox)),
+        findsOneWidget,
+      );
 
       scopeNode.dispose();
       focusNode.dispose();

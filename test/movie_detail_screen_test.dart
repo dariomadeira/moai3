@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,6 +10,8 @@ import 'package:moai3/features/movies/widgets/tv_movie_genre_chip.dart';
 import 'package:moai3/features/movies/widgets/tv_movie_hero_card.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/services/app_preferences_service.dart';
+import 'package:moai3/services/movie_watchlist_service.dart';
+import 'package:moai3/services/movie_progress_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/widgets/buttons/tv_back_pill.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
@@ -15,6 +20,34 @@ import 'helpers/spanish_translations.dart';
 
 void main() {
   group('MovieItem Content Type & Helpers Tests', () {
+    test('la categoría "Tráiler" del catálogo se llama "Adelantos"', () {
+      useSpanishTranslations();
+      CategoryColumn column(String name) =>
+          CategoryColumn.fromJson({'columnId': 1, 'name': name});
+
+      expect(column('Tráiler').columnName, 'Adelantos');
+      expect(column('Trailer').columnName, 'Adelantos');
+      expect(column('Comedia').columnName, 'Comedia');
+    });
+
+    test('displayName: "Adelanto - …" sin la marca del catálogo', () {
+      useSpanishTranslations();
+      MovieItem trailer(String name) =>
+          MovieItem(contentId: name, name: name, programType: 'trailer');
+
+      expect(trailer('(Tráiler)Weapons').displayName, 'Adelanto - Weapons');
+      expect(trailer('(Trailer) Superman').displayName, 'Adelanto - Superman');
+      expect(trailer('Jorge Polaco').displayName, 'Adelanto - Jorge Polaco');
+      expect(
+        MovieItem(
+          contentId: '1',
+          name: 'Weapons',
+          programType: 'movie',
+        ).displayName,
+        'Weapons',
+      );
+    });
+
     test('Identifica correctamente película, serie y trailer', () {
       useSpanishTranslations();
       final movie = MovieItem(
@@ -141,12 +174,54 @@ void main() {
   });
 
   group('MovieDetailScreen Widget Tests', () {
+    late AppPreferences prefs;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      MovieWatchlistService.instance.resetForTest();
+      prefs = await AppPreferences.init();
+    });
+
+    Future<void> pumpDetail(
+      WidgetTester tester,
+      MovieItem movie, {
+      Brightness brightness = Brightness.dark,
+      Future<ResolvedPlayStream?> Function(MovieItem)? resolveStream,
+    }) async {
+      useSpanishTranslations();
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(brightness: brightness),
+          home: ChangeNotifierProvider(
+            create: (_) => TvSettingsProvider(prefs),
+            child: MovieDetailScreen(
+              movie: movie,
+              resolveStream: resolveStream ?? (_) async => null,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    Color pillColor(WidgetTester tester, String label) => tester
+        .widget<TvMetaPill>(
+          find.ancestor(
+            of: find.text(label),
+            matching: find.byType(TvMetaPill),
+          ),
+        )
+        .foreground!;
+
+    String? focused() => FocusManager.instance.primaryFocus?.debugLabel;
+
     testWidgets(
-      'Muestra información detallada, botón back, hero card, calidad y score pill',
+      'Muestra información detallada, botón back, hero card y score pill',
       (tester) async {
-        useSpanishTranslations();
-        SharedPreferences.setMockInitialValues({});
-        final prefs = await AppPreferences.init();
         final movie = MovieItem(
           contentId: '100',
           name: 'Interstellar',
@@ -160,119 +235,382 @@ void main() {
           description:
               'Un grupo de exploradores viaja a través de un agujero de gusano.',
         );
+        await pumpDetail(tester, movie);
 
-        tester.view.physicalSize = const Size(1920, 1080);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(() => tester.view.resetPhysicalSize());
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: ChangeNotifierProvider(
-              create: (_) => TvSettingsProvider(prefs),
-              child: MovieDetailScreen(movie: movie),
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Debe mostrar el TvBackPill
         expect(find.byType(TvBackPill), findsOneWidget);
-
-        // Debe mostrar el título
         expect(find.text('Interstellar'), findsAtLeastNWidgets(1));
+        expect(find.text('Interstellar Original'), findsOneWidget);
 
-        // Debe mostrar la puntuación en un TvMetaPill con color amarillo (> 7.0)
+        // Puntaje > 7.0: dorado.
         expect(find.text('8.7'), findsOneWidget);
-        final scorePill = tester.widget<TvMetaPill>(
-          find.ancestor(
-            of: find.text('8.7'),
-            matching: find.byType(TvMetaPill),
-          ),
-        );
-        expect(scorePill.foreground, const Color(0xFFFBBF24));
+        expect(pillColor(tester, '8.7'), const Color(0xFFFBBF24));
 
-        // Debe mostrar el tag de calidad 1080P HD
-        expect(find.text('1080P HD'), findsOneWidget);
+        // La calidad no se inventa: recién se sabe al reproducir.
+        expect(find.text('1080P HD'), findsNothing);
 
-        // Debe mostrar el director y elenco
         expect(find.text('Christopher Nolan'), findsOneWidget);
         expect(find.text('Matthew McConaughey, Anne Hathaway'), findsOneWidget);
 
-        // Debe mostrar los chips de género traducidos al castellano
         expect(find.byType(TvMovieGenreChip), findsNWidgets(3));
         expect(find.text('Ciencia ficción'), findsOneWidget);
         expect(find.text('Aventura'), findsOneWidget);
         expect(find.text('Drama'), findsOneWidget);
 
-        // Debe mostrar el botón de Favorito (Reproducir ahora se acciona desde HeroCard)
+        // Marcar como interesante es un botón aparte; Reproducir vive en la Hero.
         expect(find.byType(TvFocusButton), findsOneWidget);
-        expect(find.text('Favorito'), findsOneWidget);
-        expect(find.text('Reproducir'), findsNothing);
-
-        // Debe mostrar la tarjeta Hero alineada arriba
+        expect(find.text('Marcar como interesante'), findsOneWidget);
         expect(find.byType(TvMovieHeroCard), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(TvMovieHeroCard),
+            matching: find.text('Reproducir'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Reproducir'), findsOneWidget);
+      },
+    );
+
+    testWidgets('Score entre 5.0 y 7.0 usa plata y menor a 5.0 usa rojo', (
+      tester,
+    ) async {
+      await pumpDetail(
+        tester,
+        MovieItem(contentId: '101', name: 'Pelicula Media', score: '6.5'),
+      );
+      expect(pillColor(tester, '6.5'), const Color(0xFFE2E8F0));
+
+      await pumpDetail(
+        tester,
+        MovieItem(contentId: '102', name: 'Pelicula Baja', score: '4.2'),
+      );
+      expect(pillColor(tester, '4.2'), const Color(0xFFF87171));
+    });
+
+    testWidgets('en tema claro el puntaje usa tonos oscuros legibles', (
+      tester,
+    ) async {
+      await pumpDetail(
+        tester,
+        MovieItem(contentId: '103', name: 'Clara', score: '8.1'),
+        brightness: Brightness.light,
+      );
+      expect(pillColor(tester, '8.1'), const Color(0xFFB45309));
+    });
+
+    testWidgets('oculta el título original si es igual al nombre', (
+      tester,
+    ) async {
+      await pumpDetail(
+        tester,
+        MovieItem(contentId: '104', name: 'Coco', alias: '  coco '),
+      );
+      expect(find.text('  coco '), findsNothing);
+    });
+
+    testWidgets(
+      'adelanto: título "Adelanto - …", sin Interesantes, progreso ni duración',
+      (tester) async {
+        // Aunque hubiera progreso guardado, un tráiler no lo usa.
+        await MovieProgressService.saveProgress(
+          contentId: 't1',
+          currentPosition: const Duration(minutes: 30),
+          totalDuration: const Duration(minutes: 120),
+        );
+        await pumpDetail(
+          tester,
+          MovieItem(
+            contentId: 't1',
+            name: '(Tráiler)Weapons',
+            alias: '(Trailer)Weapons',
+            duration: '02:08:00',
+            programType: 'trailer',
+          ),
+        );
+
+        expect(find.text('Adelanto - Weapons'), findsOneWidget);
+        expect(find.text('(Tráiler)Weapons'), findsNothing);
+        // La pestaña lateral dice "Adelanto", no "Película".
+        expect(find.text('Adelanto'), findsOneWidget);
+        expect(find.text('Película'), findsNothing);
+        // El alias sin la marca es igual al nombre: no se repite.
+        expect(find.text('Weapons'), findsNothing);
+        expect(find.text('Marcar como interesante'), findsNothing);
+        expect(find.byType(TvFocusButton), findsNothing);
+        expect(find.text('2h 8m'), findsNothing);
+        expect(find.text('Reproducir'), findsOneWidget);
+        expect(find.text('Reanudar'), findsNothing);
+        expect(find.text('25% visto'), findsNothing);
+
+        // ↓ desde la Hero no tiene adónde ir.
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+        expect(focused(), 'movie_detail_hero');
+      },
+    );
+
+    testWidgets('sin sinopsis muestra el texto de reemplazo', (tester) async {
+      await pumpDetail(tester, MovieItem(contentId: '105', name: 'Muda'));
+      expect(find.text('Sin sinopsis disponible.'), findsOneWidget);
+    });
+
+    testWidgets(
+      'con progreso: siempre "Reproducir" y al tocarlo pregunta cómo verla',
+      (tester) async {
+        await MovieProgressService.saveProgress(
+          contentId: '106',
+          currentPosition: const Duration(minutes: 30),
+          totalDuration: const Duration(minutes: 120),
+        );
+        var resolved = 0;
+        await pumpDetail(
+          tester,
+          MovieItem(contentId: '106', name: 'A medias'),
+          resolveStream: (_) async {
+            resolved++;
+            return null;
+          },
+        );
+
+        expect(find.text('Reproducir'), findsOneWidget);
+        expect(find.text('Reanudar'), findsNothing);
+        expect(find.text('25% visto'), findsOneWidget);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pumpAndSettle();
+        expect(find.text('¿Cómo querés verla?'), findsOneWidget);
+        expect(find.text('Te quedaste en 30:00.'), findsOneWidget);
+        expect(find.text('Desde el principio'), findsOneWidget);
+
+        // Atrás cancela: no se pide el video.
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(find.text('¿Cómo querés verla?'), findsNothing);
+        expect(resolved, 0);
+      },
+    );
+
+    testWidgets('elegir "Desde el principio" pide el video', (tester) async {
+      await MovieProgressService.saveProgress(
+        contentId: '116',
+        currentPosition: const Duration(minutes: 30),
+        totalDuration: const Duration(minutes: 120),
+      );
+      var resolved = 0;
+      await pumpDetail(
+        tester,
+        MovieItem(contentId: '116', name: 'Otra vez'),
+        resolveStream: (_) async {
+          resolved++;
+          return null;
+        },
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Desde el principio'));
+      await tester.pumpAndSettle();
+      expect(resolved, 1);
+    });
+
+    testWidgets('sin progreso, Reproducir no pregunta', (tester) async {
+      var resolved = 0;
+      await pumpDetail(
+        tester,
+        MovieItem(contentId: '117', name: 'Nueva'),
+        resolveStream: (_) async {
+          resolved++;
+          return null;
+        },
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.text('¿Cómo querés verla?'), findsNothing);
+      expect(resolved, 1);
+    });
+
+    testWidgets('terminada muestra Vista', (tester) async {
+      await MovieProgressService.saveProgress(
+        contentId: '107',
+        currentPosition: const Duration(minutes: 118),
+        totalDuration: const Duration(minutes: 120),
+      );
+      await pumpDetail(tester, MovieItem(contentId: '107', name: 'Terminada'));
+
+      expect(
+        find.ancestor(
+          of: find.text('Vista'),
+          matching: find.byType(TvMetaPill),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Reproducir'), findsOneWidget);
+    });
+
+    testWidgets('Marcar como interesante se guarda y se recuerda al volver', (
+      tester,
+    ) async {
+      final movie = MovieItem(contentId: '108', name: 'Querida');
+      await pumpDetail(tester, movie);
+
+      await tester.tap(find.text('Marcar como interesante'));
+      await tester.pumpAndSettle();
+      expect(find.text('Quitar de interesantes'), findsOneWidget);
+      expect(MovieWatchlistService.instance.contains('108'), isTrue);
+
+      // Pantalla nueva: arranca marcada.
+      await tester.pumpWidget(const SizedBox());
+      await pumpDetail(tester, movie);
+      expect(find.text('Quitar de interesantes'), findsOneWidget);
+
+      await tester.tap(find.text('Quitar de interesantes'));
+      await tester.pumpAndSettle();
+      expect(find.text('Marcar como interesante'), findsOneWidget);
+      expect(MovieWatchlistService.instance.contains('108'), isFalse);
+    });
+
+    testWidgets(
+      'OK con el control en Marcar como interesante la agrega y queda',
+      (tester) async {
+        await pumpDetail(tester, MovieItem(contentId: '115', name: 'Control'));
+
+        // Hero → ↓ al botón y un OK (apretar y soltar), como con el control.
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Quitar de interesantes'), findsOneWidget);
+        expect(MovieWatchlistService.instance.contains('115'), isTrue);
       },
     );
 
     testWidgets(
-      'Score entre 5.0 y 7.0 usa color plata/gris y menor a 5.0 usa rojo',
+      'foco: arranca en la Hero, ↓ va a Marcar como interesante y ← al back',
       (tester) async {
-        SharedPreferences.setMockInitialValues({});
-        final prefs = await AppPreferences.init();
-
-        final movieSilver = MovieItem(
-          contentId: '101',
-          name: 'Pelicula Media',
-          score: '6.5',
+        await pumpDetail(
+          tester,
+          MovieItem(contentId: '109', name: 'Foco', description: 'Corta.'),
         );
+        expect(focused(), 'movie_detail_hero');
 
-        tester.view.physicalSize = const Size(1920, 1080);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(() => tester.view.resetPhysicalSize());
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: ChangeNotifierProvider(
-              create: (_) => TvSettingsProvider(prefs),
-              child: MovieDetailScreen(movie: movieSilver),
-            ),
-          ),
-        );
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
         await tester.pumpAndSettle();
+        expect(focused(), 'movie_detail_watchlist');
 
-        final silverPill = tester.widget<TvMetaPill>(
-          find.ancestor(
-            of: find.text('6.5'),
-            matching: find.byType(TvMetaPill),
-          ),
-        );
-        expect(silverPill.foreground, const Color(0xFFE2E8F0));
-
-        final movieRed = MovieItem(
-          contentId: '102',
-          name: 'Pelicula Baja',
-          score: '4.2',
-        );
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: ChangeNotifierProvider(
-              create: (_) => TvSettingsProvider(prefs),
-              child: MovieDetailScreen(movie: movieRed),
-            ),
-          ),
-        );
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
         await tester.pumpAndSettle();
+        expect(focused(), 'movie_detail_hero');
 
-        final redPill = tester.widget<TvMetaPill>(
-          find.ancestor(
-            of: find.text('4.2'),
-            matching: find.byType(TvMetaPill),
-          ),
-        );
-        expect(redPill.foreground, const Color(0xFFF87171));
+        // Sinopsis corta: no hay nada que scrollear, ← va directo al back.
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+        await tester.pumpAndSettle();
+        expect(focused(), 'movie_detail_back');
       },
     );
+
+    testWidgets('sinopsis larga: se enfoca con ← y ↑/↓ la scrollean', (
+      tester,
+    ) async {
+      await pumpDetail(
+        tester,
+        MovieItem(
+          contentId: '110',
+          name: 'Larga',
+          description: List.filled(200, 'Una historia muy larga.').join(' '),
+        ),
+      );
+      final scrollable = tester.state<ScrollableState>(
+        find
+            .ancestor(
+              of: find.textContaining('Una historia'),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      expect(scrollable.position.pixels, 0);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pumpAndSettle();
+      expect(focused(), 'movie_detail_synopsis');
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(scrollable.position.pixels, greaterThan(0));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pumpAndSettle();
+      expect(scrollable.position.pixels, 0);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+      expect(focused(), 'movie_detail_hero');
+    });
+
+    testWidgets('Reproducir muestra Cargando y avisa si no hay stream', (
+      tester,
+    ) async {
+      final pending = Completer<ResolvedPlayStream?>();
+      await pumpDetail(
+        tester,
+        MovieItem(contentId: '111', name: 'Sin stream'),
+        resolveStream: (_) => pending.future,
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(find.text('Cargando...'), findsOneWidget);
+
+      pending.complete(null);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        find.text('No se pudo conectar con el servidor de streaming.'),
+        findsOneWidget,
+      );
+      expect(find.text('Cargando...'), findsNothing);
+      expect(find.text('Reproducir'), findsOneWidget);
+    });
+
+    testWidgets('si reproducir falla no muestra el error técnico', (
+      tester,
+    ) async {
+      await pumpDetail(
+        tester,
+        MovieItem(contentId: '112', name: 'Rota'),
+        resolveStream: (_) async => throw Exception('SocketException: boom'),
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('No se pudo iniciar la reproducción.'), findsOneWidget);
+      expect(find.textContaining('SocketException'), findsNothing);
+    });
+
+    testWidgets('con una sola imagen no repite el fondo ambiental', (
+      tester,
+    ) async {
+      await pumpDetail(
+        tester,
+        MovieItem(
+          contentId: '113',
+          name: 'Una foto',
+          backdrop: 'https://example.com/a.jpg',
+        ),
+      );
+      expect(find.byType(ShaderMask), findsNothing);
+
+      await pumpDetail(
+        tester,
+        MovieItem(
+          contentId: '114',
+          name: 'Dos fotos',
+          backdrop: 'https://example.com/a.jpg',
+          backdrops: const ['https://example.com/b.jpg'],
+        ),
+      );
+      expect(find.byType(ShaderMask), findsWidgets);
+    });
   });
 }

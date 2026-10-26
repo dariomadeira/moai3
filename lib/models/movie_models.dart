@@ -1,5 +1,34 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
+import 'package:moai3/utils/text_normalize.dart';
+
+/// Textos traducidos que usa armar el catálogo. Se calculan en el hilo
+/// principal ([CatalogStrings.current]) y viajan como texto común: así el
+/// catálogo se puede armar en otro hilo, donde no hay traducciones.
+class CatalogStrings {
+  const CatalogStrings({
+    required this.untitled,
+    required this.defaultCategory,
+    required this.trailersCategory,
+  });
+
+  /// Los del idioma actual.
+  factory CatalogStrings.current() => CatalogStrings(
+    untitled: LocaleKeys.movies_untitled.tr(),
+    defaultCategory: LocaleKeys.movies_category_default.tr(),
+    trailersCategory: LocaleKeys.movies_category_trailers.tr(),
+  );
+
+  /// Película sin nombre.
+  final String untitled;
+
+  /// Categoría sin nombre.
+  final String defaultCategory;
+
+  /// Cómo se llama la categoría de tráileres en Moai ("Adelantos").
+  final String trailersCategory;
+}
+
 class CategoryColumn {
   final int columnId;
   final String columnName;
@@ -13,20 +42,28 @@ class CategoryColumn {
     this.movies = const [],
   });
 
-  factory CategoryColumn.fromJson(Map<String, dynamic> json) {
+  /// Con [strings] se puede armar en otro hilo (sin ellos se traducen acá).
+  factory CategoryColumn.fromJson(
+    Map<String, dynamic> json, [
+    CatalogStrings? strings,
+  ]) {
+    final texts = strings ?? CatalogStrings.current();
     final rawAssetList = json['assetList'] as List? ?? [];
     final List<MovieItem> movieList = rawAssetList
         .whereType<Map<String, dynamic>>()
-        .map(MovieItem.fromJson)
+        .map((m) => MovieItem.fromJson(m, untitled: texts.untitled))
         .toList();
 
     final rawName =
         json['name']?.toString() ??
         json['alias']?.toString() ??
         json['columnName']?.toString() ??
-        LocaleKeys.movies_category_default.tr();
+        texts.defaultCategory;
     final normalizedName = rawName.trim().toLowerCase() == 'all'
         ? 'Todos'
+        // Los tráileres en Moai se llaman "adelantos".
+        : normalizeText(rawName) == 'trailer'
+        ? texts.trailersCategory
         : rawName.replaceAll(RegExp(r'\bAll\b', caseSensitive: false), 'Todos');
 
     return CategoryColumn(
@@ -102,12 +139,54 @@ class MovieItem {
 
   bool get isMovie => !isSeries && !isTrailer;
 
+  /// "(Tráiler)", "Trailer:" y parecidos al principio del nombre.
+  static final RegExp _trailerTag = RegExp(
+    r'^\s*\(?\s*tr[aá]iler\s*\)?\s*[:\-–]?\s*',
+    caseSensitive: false,
+  );
+
+  /// [title] sin la marca de tráiler del catálogo ("(Tráiler)Weapons" →
+  /// "Weapons").
+  static String withoutTrailerTag(String title) =>
+      title.replaceFirst(_trailerTag, '').trim();
+
+  /// Nombre para mostrar: en un tráiler (en Moai, "adelanto"), "Adelanto -
+  /// Weapons".
+  String get displayName => isTrailer
+      ? LocaleKeys.movies_trailer_title.tr(
+          namedArgs: {'name': withoutTrailerTag(name)},
+        )
+      : name;
+
+  /// La misma película con otro año. El catálogo no trae el de estreno
+  /// ([year] sale de `shelveTime`, cuándo se subió); cuando se conoce (p. ej.
+  /// por TMDb) se reemplaza con éste.
+  MovieItem withYear(String year) => MovieItem(
+    contentId: contentId,
+    name: name,
+    alias: alias,
+    poster: poster,
+    backdrop: backdrop,
+    backdrops: backdrops,
+    score: score,
+    year: year,
+    description: description,
+    director: director,
+    actorDisplay: actorDisplay,
+    duration: duration,
+    tags: tags,
+    programType: programType,
+  );
+
   /// Imagen de fondo / horizontal preferida (fallback al poster)
   String? get effectiveBackdrop =>
       backdrop ?? (backdrops.isNotEmpty ? backdrops.first : poster);
 
-  /// Lista de imágenes horizontales desduplicadas
-  List<String> get distinctBackdrops {
+  /// Lista de imágenes horizontales desduplicadas. Se calcula una vez: la
+  /// piden la Hero, las miniaturas y el detalle en cada build.
+  late final List<String> distinctBackdrops = _distinctBackdrops();
+
+  List<String> _distinctBackdrops() {
     final list = <String>[];
     if (backdrop != null && backdrop!.trim().isNotEmpty) {
       list.add(backdrop!.trim());
@@ -118,7 +197,7 @@ class MovieItem {
         list.add(trimmed);
       }
     }
-    return list;
+    return List.unmodifiable(list);
   }
 
   /// Imagen para el fondo ambiental superior.
@@ -129,7 +208,10 @@ class MovieItem {
   /// Lista de imágenes para la tarjeta de reproducción (hero card).
   /// Si la película cuenta con fotos/escenas adicionales, excluye la imagen del fondo
   /// para que el carrusel rotativo no repita la imagen principal de arriba.
-  List<String> get stageImages {
+  /// Se calcula una vez.
+  late final List<String> stageImages = _stageImages();
+
+  List<String> _stageImages() {
     final ambient = ambientBackdrop;
     if (ambient != null) {
       final others = distinctBackdrops.where((u) => u != ambient).toList();
@@ -219,7 +301,9 @@ class MovieItem {
     return year;
   }
 
-  factory MovieItem.fromJson(Map<String, dynamic> json) {
+  /// [untitled]: el nombre si no trae ninguno (ya traducido, para armarla
+  /// en otro hilo); sin él se traduce acá.
+  factory MovieItem.fromJson(Map<String, dynamic> json, {String? untitled}) {
     String? foundPoster;
     String? foundBackdrop;
     final List<String> collectedBackdrops = [];
@@ -285,6 +369,16 @@ class MovieItem {
     foundBackdrop ??=
         json['backdrop']?.toString() ?? json['backdropUrl']?.toString();
 
+    // Lo que guardó [toJson] (p. ej. favoritos): sin posterList, con la lista.
+    if (rawPosterList.isEmpty && json['backdrops'] is List) {
+      for (final b in json['backdrops'] as List) {
+        final url = b?.toString() ?? '';
+        if (url.trim().isNotEmpty && !collectedBackdrops.contains(url)) {
+          collectedBackdrops.add(url);
+        }
+      }
+    }
+
     if (foundBackdrop != null && !collectedBackdrops.contains(foundBackdrop)) {
       collectedBackdrops.insert(0, foundBackdrop);
     }
@@ -292,7 +386,9 @@ class MovieItem {
     return MovieItem(
       contentId: json['contentId']?.toString() ?? json['id']?.toString() ?? '',
       name:
-          json['name']?.toString() ?? json['title']?.toString() ??
+          json['name']?.toString() ??
+          json['title']?.toString() ??
+          untitled ??
           LocaleKeys.movies_untitled.tr(),
       alias: json['alias']?.toString(),
       poster: foundPoster,
@@ -396,8 +492,8 @@ class VodMediaSource {
     }
     return VodMediaSource(
       mediaContentId: json['contentId']?.toString() ?? '',
-      audioInfo: json['audioInfo']?.toString() ??
-          LocaleKeys.movies_audio_default.tr(),
+      audioInfo:
+          json['audioInfo']?.toString() ?? LocaleKeys.movies_audio_default.tr(),
       audioType: json['audioType']?.toString(),
       videoType: json['videoType']?.toString(),
       videoFormat: json['videoFormat']?.toString(),
@@ -440,7 +536,8 @@ class VodQualityOption {
         .where((s) => s.mediaContentId.isNotEmpty)
         .toList();
     return VodQualityOption(
-      quality: json['quality']?.toString() ?? LocaleKeys.movies_quality_auto.tr(),
+      quality:
+          json['quality']?.toString() ?? LocaleKeys.movies_quality_auto.tr(),
       sources: list,
     );
   }
@@ -471,13 +568,17 @@ class VodSubtitleOption {
   factory VodSubtitleOption.fromJson(Map<String, dynamic> json) {
     String url =
         json['url']?.toString() ?? json['subTitleUrl']?.toString() ?? '';
-    if (url.isEmpty &&
-        json['file'] is List &&
-        (json['file'] as List).isNotEmpty) {
-      final f0 = (json['file'] as List).first;
+    final file = json['file'];
+    if (url.isEmpty && file is List && file.isNotEmpty) {
+      final f0 = file.first;
       if (f0 is Map) {
         url = f0['url']?.toString() ?? '';
       }
+    }
+    // La API suele mandar `file` como texto con forma de lista de Python:
+    // "[{'url': 'http://…/x.srt', 'fileType': 'srt'}]".
+    if (url.isEmpty && file is String) {
+      url = RegExp(r'''https?://[^'"\s,\]}]+''').firstMatch(file)?[0] ?? '';
     }
     return VodSubtitleOption(
       name:
@@ -489,6 +590,12 @@ class VodSubtitleOption {
       url: url,
     );
   }
+
+  /// Tipo MIME para ExoPlayer según la extensión ("srt" por defecto, que es
+  /// lo que manda la API).
+  String get mimeType => url.toLowerCase().split('?').first.endsWith('.vtt')
+      ? 'text/vtt'
+      : 'application/x-subrip';
 
   /// Prioridad 1: Latinoamericano
   bool get isLatino {
@@ -555,21 +662,6 @@ class VodPlayInfo {
     );
   }
 
-  /// Selecciona el mejor subtítulo en castellano según la jerarquía estricta del PLAN:
-  /// Latino (P1) > Español neutro (P2) > Castellano España (P3)
-  VodSubtitleOption? get bestSpanishSubtitle {
-    if (subtitles.isEmpty) return null;
-    for (final s in subtitles) {
-      if (s.isLatino) return s;
-    }
-    for (final s in subtitles) {
-      if (s.isSpanishNeutral) return s;
-    }
-    for (final s in subtitles) {
-      if (s.isCastellano) return s;
-    }
-    return null;
-  }
 }
 
 /// Datos finales de reproducción listos para inicializar el motor de video
@@ -577,16 +669,17 @@ class ResolvedPlayStream {
   final String streamUrl;
   final String quality;
   final String audioInfo;
-  final String? subtitleUrl;
-  final String? subtitleName;
+
+  /// Subtítulos de la película (con URL); cuál mostrar lo elige el
+  /// reproductor según el ajuste.
+  final List<VodSubtitleOption> subtitles;
   final Map<String, String> headers;
 
   const ResolvedPlayStream({
     required this.streamUrl,
     required this.quality,
     required this.audioInfo,
-    this.subtitleUrl,
-    this.subtitleName,
+    this.subtitles = const [],
     this.headers = const {},
   });
 

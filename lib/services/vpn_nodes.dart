@@ -74,6 +74,19 @@ const List<VpnNode> kVpnNodes = [
   ),
 ];
 
+/// Cómo le fue a un intento con un nodo.
+enum VpnAttempt {
+  /// Conectó y dio sesión.
+  success,
+
+  /// Falla del nodo: no conectó, salió por otro país o el portal lo rechazó.
+  failure,
+
+  /// La red no contestó a tiempo (pasa apenas sube el túnel, con cualquier
+  /// nodo): no dice si el nodo es bueno o malo.
+  transient,
+}
+
 /// Historial de un nodo en este dispositivo.
 @immutable
 class VpnNodeStats {
@@ -105,7 +118,9 @@ class VpnNodeStats {
 }
 
 /// Aprende qué nodo anda mejor en este TV y lo prueba primero.
-/// Cada resultado pesa 30 %; lo anterior, 70 % (lo reciente manda).
+/// Cada resultado pesa 30 %; lo anterior, 70 % (lo reciente manda). Un
+/// corte pasajero ([VpnAttempt.transient]) cuenta como empate: no hunde a un
+/// nodo bueno por la red, pero uno que nunca contesta va bajando a neutro.
 class VpnNodeRanking {
   VpnNodeRanking({this.nodes = kVpnNodes, Random? random})
       : _random = random ?? Random();
@@ -119,7 +134,9 @@ class VpnNodeRanking {
   /// Parte de los arranques en que el primer intento va al nodo menos usado.
   static const double explorationRate = 0.1;
 
-  static const String _prefsKey = 'vpn_node_ranking';
+  /// v2: el historial anterior anotaba los cortes de red como fallas del
+  /// nodo (castigaba al primero de cada arranque); se empieza de cero.
+  static const String _prefsKey = 'vpn_node_ranking_v2';
 
   final List<VpnNode> nodes;
   final Random _random;
@@ -202,18 +219,23 @@ class VpnNodeRanking {
   /// Anota el resultado de un intento con [node].
   Future<void> record(
     VpnNode node, {
-    required bool success,
+    required VpnAttempt attempt,
     Duration? elapsed,
   }) async {
     final stats = await load();
     stats[node.id] = update(
       stats[node.id] ?? const VpnNodeStats(),
-      success: success,
+      attempt: attempt,
       elapsed: elapsed,
     );
     await _save(stats);
+    final verb = switch (attempt) {
+      VpnAttempt.success => 'sirvió',
+      VpnAttempt.failure => 'falló',
+      VpnAttempt.transient => 'tuvo un corte de red',
+    };
     debugPrint(
-      '🔒 [VPN] ${node.id} ${success ? 'sirvió' : 'falló'} '
+      '🔒 [VPN] ${node.id} $verb '
       '→ nota ${stats[node.id]!.score.toStringAsFixed(2)}',
     );
   }
@@ -221,13 +243,19 @@ class VpnNodeRanking {
   @visibleForTesting
   static VpnNodeStats update(
     VpnNodeStats old, {
-    required bool success,
+    required VpnAttempt attempt,
     Duration? elapsed,
     DateTime? now,
   }) {
     final ms = elapsed?.inMilliseconds.toDouble();
+    final success = attempt == VpnAttempt.success;
+    final outcome = switch (attempt) {
+      VpnAttempt.success => 1.0,
+      VpnAttempt.failure => 0.0,
+      VpnAttempt.transient => neutralScore,
+    };
     return VpnNodeStats(
-      score: _keep * old.score + (1 - _keep) * (success ? 1 : 0),
+      score: _keep * old.score + (1 - _keep) * outcome,
       avgMs: success && ms != null
           ? (old.avgMs == null ? ms : _keep * old.avgMs! + (1 - _keep) * ms)
           : old.avgMs,

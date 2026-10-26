@@ -5,6 +5,7 @@ import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/widgets/dialogs/tv_pin_dialog.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Widget _wrap(Widget child) {
@@ -76,18 +77,19 @@ void main() {
       // Step 1:
       expect(find.text('parental_pin_title_create'), findsOneWidget);
 
-      // Verify Step Badge: tertiaryContainer, no border, onTertiaryContainer
+      // Verify Step Badge: chip cristal, texto onSurface
       final stepFinder = find.text('parental_pin_step');
       expect(stepFinder, findsOneWidget);
       final stepContainer = tester.widget<Container>(
         find.ancestor(of: stepFinder, matching: find.byType(Container)).first,
       );
-      final boxDecoration = stepContainer.decoration as BoxDecoration;
-      expect(boxDecoration.border, isNull);
-      final theme = Theme.of(tester.element(stepFinder));
-      expect(boxDecoration.color, equals(theme.colorScheme.tertiaryContainer));
+      final scheme = Theme.of(tester.element(stepFinder)).colorScheme;
+      expect(
+        stepContainer.decoration,
+        equals(moaiGlassChipDecoration(scheme, radius: 12)),
+      );
       final stepText = tester.widget<Text>(stepFinder);
-      expect(stepText.style?.color, equals(theme.colorScheme.onTertiaryContainer));
+      expect(stepText.style?.color, equals(scheme.onSurface));
 
       // Tap 1, 2, 3, 4
       await tester.tap(find.text('1'));

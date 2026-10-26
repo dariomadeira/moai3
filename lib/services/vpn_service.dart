@@ -20,11 +20,27 @@ enum VpnConnectResult {
   /// Conectó, pero la salida no es del país del nodo.
   wrongCountry,
 
+  /// Conectó, pero no se pudo comprobar la salida: la red no contestó a
+  /// tiempo (pasa apenas sube el túnel). No dice nada malo del nodo.
+  unverified,
+
   /// El usuario rechazó el permiso VPN del sistema.
   permissionDenied,
 
   /// Cortado desde la app.
   cancelled,
+}
+
+/// Resultado de [VpnService.checkExit].
+enum VpnExitCheck {
+  /// Sale por el país esperado.
+  matches,
+
+  /// Sale por otro país.
+  otherCountry,
+
+  /// Nadie contestó: no se sabe por dónde sale.
+  noAnswer,
 }
 
 /// Servicio centralizado de VPN open source integrado en Moai TV
@@ -368,66 +384,102 @@ class VpnService {
     if (!connected) return VpnConnectResult.tunnelFailed;
 
     onStatusUpdate?.call(LocaleKeys.loading_verifying_connection);
-    final verified = await verifyConnection(country: node.country);
+    final exit = await checkExit(country: node.country);
     debugPrint(
-      '🔒 [VPN] Verificación ${node.country}: $verified '
+      '🔒 [VPN] Verificación ${node.country}: ${exit.name} '
       '(ip=$_lastExitIp cc=$_lastExitCountry)',
     );
-    if (verified) return VpnConnectResult.connected;
-    // Túnel arriba pero salida incorrecta: soltar antes de rotar nodo.
+    if (exit == VpnExitCheck.matches) return VpnConnectResult.connected;
+    if (_connectCancelled) return VpnConnectResult.cancelled;
+    // Túnel arriba pero salida incorrecta o sin respuesta: soltar antes de
+    // rotar nodo.
     await disconnect();
-    return VpnConnectResult.wrongCountry;
+    return exit == VpnExitCheck.otherCountry
+        ? VpnConnectResult.wrongCountry
+        : VpnConnectResult.unverified;
   }
 
-  /// Verifica que la salida pública sea de [country] (el servicio de catálogo
-  /// solo acepta ciertos países).
-  Future<bool> verifyConnection({
-    required String country,
-    Duration timeout = const Duration(seconds: 5),
-  }) async {
-    try {
-      final res =
-          await http.get(Uri.parse('http://ip-api.com/json')).timeout(timeout);
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        final countryName = data['country'] ?? '';
-        final countryCode =
-            data['countryCode']?.toString().toUpperCase() ?? '';
-        final query = data['query'] ?? '';
-        _lastExitIp = query.toString();
-        _lastExitCountry = countryCode;
-        debugPrint(
-          '🌐 [VPN IP Check] IP pública: $query ($countryName, $countryCode)',
-        );
-        if (countryCode == country) return true;
-        debugPrint(
-          '⚠️ [VPN IP Check] Salida no es $country ($countryCode).',
-        );
+  /// Rondas para comprobar la salida y cuánto se espera cada una. Apenas
+  /// sube el túnel la red puede tardar unos segundos en contestar: en vez de
+  /// rendirse al primer silencio (y castigar al nodo), se reintenta.
+  static const int _exitCheckRounds = 3;
+  static const Duration _exitCheckTimeout = Duration(seconds: 4);
+  static const Duration _exitCheckGap = Duration(seconds: 1);
+
+  /// Comprueba que la salida pública sea de [country] (el servicio de
+  /// catálogo sólo acepta ciertos países).
+  Future<VpnExitCheck> checkExit({required String country}) async {
+    final started = DateTime.now();
+    for (var round = 1; round <= _exitCheckRounds; round++) {
+      final found = await _exitCountry(_exitCheckTimeout);
+      final ms = DateTime.now().difference(started).inMilliseconds;
+      if (found != null) {
+        debugPrint('🌐 [VPN] Salida $found (ronda $round, +${ms}ms)');
+        return found == country
+            ? VpnExitCheck.matches
+            : VpnExitCheck.otherCountry;
       }
-    } catch (e) {
-      debugPrint('⚠️ [VPN IP Check] ip-api falló: $e');
+      debugPrint('⚠️ [VPN] Sin respuesta de la salida (ronda $round, +${ms}ms)');
+      if (_connectCancelled || round == _exitCheckRounds) break;
+      await Future<void>.delayed(_exitCheckGap);
+    }
+    return VpnExitCheck.noAnswer;
+  }
+
+  /// País de salida según el primero que conteste: Cloudflare (https) o
+  /// ip-api (http), en paralelo. null si ninguno contestó a tiempo.
+  Future<String?> _exitCountry(Duration timeout) {
+    final result = Completer<String?>();
+    var pending = 2;
+    void settle(String? country) {
+      if (result.isCompleted) return;
+      if (country != null && country.isNotEmpty) {
+        result.complete(country);
+      } else if (--pending == 0) {
+        result.complete(null);
+      }
     }
 
+    _cloudflareCountry(timeout).then(settle, onError: (_) => settle(null));
+    _ipApiCountry(timeout).then(settle, onError: (_) => settle(null));
+    return result.future;
+  }
+
+  Future<String?> _cloudflareCountry(Duration timeout) async {
     try {
       final res = await http
           .get(Uri.parse('https://cloudflare.com/cdn-cgi/trace'))
           .timeout(timeout);
-      if (res.statusCode == 200) {
-        final loc =
-            RegExp(r'loc=([A-Z]+)').firstMatch(res.body)?.group(1) ?? '';
-        final ip =
-            RegExp(r'ip=([^\n]+)').firstMatch(res.body)?.group(1) ?? '';
-        if (ip.isNotEmpty) _lastExitIp = ip;
-        if (loc.isNotEmpty) _lastExitCountry = loc;
-        debugPrint('🌐 [VPN CF Check] ip=$ip loc=$loc');
-        if (loc == country) return true;
-        debugPrint('⚠️ [VPN CF Check] Salida no es $country ($loc).');
-      }
+      if (res.statusCode != 200) return null;
+      final loc = RegExp(r'loc=([A-Z]+)').firstMatch(res.body)?.group(1) ?? '';
+      final ip = RegExp(r'ip=([^\n]+)').firstMatch(res.body)?.group(1) ?? '';
+      if (ip.isNotEmpty) _lastExitIp = ip;
+      if (loc.isNotEmpty) _lastExitCountry = loc;
+      debugPrint('🌐 [VPN CF Check] ip=$ip loc=$loc');
+      return loc;
     } catch (e) {
       debugPrint('⚠️ [VPN CF Check] falló: $e');
+      return null;
     }
+  }
 
-    return false;
+  Future<String?> _ipApiCountry(Duration timeout) async {
+    try {
+      final res = await http
+          .get(Uri.parse('http://ip-api.com/json'))
+          .timeout(timeout);
+      if (res.statusCode != 200) return null;
+      final data = jsonDecode(res.body);
+      final countryCode = data['countryCode']?.toString().toUpperCase() ?? '';
+      final query = data['query']?.toString() ?? '';
+      if (query.isNotEmpty) _lastExitIp = query;
+      if (countryCode.isNotEmpty) _lastExitCountry = countryCode;
+      debugPrint('🌐 [VPN IP Check] IP pública: $query ($countryCode)');
+      return countryCode;
+    } catch (e) {
+      debugPrint('⚠️ [VPN IP Check] ip-api falló: $e');
+      return null;
+    }
   }
 
   /// Desconecta la VPN de forma segura

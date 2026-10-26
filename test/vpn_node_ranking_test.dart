@@ -28,31 +28,68 @@ void main() {
     test('la nota sube con cada éxito y baja con cada falla', () {
       final now = DateTime(2026, 10, 24);
       var s = const VpnNodeStats();
-      s = VpnNodeRanking.update(s, success: true, now: now);
+      s = VpnNodeRanking.update(s, attempt: VpnAttempt.success, now: now);
       expect(s.score, closeTo(0.65, 1e-9));
-      s = VpnNodeRanking.update(s, success: true, now: now);
+      s = VpnNodeRanking.update(s, attempt: VpnAttempt.success, now: now);
       expect(s.score, closeTo(0.755, 1e-9));
-      s = VpnNodeRanking.update(s, success: false, now: now);
+      s = VpnNodeRanking.update(s, attempt: VpnAttempt.failure, now: now);
       expect(s.score, closeTo(0.5285, 1e-9));
       expect(s.lastUsed, now);
+    });
+
+    test('un corte de red no hunde a un nodo bueno', () {
+      var s = const VpnNodeStats(score: 0.9);
+      s = VpnNodeRanking.update(s, attempt: VpnAttempt.transient);
+      // Se acerca a neutro (0,5) sin caer como una falla (0,63).
+      expect(s.score, closeTo(0.78, 1e-9));
+      expect(s.score, greaterThan(0.7));
+    });
+
+    test('el patrón del TV: cortarse al primer intento ya no lo hunde', () {
+      // Antes, el primero de cada arranque se anotaba como falla y el
+      // segundo como éxito: los dos nodos se iban turnando.
+      var first = const VpnNodeStats(score: 0.65);
+      var second = const VpnNodeStats(score: 0.6);
+      first = VpnNodeRanking.update(first, attempt: VpnAttempt.transient);
+      second = VpnNodeRanking.update(second, attempt: VpnAttempt.success);
+      final order = VpnNodeRanking.order(
+        [a, b],
+        {'a': first, 'b': second},
+      );
+      // El que anduvo pasa adelante, pero el cortado sigue arriba de neutro.
+      expect(order.first, b);
+      expect(first.score, greaterThan(VpnNodeRanking.neutralScore));
+    });
+
+    test('un nodo que nunca contesta queda detrás de uno que anda', () {
+      var mute = const VpnNodeStats();
+      var good = const VpnNodeStats();
+      for (var i = 0; i < 5; i++) {
+        mute = VpnNodeRanking.update(mute, attempt: VpnAttempt.transient);
+        good = VpnNodeRanking.update(good, attempt: VpnAttempt.success);
+      }
+      expect(
+        VpnNodeRanking.order([a, b], {'a': mute, 'b': good}).first,
+        b,
+      );
     });
 
     test('el tiempo promedio solo cambia cuando sirvió', () {
       var s = VpnNodeRanking.update(
         const VpnNodeStats(),
-        success: true,
+        attempt: VpnAttempt.success,
         elapsed: const Duration(seconds: 10),
       );
       expect(s.avgMs, 10000);
       s = VpnNodeRanking.update(
         s,
-        success: true,
+        attempt: VpnAttempt.success,
         elapsed: const Duration(seconds: 20),
       );
       expect(s.avgMs, closeTo(13000, 1e-9));
       s = VpnNodeRanking.update(
         s,
-        success: false,
+        attempt: VpnAttempt.failure,
         elapsed: const Duration(seconds: 60),
       );
       expect(s.avgMs, closeTo(13000, 1e-9));
@@ -101,8 +138,8 @@ void main() {
     test('record guarda el historial entre arranques', () async {
       SharedPreferences.setMockInitialValues({});
       final ranking = VpnNodeRanking(nodes: [a, b]);
-      await ranking.record(a, success: false);
-      await ranking.record(b, success: true);
+      await ranking.record(a, attempt: VpnAttempt.failure);
+      await ranking.record(b, attempt: VpnAttempt.success);
       final stats = await VpnNodeRanking(nodes: [a, b]).load();
       expect(stats['a']!.score, closeTo(0.35, 1e-9));
       expect(stats['b']!.score, closeTo(0.65, 1e-9));

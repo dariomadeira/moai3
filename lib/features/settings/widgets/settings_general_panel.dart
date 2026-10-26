@@ -1,3 +1,4 @@
+import 'package:moai3/features/discounts/widgets/discount_dialogs.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,7 @@ enum _SettingsGeneralItemType {
   plugins,
   overscan,
   weatherLocation,
+  discountBanks,
   darkMode,
   accentColor,
   muteUiSounds,
@@ -200,6 +202,18 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
           onPressed: () {
             TvWeatherLocationDialog.show(context);
           },
+          onKeyLeft: widget.onKeyLeft,
+          onKeyRight: widget.onKeyRight,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+        );
+      case _SettingsGeneralItemType.discountBanks:
+        return TvSettingsActionRow(
+          focusNode: focusNode,
+          icon: MoaiIcons.discountBanks,
+          label: LocaleKeys.settings_general_discount_banks.tr(),
+          description: LocaleKeys.settings_general_discount_banks_desc.tr(),
+          onPressed: () => TvDiscountBanksDialog.show(context),
           onKeyLeft: widget.onKeyLeft,
           onKeyRight: widget.onKeyRight,
           onKeyUp: onKeyUp,

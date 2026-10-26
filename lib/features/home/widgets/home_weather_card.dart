@@ -1,11 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/features/home/widgets/home_card.dart';
+import 'package:moai3/features/home/widgets/home_sky.dart';
 import 'package:moai3/features/home/widgets/tv_weather_animated_icon.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/services/weather_icon_mapper.dart';
 import 'package:moai3/services/weather_service.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Widget de clima del Inicio, en formato franja para la lista de widgets
 /// (doble alto que un ítem de Ajustes, todo el ancho del panel):
@@ -17,7 +18,12 @@ class HomeWeatherCard extends StatelessWidget {
     required this.weather,
     required this.now,
     this.isFocused = false,
+    this.place,
   });
+
+  /// Dónde es el clima (ver `WeatherProvider.placeName`); sin él, la
+  /// localidad que devolvió el servicio.
+  final String? place;
 
   final WeatherData weather;
 
@@ -30,7 +36,6 @@ class HomeWeatherCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final dark = scheme.brightness == Brightness.dark;
     final glow = _conditionGlow(weather.conditionCode, weather.isDay);
 
     final upcoming = weather.upcomingHours(now);
@@ -47,61 +52,37 @@ class HomeWeatherCard extends StatelessWidget {
       ...upcoming.skip(1),
     ];
 
-    return MoaiGlass(
-      borderRadius: radius,
-      elevated: false,
-      solid: true,
+    return HomeCard(
+      glow: glow,
       focused: isFocused,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
-        child: Stack(
-          children: [
-            // Halo del color del clima detrás del ícono.
-            Positioned(
-              right: -50,
-              top: -70,
-              width: 240,
-              height: 240,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    colors: [
-                      glow.withValues(alpha: dark ? 0.22 : 0.30),
-                      glow.withValues(alpha: 0),
-                    ],
-                  ),
-                ),
-              ),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      child: Row(
+        children: [
+          // El ícono va primero y más chico: está, pero no manda.
+          TvWeatherAnimatedIcon(
+            lottieUrl: WeatherIconMapper.getLottieUrl(
+              code: weather.conditionCode,
+              isDay: weather.isDay,
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 16, 12),
-              child: Row(
-                children: [
-                  SizedBox(width: 214, child: _Current(weather: weather)),
-                  if (hours.length > 1) ...[
-                    Container(
-                      width: 1,
-                      height: 72,
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      color: scheme.onSurface.withValues(alpha: 0.08),
-                    ),
-                    Expanded(child: _HourlyStrip(hours: hours)),
-                  ] else
-                    const Spacer(),
-                  const SizedBox(width: 8),
-                  TvWeatherAnimatedIcon(
-                    lottieUrl: WeatherIconMapper.getLottieUrl(
-                      code: weather.conditionCode,
-                      isDay: weather.isDay,
-                    ),
-                    updateToken: weather.lastUpdated.millisecondsSinceEpoch,
-                    size: 84,
-                  ),
-                ],
-              ),
+            updateToken: weather.lastUpdated.millisecondsSinceEpoch,
+            size: 56,
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 214,
+            child: _Current(weather: weather, place: place ?? weather.city),
+          ),
+          if (hours.length > 1) ...[
+            Container(
+              width: 1,
+              height: 72,
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              color: scheme.onSurface.withValues(alpha: 0.08),
             ),
-          ],
-        ),
+            Expanded(child: _HourlyStrip(hours: hours)),
+          ] else
+            const Spacer(),
+        ],
       ),
     );
   }
@@ -109,20 +90,11 @@ class HomeWeatherCard extends StatelessWidget {
   /// Color del halo según el clima: cálido con sol, frío de noche o con
   /// lluvia/nieve, gris con nubes o niebla.
   static Color _conditionGlow(int? code, bool isDay) {
-    const rain = {
-      1063, 1072, 1087, 1150, 1153, 1168, 1171, 1180, 1183, 1186, 1189, 1192, //
-      1195, 1198, 1201, 1240, 1243, 1246, 1273, 1276,
-    };
-    const snow = {
-      1066, 1069, 1114, 1117, 1204, 1207, 1210, 1213, 1216, 1219, 1222, 1225, //
-      1237, 1249, 1252, 1255, 1258, 1261, 1264, 1279, 1282,
-    };
-    if (code != null && rain.contains(code)) return const Color(0xFF5FA8F5);
-    if (code != null && snow.contains(code)) return const Color(0xFFB8E4FF);
+    final kind = weatherKindOf(code);
+    if (kind == WeatherKind.rain) return const Color(0xFF5FA8F5);
+    if (kind == WeatherKind.snow) return const Color(0xFFB8E4FF);
     if (!isDay) return const Color(0xFF8A94FF);
-    if (code == null || code == 1000 || code == 1003) {
-      return const Color(0xFFFFB547);
-    }
+    if (kind == WeatherKind.clear) return const Color(0xFFFFB547);
     return const Color(0xFF9FB1BE);
   }
 }
@@ -130,9 +102,10 @@ class HomeWeatherCard extends StatelessWidget {
 /// Estado actual compacto: ciudad, temperatura + condición y máx/mín, y una
 /// línea con sensación térmica y lluvia.
 class _Current extends StatelessWidget {
-  const _Current({required this.weather});
+  const _Current({required this.weather, required this.place});
 
   final WeatherData weather;
+  final String place;
 
   @override
   Widget build(BuildContext context) {
@@ -172,9 +145,9 @@ class _Current extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (weather.city.isNotEmpty)
+        if (place.isNotEmpty)
           Text(
-            weather.city,
+            place,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: MoaiText.body(
@@ -191,7 +164,7 @@ class _Current extends StatelessWidget {
               style: MoaiText.display(
                 context,
                 color: scheme.onSurface,
-                fontSize: 46,
+                fontSize: 40,
                 fontWeight: FontWeight.w500,
                 height: 1.15,
               ),

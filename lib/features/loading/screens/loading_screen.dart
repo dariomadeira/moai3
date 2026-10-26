@@ -42,6 +42,9 @@ class _LoadingScreenState extends State<LoadingScreen>
   late final AnimationController _pulseController;
   late final Animation<double> _scaleAnimation;
   late final Animation<double> _glowAnimation;
+
+  /// Opacidad máxima del aura del logo (late entre 0,12 y esto).
+  static const double _glowMax = 0.28;
   final FocusNode _retryFocusNode = FocusNode(debugLabel: 'loading_retry');
   final FocusNode _cancelCatalogFocus = FocusNode(
     debugLabel: 'loading_cancel_catalog',
@@ -75,7 +78,10 @@ class _LoadingScreenState extends State<LoadingScreen>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutCubic),
     );
 
-    _glowAnimation = Tween<double>(begin: 0.12, end: 0.28).animate(
+    _glowAnimation = Tween<double>(
+      begin: 0.12 / _glowMax,
+      end: 1.0,
+    ).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutCubic),
     );
 
@@ -268,7 +274,8 @@ class _LoadingScreenState extends State<LoadingScreen>
       // resultados se anotan al final.
       final ranking = VpnNodeRanking();
       final nodes = (await ranking.orderedNodes()).take(_maxAttempts).toList();
-      final results = <({VpnNode node, bool success, Duration? elapsed})>[];
+      final results =
+          <({VpnNode node, VpnAttempt attempt, Duration? elapsed})>[];
       var anyTunnel = false;
 
       // El permiso VPN se pide dentro de connect (el plugin guarda la
@@ -289,8 +296,19 @@ class _LoadingScreenState extends State<LoadingScreen>
         }
         if (connection == VpnConnectResult.cancelled) break;
         if (connection != VpnConnectResult.connected) {
-          if (connection == VpnConnectResult.wrongCountry) anyTunnel = true;
-          results.add((node: node, success: false, elapsed: null));
+          // Con túnel arriba (otro país o sin respuesta) hay internet.
+          if (connection == VpnConnectResult.wrongCountry ||
+              connection == VpnConnectResult.unverified) {
+            anyTunnel = true;
+          }
+          results.add((
+            node: node,
+            // Sin respuesta de la red no es culpa del nodo.
+            attempt: connection == VpnConnectResult.unverified
+                ? VpnAttempt.transient
+                : VpnAttempt.failure,
+            elapsed: null,
+          ));
           MoiamovApiService.logLine(
             '${node.id}: conexión no verificada ($connection).',
           );
@@ -311,10 +329,28 @@ class _LoadingScreenState extends State<LoadingScreen>
         MoiamovApiService.logLine(
           'Solicitando sesión de dispositivo (sin credenciales)...',
         );
-        if (!await api.ensureSession()) {
-          results.add((node: node, success: false, elapsed: null));
+        var session = await api.ensureSession();
+        // Un corte de red apenas sube el túnel suele pasar solo: se
+        // reintenta una vez con el mismo nodo antes de cambiarlo.
+        if (!session && api.lastSessionNetworkFailure && mounted) {
           MoiamovApiService.logLine(
-            '${node.id}: sesión rechazada; rotando nodo...',
+            '${node.id}: la red no contestó; reintento con el mismo nodo...',
+          );
+          await _pause(const Duration(milliseconds: 1500));
+          if (!_catalogCancelRequested) session = await api.ensureSession();
+        }
+        if (!session) {
+          results.add((
+            node: node,
+            attempt: api.lastSessionNetworkFailure
+                ? VpnAttempt.transient
+                : VpnAttempt.failure,
+            elapsed: null,
+          ));
+          MoiamovApiService.logLine(
+            api.lastSessionNetworkFailure
+                ? '${node.id}: la red sigue sin contestar; rotando nodo...'
+                : '${node.id}: sesión rechazada; rotando nodo...',
           );
           await vpn.disconnect();
           await _pause(const Duration(milliseconds: 1500));
@@ -325,14 +361,22 @@ class _LoadingScreenState extends State<LoadingScreen>
         MoiamovApiService.logLine('✅ Sesión de dispositivo obtenida.');
 
         if (!needsUpdate) {
-          results.add((node: node, success: true, elapsed: sessionTime));
+          results.add((
+            node: node,
+            attempt: VpnAttempt.success,
+            elapsed: sessionTime,
+          ));
           break;
         }
         await _downloadMissingSections(downloaded, showCancel: hasCatalog);
         // Si el usuario cortó la descarga, este nodo no se anota.
         if (_catalogCancelRequested) break;
         final complete = downloaded.length == _catalogSections.length;
-        results.add((node: node, success: complete, elapsed: sessionTime));
+        results.add((
+          node: node,
+          attempt: complete ? VpnAttempt.success : VpnAttempt.failure,
+          elapsed: sessionTime,
+        ));
         if (complete) break;
         MoiamovApiService.logLine(
           'Faltan secciones (${downloaded.length}/${_catalogSections.length}); '
@@ -346,7 +390,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       // no es culpa de los nodos y no se anota.
       if (anyTunnel) {
         for (final r in results) {
-          await ranking.record(r.node, success: r.success, elapsed: r.elapsed);
+          await ranking.record(r.node, attempt: r.attempt, elapsed: r.elapsed);
         }
       } else if (results.isNotEmpty) {
         MoiamovApiService.logLine(
@@ -474,54 +518,35 @@ class _LoadingScreenState extends State<LoadingScreen>
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        AnimatedBuilder(
-          animation: _pulseController,
-          builder: (context, logo) => Transform.scale(
-            scale: _scaleAnimation.value,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Aura de luz ambiental circular difuminada
-                Container(
-                  width: 140,
-                  height: 140,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: scheme.primary.withValues(
-                          alpha: _glowAnimation.value,
+        // El latido sólo escala y cambia la opacidad de capas ya pintadas: la
+        // sombra difuminada (radio 48) se pinta una vez, no en cada cuadro
+        // de todo el arranque.
+        ScaleTransition(
+          scale: _scaleAnimation,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Aura de luz ambiental circular difuminada
+              FadeTransition(
+                opacity: _glowAnimation,
+                child: RepaintBoundary(
+                  child: Container(
+                    width: 140,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: scheme.primary.withValues(alpha: _glowMax),
+                          blurRadius: 48,
+                          spreadRadius: 8,
                         ),
-                        blurRadius: 48,
-                        spreadRadius: 8,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-                logo!,
-              ],
-            ),
-          ),
-          // Mascota e Isotipo de Moai
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.asset(
-                'assets/images/moaiAbout.png',
-                height: 112,
-                cacheHeight: (112 * MediaQuery.devicePixelRatioOf(context))
-                    .ceil(),
-                fit: BoxFit.contain,
               ),
-              const SizedBox(height: 14),
-              SvgPicture.asset(
-                'assets/svgs/appLogo.svg',
-                height: 24,
-                colorFilter: ColorFilter.mode(
-                  scheme.onSurface,
-                  BlendMode.srcIn,
-                ),
-              ),
+              RepaintBoundary(child: _buildLogo(context, scheme)),
             ],
           ),
         ),
@@ -572,6 +597,27 @@ class _LoadingScreenState extends State<LoadingScreen>
             onPressed: _cancelCatalogUpdate,
           ),
         ],
+      ],
+    );
+  }
+
+  /// Mascota e isotipo de Moai.
+  Widget _buildLogo(BuildContext context, ColorScheme scheme) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Image.asset(
+          'assets/images/moaiAbout.png',
+          height: 112,
+          cacheHeight: (112 * MediaQuery.devicePixelRatioOf(context)).ceil(),
+          fit: BoxFit.contain,
+        ),
+        const SizedBox(height: 14),
+        SvgPicture.asset(
+          'assets/svgs/appLogo.svg',
+          height: 24,
+          colorFilter: ColorFilter.mode(scheme.onSurface, BlendMode.srcIn),
+        ),
       ],
     );
   }

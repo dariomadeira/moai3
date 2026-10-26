@@ -65,6 +65,38 @@ void main() {
       provider.dispose();
     });
 
+    test('en automático muestra la ciudad (región), no el barrio', () async {
+      final provider = WeatherProvider(
+        prefs,
+        service: _FixedWeather(),
+        enableTimer: false,
+      );
+      await provider.refresh();
+      // WeatherAPI ubica la IP en un barrio de São Paulo.
+      expect(provider.placeName, 'Sao Paulo');
+      provider.dispose();
+    });
+
+    test('con una localidad elegida muestra su nombre', () async {
+      final provider = WeatherProvider(
+        prefs,
+        service: _FixedWeather(),
+        enableTimer: false,
+      );
+      await provider.setCustomLocation(
+        const WeatherLocationSearchResult(
+          id: 1,
+          name: 'Cosquin',
+          region: 'Cordoba',
+          country: 'Argentina',
+          lat: 0,
+          lon: 0,
+        ),
+      );
+      expect(provider.placeName, 'Cosquin, Cordoba');
+      provider.dispose();
+    });
+
     test('setCustomLocation guarda y conmuta a modo custom', () async {
       final provider = WeatherProvider(prefs);
 
@@ -106,4 +138,19 @@ void main() {
       provider.dispose();
     });
   });
+}
+
+/// Clima fijo: la IP cae en el barrio Liberdade de São Paulo.
+class _FixedWeather extends WeatherService {
+  @override
+  Future<WeatherData?> fetchWeatherByIp({String query = 'auto:ip'}) async =>
+      WeatherData(
+        tempC: 18,
+        condition: 'Lluvia ligera',
+        iconUrl: '',
+        city: 'Liberdade',
+        region: 'Sao Paulo',
+        country: 'Brazil',
+        lastUpdated: DateTime(2026, 10, 25),
+      );
 }

@@ -91,6 +91,9 @@ flutter:
     - assets/translations/
     - assets/svgs/
     - assets/images/
+    # EN PAUSA: fotos del cielo del Inicio (HomeSkyBackdrop), fuera de la
+    # app hasta volver a usarlas.
+    # - assets/images/home_sky/
     - assets/vpn/
     - assets/music/
     - .env

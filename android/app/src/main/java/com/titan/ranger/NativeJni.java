@@ -154,4 +154,80 @@ public class NativeJni {
             }
         });
     }
+
+    /**
+     * Salto: Ranger empieza a bajar desde [momentMs] (como la app oficial,
+     * C7707e.m29665B0 → NativeJni "Seek"). Recién cuando termina
+     * ([onDone]) el reproductor puede saltar; si no, el tramo da 404.
+     */
+    public void seek(int instanceId, String name, long momentMs, Runnable onDone) {
+        handler.post(() -> {
+            try {
+                JSONObject obj = new JSONObject();
+                obj.put("instance", instanceId);
+                obj.put("name", name);
+                obj.put("moment", momentMs);
+                obj.put("offset", -1L);
+                String res = callDirect("Seek", obj.toString());
+                Log.i(TAG, "Seek " + momentMs + " -> " + res);
+            } catch (Exception e) {
+                Log.e(TAG, "seek error: " + e.getMessage(), e);
+            }
+            if (onDone != null) onDone.run();
+        });
+    }
+
+    // Avisos del reproductor a Ranger, como la app oficial (C7707e): sin
+    // ellos Ranger baja el video en orden y un salto lejos responde 404.
+
+    /** Operación del reproductor: "start", "pause", "seekTo", "stop". */
+    public void onPlayerOperation(int instanceId, String operation, String data) {
+        handler.post(() -> {
+            try {
+                JSONObject obj = new JSONObject();
+                obj.put("instance", instanceId);
+                obj.put("operation", operation);
+                obj.put("data", data != null ? data : "");
+                obj.put("err", 0);
+                String res = callDirect("OnPlayerOperation", obj.toString());
+                Log.i(TAG, "OnPlayerOperation " + operation + " -> " + res);
+            } catch (Exception e) {
+                Log.e(TAG, "onPlayerOperation error: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /** Evento del reproductor: "onPrepared", "onSeekComplete", "onCompletion", "onError". */
+    public void onPlayerEvent(int instanceId, String event, int err, int extra, long data) {
+        handler.post(() -> {
+            try {
+                JSONObject obj = new JSONObject();
+                obj.put("instance", instanceId);
+                obj.put("event", event);
+                obj.put("err", err);
+                obj.put("extra", extra);
+                obj.put("data", data);
+                obj.put("reason", "");
+                String res = callDirect("OnPlayerEvent", obj.toString());
+                Log.i(TAG, "OnPlayerEvent " + event + " -> " + res);
+            } catch (Exception e) {
+                Log.e(TAG, "onPlayerEvent error: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /** Por dónde va (ms) y cuánto tiene cargado por delante (ms). */
+    public void onPlayBuffer(int instanceId, long progressMs, long bufferMs) {
+        handler.post(() -> {
+            try {
+                JSONObject obj = new JSONObject();
+                obj.put("instance", instanceId);
+                obj.put("progress", progressMs);
+                obj.put("buffer", bufferMs);
+                callDirect("OnPlayBuffer", obj.toString());
+            } catch (Exception e) {
+                Log.e(TAG, "onPlayBuffer error: " + e.getMessage(), e);
+            }
+        });
+    }
 }

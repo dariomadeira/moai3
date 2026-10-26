@@ -113,10 +113,89 @@ class TitanRangerService {
     }
   }
 
-  /// Detiene la sesión activa de reproducción en Ranger.
+  /// Le pide a Ranger saltar a [moment] del programa [name] (el que se pasó a
+  /// [prepareProgram]): empieza a bajar desde ahí. Termina cuando Ranger
+  /// respondió; recién entonces conviene saltar en el reproductor (el tramo
+  /// pedido antes da 404). Así lo hace la app oficial.
+  static Future<void> seek({
+    required String name,
+    required Duration moment,
+    int instanceId = 0,
+  }) async {
+    if (!isSupported) return;
+    try {
+      await _channel
+          .invokeMethod('seek', {
+            'instanceId': instanceId,
+            'name': name,
+            'moment': moment.inMilliseconds,
+          })
+          .timeout(const Duration(seconds: 10));
+    } catch (_) {}
+  }
+
+  /// Avisa a Ranger una operación del reproductor ("start", "pause",
+  /// "seekTo", "end"), como la app oficial (que manda "media" de dato). Sin
+  /// el aviso de "seekTo" Ranger sigue bajando en orden y el tramo del salto
+  /// responde 404.
+  static Future<void> playerOperation(
+    String operation, {
+    String data = 'media',
+    int instanceId = 0,
+  }) async {
+    if (!isSupported) return;
+    try {
+      await _channel.invokeMethod('playerOperation', {
+        'instanceId': instanceId,
+        'operation': operation,
+        'data': data,
+      });
+    } catch (_) {}
+  }
+
+  /// Avisa a Ranger un evento del reproductor ("onPrepared",
+  /// "onSeekComplete", "onCompletion", "onError").
+  static Future<void> playerEvent(
+    String event, {
+    int err = 0,
+    int extra = 0,
+    int data = 0,
+    int instanceId = 0,
+  }) async {
+    if (!isSupported) return;
+    try {
+      await _channel.invokeMethod('playerEvent', {
+        'instanceId': instanceId,
+        'event': event,
+        'err': err,
+        'extra': extra,
+        'data': data,
+      });
+    } catch (_) {}
+  }
+
+  /// Le cuenta a Ranger por dónde va la reproducción y cuánto hay cargado por
+  /// delante (ms), para que baje lo que viene.
+  static Future<void> playBuffer({
+    required Duration progress,
+    required Duration buffer,
+    int instanceId = 0,
+  }) async {
+    if (!isSupported) return;
+    try {
+      await _channel.invokeMethod('playBuffer', {
+        'instanceId': instanceId,
+        'progress': progress.inMilliseconds,
+        'buffer': buffer.inMilliseconds,
+      });
+    } catch (_) {}
+  }
+
+  /// Detiene el programa [name] (el que se pasó a [prepareProgram]): Ranger
+  /// deja de bajarlo.
   static Future<void> stopProgram({
-    int instanceId = 1,
-    String name = 'vod',
+    int instanceId = 0,
+    required String name,
   }) async {
     if (!isSupported) return;
     try {
@@ -125,6 +204,16 @@ class TitanRangerService {
         'name': name,
       });
     } catch (_) {}
+  }
+
+  /// Se cerró el reproductor: como la app oficial, avisa "end" y detiene el
+  /// programa. Sin esto Ranger sigue bajando la película en segundo plano.
+  static Future<void> endProgram({
+    required String name,
+    int instanceId = 0,
+  }) async {
+    await playerOperation('end', instanceId: instanceId);
+    await stopProgram(instanceId: instanceId, name: name);
   }
 
   /// Lee el ANDROID_ID real del dispositivo (Settings.System "android_id").

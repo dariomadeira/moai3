@@ -51,11 +51,22 @@ class WeatherProvider extends ChangeNotifier {
   @visibleForTesting
   String? get customLocationName => _customName;
 
+  /// Dónde es el clima, para mostrar. En automático, la ciudad (región) y
+  /// no el barrio: la ubicación por IP suele caer en un barrio o en el nodo
+  /// del proveedor (p. ej. "Liberdade" en vez de "São Paulo"). Con una
+  /// localidad elegida, su nombre.
+  String get placeName {
+    final weather = _weather;
+    if (!isAutoLocation) return _customName ?? weather?.city ?? '';
+    if (weather == null) return '';
+    return weather.region.isNotEmpty ? weather.region : weather.city;
+  }
+
   /// Nombre legible de la ubicación para mostrar en los paneles de TV.
   String get locationDisplayName {
     if (isAutoLocation) {
-      final detectedCity = _weather?.city;
-      if (detectedCity != null && detectedCity.isNotEmpty) {
+      final detectedCity = placeName;
+      if (detectedCity.isNotEmpty) {
         return LocaleKeys.weather_auto_city.tr(namedArgs: {'city': detectedCity});
       }
       return LocaleKeys.weather_auto_network.tr();

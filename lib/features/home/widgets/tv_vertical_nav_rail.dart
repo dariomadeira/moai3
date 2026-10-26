@@ -1,6 +1,7 @@
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
@@ -195,11 +196,18 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
                     ),
                   ),
                 ),
-                const Positioned(
+                // En el Inicio la hora y el clima ya están en el panel: arriba
+                // va el logo. En las demás secciones, la píldora de siempre.
+                Positioned(
                   top: 8,
                   left: 0,
                   right: 0,
-                  child: TvBottomWeatherPill(),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    child: widget.selected == HomeSection.home
+                        ? const _RailLogo(key: ValueKey('logo'))
+                        : const TvBottomWeatherPill(key: ValueKey('reloj')),
+                  ),
                 ),
               ],
             ),
@@ -342,6 +350,31 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
                 child: iconWidget,
               )
             : SizedBox(width: 40, height: 40, child: Center(child: iconWidget)),
+      ),
+    );
+  }
+}
+
+/// Logo de Moai, girado para leerse de abajo hacia arriba (como la pestaña
+/// de los paneles), solo, en el lugar de la píldora del reloj y el clima.
+class _RailLogo extends StatelessWidget {
+  const _RailLogo({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    // Sólo el logo, sin cristal alrededor.
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: RotatedBox(
+          quarterTurns: 3,
+          child: SvgPicture.asset(
+            'assets/svgs/appLogo.svg',
+            height: 20,
+            colorFilter: ColorFilter.mode(scheme.onSurface, BlendMode.srcIn),
+          ),
+        ),
       ),
     );
   }

@@ -184,8 +184,14 @@ class _TvFocusButtonState extends State<TvFocusButton> {
               _cancelHoldTimer();
               return KeyEventResult.handled;
             }
+            // Sin pulsación larga ya se disparó al apretar: soltar no repite
+            // (un botón que alterna volvía a su estado). Con pulsación larga,
+            // el OK corto se dispara recién acá, si el temporizador seguía.
+            final pending = _holdTimer != null;
             _cancelHoldTimer();
-            if (enabled) widget.onPressed?.call();
+            if (enabled && widget.onLongPress != null && pending) {
+              widget.onPressed?.call();
+            }
             return KeyEventResult.handled;
           }
         }

@@ -1,6 +1,7 @@
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:provider/provider.dart';
 import 'package:moai3/features/home/areas/home_area.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
@@ -130,6 +131,10 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
     }
   }
 
+  /// Filas de la grilla de 5 columnas que ocupa la categoría.
+  int _rowCount(CategoryColumn cat) =>
+      (cat.movies.length + _crossAxisCount - 1) ~/ _crossAxisCount;
+
   List<MovieItem> _getChunk(List<MovieItem> movies, int rowIndex) {
     final start = rowIndex * _crossAxisCount;
     if (start >= movies.length) return [];
@@ -164,7 +169,8 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
   }
 
   void _onMovieTap(MovieItem movie) {
-    if (!movie.isMovie) {
+    // Películas y tráileres tienen detalle; las series todavía no.
+    if (movie.isSeries) {
       return;
     }
     Navigator.of(context).push(
@@ -177,12 +183,18 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final provider = context.watch<FeaturedMoviesProvider>();
-    final categories = provider.categoriesFor(widget.section);
-    final isLoading = provider.isLoadingFor(widget.section);
-    final loadedOnce = provider.loadedOnceFor(widget.section);
-    final errorMessage = provider.errorMessageFor(widget.section);
-    final errorDetail = provider.errorDetailFor(widget.section);
+    // Sólo lo de esta sección: si otra carga (p. ej. el Inicio pide Películas
+    // para los adelantos), la grilla no se reconstruye.
+    final (categories, isLoading, loadedOnce, errorMessage, errorDetail) =
+        context.select(
+          (FeaturedMoviesProvider p) => (
+            p.categoriesFor(widget.section),
+            p.isLoadingFor(widget.section),
+            p.loadedOnceFor(widget.section),
+            p.errorMessageFor(widget.section),
+            p.errorDetailFor(widget.section),
+          ),
+        );
 
     final title = widget.panelTitle.isNotEmpty
         ? widget.panelTitle
@@ -251,6 +263,15 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
             // Proporción estándar de afiche 262:370 (1:1.412) + barra inferior del título (30px)
             final cardHeight = (colWidth * (370 / 262)) + 30.0;
 
+            // Un ítem por encabezado y por fila: sólo se arman las filas que
+            // se ven (antes, cada categoría armaba todas sus tarjetas de una).
+            // `row` -1 es el encabezado.
+            final items = <(int cat, int row, int totalRows)>[
+              for (int c = 0; c < categories.length; c++)
+                for (int r = -1; r < _rowCount(categories[c]); r++)
+                  (c, r, _rowCount(categories[c])),
+            ];
+
             return ScrollConfiguration(
               behavior: const ScrollBehavior().copyWith(scrollbars: false),
               child: ListView.builder(
@@ -260,34 +281,34 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
                   top: 8,
                   bottom: 8,
                 ),
-                itemCount: categories.length,
-                itemBuilder: (context, catIdx) {
-                  final cat = categories[catIdx];
-                  final totalRows =
-                      (cat.movies.length + _crossAxisCount - 1) ~/
-                      _crossAxisCount;
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Encabezado de la categoría con GlobalKey para scroll
-                      _buildCategoryHeader(context, cat, catIdx, scheme),
-                      // Filas de tarjetas (grilla de 5 columnas)
-                      for (int r = 0; r < totalRows; r++) ...[
-                        _buildMovieRow(
-                          context,
-                          categories,
-                          catIdx,
-                          r,
-                          totalRows,
-                          cardHeight,
-                          uniformGap,
-                        ),
-                        if (r < totalRows - 1)
-                          const SizedBox(height: uniformGap),
-                      ],
-                      const SizedBox(height: 14),
-                    ],
+                // Las filas vecinas quedan armadas: ↑/↓ siempre encuentran la
+                // tarjeta a enfocar.
+                scrollCacheExtent: ScrollCacheExtent.pixels(cardHeight * 2.5),
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final (catIdx, r, totalRows) = items[index];
+                  if (r < 0) {
+                    // Encabezado de la categoría con GlobalKey para scroll
+                    return _buildCategoryHeader(
+                      context,
+                      categories[catIdx],
+                      catIdx,
+                      scheme,
+                    );
+                  }
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      bottom: r < totalRows - 1 ? uniformGap : 14,
+                    ),
+                    child: _buildMovieRow(
+                      context,
+                      categories,
+                      catIdx,
+                      r,
+                      totalRows,
+                      cardHeight,
+                      uniformGap,
+                    ),
                   );
                 },
               ),
@@ -470,8 +491,11 @@ class _MovieCardSlot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Sólo escucha el foco de la tarjeta. Sin nodo propio: uno creado en
+    // cada build quedaba sin liberar.
     return Focus(
-      focusNode: FocusNode(canRequestFocus: false),
+      canRequestFocus: false,
+      skipTraversal: true,
       onFocusChange: (hasFocus) {
         if (hasFocus) {
           onFocused();

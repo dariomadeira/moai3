@@ -74,7 +74,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _calendarPanelIndex = 0;
   int _settingsPanelIndex = SettingsPanelLayout.configTvPanelIndex;
 
-  HomeSection _section = HomeSection.tv;
+  /// Moai arranca siempre en el Inicio.
+  HomeSection _section = HomeSection.home;
   StreamSubscription<List<CalendarEvent>>? _liveEventsSub;
   final List<CalendarEvent> _liveSnackQueue = [];
   bool _liveSnackBusy = false;
@@ -106,6 +107,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _listenToLiveEvents();
       _updatePresenceForSection(_section);
       _listenToArcadeInvites();
+      // Arranca con el foco en el contenido del Inicio.
+      _area?.requestEntryFocus();
     });
   }
 
@@ -113,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     if (_section == HomeSection.arcade &&
         !ArcadePluginService.instance.isInstalled) {
-      _switchSection(HomeSection.tv);
+      _switchSection(HomeSection.home);
     }
   }
 
@@ -339,12 +342,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _interceptBack() {
     if (_area?.handleBack() ?? false) return true;
-    // En TV el back sin consumir lo maneja el doble back para salir.
-    if (_section == HomeSection.tv) return false;
-    // Fuera de TV: back desde el rail vuelve a TV; desde el contenido, al rail.
+    // El Inicio es la base: back desde el rail lo maneja el doble back para
+    // salir; desde cualquier otra sección vuelve al Inicio.
     if (_railFocusNode.hasFocus) {
-      _switchSection(HomeSection.tv);
+      if (_section == HomeSection.home) return false;
+      _switchSection(HomeSection.home);
     } else {
+      // Desde el contenido, primero al rail.
       _focusRail();
     }
     return true;

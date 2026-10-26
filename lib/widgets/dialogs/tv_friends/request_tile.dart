@@ -83,7 +83,9 @@ class _RequestTileState extends State<_RequestTile> {
             return KeyEventResult.handled;
           }
           if (TvKeyHandler.isActionKey(key)) {
-            if (!widget.isLoading) {
+            // Sólo un OK nuevo: las repeticiones de un OK que se mantuvo
+            // antes de abrir el panel no aceptan solicitudes.
+            if (event is KeyDownEvent && !widget.isLoading) {
               widget.onAccept();
             }
             return KeyEventResult.handled;

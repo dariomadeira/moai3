@@ -7,6 +7,7 @@ import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
+import 'package:moai3/utils/image_decode.dart';
 
 /// Tarjeta visual cinematográfica 16:9 para la pantalla de detalle de películas en Smart TV.
 class TvMovieHeroCard extends StatefulWidget {
@@ -45,6 +46,7 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
   bool _isFocused = false;
   int _currentIndex = 0;
   Timer? _rotationTimer;
+  ModalRoute<Object?>? _route;
 
   List<String> get _effectiveImages {
     final list = widget.imageUrls.where((u) => u.trim().isNotEmpty).toList();
@@ -67,12 +69,19 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
     final images = _effectiveImages;
     if (images.length > 1) {
       _rotationTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-        if (!mounted) return;
+        // Tapada por otra pantalla (p. ej. el reproductor): no repinta.
+        if (!mounted || !(_route?.isCurrent ?? true)) return;
         setState(() {
           _currentIndex = (_currentIndex + 1) % images.length;
         });
       });
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _route = ModalRoute.of(context);
   }
 
   @override
@@ -160,8 +169,9 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Carrusel dinámico de fotogramas de la película
-                  _buildImageCarousel(scheme),
+                  // Carrusel dinámico de fotogramas de la película. En su
+                  // capa: el fundido cada 4 s no repinta el resto.
+                  RepaintBoundary(child: _buildImageCarousel(scheme)),
 
                   // Viñeta degradada cinemática
                   Positioned.fill(
@@ -295,34 +305,61 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
 
     final currentUrl = images[_currentIndex % images.length];
 
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 700),
-      switchInCurve: Curves.easeInOut,
-      switchOutCurve: Curves.easeInOut,
-      child: CachedNetworkImage(
-        key: ValueKey<String>(currentUrl),
-        imageUrl: currentUrl,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        placeholder: (_, _) => Container(
-          color: emptyColor,
-          child: Center(
-            child: Icon(
-              MoaiIcons.vodMovie,
-              size: MoaiIconSizes.hero,
-              color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) => AnimatedSwitcher(
+        duration: const Duration(milliseconds: 700),
+        switchInCurve: Curves.easeInOut,
+        switchOutCurve: Curves.easeInOut,
+        child: _buildImage(
+          context,
+          scheme,
+          currentUrl,
+          emptyColor,
+          constraints,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImage(
+    BuildContext context,
+    ColorScheme scheme,
+    String currentUrl,
+    Color emptyColor,
+    BoxConstraints constraints,
+  ) {
+    return CachedNetworkImage(
+      key: ValueKey<String>(currentUrl),
+      imageUrl: currentUrl,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      // Las fotos vienen de hasta 4096 px y rotan cada 4 s: se decodifican
+      // al tamaño de la tarjeta, no enteras.
+      memCacheWidth: constraints.hasBoundedWidth && constraints.hasBoundedHeight
+          ? coverDecodeWidth(
+              width: constraints.maxWidth,
+              height: constraints.maxHeight,
+              devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+            )
+          : null,
+      placeholder: (_, _) => Container(
+        color: emptyColor,
+        child: Center(
+          child: Icon(
+            MoaiIcons.vodMovie,
+            size: MoaiIconSizes.hero,
+            color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
           ),
         ),
-        errorWidget: (_, _, _) => Container(
-          color: emptyColor,
-          child: Center(
-            child: Icon(
-              MoaiIcons.vodMovie,
-              size: MoaiIconSizes.hero,
-              color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
-            ),
+      ),
+      errorWidget: (_, _, _) => Container(
+        color: emptyColor,
+        child: Center(
+          child: Icon(
+            MoaiIcons.vodMovie,
+            size: MoaiIconSizes.hero,
+            color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
           ),
         ),
       ),

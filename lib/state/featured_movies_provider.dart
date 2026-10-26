@@ -7,6 +7,9 @@ import 'package:moai3/services/tmdb_trending_service.dart';
 class _CatalogSectionState {
   List<MovieItem> items = [];
   List<CategoryColumn> categories = [];
+
+  /// Adelantos de la sección, fuera de [items] y [categories].
+  List<MovieItem> trailers = const [];
   bool isLoading = false;
   String? errorMessage;
   String? errorDetail;
@@ -18,6 +21,9 @@ class FeaturedMoviesProvider extends ChangeNotifier {
   static const String sectionFeatured = 'masnew_featured';
   static const String sectionMovies = 'masnew_movies';
   static const String sectionSeries = 'masnew_series';
+
+  /// Cuánto espera la grilla de Películas a la fila de estrenos de TMDb.
+  static const Duration _trendingWait = Duration(seconds: 3);
 
   final Map<String, _CatalogSectionState> _sections = {};
 
@@ -46,6 +52,11 @@ class FeaturedMoviesProvider extends ChangeNotifier {
     }
     return _stateFor(section).items;
   }
+
+  /// Adelantos (tráileres) de la sección: no están en la grilla, los muestra
+  /// la tarjeta "Adelantos" del Inicio.
+  List<MovieItem> trailersFor(String section) =>
+      _sections[section]?.trailers ?? const [];
 
   List<CategoryColumn> categoriesFor(String section) {
     if (section == sectionFeatured && !_sections.containsKey(section)) {
@@ -109,7 +120,10 @@ class FeaturedMoviesProvider extends ChangeNotifier {
       final result =
           await MoiamovApiService.instance.loadPersistedCatalog(section);
       final columns = result?.categories ?? const <CategoryColumn>[];
+      // Los adelantos (tráileres) no van en la grilla: tienen su propia
+      // tarjeta en el Inicio ([trailersFor]).
       final flat = <MovieItem>[];
+      final trailers = <MovieItem>[];
       final seen = <String>{};
       for (final column in columns) {
         for (final movie in column.movies) {
@@ -117,19 +131,35 @@ class FeaturedMoviesProvider extends ChangeNotifier {
               ? movie.contentId
               : '${movie.name}|${movie.poster}';
           if (seen.add(key)) {
-            flat.add(movie);
+            (movie.isTrailer ? trailers : flat).add(movie);
           }
         }
       }
       state.items = flat;
-      var categories = columns.where((c) => c.movies.isNotEmpty).toList();
+      state.trailers = trailers;
+      var categories = [
+        for (final column in columns)
+          if (column.movies.where((m) => !m.isTrailer).toList()
+              case final movies when movies.isNotEmpty)
+            CategoryColumn(
+              columnId: column.columnId,
+              columnName: column.columnName,
+              code: column.code,
+              movies: movies,
+            ),
+      ];
 
       if (section == sectionMovies) {
         try {
-          final trendingRow = await TmdbTrendingService.instance.buildTrendingRow(
-            allCatalogMovies: flat,
-            existingCategories: categories,
-          );
+          // La grilla espera a TMDb como mucho [_trendingWait]: después sale
+          // sin la fila (sumarla más tarde correría el foco). Lo que llegue
+          // tarde queda en caché para la próxima carga.
+          final trendingRow = await TmdbTrendingService.instance
+              .buildTrendingRow(
+                allCatalogMovies: flat,
+                existingCategories: categories,
+              )
+              .timeout(_trendingWait);
           if (trendingRow.movies.isNotEmpty) {
             categories = [trendingRow, ...categories];
           }
@@ -145,6 +175,7 @@ class FeaturedMoviesProvider extends ChangeNotifier {
       state.errorDetail = '$e';
       state.items = [];
       state.categories = [];
+      state.trailers = const [];
       state.loadedOnce = true;
     } finally {
       state.isLoading = false;
