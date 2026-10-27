@@ -746,6 +746,65 @@ class MoiamovApiService {
     return result;
   }
 
+  /// Búsqueda en toda la biblioteca (`v3/searchByName`), como la app oficial.
+  /// Trae películas y series mezcladas, sin limpiar (SPEC-45 §4). Funciona con
+  /// la sesión del arranque, sin VPN. `null` si no hay sesión o el portal no
+  /// contesta bien.
+  Future<MovieSearchPage?> searchMovies(
+    String query, {
+    int page = 1,
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
+    if (_currentUserToken.isEmpty) return null;
+    final body = await _postEncrypted(
+      _vodClient,
+      '${_cleanUrl(defaultBaseUrl)}/api/portalCore/v3/searchByName',
+      {
+        'userToken': _currentUserToken,
+        'userId': _currentUserId,
+        'portalCode': _currentPortalCode,
+        'columnId': '-1',
+        'value': query,
+        'type': '1',
+        'pageSize': MovieSearchPage.pageSize,
+        'pageNum': page,
+        'filter': '',
+      },
+      timeout,
+    );
+    if (body == null) return null;
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is! Map<String, dynamic>) return null;
+      if (decoded['returnCode']?.toString() != '0') {
+        logLine(
+          'searchByName rechazado: ${decoded['returnCode']} (${decoded['errorMessage']})',
+        );
+        return null;
+      }
+      final data = _decodeData(decoded['data']);
+      if (data is! Map) return const MovieSearchPage(items: [], total: 0);
+      final items = <MovieItem>[
+        for (final group in (data['searchItemList'] as List?) ?? const [])
+          if (group is Map)
+            for (final raw in (group['itemList'] as List?) ?? const [])
+              if (raw is Map<String, dynamic>) _searchItem(raw),
+      ];
+      final total = int.tryParse('${data['totalSize']}') ?? items.length;
+      return MovieSearchPage(items: items, total: total);
+    } catch (e) {
+      logLine('⚠️ searchByName: respuesta inválida: $e');
+      return null;
+    }
+  }
+
+  /// Los resultados traen el estreno (`releaseTime`), que el catálogo no.
+  static MovieItem _searchItem(Map<String, dynamic> raw) {
+    final released = raw['releaseTime']?.toString() ?? '';
+    final year = RegExp(r'\b(19|20)\d\d\b').firstMatch(released)?.group(0);
+    return MovieItem.fromJson(year == null ? raw : {...raw, 'year': year});
+  }
+
   CatalogResult _emptyCatalog(String sectionLabel) {
     return CatalogResult(
       categories: [],

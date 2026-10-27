@@ -506,6 +506,7 @@ abstract class  LocaleKeys {
   static const movies_loading_video = 'movies_loading_video';
   static const movies_panel_featured_title = 'movies_panel_featured_title';
   static const movies_panel_movies_title = 'movies_panel_movies_title';
+  static const movies_panel_search_title = 'movies_panel_search_title';
   static const movies_panel_series_title = 'movies_panel_series_title';
   static const movies_play = 'movies_play';
   static const movies_player_error_desc = 'movies_player_error_desc';
@@ -519,6 +520,11 @@ abstract class  LocaleKeys {
   static const movies_resume_dialog_desc = 'movies_resume_dialog_desc';
   static const movies_resume_dialog_title = 'movies_resume_dialog_title';
   static const movies_resume_from_start = 'movies_resume_from_start';
+  static const movies_search_empty_history = 'movies_search_empty_history';
+  static const movies_search_hint = 'movies_search_hint';
+  static const movies_search_no_results = 'movies_search_no_results';
+  static const movies_search_offline = 'movies_search_offline';
+  static const movies_search_recent = 'movies_search_recent';
   static const movies_subtitle_default = 'movies_subtitle_default';
   static const movies_synopsis = 'movies_synopsis';
   static const movies_synopsis_empty = 'movies_synopsis_empty';

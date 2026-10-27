@@ -427,6 +427,18 @@ class MovieItem {
   };
 }
 
+/// Una página de la búsqueda del servidor, sin limpiar (SPEC-45 §4.2).
+class MovieSearchPage {
+  static const int pageSize = 20;
+
+  final List<MovieItem> items;
+
+  /// Resultados en total según el servidor (todas las páginas).
+  final int total;
+
+  const MovieSearchPage({required this.items, required this.total});
+}
+
 /// Origen real del catálogo mostrado por la app.
 enum CatalogSource {
   /// Descargado en vivo desde el servicio de catálogo (sesión válida).

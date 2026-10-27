@@ -307,7 +307,7 @@ class _SearchPanelChrome extends StatelessWidget {
             ),
             if (hasQuery) ...[
               const SizedBox(width: 8),
-              _SearchClearButton(
+              SearchClearButton(
                 focusNode: clearFocusNode,
                 onClear: onClear,
                 onKeyLeft: searchFocusNode.requestFocus,
@@ -338,14 +338,16 @@ class _SearchPanelChrome extends StatelessWidget {
   }
 }
 
-class _SearchClearButton extends StatefulWidget {
+/// "X" para borrar la búsqueda (también la usa Buscar de Películas).
+class SearchClearButton extends StatefulWidget {
   final FocusNode focusNode;
   final VoidCallback onClear;
   final VoidCallback onKeyLeft;
   final VoidCallback? onKeyUp;
   final VoidCallback? onKeyDown;
 
-  const _SearchClearButton({
+  const SearchClearButton({
+    super.key,
     required this.focusNode,
     required this.onClear,
     required this.onKeyLeft,
@@ -354,10 +356,10 @@ class _SearchClearButton extends StatefulWidget {
   });
 
   @override
-  State<_SearchClearButton> createState() => _SearchClearButtonState();
+  State<SearchClearButton> createState() => SearchClearButtonState();
 }
 
-class _SearchClearButtonState extends State<_SearchClearButton> {
+class SearchClearButtonState extends State<SearchClearButton> {
   bool _isFocused = false;
 
   @override

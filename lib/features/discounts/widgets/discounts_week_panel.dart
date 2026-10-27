@@ -232,79 +232,94 @@ class _DiscountsWeekPanelState extends State<DiscountsWeekPanel> {
               // los botones a la derecha.
               Padding(
                 padding: const EdgeInsets.fromLTRB(0, 10, 14, 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Icon(
-                            MoaiIcons.discounts,
-                            size: MoaiIconSizes.md,
-                            color: scheme.primary,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isUltraCompact = constraints.maxWidth < 360;
+                    final isCompact = constraints.maxWidth < 480;
+
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Icon(
+                                MoaiIcons.discounts,
+                                size: MoaiIconSizes.md,
+                                color: scheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  MoaiFormats.weekRange(
+                                    week.first.day,
+                                    week.last.day,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: MoaiText.display(
+                                    context,
+                                    fontSize: 15,
+                                    color: scheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              MoaiFormats.weekRange(
-                                week.first.day,
-                                week.last.day,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: MoaiText.display(
-                                context,
-                                fontSize: 15,
-                                color: scheme.onSurface,
-                              ),
+                        ),
+                        for (final (i, action) in _HeaderAction.values.indexed)
+                          Padding(
+                            padding: EdgeInsets.only(left: i == 0 ? 0 : 6),
+                            child: TvWeekHeaderButton(
+                              icon: switch (action) {
+                                _HeaderAction.mine => MoaiIcons.discountMerchants,
+                                _HeaderAction.rubro =>
+                                  _rubro == null
+                                      ? MoaiIcons.discountFilter
+                                      : DiscountFormat.rubroIcon(_rubro!),
+                                _HeaderAction.refresh => MoaiIcons.refresh,
+                              },
+                              label: switch (action) {
+                                _HeaderAction.mine => isUltraCompact
+                                    ? null
+                                    : _service.onlyMine
+                                    ? LocaleKeys.discounts_filter_mine.tr()
+                                    : (isCompact ? 'Todos' : LocaleKeys.discounts_filter_all.tr()),
+                                _HeaderAction.rubro => isUltraCompact
+                                    ? null
+                                    : _rubro == null
+                                    ? (isCompact ? 'Rubros' : LocaleKeys.discounts_filter_all_rubros.tr())
+                                    : DiscountFormat.rubro(_rubro!),
+                                _HeaderAction.refresh => null,
+                              },
+                              tooltip: switch (action) {
+                                _HeaderAction.mine => _service.onlyMine
+                                    ? LocaleKeys.discounts_filter_mine.tr()
+                                    : LocaleKeys.discounts_filter_all.tr(),
+                                _HeaderAction.rubro => _rubro == null
+                                    ? LocaleKeys.discounts_filter_all_rubros.tr()
+                                    : DiscountFormat.rubro(_rubro!),
+                                _HeaderAction.refresh => LocaleKeys.calendar_refresh.tr(),
+                              },
+                              isLoading:
+                                  action == _HeaderAction.refresh &&
+                                  _service.isLoading,
+                              isFocused:
+                                  focused &&
+                                  _section == _Section.header &&
+                                  _headerIndex == i,
+                              onTap: () {
+                                setState(() {
+                                  _section = _Section.header;
+                                  _headerIndex = i;
+                                });
+                                _runHeader(action);
+                                widget.focusNode.requestFocus();
+                              },
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    for (final (i, action) in _HeaderAction.values.indexed)
-                      Padding(
-                        padding: EdgeInsets.only(left: i == 0 ? 0 : 6),
-                        child: TvWeekHeaderButton(
-                          icon: switch (action) {
-                            _HeaderAction.mine => MoaiIcons.discountMerchants,
-                            _HeaderAction.rubro =>
-                              _rubro == null
-                                  ? MoaiIcons.discountFilter
-                                  : DiscountFormat.rubroIcon(_rubro!),
-                            _HeaderAction.refresh => MoaiIcons.refresh,
-                          },
-                          label: switch (action) {
-                            _HeaderAction.mine =>
-                              _service.onlyMine
-                                  ? LocaleKeys.discounts_filter_mine.tr()
-                                  : LocaleKeys.discounts_filter_all.tr(),
-                            _HeaderAction.rubro =>
-                              _rubro == null
-                                  ? LocaleKeys.discounts_filter_all_rubros.tr()
-                                  : DiscountFormat.rubro(_rubro!),
-                            _HeaderAction.refresh => null,
-                          },
-                          tooltip: action == _HeaderAction.refresh
-                              ? LocaleKeys.calendar_refresh.tr()
-                              : null,
-                          isLoading:
-                              action == _HeaderAction.refresh &&
-                              _service.isLoading,
-                          isFocused:
-                              focused &&
-                              _section == _Section.header &&
-                              _headerIndex == i,
-                          onTap: () {
-                            setState(() {
-                              _section = _Section.header;
-                              _headerIndex = i;
-                            });
-                            _runHeader(action);
-                            widget.focusNode.requestFocus();
-                          },
-                        ),
-                      ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
               ),
               Expanded(

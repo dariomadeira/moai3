@@ -176,6 +176,54 @@ void main() {
 
       provider.dispose();
     });
+
+    test('restaura pronóstico completo desde caché JSON', () async {
+      final sampleJson = {
+        'location': {'name': 'Quines', 'region': 'San Luis', 'country': 'Argentina'},
+        'current': {
+          'temp_c': 17.0,
+          'feelslike_c': 16.0,
+          'is_day': 1,
+          'condition': {'text': 'Cubierto', 'code': 1009, 'icon': '//cdn.weatherapi.com/icon.png'},
+        },
+        'forecast': {
+          'forecastday': [
+            {
+              'day': {'maxtemp_c': 22.0, 'mintemp_c': 11.0, 'daily_chance_of_rain': 20},
+              'hour': [
+                {
+                  'time_epoch': 1792983600,
+                  'temp_c': 17.0,
+                  'is_day': 1,
+                  'condition': {'code': 1009},
+                  'chance_of_rain': 20,
+                },
+                {
+                  'time_epoch': 1792987200,
+                  'temp_c': 16.5,
+                  'is_day': 1,
+                  'condition': {'code': 1009},
+                  'chance_of_rain': 10,
+                },
+              ],
+            },
+          ],
+        },
+      };
+
+      await prefs.saveString('weather_last_full_json', jsonEncode(sampleJson));
+
+      final provider = WeatherProvider(prefs, enableTimer: false);
+      expect(provider.weather, isNotNull);
+      expect(provider.weather!.city, equals('Quines'));
+      expect(provider.weather!.tempC, equals(17.0));
+      expect(provider.weather!.feelsLikeC, equals(16.0));
+      expect(provider.weather!.maxTempC, equals(22.0));
+      expect(provider.weather!.minTempC, equals(11.0));
+      expect(provider.weather!.hourly, hasLength(2));
+      expect(provider.weather!.rawJson, isNotNull);
+      provider.dispose();
+    });
   });
 }
 

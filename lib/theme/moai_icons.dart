@@ -805,6 +805,15 @@ abstract final class MoaiIcons {
   /// Estado vacío del catálogo de películas (`movies_empty_featured`).
   static const tvMoviesEmpty = ReiconIcons.cloudDownload;
 
+  /// Panel Buscar de Películas (columna del acordeón y campo vacío).
+  static const moviesSearch = ReiconIcons.search4;
+
+  /// Una búsqueda reciente en Buscar de Películas.
+  static const moviesSearchRecent = ReiconIcons.history;
+
+  /// Resultados del catálogo guardado: el servidor no contestó.
+  static const moviesSearchOffline = ReiconIcons.wifiOff;
+
   /// Tarjeta: película.
   static const vodMovie = ReiconIcons.videoFrame2;
 

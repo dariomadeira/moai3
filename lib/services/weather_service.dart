@@ -28,6 +28,9 @@ class WeatherData {
   /// trae pronóstico (p. ej. datos restaurados de caché).
   final List<WeatherHour> hourly;
 
+  /// Payload JSON devuelto por la API, para persistir el pronóstico completo en caché.
+  final Map<String, dynamic>? rawJson;
+
   const WeatherData({
     required this.tempC,
     required this.condition,
@@ -44,6 +47,7 @@ class WeatherData {
     this.minTempC,
     this.chanceOfRain,
     this.hourly = const [],
+    this.rawJson,
   });
 
   factory WeatherData.fromJson(Map<String, dynamic> json) {
@@ -86,6 +90,7 @@ class WeatherData {
       country: location['country'] as String? ?? '',
       humidity: (current['humidity'] as num?)?.toInt(),
       lastUpdated: DateTime.now(),
+      rawJson: json,
     );
   }
 

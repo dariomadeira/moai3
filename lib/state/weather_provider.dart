@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:moai3/services/weather_service.dart';
 
 /// Provider responsable de mantener actualizado el clima del dispositivo (TV).
 class WeatherProvider extends ChangeNotifier {
+  static const String _prefRawJsonKey = 'weather_last_full_json';
   static const String _prefTempKey = 'weather_last_temp_c';
   static const String _prefCityKey = 'weather_last_city';
   static const String _prefCondKey = 'weather_last_condition';
@@ -126,6 +128,18 @@ class WeatherProvider extends ChangeNotifier {
     _customQuery = _prefs.readOptionalString(_prefCustomQueryKey);
     _customName = _prefs.readOptionalString(_prefCustomNameKey);
 
+    // Si existe el pronóstico completo guardado, se restaura con sus horas y máximas/mínimas.
+    final cachedFullJson = _prefs.readOptionalString(_prefRawJsonKey);
+    if (cachedFullJson != null && cachedFullJson.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(cachedFullJson) as Map<String, dynamic>;
+        _weather = WeatherData.fromJson(decoded);
+        return;
+      } catch (e) {
+        debugPrint('[WeatherProvider] Error al restaurar caché completo: $e');
+      }
+    }
+
     final cachedTemp = _prefs.readOptionalString(_prefTempKey);
     final cachedCity = _prefs.readOptionalString(_prefCityKey);
     final cachedCond = _prefs.readOptionalString(_prefCondKey);
@@ -172,6 +186,9 @@ class WeatherProvider extends ChangeNotifier {
 
       if (data != null) {
         _weather = data;
+        if (data.rawJson != null) {
+          await _prefs.saveString(_prefRawJsonKey, jsonEncode(data.rawJson));
+        }
         await _prefs.saveString(_prefTempKey, '${data.tempC}');
         await _prefs.saveString(_prefCityKey, data.city);
         await _prefs.saveString(_prefCondKey, data.condition);

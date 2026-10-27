@@ -453,6 +453,7 @@ class _HomeScreenState extends State<HomeScreen> {
         panelTitle: LocaleKeys.movies_panel_movies_title.tr(),
         accordionIcon: MoaiIcons.tvAccordionMovies,
         emptyMessage: LocaleKeys.movies_empty_movies.tr(),
+        searchEnabled: true,
         onExitLeft: _focusRail,
       ),
       HomeSection.series => HomeMoviesArea(

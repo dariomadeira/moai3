@@ -6,9 +6,12 @@ import 'package:provider/provider.dart';
 import 'package:moai3/features/home/areas/home_area.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/home/widgets/tv_movie_card.dart';
+import 'package:moai3/features/movies/controllers/movie_search_controller.dart';
 import 'package:moai3/features/movies/screens/movie_detail_screen.dart';
+import 'package:moai3/features/movies/widgets/movie_search_panel.dart';
 import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/models/movie_models.dart';
+import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/state/featured_movies_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -17,12 +20,17 @@ import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
 
 /// Área del rail para catálogos de Moiamov (Destacados, Películas, Series):
 /// navegación vertical con grupos seccionales y grilla de 5 columnas para cada categoría.
+/// Con [searchEnabled] suma un segundo panel "Buscar" (SPEC-45).
 class HomeMoviesArea extends StatefulWidget {
   final String section;
   final String panelTitle;
   final IconData? accordionIcon;
   final String emptyMessage;
+  final bool searchEnabled;
   final VoidCallback onExitLeft;
+
+  /// Búsqueda del servidor; en los tests se reemplaza.
+  final MovieSearchFetcher? searchFetcher;
 
   const HomeMoviesArea({
     super.key,
@@ -30,6 +38,8 @@ class HomeMoviesArea extends StatefulWidget {
     this.panelTitle = '',
     this.accordionIcon,
     this.emptyMessage = '',
+    this.searchEnabled = false,
+    this.searchFetcher,
     required this.onExitLeft,
   });
 
@@ -52,6 +62,43 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
   int _lastFocusedRow = 0;
   int _lastFocusedCol = 0;
 
+  /// 0: la grilla; 1: Buscar.
+  int _panel = 0;
+  MovieSearchController? _search;
+  final FocusNode _searchFieldFocus = FocusNode(debugLabel: 'movie_search');
+  final FocusNode _searchClearFocus = FocusNode(
+    debugLabel: 'movie_search_clear',
+  );
+
+  void _openSearch() {
+    if (!widget.searchEnabled) return;
+    setState(() => _panel = 1);
+    _focus.node(_searchFieldFocus);
+  }
+
+  void _closeSearch() {
+    if (_panel == 0) return;
+    setState(() => _panel = 0);
+    // La grilla se vuelve a armar en el próximo frame.
+    _focus.request(() {
+      focusGrid();
+      final focused = FocusManager.instance.primaryFocus;
+      return focused == _emptyFocusNode || _focusNodes.containsValue(focused);
+    });
+  }
+
+  void _openSearchResult(MovieItem movie) {
+    _search?.rememberQuery();
+    _onMovieTap(movie);
+  }
+
+  @override
+  bool handleBack() {
+    if (_panel == 0) return false;
+    _closeSearch();
+    return true;
+  }
+
   void focusGrid() {
     if (!mounted) return;
     final provider = context.read<FeaturedMoviesProvider>();
@@ -63,8 +110,15 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
     _focusCard(_lastFocusedCat, _lastFocusedRow, _lastFocusedCol);
   }
 
+  /// Desde el rail siempre a la grilla (SPEC-45 §2.1).
   @override
-  void requestEntryFocus() => focusGrid();
+  void requestEntryFocus() {
+    if (_panel == 1) {
+      _closeSearch();
+    } else {
+      focusGrid();
+    }
+  }
 
   GlobalKey _getCategoryHeaderKey(int catIdx) {
     return _categoryHeaderKeys.putIfAbsent(catIdx, GlobalKey.new);
@@ -143,6 +197,16 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
   @override
   void initState() {
     super.initState();
+    if (widget.searchEnabled) {
+      _search = MovieSearchController(
+        fetch:
+            widget.searchFetcher ??
+            (query, page) =>
+                MoiamovApiService.instance.searchMovies(query, page: page),
+        localMovies: () =>
+            context.read<FeaturedMoviesProvider>().itemsFor(widget.section),
+      )..loadHistory();
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final provider = context.read<FeaturedMoviesProvider>();
@@ -163,6 +227,9 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
     _categoryHeaderKeys.clear();
     _emptyFocusNode.dispose();
     _scrollController.dispose();
+    _search?.dispose();
+    _searchFieldFocus.dispose();
+    _searchClearFocus.dispose();
     super.dispose();
   }
 
@@ -205,14 +272,30 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
         ? widget.emptyMessage
         : LocaleKeys.movies_empty_featured.tr();
 
+    final search = _search;
     return TvAccordionRowPreview(
-      panelCount: 1,
-      activeIndex: 0,
-      colors: [scheme.surface.withValues(alpha: 0.8)],
-      titles: [title],
-      icons: [icon],
-      onPanelTap: (_) {},
+      panelCount: search == null ? 1 : 2,
+      activeIndex: _panel,
+      colors: [
+        scheme.surface.withValues(alpha: 0.8),
+        if (search != null) scheme.surface.withValues(alpha: 0.8),
+      ],
+      titles: [
+        title,
+        if (search != null) LocaleKeys.movies_panel_search_title.tr(),
+      ],
+      icons: [icon, if (search != null) MoaiIcons.moviesSearch],
+      onPanelTap: (index) => index == 1 ? _openSearch() : _closeSearch(),
       buildExpandedContent: (index, title) {
+        if (index == 1 && search != null) {
+          return MovieSearchPanel(
+            controller: search,
+            fieldFocusNode: _searchFieldFocus,
+            clearFocusNode: _searchClearFocus,
+            onExitLeft: _closeSearch,
+            onOpenMovie: _openSearchResult,
+          );
+        }
         if ((!loadedOnce || isLoading) &&
             categories.isEmpty &&
             errorMessage == null) {
@@ -414,6 +497,8 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
                       _focusCard(catIdx, r, c + 1);
                       return true;
                     }
+                    // Última película de la fila: al panel Buscar.
+                    _openSearch();
                     return true;
                   },
                   onKeyUp: () {

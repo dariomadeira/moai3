@@ -330,13 +330,17 @@ class TvWeekHeaderButton extends StatelessWidget {
           Icon(icon, size: MoaiIconSizes.sm, color: fgColor),
         if (label != null) ...[
           const SizedBox(width: 6),
-          Text(
-            label!,
-            style: MoaiText.body(
-              context,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: fgColor,
+          Flexible(
+            child: Text(
+              label!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: MoaiText.body(
+                context,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: fgColor,
+              ),
             ),
           ),
         ],

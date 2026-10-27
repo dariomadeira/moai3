@@ -74,9 +74,13 @@ class _TvVerticalNavRailState extends State<TvVerticalNavRail> {
     HomeSection.series: FeaturedMoviesProvider.sectionSeries,
   };
 
+  /// Ocultas temporalmente: nos centramos en Películas hasta que ande bien.
+  static const _hiddenSections = {HomeSection.featured, HomeSection.series};
+
   List<HomeSection> _getAvailableSections(bool isArcadeInstalled) {
     final movies = context.read<FeaturedMoviesProvider>();
     bool isVisible(HomeSection section) {
+      if (_hiddenSections.contains(section)) return false;
       if (section == HomeSection.arcade) return isArcadeInstalled;
       final catalog = _catalogSections[section];
       return catalog == null || movies.isSectionAvailable(catalog);

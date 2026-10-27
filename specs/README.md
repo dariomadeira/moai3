@@ -60,6 +60,8 @@ Todas las decisiones de diseño, contratos de plugins, modelos de datos y flujos
   *Sección del rail: bancos y billeteras, Mis comercios, rubros (súper, mayoristas, farmacias, combustible) y provincia; API pública de MODO con caché diario, semana de hoy a +6 y detalle. Tarjeta resumen en el Inicio.*
 - [SPEC-44: Biblioteca de películas y reproducción](features/movie_library_and_playback.md)  
   *Zonas de progreso, Interesantes → Seguir viendo → vista, Titan Ranger, audio/subtítulos globales, catálogo en isolate e imágenes.*
+- [SPEC-45: Buscador de películas](features/movie_search.md)  
+  *Segundo panel "Buscar" en Películas; búsqueda en el servidor (`searchByName`) con limpieza, paginado, recientes y respaldo en el catálogo guardado.*
 
 ### 5. Verificación y Calidad
 - [SPEC-40: Matriz de Criterios de Aceptación (Baseline v3.0.14 + xumovies)](verification/baseline_acceptance_matrix.md)  
