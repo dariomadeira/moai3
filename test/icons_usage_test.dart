@@ -7,8 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('no se usan familias de íconos fuera de MoaiIcons', () {
     final direct = RegExp(
-      r'\b(Icons|Symbols|ReiconIcons|ReiconFilledIcons)\.[a-z]|'
-      r'package:(reicons|material_symbols_icons)/',
+      r'\b(Icons|Symbols|ReiconIcons|ReiconFilledIcons|HugeIcons)\.[a-z]|'
+      r'package:(reicons|material_symbols_icons|hugeicons_plus)/',
     );
     final offenders = [
       for (final e in Directory('lib').listSync(recursive: true))
@@ -45,13 +45,14 @@ void main() {
     expect(offenders, isEmpty);
   });
 
-  test('MoaiIcons usa solo Reicon (sin Material Icons ni Symbols)', () {
+  test('MoaiIcons usa solo HugeIcons (sin Material Icons, Symbols ni Reicon)', () {
     final source = File('lib/theme/moai_icons.dart').readAsStringSync();
     final values = RegExp(r'static const \w+ = (\w+)\.')
         .allMatches(source)
         .map((m) => m[1])
         .toSet();
-    expect(values, {'ReiconIcons', 'ReiconFilledIcons'});
+    expect(values, {'HugeIcons'});
     expect(source, isNot(contains('package:material_symbols_icons')));
+    expect(source, isNot(contains('package:reicons')));
   });
 }

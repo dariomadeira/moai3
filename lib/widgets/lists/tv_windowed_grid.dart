@@ -56,7 +56,11 @@ class TvWindowedGrid<T> extends StatefulWidget {
     this.onExitRight,
     this.onFocusedGlobalIndex,
     this.focusOnMount = true,
+    this.focusNodeBuilder,
   });
+
+  /// Constructor opcional para usar FocusNodes externos (p. ej. con debugLabel específico).
+  final FocusNode Function(int globalIndex)? focusNodeBuilder;
 
   @override
   State<TvWindowedGrid<T>> createState() => TvWindowedGridState<T>();
@@ -66,6 +70,16 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
   late int _windowStart;
   late int _localFocus;
   late List<FocusNode> _nodes;
+
+  FocusNode _nodeAt(int local) {
+    if (widget.focusNodeBuilder != null && widget.items.isNotEmpty) {
+      final global = _windowStart + local;
+      if (global < widget.items.length) {
+        return widget.focusNodeBuilder!(global);
+      }
+    }
+    return _nodes[local];
+  }
 
   int get crossAxisCount {
     final v = widget.crossAxisCount;
@@ -93,7 +107,7 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
 
   int get _activeLocal {
     for (var i = 0; i < _visibleCount; i++) {
-      if (_nodes[i].hasFocus) return i;
+      if (_nodeAt(i).hasFocus) return i;
     }
     final maxLocal = _visibleCount <= 0 ? 0 : _visibleCount - 1;
     if (_localFocus < 0) return 0;
@@ -181,7 +195,7 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
       final inWindow =
           target >= _windowStart && target < _windowStart + _visibleCount;
       if (!inWindow || oldWidget.items.length != widget.items.length) {
-        final hadFocus = _nodes.any((n) => n.hasFocus);
+        final hadFocus = List.generate(_visibleCount, _nodeAt).any((n) => n.hasFocus);
         _placeWindowFor(target);
         if (hadFocus) {
           SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -217,7 +231,7 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
       return;
     }
 
-    final hadFocus = _nodes.any((n) => n.hasFocus);
+    final hadFocus = List.generate(_visibleCount, _nodeAt).any((n) => n.hasFocus);
     setState(() => _placeWindowFor(target));
     if (requestFocus || hadFocus) {
       SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -262,7 +276,7 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
     if (maxLocal < 0) return;
     final clamped = local < 0 ? 0 : (local > maxLocal ? maxLocal : local);
     _localFocus = clamped;
-    final node = _nodes[clamped];
+    final node = _nodeAt(clamped);
     if (node.context != null) {
       node.requestFocus();
     } else if (attempts > 0) {
@@ -326,10 +340,7 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
     final newStart = _alignStart(_windowStart - cols);
     setState(() {
       _windowStart = newStart;
-      final nextLocal = global - _windowStart;
-      _localFocus = nextLocal < 0
-          ? 0
-          : (nextLocal > windowSize - 1 ? windowSize - 1 : nextLocal);
+      _localFocus = local.clamp(0, _visibleCount - 1);
     });
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (mounted) _requestLocalFocus(_localFocus);
@@ -365,10 +376,7 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
     if (newStart == _windowStart) return;
     setState(() {
       _windowStart = newStart;
-      final nextLocal = global - _windowStart;
-      _localFocus = nextLocal < 0
-          ? 0
-          : (nextLocal > windowSize - 1 ? windowSize - 1 : nextLocal);
+      _localFocus = local.clamp(0, _visibleCount - 1);
     });
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (mounted) _requestLocalFocus(_localFocus);
@@ -407,7 +415,7 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
                         return widget.itemBuilder(
                           context,
                           widget.items[_windowStart + local],
-                          _nodes[local],
+                          _nodeAt(local),
                           local,
                           _windowStart + local,
                           _moveUp,

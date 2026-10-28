@@ -211,8 +211,8 @@ class _TvTileChrome extends StatelessWidget {
         : scheme.outlineVariant.withValues(alpha: 0.12);
 
     final iconGlyph = Padding(
-      padding: const EdgeInsets.all(10),
-      child: Icon(icon, size: MoaiIconSizes.md, color: iconColor),
+      padding: const EdgeInsets.all(8),
+      child: Icon(icon, size: MoaiIconSizes.lg, color: iconColor),
     );
 
     final content = LayoutBuilder(

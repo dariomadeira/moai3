@@ -588,7 +588,7 @@ void main() {
       expect(find.textContaining('SocketException'), findsNothing);
     });
 
-    testWidgets('con una sola imagen no repite el fondo ambiental', (
+    testWidgets('con una sola imagen también muestra el fondo ambiental difuminado', (
       tester,
     ) async {
       await pumpDetail(
@@ -599,7 +599,7 @@ void main() {
           backdrop: 'https://example.com/a.jpg',
         ),
       );
-      expect(find.byType(ShaderMask), findsNothing);
+      expect(find.byType(ShaderMask), findsWidgets);
 
       await pumpDetail(
         tester,

@@ -105,8 +105,9 @@ class FriendInfo {
   /// Si no coincide el ID pero ambos tienen nombre, compara nombres normalizados (ej. 'ESPN').
   bool isWatchingSameChannel(String? myChannelId, [String? myChannelName]) {
     if (!isOnline) return false;
-    if (currentChannelId == null || currentChannelId!.trim().isEmpty)
+    if (currentChannelId == null || currentChannelId!.trim().isEmpty) {
       return false;
+    }
 
     // 1. Coincidencia exacta de ID
     if (myChannelId != null &&

@@ -78,8 +78,20 @@ class _MoaiAppState extends State<MoaiApp> {
       colorScheme: scheme,
       scaffoldBackgroundColor: scheme.surfaceContainer,
       useMaterial3: true,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: MoaiFadePageTransitionsBuilder(),
+          TargetPlatform.iOS: MoaiFadePageTransitionsBuilder(),
+          TargetPlatform.windows: MoaiFadePageTransitionsBuilder(),
+          TargetPlatform.linux: MoaiFadePageTransitionsBuilder(),
+          TargetPlatform.macOS: MoaiFadePageTransitionsBuilder(),
+        },
+      ),
       fontFamily: MoaiText.bodyFamily,
       textTheme: MoaiText.textTheme(scheme),
+      iconTheme: const IconThemeData(
+        weight: 1.2,
+      ),
       snackBarTheme: const SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         elevation: 0,
@@ -127,6 +139,32 @@ class _MoaiAppState extends State<MoaiApp> {
       // y diálogos.
       builder: (context, child) =>
           MoaiGlassScope(child: child ?? const SizedBox.shrink()),
+    );
+  }
+}
+
+/// Transición de pantalla por fundido directo:
+/// - Sin desplazamiento lateral (sin movimiento 'de costado').
+/// - La pantalla saliente permanece debajo hasta ser cubierta por completo,
+///   eliminando destellos del fondo de la ventana.
+class MoaiFadePageTransitionsBuilder extends PageTransitionsBuilder {
+  const MoaiFadePageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return FadeTransition(
+      opacity: CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      ),
+      child: child,
     );
   }
 }

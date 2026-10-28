@@ -76,6 +76,8 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     // mira el detalle, no al tocar Reproducir. Una vez por arranque.
     unawaited(TitanRangerService.init());
     if (!_isTrailer) {
+      _inWatchlist =
+          MovieWatchlistService.instance.contains(widget.movie.contentId);
       _loadProgress();
       _loadWatchlist();
     }
@@ -90,7 +92,10 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     final watchlist = MovieWatchlistService.instance;
     await watchlist.ensureLoaded();
     if (mounted) {
-      setState(() => _inWatchlist = watchlist.contains(widget.movie.contentId));
+      final contains = watchlist.contains(widget.movie.contentId);
+      if (_inWatchlist != contains) {
+        setState(() => _inWatchlist = contains);
+      }
     }
   }
 
@@ -98,7 +103,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     final progress = await MovieProgressService.getProgress(
       widget.movie.contentId,
     );
-    if (mounted) {
+    if (mounted && progress != null) {
       setState(() => _watchProgress = progress);
     }
   }
@@ -335,13 +340,11 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                           );
                         },
                         buildExpandedContent: (index, title) {
-                          // Sólo si la Hero no la repite (con una única
-                          // imagen la muestra ella).
+                          // Fondo ambiental superior: se muestra siempre que haya imagen
+                          // (si hay una sola foto, se duplica difuminada en la esquina).
                           final ambientUrl = movie.ambientBackdrop;
                           final showAmbient =
-                              ambientUrl != null &&
-                              ambientUrl.isNotEmpty &&
-                              !movie.stageImages.contains(ambientUrl);
+                              ambientUrl != null && ambientUrl.isNotEmpty;
 
                           return ClipRRect(
                             borderRadius: const BorderRadius.only(

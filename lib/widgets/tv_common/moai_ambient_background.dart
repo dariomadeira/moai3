@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:moai3/state/theme_provider.dart';
 
 /// Fondo de luz ambiente: tres manchas de color del [ColorScheme] sobre la
 /// superficie, más viñeta y grano (el grano evita las bandas de los
@@ -48,6 +50,11 @@ class _MoaiAmbientBackgroundState extends State<MoaiAmbientBackground>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (use3DWallpaper) {
+      final accentIndex = context.read<ThemeProvider?>()?.accentColorIndex;
+      final asset = wallpaperForAccent(accentIndex);
+      precacheImage(AssetImage(asset), context);
+    }
     final next = _AmbientPalette.of(Theme.of(context).colorScheme);
     if (_to == null) {
       _from = _to = next;
@@ -91,8 +98,75 @@ class _MoaiAmbientBackgroundState extends State<MoaiAmbientBackground>
     super.dispose();
   }
 
+  /// Si es true, usa el fondo 3D orgánico renderizado en WebP.
+  static const bool use3DWallpaper = true;
+
+  /// Retorna el asset correspondiente según el índice de color de acento actual.
+  static String wallpaperForAccent(int? accentIndex) {
+    return switch (accentIndex) {
+      0 => 'assets/images/bg_blue.webp',         // Azul (default)
+      1 => 'assets/images/bg_deep_blue.webp',    // Azul Oscuro
+      2 => 'assets/images/bg_teal.webp',         // Teal
+      3 => 'assets/images/bg_green.webp',        // Verde
+      4 => 'assets/images/bg_emerald.webp',      // Esmeralda
+      5 => 'assets/images/bg_cyan.webp',         // Cian
+      6 => 'assets/images/bg_orange.webp',       // Naranja
+      7 => 'assets/images/bg_coral.webp',        // Coral
+      8 => 'assets/images/bg_yellow.webp',       // Ámbar (Amarillo)
+      9 => 'assets/images/bg_red.webp',          // Rojo
+      10 => 'assets/images/bg_pink.webp',        // Rosa
+      11 => 'assets/images/bg_indigo.webp',      // Índigo
+      12 => 'assets/images/bg_violet.webp',      // Violeta
+      _ => 'assets/images/bg_blue.webp',         // Default de Moai (Azul)
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (use3DWallpaper) {
+      final dark = Theme.of(context).brightness == Brightness.dark;
+      final accentIndex = context.select<ThemeProvider?, int?>(
+        (p) => p?.accentColorIndex,
+      );
+      final asset = wallpaperForAccent(accentIndex);
+
+      return RepaintBoundary(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 700),
+              child: Image.asset(
+                asset,
+                key: ValueKey(asset),
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                errorBuilder: (context, error, stackTrace) => Image.asset(
+                  'assets/images/bg_green.webp',
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                ),
+              ),
+            ),
+            // Tinte sutil para contraste de texto sin apagar la luz del fondo
+            Container(
+              color: dark
+                  ? Colors.black.withValues(alpha: 0.28)
+                  : Colors.white.withValues(alpha: 0.12),
+            ),
+            // Viñeta perimetral suave (sin grano)
+            CustomPaint(
+              size: Size.infinite,
+              isComplex: true,
+              painter: _VignettePainter(dark: dark),
+            ),
+          ],
+        ),
+      );
+    }
+
     return RepaintBoundary(
       child: CustomPaint(
         size: Size.infinite,
@@ -107,6 +181,34 @@ class _MoaiAmbientBackgroundState extends State<MoaiAmbientBackground>
       ),
     );
   }
+}
+
+class _VignettePainter extends CustomPainter {
+  const _VignettePainter({required this.dark});
+
+  final bool dark;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final vignetteColor = dark
+        ? Colors.black.withValues(alpha: 0.35)
+        : Colors.black.withValues(alpha: 0.10);
+
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(0, -0.1),
+          radius: 0.85,
+          colors: [vignetteColor.withValues(alpha: 0), vignetteColor],
+          stops: const [0.60, 1],
+        ).createShader(rect),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_VignettePainter old) => old.dark != dark;
 }
 
 /// Una mancha: centro (0–1) y radio relativo al ancho. Son las posiciones
