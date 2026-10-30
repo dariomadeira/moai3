@@ -1,6 +1,6 @@
 # SPEC-45: Buscador de películas
 
-> **Estado**: Aprobada, sin implementar (rama `cristal`)  
+> **Estado**: Aprobada, en implementación (rama `cristal`)  
 > **Área**: Features / Películas  
 > **Archivos de Referencia** (previstos):  
 > - `lib/features/home/areas/home_movies_area.dart` (pasa a 2 paneles)  
@@ -62,14 +62,16 @@ El panel abierto ocupa el ancho; el otro queda como columna angosta con su ícon
 - "X": borra el texto, vuelve a las búsquedas recientes y deja el foco en el campo.
 
 ### 3.2 Campo vacío: últimas búsquedas
-- Lista de hasta **10** búsquedas recientes (la más nueva primero). OK sobre una la vuelve a buscar.
+- Hasta **10** búsquedas recientes (la más nueva primero) como pastillas **una al lado de la otra**; si no entran pasan a la fila siguiente (2026-10-30). Una muy larga se corta con "…". OK sobre una la vuelve a buscar.
+- Al final, la pastilla **"Borrar búsquedas"** (ícono `delete`): vacía la lista y lo guardado, y el foco vuelve al campo.
+- Flechas según dónde quedó cada pastilla (`FocusNode.rect`): ←/→ dentro de la fila (← al principio sale a la grilla); ↑/↓ a la más cercana en horizontal de la fila de arriba o de abajo; ↑ desde la primera fila vuelve al campo.
 - Se guarda una búsqueda cuando se **abre una película** desde sus resultados (no en cada letra).
 - Sin duplicados (sin importar tildes ni mayúsculas): repetir una la sube al principio.
 - Se guardan en `SharedPreferences` (`movie_search_history`, lista JSON).
 - Sin búsquedas guardadas: mensaje "Buscá por título, actor o director".
 
 ### 3.3 Resultados
-- Misma tarjeta que la grilla (`TvMovieCard`), grilla de 5 columnas.
+- Misma tarjeta que la grilla (`TvMovieCard`, con la estrella de las buenas), grilla de 5 columnas: `MoviePosterGrid` (`lib/features/movies/widgets/movie_poster_grid.dart`, la misma de "Ver todas", SPEC-44 §3.3). Un solo foco para todos los resultados, alturas fijas y scroll calculado (antes un nodo por tarjeta y `ensureVisible`). ↑ desde la primera fila vuelve al campo; ← desde la primera columna sale a la grilla; una búsqueda nueva vuelve la selección al principio.
 - OK → `MovieDetailScreen`. Al volver del detalle, el texto, los resultados, el scroll y el foco siguen como estaban.
 - Mientras se busca: indicador de carga en el lugar de los resultados (los anteriores se reemplazan cuando llega la respuesta).
 - Sin resultados: "No encontramos películas para «…»".
@@ -79,9 +81,10 @@ El panel abierto ocupa el ancho; el otro queda como columna angosta con su ícon
 ## 4. Búsqueda en el servidor
 
 ### 4.1 Cuándo se busca
-- Desde **2 caracteres**, **600 ms** después de la última tecla (debounce).
+- **Sólo con "Buscar" del teclado** (decisión del usuario 2026-10-30, reemplaza el debounce de 600 ms). Cerrar el teclado con atrás descarta lo escrito y no busca, como en el resto de la app. **No se busca mientras se escribe**: en el TV cada letra tarda 1–2 s con el control y el debounce dispararía una búsqueda por letra ("ba", "bat"…), con cientos de resultados basura (el servidor es laxo con poco texto) y resultados que cambian detrás del teclado, que igual tapa la pantalla. Con el micrófono el texto llega entero.
+- Desde **2 caracteres**; menos muestra las recientes.
+- `MovieSearchController.submit` no repite una búsqueda igual (sin importar tildes ni mayúsculas): se conservan resultados y scroll. Si la anterior cayó al catálogo guardado (§4.5), se reintenta con el servidor.
 - Cada búsqueda nueva descarta la respuesta de la anterior si llega tarde (sólo cuenta la última).
-- Al cerrar el teclado con texto, se busca enseguida si no se buscó ya.
 
 ### 4.2 Pedido
 `POST /api/portalCore/v3/searchByName` (cifrado y headers como el resto del portal, `_postEncrypted`):
@@ -109,7 +112,7 @@ Comprobado en el emulador (2026-10-26):
 3. **Orden:** se respeta el del servidor, pero suben primero los que tienen **todas** las palabras buscadas en el título o el alias (normalizado sin tildes). Con varias palabras el servidor es laxo ("rey leon" → 1297 resultados con "Reyes", "Leone"…).
 
 ### 4.4 Paginado
-- Al enfocar la **última fila** de resultados se pide la página siguiente (`pageNum + 1`) y se agrega abajo sin mover el foco.
+- Cuando quedan **2 filas o menos** debajo de la elegida (o ↓ en la última) se pide la página siguiente (`pageNum + 1`) y se agrega abajo sin mover el foco; mientras baja, una fila de "cargando" al pie.
 - Se deja de pedir cuando una página viene vacía o se alcanza `totalSize`.
 - Como la limpieza puede dejar una página con pocas películas (p. ej. "batman" trae muchas series), si tras limpiar quedan **menos de 10** se pide automáticamente la siguiente (máximo 3 páginas por búsqueda en ese caso).
 
@@ -126,6 +129,7 @@ Sin sesión, sin red, tiempo agotado (**8 s**) o `returnCode != 0`:
 `MovieSearchController` (ChangeNotifier, vive en `HomeMoviesAreaState`):
 - `query`, `results`, `page`, `totalSize`, `isLoading`, `isLoadingMore`, `isOffline` (resultados locales), `history`.
 - Se conserva mientras la sección está montada. Al salir de Películas desde el rail se descarta el texto y los resultados (la próxima vez abre en la grilla, §2.1); el historial queda guardado.
+- (2026-10-30) Con el acordeón que conserva paneles (SPEC-33 §4.3), la grilla y Buscar quedan montados al alternar: ← desde Buscar vuelve a la misma película y al mismo scroll de la grilla sin re-armarla. La grilla usa un único foco (SPEC-44 §3).
 
 ---
 
@@ -151,10 +155,26 @@ Sin sesión, sin red, tiempo agotado (**8 s**) o `returnCode != 0`:
 - Bajar hasta la última fila carga más resultados sin mover el foco.
 - Abrir una película y volver deja la búsqueda igual; la búsqueda queda en Recientes.
 - Con el servidor caído, la búsqueda devuelve coincidencias de las 270 guardadas con el aviso.
-- Tests: `movie_search_controller_test` (debounce, descarte de respuestas viejas, paginado, fallback), `movie_search_cleanup_test` (filtro de series, repetidos, orden), `movie_search_history_test`.
+- Tests: `movie_search_controller_test` (limpieza, `submit`, descarte de respuestas viejas, paginado, fallback, historial), `movie_search_panel_test` (navegación con el control, paginado, recientes).
 
 ---
 
-## 8. Pendiente: categorías completas
+## 8. Categorías completas (probado 2026-10-30)
 
-Cada categoría trae 10 películas. Ver más requiere el listado paginado por categoría (`v3/getShelveData` por `columnId`); con `{columnId, columnType: "movie", pageSize, pageNum, numDisplay, encryptVersion: 1}` respondió `rc=0` pero vacío. Falta replicar los parámetros exactos de la app original. Se tratará en otra spec.
+Cada categoría del catálogo trae 10 películas. El listado completo sale de `POST /api/portalCore/v3/getShelveData`:
+
+```json
+{ "userToken", "userId", "portalCode",
+  "columnId": 76275, "columnType": "2",
+  "pageNum": 1, "pageSize": 30, "numDisplay": 30, "encryptVersion": 1 }
+```
+
+- **`columnType` es `"2"`** (con `"movie"`, `"1"`, `"vod"`… responde `rc=0` y 0 películas; vacío da "parámetros inválidos"). El `columnId` es el mismo de cada fila del catálogo.
+- `data` viene cifrada como el resto. Trae `assetList`, `assetListTotalSize`, `version` y `freshTime` (600).
+- Las páginas no se pisan; `pageSize` acepta al menos 100. Sólo `programType = movie`. Los ítems tienen los mismos campos que el catálogo **más `releaseTime`** (año de estreno). `score` puede ser `0` = sin puntaje.
+- La página 1 empieza con las mismas 10 películas de la fila del catálogo, en el mismo orden.
+- Totales (2026-10-30): All 31.419 · Prime 10.653 · Comedia 9.308 · Apple TV+ 7.327 · Suspenso 7.325 · Acción 5.942 · Romántico 4.469 · Horror 4.342 · Crimen 4.059 · Aventuras 4.048 · Misterio 2.741 · Familia 2.694 · Fantástico 2.511 · 2026 2.412 · Ciencia ficción 2.306 · Documental 1.820 · Biografía 1.468 · Historia 1.097 · HBO 603 · Hulu 362 · Occidental 346 · 2026 teatrales 235 · Paramount+ 207 · Tráiler 32 · Nativo 14. Las dos primeras filas (cambian seguido, p. ej. "Rompecabezas diplomático") tienen 10.
+- Árbol: `v3/getColumnContents {columnId: 0, isAv1: "", specialFlag: "", …}` da el menú raíz (Movies = 76177, `masnew_movies`); sus hijas son las 27 filas, sin subcategorías. `getNextColumns` con el `code` de una fila viene vacío.
+- La sesión obtenida con VPN en el arranque sirve también sin VPN.
+
+El diseño de "Ver todas" y de la grilla sin repetidas va en su propia spec.

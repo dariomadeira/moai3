@@ -89,6 +89,19 @@ class MovieSearchController extends ChangeNotifier with SafeChangeNotifier {
     safeNotifyListeners();
   }
 
+  /// Texto confirmado con "Buscar" en el teclado: es la única forma de
+  /// buscar (ni por letra ni al cerrar el teclado; decisión del usuario).
+  /// Queda en las recientes (como se busca sólo al confirmar, no se guardan
+  /// búsquedas a medias). Si es lo mismo que ya se buscó no se repite (se
+  /// conservan resultados y scroll), salvo que haya caído al catálogo
+  /// guardado: entonces se reintenta con el servidor.
+  Future<void> submit(String text) async {
+    final same = normalizeText(text.trim()) == normalizeText(_query);
+    if (same && _query.isEmpty) return;
+    if (!same || isOffline) await search(text);
+    await rememberQuery();
+  }
+
   /// Borra el texto y vuelve a las últimas búsquedas.
   void clear() {
     queryController.clear();
@@ -115,6 +128,12 @@ class MovieSearchController extends ChangeNotifier with SafeChangeNotifier {
   Future<void> rememberQuery() async {
     if (_query.isEmpty) return;
     history = await _history.remember(_query);
+    safeNotifyListeners();
+  }
+
+  /// "Borrar búsquedas": vacía las recientes.
+  Future<void> clearHistory() async {
+    history = await _history.clear();
     safeNotifyListeners();
   }
 

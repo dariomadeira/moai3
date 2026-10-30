@@ -24,12 +24,16 @@ class SettingsMoviesSeriesPanel extends StatefulWidget {
   final FocusNode focusNode;
   final VoidCallback onKeyLeft;
   final VoidCallback onKeyRight;
+  final int initialIndex;
+  final ValueChanged<int>? onSelectedIndexChanged;
 
   const SettingsMoviesSeriesPanel({
     super.key,
     required this.focusNode,
     required this.onKeyLeft,
     required this.onKeyRight,
+    this.initialIndex = 0,
+    this.onSelectedIndexChanged,
   });
 
   @override
@@ -43,7 +47,7 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
 
   final _listKey =
       GlobalKey<TvWindowedListState<_SettingsMoviesSeriesItemType>>();
-  int _selectedIndex = 0;
+  late int _selectedIndex = widget.initialIndex;
   DateTime? _catalogSavedAt;
 
   @override
@@ -116,6 +120,7 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
                           initialGlobalIndex: _selectedIndex,
                           onFocusedGlobalIndex: (idx) {
                             _selectedIndex = idx;
+                            widget.onSelectedIndexChanged?.call(idx);
                           },
                           itemBuilder: (
                             context,

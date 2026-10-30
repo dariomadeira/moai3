@@ -41,7 +41,9 @@ class HomeCalendarAreaState extends HomeAreaState<HomeCalendarArea> {
   final _eventsFocus = FocusNode(debugLabel: 'calendar_events');
   final _subscriptionsFocus = FocusNode(debugLabel: 'calendar_subscriptions');
   late int _panel = widget.initialPanelIndex;
-  int _eventsEntryDayIndex = 0;
+  int _eventsDayIndex = 0;
+  int _eventsEventIndex = 0;
+  int _subscriptionsItemIndex = 0;
 
   @override
   void dispose() {
@@ -56,12 +58,12 @@ class HomeCalendarAreaState extends HomeAreaState<HomeCalendarArea> {
     immediate: true,
   );
 
-  void _onPanelIndexChanged(int newIndex) {
+  void _openPanel(int newIndex) {
     if (newIndex == 0 && _panel == 1) {
       // Al cambiar de Suscripciones (panel 1) a Eventos (panel 0), entrar por DOMINGO (col 6)
-      _eventsEntryDayIndex = 6;
+      _eventsDayIndex = 6;
     } else if (newIndex == 0 && _panel == 0) {
-      _eventsEntryDayIndex = 0;
+      _eventsDayIndex = 0;
     }
     setState(() => _panel = newIndex);
     widget.onPanelIndexChanged?.call(newIndex);
@@ -80,43 +82,49 @@ class HomeCalendarAreaState extends HomeAreaState<HomeCalendarArea> {
       LocaleKeys.calendar_panel_subscriptions_title.tr(),
     ];
 
+    // Ancho final fijo: la grilla semanal no se deforma mientras el acordeón
+    // abre o cambia de panel.
     return TvAccordionRowPreview(
       panelCount: 2,
       activeIndex: _panel,
       colors: panelColors,
       titles: titles,
       icons: HomeCalendarArea.icons,
-      onPanelTap: _onPanelIndexChanged,
+      onPanelTap: _openPanel,
+      fixedContentWidth: true,
       buildExpandedContent: (index, title) {
-        if (index == 0) {
-          return CalendarEventsPanel(
-            focusNode: _eventsFocus,
-            initialDayIndex: _eventsEntryDayIndex,
-            onTuneChannel: widget.onTuneChannel,
-            onKeyLeft: () {
-              setState(() {
-                _eventsEntryDayIndex = 0;
-              });
-              widget.onExitLeft();
-            },
-            onKeyRight: () {
-              setState(() {
-                _eventsEntryDayIndex = 6;
-              });
-              _onPanelIndexChanged(1);
-            },
-          );
-        }
-
-        return CalendarSubscriptionsPanel(
-          focusNode: _subscriptionsFocus,
-          onKeyLeft: () {
-            setState(() {
-              _eventsEntryDayIndex = 6;
-            });
-            _onPanelIndexChanged(0);
-          },
-        );
+        return index == 0
+            ? CalendarEventsPanel(
+                focusNode: _eventsFocus,
+                initialDayIndex: _eventsDayIndex,
+                initialEventIndex: _eventsEventIndex,
+                onDayChanged: (d) => _eventsDayIndex = d,
+                onEventIndexChanged: (e) => _eventsEventIndex = e,
+                onTuneChannel: widget.onTuneChannel,
+                onKeyLeft: () {
+                  setState(() {
+                    _eventsDayIndex = 0;
+                  });
+                  widget.onExitLeft();
+                },
+                onKeyRight: () {
+                  setState(() {
+                    _eventsDayIndex = 6;
+                  });
+                  _openPanel(1);
+                },
+              )
+            : CalendarSubscriptionsPanel(
+                focusNode: _subscriptionsFocus,
+                initialIndex: _subscriptionsItemIndex,
+                onSelectedIndexChanged: (idx) => _subscriptionsItemIndex = idx,
+                onKeyLeft: () {
+                  setState(() {
+                    _eventsDayIndex = 6;
+                  });
+                  _openPanel(0);
+                },
+              );
       },
     );
   }

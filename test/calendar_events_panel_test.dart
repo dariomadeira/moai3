@@ -1,3 +1,4 @@
+import 'package:moai3/features/calendar/widgets/calendar_subscriptions_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -330,7 +331,157 @@ void main() {
 
     focusNode.dispose();
   });
+
+  testWidgets('HomeCalendarArea preserves subscriptions index across panel switches', (tester) async {
+    final calendarProvider = CalendarProvider();
+    final areaKey = GlobalKey<HomeCalendarAreaState>();
+    int activeIndex = 1;
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<CalendarProvider>.value(
+        value: calendarProvider,
+        child: MaterialApp(
+          theme: ThemeData(useMaterial3: true),
+          home: Scaffold(
+            body: SizedBox(
+              width: 900,
+              height: 600,
+              child: HomeCalendarArea(
+                key: areaKey,
+                initialPanelIndex: activeIndex,
+                onPanelIndexChanged: (idx) => activeIndex = idx,
+                onExitLeft: () {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    areaKey.currentState!.requestEntryFocus();
+    await tester.pump();
+
+    // Navigate down in Subscriptions list to item index 2
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+
+    // Move left to Events
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.pumpAndSettle();
+    expect(activeIndex, 0);
+
+    // Return right to Subscriptions
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+    expect(activeIndex, 1);
+
+    // Verify that the subscriptions panel kept the selected index (still at item 2)
+    final subsPanelFinder = find.byType(CalendarSubscriptionsPanel);
+    expect(subsPanelFinder, findsOneWidget);
+    final subsPanel = tester.widget<CalendarSubscriptionsPanel>(subsPanelFinder);
+    expect(subsPanel.initialIndex, 2);
+  });
+
+  testWidgets('desde el encabezado → a Suscripciones y ← vuelve por el domingo', (tester) async {
+    final calendarProvider = CalendarProvider();
+    final areaKey = GlobalKey<HomeCalendarAreaState>();
+    var activeIndex = 0;
+
+    await tester.pumpWidget(
+      wrap(
+        HomeCalendarArea(
+          key: areaKey,
+          onPanelIndexChanged: (idx) => activeIndex = idx,
+          onExitLeft: () {},
+        ),
+        calendarProvider: calendarProvider,
+      ),
+    );
+    await tester.pumpAndSettle();
+    areaKey.currentState!.requestEntryFocus();
+    await tester.pumpAndSettle();
+
+    // Un ida y vuelta por el domingo: el área ya le pasó el domingo al panel.
+    for (var i = 0; i < 7; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+    }
+    expect(activeIndex, 1);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.pumpAndSettle();
+    expect(activeIndex, 0);
+
+    // Al miércoles (sin redibujar el área), sube al encabezado y → hasta
+    // salir a Suscripciones.
+    for (var i = 0; i < 4; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pump();
+    }
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pump();
+    for (var i = 0; i < 4 && activeIndex == 0; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+    }
+    expect(activeIndex, 1);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.pumpAndSettle();
+    expect(activeIndex, 0);
+
+    final panel = tester.state<CalendarEventsPanelState>(
+      find.byType(CalendarEventsPanel),
+    );
+    expect(panel.debugSelectedDay, 6);
+    expect(panel.debugInHeader, isFalse);
+  });
+
+  testWidgets('redibujar el área no saca el foco del encabezado ni cambia el día', (tester) async {
+    final calendarProvider = CalendarProvider();
+    final areaKey = GlobalKey<HomeCalendarAreaState>();
+    late StateSetter rebuildOuter;
+
+    await tester.pumpWidget(
+      wrap(
+        StatefulBuilder(
+          builder: (context, setState) {
+            rebuildOuter = setState;
+            return HomeCalendarArea(
+              key: areaKey,
+              onExitLeft: () {},
+            );
+          },
+        ),
+        calendarProvider: calendarProvider,
+      ),
+    );
+    await tester.pumpAndSettle();
+    areaKey.currentState!.requestEntryFocus();
+    await tester.pumpAndSettle();
+
+    // Lunes → miércoles; el área se entera por onDayChanged sin redibujar.
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pump();
+    // Sin eventos: ↑ sube al encabezado (semana anterior / actual / siguiente).
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pump();
+
+    final panel = tester.state<CalendarEventsPanelState>(
+      find.byType(CalendarEventsPanel),
+    );
+    expect(panel.debugSelectedDay, 2);
+    expect(panel.debugInHeader, isTrue);
+
+    // Un redibujo cualquiera del área le devuelve el día que ya eligió.
+    rebuildOuter(() {});
+    await tester.pump();
+
+    expect(panel.debugSelectedDay, 2);
+    expect(panel.debugInHeader, isTrue);
+  });
 }
-
-
-

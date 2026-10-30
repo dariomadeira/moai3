@@ -31,6 +31,17 @@ abstract final class MoaiFormats {
 
   static String _two(int n) => n.toString().padLeft(2, '0');
 
+  /// Entero con punto de miles: `31.419`.
+  static String thousands(int n) {
+    final digits = n.abs().toString();
+    final sb = StringBuffer(n < 0 ? '-' : '');
+    for (var i = 0; i < digits.length; i++) {
+      if (i > 0 && (digits.length - i) % 3 == 0) sb.write('.');
+      sb.write(digits[i]);
+    }
+    return sb.toString();
+  }
+
   /// `dd/MM/yyyy`.
   static String date(DateTime d) => '${_two(d.day)}/${_two(d.month)}/${d.year}';
 
@@ -38,7 +49,8 @@ abstract final class MoaiFormats {
   static String time(DateTime d) => '${_two(d.hour)}:${_two(d.minute)}';
 
   /// `Ene` … `Dic` para [month] 1–12.
-  static String monthShort(int month) => _monthsShort[(month - 1).clamp(0, 11)].tr();
+  static String monthShort(int month) =>
+      _monthsShort[(month - 1).clamp(0, 11)].tr();
 
   /// `LUN` … `DOM` para [weekday] 1–7 (`DateTime.monday` = 1).
   static String weekdayShort(int weekday) =>

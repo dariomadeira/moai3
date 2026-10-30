@@ -46,6 +46,7 @@ class CountryListPanelState extends State<CountryListPanel>
   late final _focus = FocusRequester(isMounted: () => mounted);
   final _listKey = GlobalKey<TvWindowedListState<String>>();
   final FocusNode _emptyFocusNode = FocusNode(debugLabel: 'country_empty');
+  int? _focusedIndex;
 
   @override
   void dispose() {
@@ -54,6 +55,9 @@ class CountryListPanelState extends State<CountryListPanel>
   }
 
   int get _selectedIndex {
+    if (_focusedIndex != null && _focusedIndex! < widget.countries.length) {
+      return _focusedIndex!;
+    }
     final idx = widget.countries.indexOf(widget.selectedCountry);
     if (idx >= 0) return idx;
     return 0;
@@ -80,6 +84,9 @@ class CountryListPanelState extends State<CountryListPanel>
   @override
   void didUpdateWidget(covariant CountryListPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedCountry != widget.selectedCountry) {
+      _focusedIndex = null;
+    }
     if (oldWidget.selectedCountry != widget.selectedCountry &&
         widget.countries.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -128,6 +135,9 @@ class CountryListPanelState extends State<CountryListPanel>
                       showScrollDots: true,
                       focusOnMount: false,
                       onFocusUpFromFirst: widget.onFocusUp,
+                      onFocusedGlobalIndex: (idx) {
+                        _focusedIndex = idx;
+                      },
                       itemBuilder: (
                         context,
                         country,

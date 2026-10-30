@@ -25,12 +25,16 @@ class SettingsTvPanel extends StatefulWidget {
   final FocusNode focusNode;
   final VoidCallback onKeyLeft;
   final VoidCallback onKeyRight;
+  final int initialIndex;
+  final ValueChanged<int>? onSelectedIndexChanged;
 
   const SettingsTvPanel({
     super.key,
     required this.focusNode,
     required this.onKeyLeft,
     required this.onKeyRight,
+    this.initialIndex = 0,
+    this.onSelectedIndexChanged,
   });
 
   @override
@@ -42,7 +46,7 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
   static const double _itemExtent = 70.0;
 
   final _listKey = GlobalKey<TvWindowedListState<_SettingsTvItemType>>();
-  int _selectedIndex = 0;
+  late int _selectedIndex = widget.initialIndex;
 
   void focusSelected() {
     _listKey.currentState?.ensureVisible(_selectedIndex);
@@ -107,6 +111,7 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
                           initialGlobalIndex: _selectedIndex,
                           onFocusedGlobalIndex: (idx) {
                             _selectedIndex = idx;
+                            widget.onSelectedIndexChanged?.call(idx);
                           },
                           itemBuilder: (
                             context,

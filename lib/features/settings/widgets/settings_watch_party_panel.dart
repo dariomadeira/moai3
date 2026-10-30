@@ -27,12 +27,16 @@ class SettingsWatchPartyPanel extends StatefulWidget {
   final FocusNode focusNode;
   final VoidCallback onKeyLeft;
   final VoidCallback onKeyRight;
+  final int initialIndex;
+  final ValueChanged<int>? onSelectedIndexChanged;
 
   const SettingsWatchPartyPanel({
     super.key,
     required this.focusNode,
     required this.onKeyLeft,
     required this.onKeyRight,
+    this.initialIndex = 0,
+    this.onSelectedIndexChanged,
   });
 
   @override
@@ -45,7 +49,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
 
   final _listKey =
       GlobalKey<TvWindowedListState<_SettingsWatchPartyItemType>>();
-  int _selectedIndex = 0;
+  late int _selectedIndex = widget.initialIndex;
 
   @override
   void initState() {
@@ -126,6 +130,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
                           initialGlobalIndex: _selectedIndex,
                           onFocusedGlobalIndex: (idx) {
                             _selectedIndex = idx;
+                            widget.onSelectedIndexChanged?.call(idx);
                           },
                           itemBuilder: (
                             context,

@@ -45,6 +45,7 @@ class ChannelListPanelState extends State<ChannelListPanel>
 
   final _listKey = GlobalKey<TvWindowedGridState<Channel>>();
   final FocusNode _emptyFocusNode = FocusNode(debugLabel: 'channel_empty');
+  int? _focusedIndex;
 
   @override
   void dispose() {
@@ -53,6 +54,9 @@ class ChannelListPanelState extends State<ChannelListPanel>
   }
 
   int get _selectedIndex {
+    if (_focusedIndex != null && _focusedIndex! < widget.channels.length) {
+      return _focusedIndex!;
+    }
     final id = widget.selectedChannel?.id;
     if (id == null) return 0;
     final idx = widget.channels.indexWhere((c) => c.id == id);
@@ -84,6 +88,9 @@ class ChannelListPanelState extends State<ChannelListPanel>
         oldWidget.selectedChannel?.id != widget.selectedChannel?.id;
     final listChanged = !identical(oldWidget.channels, widget.channels) ||
         oldWidget.channels.length != widget.channels.length;
+    if (selChanged || listChanged) {
+      _focusedIndex = null;
+    }
     if ((selChanged || listChanged) && widget.channels.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -129,6 +136,9 @@ class ChannelListPanelState extends State<ChannelListPanel>
                       itemExtent: _rowExtent,
                       showScrollDots: true,
                       onFocusUpFromFirst: widget.onFocusUp,
+                      onFocusedGlobalIndex: (idx) {
+                        _focusedIndex = idx;
+                      },
                       itemBuilder: (
                         context,
                         channel,

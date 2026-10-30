@@ -35,11 +35,16 @@ class CategoryColumn {
   final String? code;
   final List<MovieItem> movies;
 
+  /// La grilla le suma la tarjeta "Ver todas" (la categoría completa del
+  /// servidor). Lo decide `MovieGridCatalog`; no viene del catálogo.
+  final bool hasMore;
+
   CategoryColumn({
     required this.columnId,
     required this.columnName,
     this.code,
     this.movies = const [],
+    this.hasMore = false,
   });
 
   /// Con [strings] se puede armar en otro hilo (sin ellos se traducen acá).
@@ -158,9 +163,8 @@ class MovieItem {
         )
       : name;
 
-  /// La misma película con otro año. El catálogo no trae el de estreno
-  /// ([year] sale de `shelveTime`, cuándo se subió); cuando se conoce (p. ej.
-  /// por TMDb) se reemplaza con éste.
+  /// La misma película con otro año. El catálogo no trae el de estreno;
+  /// cuando se conoce (p. ej. por TMDb o `releaseTime`) se reemplaza con éste.
   MovieItem withYear(String year) => MovieItem(
     contentId: contentId,
     name: name,
@@ -292,13 +296,20 @@ class MovieItem {
     return score;
   }
 
-  /// Año extraído de [year] o [shelveTime] (ej. "2026")
+  /// Puntaje mayor a 7: las "buenas" (estrella en la grilla). Mismo umbral
+  /// que el dorado del puntaje en el detalle. `0` o vacío = sin puntaje.
+  bool get isWellRated {
+    final val = double.tryParse(score?.trim() ?? '');
+    return val != null && val > 7.0;
+  }
+
+  /// Año de estreno extraído de [year] (ej. "1976", "2024").
   String? get formattedYear {
     if (year != null && year!.trim().isNotEmpty) {
       final yMatch = RegExp(r'\b(19\d\d|20\d\d)\b').firstMatch(year!);
       if (yMatch != null) return yMatch.group(0);
     }
-    return year;
+    return null;
   }
 
   /// [untitled]: el nombre si no trae ninguno (ya traducido, para armarla
@@ -396,9 +407,9 @@ class MovieItem {
       backdrops: collectedBackdrops,
       score: json['score']?.toString(),
       year:
-          json['year']?.toString() ??
+          _savedYear(json['year']) ??
           json['releaseYear']?.toString() ??
-          (json['shelveTime'] as String?)?.split(' ').first,
+          json['releaseTime']?.toString(),
       description: json['description']?.toString() ?? json['intro']?.toString(),
       director: json['director']?.toString(),
       actorDisplay:
@@ -409,6 +420,16 @@ class MovieItem {
     );
   }
 
+  /// `year` tal como lo dejó [toJson]. Antes se guardaba la fecha de subida
+  /// al catálogo (`shelveTime`, "2025-08-10"), no el estreno: una fecha
+  /// completa se descarta para que el detalle busque el año real.
+  static String? _savedYear(Object? raw) {
+    final value = raw?.toString().trim();
+    if (value == null || value.isEmpty) return null;
+    if (RegExp(r'^\d{4}-\d{2}-\d{2}').hasMatch(value)) return null;
+    return value;
+  }
+
   Map<String, dynamic> toJson() => {
     'contentId': contentId,
     'name': name,
@@ -417,7 +438,8 @@ class MovieItem {
     'backdrop': backdrop,
     'backdrops': backdrops,
     'score': score,
-    'year': year,
+    // Sólo el año (ver [_savedYear]).
+    'year': formattedYear,
     'description': description,
     'director': director,
     'actorDisplay': actorDisplay,

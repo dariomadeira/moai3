@@ -3,7 +3,8 @@ import 'package:moai3/features/home/widgets/collapsed_panel_tab_preview.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Acordeón horizontal TV: un panel expandido + tabs colapsados.
-class TvAccordionRowPreview extends StatelessWidget {
+/// Conserva el estado y foco de los paneles montados al alternar entre pestañas.
+class TvAccordionRowPreview extends StatefulWidget {
   final int panelCount;
   final int activeIndex;
   final List<Color> colors;
@@ -14,6 +15,14 @@ class TvAccordionRowPreview extends StatelessWidget {
   final Widget Function(int index, bool isExpanded)? tabBuilder;
   final ValueChanged<int> onPanelTap;
   final Widget Function(int index, String title) buildExpandedContent;
+
+  /// El contenido se arma siempre con su ancho final ([contentWidth]): mientras
+  /// el panel anima su ancho, el recorte lo descubre como una cortina en vez
+  /// de re-layoutearlo cuadro a cuadro.
+  final bool fixedContentWidth;
+
+  static const double collapsedWidth = 44.0;
+  static const double gap = 6.0;
 
   const TvAccordionRowPreview({
     super.key,
@@ -27,23 +36,60 @@ class TvAccordionRowPreview extends StatelessWidget {
     this.tabBuilder,
     required this.onPanelTap,
     required this.buildExpandedContent,
+    this.fixedContentWidth = false,
   });
+
+  /// Ancho del contenido del panel abierto: el panel menos su pestaña y, sin
+  /// cristal, el borde de 1 px de cada lado.
+  static double contentWidth({
+    required double totalWidth,
+    required int panelCount,
+    required bool glass,
+  }) {
+    final expanded = totalWidth - (collapsedWidth + gap) * (panelCount - 1);
+    final width = expanded - (collapsedWidth - 2.0) - (glass ? 0.0 : 2.0);
+    return width < 0 ? 0 : width;
+  }
+
+  @override
+  State<TvAccordionRowPreview> createState() => _TvAccordionRowPreviewState();
+}
+
+class _TvAccordionRowPreviewState extends State<TvAccordionRowPreview> {
+  final Set<int> _mountedPanels = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _mountedPanels.add(widget.activeIndex);
+  }
+
+  @override
+  void didUpdateWidget(covariant TvAccordionRowPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _mountedPanels.add(widget.activeIndex);
+  }
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        const collapsedWidth = TvAccordionRowPreview.collapsedWidth;
+        const gap = TvAccordionRowPreview.gap;
         final totalWidth = constraints.maxWidth;
-        const collapsedWidth = 44.0;
-        const gap = 6.0;
-        final totalGaps = gap * (panelCount - 1);
+        final totalGaps = gap * (widget.panelCount - 1);
         final expandedWidth =
-            totalWidth - (collapsedWidth * (panelCount - 1)) - totalGaps;
+            totalWidth - (collapsedWidth * (widget.panelCount - 1)) - totalGaps;
 
         final scheme = Theme.of(context).colorScheme;
         final borderExpanded = scheme.outlineVariant.withValues(alpha: 0.48);
         final borderCollapsed = scheme.outlineVariant.withValues(alpha: 0.38);
         final glass = MoaiGlassScope.enabledOf(context);
+        final contentWidth = TvAccordionRowPreview.contentWidth(
+          totalWidth: totalWidth,
+          panelCount: widget.panelCount,
+          glass: glass,
+        );
 
         return RepaintBoundary(
           child: SingleChildScrollView(
@@ -51,17 +97,18 @@ class TvAccordionRowPreview extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: List.generate(panelCount, (index) {
-                final isExpanded = activeIndex == index;
+              children: List.generate(widget.panelCount, (index) {
+                final isExpanded = widget.activeIndex == index;
                 final width = isExpanded ? expandedWidth : collapsedWidth;
-                final title = titles[index];
-                final icon = icons[index];
+                final title = widget.titles[index];
+                final icon = widget.icons[index];
                 final showAlphabet =
-                    alphabetModePanelIndex == index &&
-                    alphabetPanelBuilder != null;
-                final isLast = index == panelCount - 1;
+                    widget.alphabetModePanelIndex == index &&
+                    widget.alphabetPanelBuilder != null;
+                final isLast = index == widget.panelCount - 1;
+                final hasBeenMounted = _mountedPanels.contains(index);
 
-                final baseColor = colors[index];
+                final baseColor = widget.colors[index];
 
                 final panelContent = Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -69,17 +116,17 @@ class TvAccordionRowPreview extends StatelessWidget {
                     if (showAlphabet)
                       SizedBox(
                         width: collapsedWidth - 2.0,
-                        child: alphabetPanelBuilder!(index),
+                        child: widget.alphabetPanelBuilder!(index),
                       )
-                    else if (tabBuilder != null)
+                    else if (widget.tabBuilder != null)
                       SizedBox(
                         width: collapsedWidth - 2.0,
-                        child: tabBuilder!(index, isExpanded),
+                        child: widget.tabBuilder!(index, isExpanded),
                       )
                     else
                       ExcludeFocus(
                         child: InkWell(
-                          onTap: () => onPanelTap(index),
+                          onTap: () => widget.onPanelTap(index),
                           child: SizedBox(
                             width: collapsedWidth - 2.0,
                             child: CollapsedPanelTabPreview(
@@ -89,20 +136,39 @@ class TvAccordionRowPreview extends StatelessWidget {
                           ),
                         ),
                       ),
-                    if (isExpanded)
+                    if (hasBeenMounted)
                       Expanded(
                         child: LayoutBuilder(
                           builder: (context, innerConstraints) {
-                            if (innerConstraints.maxWidth < 180) {
-                              return const SizedBox.shrink();
-                            }
-                            final content = ClipRect(
-                              child: buildExpandedContent(index, title),
+                            final offstage =
+                                !isExpanded || innerConstraints.maxWidth < 180;
+                            final exclude =
+                                !isExpanded ||
+                                widget.alphabetModePanelIndex != null;
+                            var content = widget.buildExpandedContent(
+                              index,
+                              title,
                             );
-                            if (alphabetModePanelIndex != null) {
-                              return ExcludeFocus(child: content);
+                            if (widget.fixedContentWidth) {
+                              content = OverflowBox(
+                                alignment: Alignment.topLeft,
+                                minWidth: contentWidth,
+                                maxWidth: contentWidth,
+                                child: content,
+                              );
                             }
-                            return content;
+                            // Un panel cerrado queda armado (conserva su
+                            // estado) pero sin foco ni animaciones.
+                            return Offstage(
+                              offstage: offstage,
+                              child: TickerMode(
+                                enabled: isExpanded,
+                                child: ExcludeFocus(
+                                  excluding: exclude,
+                                  child: ClipRect(child: content),
+                                ),
+                              ),
+                            );
                           },
                         ),
                       ),

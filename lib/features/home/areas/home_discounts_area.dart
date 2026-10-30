@@ -39,11 +39,19 @@ class HomeDiscountsAreaState extends HomeAreaState<HomeDiscountsArea> {
   final _settingsFocus = FocusNode(debugLabel: 'discounts_settings');
   late int _panel = widget.initialPanelIndex;
 
+  /// Conserva el día e ítem seleccionados de la semana y de configuración al alternar paneles.
+  late int _discountsDay = widget.initialDayIndex;
+  int _discountsDayItem = 0;
+  int _discountsSettingsItem = 0;
+
   @override
   void didUpdateWidget(covariant HomeDiscountsArea oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialPanelIndex != widget.initialPanelIndex) {
       _panel = widget.initialPanelIndex;
+    }
+    if (oldWidget.initialDayIndex != widget.initialDayIndex) {
+      _discountsDay = widget.initialDayIndex;
     }
   }
 
@@ -67,6 +75,9 @@ class HomeDiscountsAreaState extends HomeAreaState<HomeDiscountsArea> {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
+
+    // Ancho final fijo: las tarjetas de comercios no se deforman mientras el
+    // acordeón abre o cambia de panel.
     return TvAccordionRowPreview(
       panelCount: 2,
       activeIndex: _panel,
@@ -80,17 +91,25 @@ class HomeDiscountsAreaState extends HomeAreaState<HomeDiscountsArea> {
       ],
       icons: HomeDiscountsArea.icons,
       onPanelTap: _openPanel,
-      buildExpandedContent: (index, title) => index == 0
-          ? DiscountsWeekPanel(
-              focusNode: _weekFocus,
-              initialDayIndex: widget.initialDayIndex,
-              onKeyLeft: widget.onExitLeft,
-              onKeyRight: () => _openPanel(1),
-            )
-          : DiscountsSettingsPanel(
-              focusNode: _settingsFocus,
-              onKeyLeft: () => _openPanel(0),
-            ),
+      fixedContentWidth: true,
+      buildExpandedContent: (index, title) {
+        return index == 0
+            ? DiscountsWeekPanel(
+                focusNode: _weekFocus,
+                initialDayIndex: _discountsDay,
+                initialItemIndex: _discountsDayItem,
+                onDayChanged: (d) => _discountsDay = d,
+                onItemChanged: (item) => _discountsDayItem = item,
+                onKeyLeft: widget.onExitLeft,
+                onKeyRight: () => _openPanel(1),
+              )
+            : DiscountsSettingsPanel(
+                focusNode: _settingsFocus,
+                initialIndex: _discountsSettingsItem,
+                onSelectedIndexChanged: (idx) => _discountsSettingsItem = idx,
+                onKeyLeft: () => _openPanel(0),
+              );
+      },
     );
   }
 }

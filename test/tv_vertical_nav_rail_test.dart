@@ -39,7 +39,7 @@ void main() {
 
   group('TvVerticalNavRail', () {
     testWidgets(
-      'muestra iconos Reicon en destinos circulares sin label vertical',
+      'muestra los íconos de las secciones visibles sin label vertical',
       (tester) async {
         final scopeNode = FocusScopeNode();
         final focusNode = FocusNode();
@@ -59,9 +59,10 @@ void main() {
 
         expect(find.byIcon(MoaiIcons.railHomeSelected), findsOneWidget);
         expect(find.byIcon(MoaiIcons.railTv), findsOneWidget);
-        expect(find.byIcon(MoaiIcons.railFeatured), findsOneWidget);
+        // Destacados y Series están ocultas por ahora (`_hiddenSections`).
+        expect(find.byIcon(MoaiIcons.railFeatured), findsNothing);
         expect(find.byIcon(MoaiIcons.railMovies), findsOneWidget);
-        expect(find.byIcon(MoaiIcons.railSeries), findsOneWidget);
+        expect(find.byIcon(MoaiIcons.railSeries), findsNothing);
         expect(find.byIcon(MoaiIcons.railCalendar), findsOneWidget);
         expect(find.byIcon(MoaiIcons.railSettings), findsOneWidget);
         expect(find.byIcon(MoaiIcons.railArcade), findsNothing);
@@ -147,7 +148,7 @@ void main() {
     });
 
     testWidgets(
-      'D-pad sin Arcade recorre Inicio -> TV -> Destacados -> Películas -> Series -> Agenda -> Descuentos -> Ajustes',
+      'D-pad sin Arcade recorre Inicio -> TV -> Películas -> Agenda -> Descuentos -> Ajustes',
       (tester) async {
         var selected = HomeSection.home;
         final scopeNode = FocusScopeNode();
@@ -180,33 +181,19 @@ void main() {
         await tester.pumpAndSettle();
         expect(selected, HomeSection.values[1]);
 
-        // TV -> Destacados (2)
+        // TV -> Películas (Destacados y Series están ocultas)
         await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
         await tester.pumpAndSettle();
         await tester.sendKeyEvent(LogicalKeyboardKey.select);
         await tester.pumpAndSettle();
-        expect(selected, HomeSection.values[2]);
+        expect(selected, HomeSection.movies);
 
-        // Destacados -> Películas (3)
+        // Películas -> Agenda
         await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
         await tester.pumpAndSettle();
         await tester.sendKeyEvent(LogicalKeyboardKey.select);
         await tester.pumpAndSettle();
-        expect(selected, HomeSection.values[3]);
-
-        // Películas -> Series (4)
-        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-        await tester.pumpAndSettle();
-        await tester.sendKeyEvent(LogicalKeyboardKey.select);
-        await tester.pumpAndSettle();
-        expect(selected, HomeSection.values[4]);
-
-        // Series -> Agenda (5)
-        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-        await tester.pumpAndSettle();
-        await tester.sendKeyEvent(LogicalKeyboardKey.select);
-        await tester.pumpAndSettle();
-        expect(selected, HomeSection.values[5]);
+        expect(selected, HomeSection.calendar);
 
         // Agenda -> Descuentos
         await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
@@ -268,11 +255,17 @@ void main() {
       await down();
       expect(selected, HomeSection.calendar);
 
-      // Solo Series: TV -> Series -> Agenda.
+      // Solo Películas: TV -> Películas -> Agenda.
+      selected = HomeSection.tv;
+      await pumpRail(const {FeaturedMoviesProvider.sectionMovies});
+      await down();
+      expect(selected, HomeSection.movies);
+      await down();
+      expect(selected, HomeSection.calendar);
+
+      // Solo Series: sigue oculta, TV -> Agenda.
       selected = HomeSection.tv;
       await pumpRail(const {FeaturedMoviesProvider.sectionSeries});
-      await down();
-      expect(selected, HomeSection.series);
       await down();
       expect(selected, HomeSection.calendar);
 

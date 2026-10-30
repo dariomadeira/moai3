@@ -21,6 +21,18 @@ class MovieSearchHistory {
     return _entries;
   }
 
+  /// Borra todas ("Borrar búsquedas" en las recientes).
+  Future<List<String>> clear() async {
+    _entries = const [];
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_key);
+    } catch (e) {
+      debugPrint('[MovieSearchHistory] No se pudo borrar: $e');
+    }
+    return _entries;
+  }
+
   /// Pone [query] primero. Una igual (sin importar tildes ni mayúsculas) se
   /// reemplaza en vez de repetirse.
   Future<List<String>> remember(String query) async {

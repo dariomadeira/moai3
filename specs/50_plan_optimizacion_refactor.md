@@ -54,6 +54,8 @@ Dejar moai3 **sin código muerto, sin piezas rotas ni redundantes, con traduccio
 
 Verificado en Chromecast con Google TV (2026-10-23): arranque, TV (Explorar, volver conserva el panel, foco al volver queda en el rail), Agenda (grilla, suscripciones, eventos F1), Ajustes (todos los paneles, PIN), Miremos Juntos (amigos, micrófono), Arcade (gamepad, catálogo, juego Marvel vs. Capcom y salida), APK `armeabi-v7a`. Sin excepciones en el log. Tests: 252 OK / 1 falla (películas, fuera de alcance).
 
+**2026-10-30: suite en verde, 467 OK / 0 fallan.** Tras `24f5fab`, 7 tests fallaban sin que el código estuviera roto: la familia HugeIcons usa el mismo glifo para una pestaña elegida o no (los tests ahora reconocen la pestaña elegida por su título), Destacados y Series están ocultas en el rail a propósito (los tests recorren TV → Películas → Agenda) y la fila "Bancos y billeteras" se mudó a la configuración de Descuentos (se borraron sus 2 claves de `es.json`).
+
 Hallazgos que aparecieron al ejecutar (no estaban en el análisis original):
 - **Agenda con partidos inventados**: `CalendarProvider.generateMockFixturesForWeek` mezclaba ~20 partidos falsos por semana con los reales (y podían disparar avisos "en vivo" falsos). Borrado junto con sus 31 claves (decisión del usuario).
 - **`sessionType` guardaba texto traducido** y `estimatedDuration` comparaba contra "práctica"/"qualy": ahora guarda claves estables (`f1_type_*`, `calendar_session_match`) y se traduce solo al mostrar.
@@ -431,7 +433,8 @@ Extraer a `BootstrapController` solo lo que no es catálogo: verificación de pr
 - `FocusRequester` cancelable (§2.10) evita que un reintento atrasado pise una navegación nueva **[verificar en dispositivo]**.
 - `TvBrowserSession` (§5.4) hace instantáneo TV → Ajustes → TV (M4).
 - Repeticiones de ←/→: `includeRepeats: false` deja caer las repeticiones a la navegación direccional por defecto en nodos que solo miran `KeyDownEvent` **[verificar en dispositivo]**; si se reproduce, mapear la repetición a `DoNothingAndStopPropagationIntent`.
-- Acordeón (`TvAccordionRowPreview`, anima `width` y re-layoutea el contenido) **[medir primero]**: contenido con ancho final dentro de `ClipRect` + `OverflowBox`.
+- Acordeón (`TvAccordionRowPreview`, anima `width` y re-layoutea el contenido) **[medir primero]**: contenido con ancho final dentro de `ClipRect` + `OverflowBox`. **Hecho (2026-10-30)** en todas las áreas, junto con paneles que quedan montados al alternar (SPEC-33 §4.3). Falta medirlo en el Chromecast.
+- Grilla de Películas **Hecho (2026-10-30)**: un solo `FocusNode`, selección por índice, alturas fijas con `itemExtentBuilder` y scroll calculado (SPEC-44 §3). Antes había un nodo por tarjeta y `ensureVisible` buscando contextos; ↑/↓ fallaba si la fila destino no estaba armada.
 
 ### 6.4. APK
 - −2,3 MB por los PNG del launcher (§1.7).

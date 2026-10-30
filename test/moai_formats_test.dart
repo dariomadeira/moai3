@@ -4,6 +4,15 @@ import 'helpers/spanish_translations.dart';
 
 void main() {
   group('MoaiFormats', () {
+    test('miles con punto', () {
+      expect(MoaiFormats.thousands(0), '0');
+      expect(MoaiFormats.thousands(999), '999');
+      expect(MoaiFormats.thousands(1000), '1.000');
+      expect(MoaiFormats.thousands(31419), '31.419');
+      expect(MoaiFormats.thousands(1234567), '1.234.567');
+      expect(MoaiFormats.thousands(-1500), '-1.500');
+    });
+
     test('fecha y hora con ceros', () {
       final d = DateTime(2026, 3, 7, 9, 5);
       expect(MoaiFormats.date(d), '07/03/2026');

@@ -118,8 +118,11 @@ extension _TvAreaLayout on HomeTvAreaState {
                     ),
                     Expanded(
                       child: _tvTab == TvTab.explore
+                          // Ancho final fijo: la grilla y las listas no se
+                          // deforman mientras el acordeón anima.
                           ? TvAccordionRowPreview(
                               panelCount: panelCount,
+                              fixedContentWidth: true,
                               activeIndex: active,
                               colors: List.filled(
                                 panelCount,

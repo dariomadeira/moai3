@@ -19,6 +19,7 @@ import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 import 'package:moai3/features/movies/movie_player_format.dart';
 import 'package:moai3/features/movies/movie_playback.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
+import 'package:moai3/services/movie_metadata_service.dart';
 import 'package:moai3/services/movie_watchlist_service.dart';
 import 'package:moai3/services/movie_progress_service.dart';
 import 'package:moai3/services/titan_ranger_service.dart';
@@ -34,7 +35,16 @@ class MovieDetailScreen extends StatefulWidget {
   /// tests lo reemplazan para no salir a la red.
   final Future<ResolvedPlayStream?> Function(MovieItem movie)? resolveStream;
 
-  const MovieDetailScreen({super.key, required this.movie, this.resolveStream});
+  /// Resuelve el año de estreno real; por defecto [MovieMetadataService.instance.resolveYear].
+  /// Los tests lo reemplazan si quieren simular red o respuesta fija.
+  final Future<String?> Function(MovieItem movie)? resolveYear;
+
+  const MovieDetailScreen({
+    super.key,
+    required this.movie,
+    this.resolveStream,
+    this.resolveYear,
+  });
 
   @override
   State<MovieDetailScreen> createState() => _MovieDetailScreenState();
@@ -54,6 +64,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   bool _inWatchlist = false;
   bool _isLoadingStream = false;
   MovieWatchProgress? _watchProgress;
+  String? _resolvedYear;
 
   /// La sinopsis no entra entera: se puede enfocar y scrollear con ↑/↓.
   bool _synopsisScrollable = false;
@@ -75,9 +86,14 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     // Titan tarda 1,5 s en quedar listo la primera vez: arranca mientras se
     // mira el detalle, no al tocar Reproducir. Una vez por arranque.
     unawaited(TitanRangerService.init());
+    _resolvedYear = widget.movie.formattedYear;
+    if (_resolvedYear == null) {
+      _loadYear();
+    }
     if (!_isTrailer) {
-      _inWatchlist =
-          MovieWatchlistService.instance.contains(widget.movie.contentId);
+      _inWatchlist = MovieWatchlistService.instance.contains(
+        widget.movie.contentId,
+      );
       _loadProgress();
       _loadWatchlist();
     }
@@ -105,6 +121,26 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     );
     if (mounted && progress != null) {
       setState(() => _watchProgress = progress);
+    }
+  }
+
+  Future<void> _loadYear() async {
+    final resolver =
+        widget.resolveYear ?? MovieMetadataService.instance.resolveYear;
+    final year = await resolver(widget.movie);
+    if (mounted && year != null && year.isNotEmpty) {
+      setState(() => _resolvedYear = year);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant MovieDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.movie.contentId != widget.movie.contentId) {
+      _resolvedYear = widget.movie.formattedYear;
+      if (_resolvedYear == null) {
+        _loadYear();
+      }
     }
   }
 
@@ -536,7 +572,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     ColorScheme scheme,
     MovieItem movie,
   ) {
-    final year = movie.formattedYear;
+    final year = _resolvedYear ?? movie.formattedYear;
     final duration = movie.formattedDuration;
     final genres = movie.genreList;
     final scorePill = _buildScorePill(context, scheme, movie);

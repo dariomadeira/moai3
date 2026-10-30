@@ -101,6 +101,26 @@ void main() {
       ]);
     });
 
+    test('el año guardado: sólo 4 dígitos, y se descarta la fecha de subida vieja', () {
+      // Lo que guardaba la versión anterior: la fecha de `shelveTime`.
+      final old = MovieItem.fromJson({
+        'contentId': '1',
+        'name': 'Rocky',
+        'year': '2025-08-10',
+      });
+      expect(old.formattedYear, isNull);
+
+      final fromRelease = MovieItem.fromJson({
+        'contentId': '2',
+        'name': 'Rocky',
+        'releaseTime': '1976-11-21',
+      });
+      expect(fromRelease.formattedYear, '1976');
+      // Al guardar queda sólo el año y al volver a leerlo se conserva.
+      expect(fromRelease.toJson()['year'], '1976');
+      expect(MovieItem.fromJson(fromRelease.toJson()).formattedYear, '1976');
+    });
+
     test(
       'Parsea backdrops múltiples de posterList y genera stageImages distintas al backdrop principal',
       () {
@@ -187,6 +207,7 @@ void main() {
       MovieItem movie, {
       Brightness brightness = Brightness.dark,
       Future<ResolvedPlayStream?> Function(MovieItem)? resolveStream,
+      Future<String?> Function(MovieItem)? resolveYear,
     }) async {
       useSpanishTranslations();
       tester.view.physicalSize = const Size(1920, 1080);
@@ -201,6 +222,7 @@ void main() {
             child: MovieDetailScreen(
               movie: movie,
               resolveStream: resolveStream ?? (_) async => null,
+              resolveYear: resolveYear,
             ),
           ),
         ),
@@ -612,5 +634,24 @@ void main() {
       );
       expect(find.byType(ShaderMask), findsWidgets);
     });
+
+    testWidgets(
+      'resuelve el año de estreno perezosamente si el catálogo no lo trae',
+      (tester) async {
+        final rocky = MovieItem(
+          contentId: '15406',
+          name: 'Rocky',
+          score: '8.1',
+        );
+
+        await pumpDetail(
+          tester,
+          rocky,
+          resolveYear: (_) async => '1976',
+        );
+
+        expect(find.text('1976'), findsOneWidget);
+      },
+    );
   });
 }

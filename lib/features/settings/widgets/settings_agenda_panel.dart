@@ -19,12 +19,16 @@ class SettingsAgendaPanel extends StatefulWidget {
   final FocusNode focusNode;
   final VoidCallback onKeyLeft;
   final VoidCallback onKeyRight;
+  final int initialIndex;
+  final ValueChanged<int>? onSelectedIndexChanged;
 
   const SettingsAgendaPanel({
     super.key,
     required this.focusNode,
     required this.onKeyLeft,
     required this.onKeyRight,
+    this.initialIndex = 0,
+    this.onSelectedIndexChanged,
   });
 
   @override
@@ -36,7 +40,7 @@ class SettingsAgendaPanelState extends State<SettingsAgendaPanel> {
   static const double _itemExtent = 70.0;
 
   final _listKey = GlobalKey<TvWindowedListState<_SettingsAgendaItemType>>();
-  int _selectedIndex = 0;
+  late int _selectedIndex = widget.initialIndex;
 
   void focusSelected() {
     _listKey.currentState?.ensureVisible(_selectedIndex);
@@ -94,6 +98,7 @@ class SettingsAgendaPanelState extends State<SettingsAgendaPanel> {
                           initialGlobalIndex: _selectedIndex,
                           onFocusedGlobalIndex: (idx) {
                             _selectedIndex = idx;
+                            widget.onSelectedIndexChanged?.call(idx);
                           },
                           itemBuilder: (
                             context,

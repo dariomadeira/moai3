@@ -8,15 +8,8 @@ import 'package:moai3/utils/moai_formats.dart';
 /// Textos de los descuentos, en un solo lugar.
 abstract final class DiscountFormat {
   /// `$12.000` (pesos, sin decimales, con punto de miles).
-  static String money(double amount) {
-    final digits = amount.round().toString();
-    final sb = StringBuffer();
-    for (var i = 0; i < digits.length; i++) {
-      if (i > 0 && (digits.length - i) % 3 == 0) sb.write('.');
-      sb.write(digits[i]);
-    }
-    return '\$$sb';
-  }
+  static String money(double amount) =>
+      '\$${MoaiFormats.thousands(amount.round())}';
 
   /// `20%` o, sin porcentaje, el texto de MODO.
   static String headline(Discount d) {

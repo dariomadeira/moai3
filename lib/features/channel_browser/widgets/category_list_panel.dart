@@ -40,6 +40,7 @@ class CategoryListPanelState extends State<CategoryListPanel>
   late final _focus = FocusRequester(isMounted: () => mounted);
   final _listKey = GlobalKey<TvWindowedListState<String>>();
   final FocusNode _emptyFocusNode = FocusNode(debugLabel: 'category_empty');
+  int? _focusedIndex;
 
   @override
   void dispose() {
@@ -48,6 +49,9 @@ class CategoryListPanelState extends State<CategoryListPanel>
   }
 
   int get _selectedIndex {
+    if (_focusedIndex != null && _focusedIndex! < widget.categories.length) {
+      return _focusedIndex!;
+    }
     final idx = widget.categories.indexOf(widget.selectedCategory);
     if (idx >= 0) return idx;
     return 0;
@@ -74,6 +78,9 @@ class CategoryListPanelState extends State<CategoryListPanel>
   @override
   void didUpdateWidget(covariant CategoryListPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedCategory != widget.selectedCategory) {
+      _focusedIndex = null;
+    }
     if (oldWidget.selectedCategory != widget.selectedCategory &&
         widget.categories.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -121,6 +128,9 @@ class CategoryListPanelState extends State<CategoryListPanel>
                       initialGlobalIndex: _selectedIndex,
                       showScrollDots: true,
                       onFocusUpFromFirst: widget.onFocusUp,
+                      onFocusedGlobalIndex: (idx) {
+                        _focusedIndex = idx;
+                      },
                       itemBuilder: (
                         context,
                         category,

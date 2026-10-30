@@ -193,6 +193,47 @@ void main() {
       expect(names(c.results), ['Superman']);
     });
 
+    test('submit no repite la misma búsqueda (ni con otras tildes)', () async {
+      final server = FakeServer({
+        1: [movie('1', 'El rey león')],
+      }, total: 1);
+      final c = controller(server.call);
+      await c.submit('rey león');
+      await c.submit(' Rey Leon ');
+      expect(server.calls, [('rey león', 1)]);
+      expect(names(c.results), ['El rey león']);
+
+      await c.submit('mufasa');
+      expect(server.calls.last, ('mufasa', 1));
+    });
+
+    test(
+      'submit reintenta con el servidor si la anterior fue sin conexión',
+      () async {
+        var online = false;
+        final c = controller(
+          (query, page) async => online
+              ? MovieSearchPage(items: [movie('9', 'Troya')], total: 1)
+              : null,
+          local: [movie('1', 'Troya', actors: 'Brad Pitt')],
+        );
+        await c.submit('troya');
+        expect(c.isOffline, isTrue);
+        online = true;
+        await c.submit('troya');
+        expect(c.isOffline, isFalse);
+        expect(c.results.single.contentId, '9');
+      },
+    );
+
+    test('submit vacío con las recientes a la vista no hace nada', () async {
+      final server = FakeServer({}, total: 0);
+      final c = controller(server.call);
+      await c.submit('');
+      expect(server.calls, isEmpty);
+      expect(c.showHistory, isTrue);
+    });
+
     test('si el servidor falla busca en el catálogo guardado', () async {
       final c = controller(
         (query, page) async => null,
@@ -205,6 +246,26 @@ void main() {
 
       await c.search('troya');
       expect(c.isOffline, isTrue);
+    });
+
+    test('apretar Buscar guarda la búsqueda en recientes', () async {
+      final server = FakeServer({
+        1: [movie('1', 'We Live in Time')],
+      }, total: 1);
+      final c = controller(server.call);
+      await c.submit('we');
+      expect(c.history, ['we']);
+      // Repetirla no la duplica; la anterior sube al principio.
+      await c.submit('rocky');
+      await c.submit('We');
+      expect(c.history, ['We', 'rocky']);
+      expect(await MovieSearchHistory().load(), ['We', 'rocky']);
+    });
+
+    test('con menos de 2 letras no se guarda', () async {
+      final c = controller(FakeServer({}, total: 0).call);
+      await c.submit('w');
+      expect(c.history, isEmpty);
     });
 
     test('abrir una película guarda la búsqueda en recientes', () async {

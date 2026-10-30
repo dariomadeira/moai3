@@ -461,8 +461,12 @@ abstract class  LocaleKeys {
   static const movies_catalog_empty = 'movies_catalog_empty';
   static const movies_catalog_from_saved = 'movies_catalog_from_saved';
   static const movies_category_default = 'movies_category_default';
+  static const movies_category_empty = 'movies_category_empty';
+  static const movies_category_error = 'movies_category_error';
   static const movies_category_new_releases = 'movies_category_new_releases';
+  static const movies_category_top_rated = 'movies_category_top_rated';
   static const movies_category_trailers = 'movies_category_trailers';
+  static const movies_count = 'movies_count';
   static const movies_detail_tab = 'movies_detail_tab';
   static const movies_director = 'movies_director';
   static const movies_empty_featured = 'movies_empty_featured';
@@ -520,11 +524,13 @@ abstract class  LocaleKeys {
   static const movies_resume_dialog_desc = 'movies_resume_dialog_desc';
   static const movies_resume_dialog_title = 'movies_resume_dialog_title';
   static const movies_resume_from_start = 'movies_resume_from_start';
+  static const movies_search_clear_history = 'movies_search_clear_history';
   static const movies_search_empty_history = 'movies_search_empty_history';
   static const movies_search_hint = 'movies_search_hint';
   static const movies_search_no_results = 'movies_search_no_results';
   static const movies_search_offline = 'movies_search_offline';
   static const movies_search_recent = 'movies_search_recent';
+  static const movies_show_all = 'movies_show_all';
   static const movies_subtitle_default = 'movies_subtitle_default';
   static const movies_synopsis = 'movies_synopsis';
   static const movies_synopsis_empty = 'movies_synopsis_empty';
@@ -627,6 +633,7 @@ abstract class  LocaleKeys {
   static const settings_about_check_updates_desc = 'settings_about_check_updates_desc';
   static const settings_about_empty = 'settings_about_empty';
   static const settings_about_loading = 'settings_about_loading';
+  static const settings_about_movies = 'settings_about_movies';
   static const settings_about_subtitle = 'settings_about_subtitle';
   static const settings_about_title = 'settings_about_title';
   static const settings_about_up_to_date = 'settings_about_up_to_date';
@@ -674,8 +681,6 @@ abstract class  LocaleKeys {
   static const settings_general_catalog_frequency_desc = 'settings_general_catalog_frequency_desc';
   static const settings_general_dark_mode = 'settings_general_dark_mode';
   static const settings_general_dark_mode_desc = 'settings_general_dark_mode_desc';
-  static const settings_general_discount_banks = 'settings_general_discount_banks';
-  static const settings_general_discount_banks_desc = 'settings_general_discount_banks_desc';
   static const settings_general_mute_ui_sounds = 'settings_general_mute_ui_sounds';
   static const settings_general_mute_ui_sounds_desc = 'settings_general_mute_ui_sounds_desc';
   static const settings_general_overscan = 'settings_general_overscan';

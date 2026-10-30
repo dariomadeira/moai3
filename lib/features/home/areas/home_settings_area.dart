@@ -45,6 +45,12 @@ class _HomeSettingsAreaState extends HomeAreaState<HomeSettingsArea> {
   late final _focus = FocusRequester(isMounted: () => mounted);
   late int _panel = widget.initialPanelIndex;
 
+  /// Guarda el ítem seleccionado de cada panel para conservarlo al ir y volver.
+  final List<int> _panelItemIndices = List.filled(
+    SettingsPanelLayout.panelCount,
+    0,
+  );
+
   /// Un nodo por panel, en el orden de [SettingsPanelLayout].
   final _panelFocus = [
     FocusNode(debugLabel: 'settings_tv'),
@@ -88,6 +94,8 @@ class _HomeSettingsAreaState extends HomeAreaState<HomeSettingsArea> {
       LocaleKeys.settings_about_title.tr(),
     ];
 
+    // Ancho final fijo: interruptores y textos no se re-distribuyen mientras
+    // el acordeón abre o cambia de panel.
     return TvAccordionRowPreview(
       panelCount: SettingsPanelLayout.panelCount,
       activeIndex: _panel,
@@ -95,61 +103,72 @@ class _HomeSettingsAreaState extends HomeAreaState<HomeSettingsArea> {
       titles: titles,
       icons: HomeSettingsArea.icons,
       onPanelTap: _selectPanel,
+      fixedContentWidth: true,
       buildExpandedContent: (index, title) {
         final focusNode = _panelFocus[index];
+        final itemIndex = _panelItemIndices[index];
+        void onItemChanged(int idx) => _panelItemIndices[index] = idx;
+
+        final Widget panelWidget;
         if (SettingsPanelLayout.isConfigTvPanel(index)) {
-          return SettingsTvPanel(
+          panelWidget = SettingsTvPanel(
             focusNode: focusNode,
+            initialIndex: itemIndex,
+            onSelectedIndexChanged: onItemChanged,
             onKeyLeft: widget.onExitLeft,
             onKeyRight: () =>
                 _selectPanel(SettingsPanelLayout.configMoviesSeriesPanelIndex),
           );
-        }
-
-        if (SettingsPanelLayout.isConfigMoviesSeriesPanel(index)) {
-          return SettingsMoviesSeriesPanel(
+        } else if (SettingsPanelLayout.isConfigMoviesSeriesPanel(index)) {
+          panelWidget = SettingsMoviesSeriesPanel(
             focusNode: focusNode,
+            initialIndex: itemIndex,
+            onSelectedIndexChanged: onItemChanged,
             onKeyLeft: () =>
                 _selectPanel(SettingsPanelLayout.configTvPanelIndex),
             onKeyRight: () =>
                 _selectPanel(SettingsPanelLayout.configAgendaPanelIndex),
           );
-        }
-
-        if (SettingsPanelLayout.isConfigAgendaPanel(index)) {
-          return SettingsAgendaPanel(
+        } else if (SettingsPanelLayout.isConfigAgendaPanel(index)) {
+          panelWidget = SettingsAgendaPanel(
             focusNode: focusNode,
+            initialIndex: itemIndex,
+            onSelectedIndexChanged: onItemChanged,
             onKeyLeft: () =>
                 _selectPanel(SettingsPanelLayout.configMoviesSeriesPanelIndex),
             onKeyRight: () =>
                 _selectPanel(SettingsPanelLayout.watchPartyPanelIndex),
           );
-        }
-
-        if (SettingsPanelLayout.isWatchPartyPanel(index)) {
-          return SettingsWatchPartyPanel(
+        } else if (SettingsPanelLayout.isWatchPartyPanel(index)) {
+          panelWidget = SettingsWatchPartyPanel(
             focusNode: focusNode,
+            initialIndex: itemIndex,
+            onSelectedIndexChanged: onItemChanged,
             onKeyLeft: () =>
                 _selectPanel(SettingsPanelLayout.configAgendaPanelIndex),
             onKeyRight: () =>
                 _selectPanel(SettingsPanelLayout.configGeneralPanelIndex),
           );
-        }
-
-        if (SettingsPanelLayout.isConfigGeneralPanel(index)) {
-          return SettingsGeneralPanel(
+        } else if (SettingsPanelLayout.isConfigGeneralPanel(index)) {
+          panelWidget = SettingsGeneralPanel(
             focusNode: focusNode,
+            initialIndex: itemIndex,
+            onSelectedIndexChanged: onItemChanged,
             onKeyLeft: () =>
                 _selectPanel(SettingsPanelLayout.watchPartyPanelIndex),
             onKeyRight: () => _selectPanel(SettingsPanelLayout.aboutPanelIndex),
           );
+        } else {
+          panelWidget = SettingsAboutPanel(
+            focusNode: focusNode,
+            initialIndex: itemIndex,
+            onSelectedIndexChanged: onItemChanged,
+            onKeyLeft: () =>
+                _selectPanel(SettingsPanelLayout.configGeneralPanelIndex),
+          );
         }
 
-        return SettingsAboutPanel(
-          focusNode: focusNode,
-          onKeyLeft: () =>
-              _selectPanel(SettingsPanelLayout.configGeneralPanelIndex),
-        );
+        return panelWidget;
       },
     );
   }

@@ -30,6 +30,9 @@ class DiscountsWeekPanel extends StatefulWidget {
     required this.onKeyLeft,
     required this.onKeyRight,
     this.initialDayIndex = 0,
+    this.initialItemIndex = 0,
+    this.onDayChanged,
+    this.onItemChanged,
     this.now,
   });
 
@@ -41,6 +44,11 @@ class DiscountsWeekPanel extends StatefulWidget {
 
   /// Día elegido al entrar (0 = hoy), p. ej. desde la tarjeta del Inicio.
   final int initialDayIndex;
+
+  /// Ítem elegido al entrar.
+  final int initialItemIndex;
+  final ValueChanged<int>? onDayChanged;
+  final ValueChanged<int>? onItemChanged;
 
   /// Hoy (tests); sin él, la fecha del aparato.
   final DateTime Function()? now;
@@ -68,6 +76,10 @@ class _DiscountsWeekPanelState extends State<DiscountsWeekPanel> {
   void initState() {
     super.initState();
     _service.ensureLoaded();
+    _itemIndex[_day] = widget.initialItemIndex;
+    if (widget.initialItemIndex >= _windowSize) {
+      _windowStart[_day] = widget.initialItemIndex - _windowSize + 1;
+    }
     widget.focusNode.addListener(_onFocusChanged);
   }
 
@@ -125,6 +137,7 @@ class _DiscountsWeekPanelState extends State<DiscountsWeekPanel> {
     if (next < 0 || next >= count) return;
     setState(() {
       _itemIndex[_day] = next;
+      widget.onItemChanged?.call(next);
       if (next < _windowStart[_day]) _windowStart[_day] = next;
       if (next >= _windowStart[_day] + _windowSize) {
         _windowStart[_day] = next - _windowSize + 1;
@@ -172,6 +185,8 @@ class _DiscountsWeekPanelState extends State<DiscountsWeekPanel> {
     if (key == LogicalKeyboardKey.arrowLeft) {
       if (_day > 0) {
         setState(() => _day--);
+        widget.onDayChanged?.call(_day);
+        widget.onItemChanged?.call(_itemIndex[_day]);
       } else {
         widget.onKeyLeft();
       }
@@ -180,6 +195,8 @@ class _DiscountsWeekPanelState extends State<DiscountsWeekPanel> {
     if (key == LogicalKeyboardKey.arrowRight) {
       if (_day < DiscountsWeekPanel.days - 1) {
         setState(() => _day++);
+        widget.onDayChanged?.call(_day);
+        widget.onItemChanged?.call(_itemIndex[_day]);
       } else {
         widget.onKeyRight();
       }
@@ -353,6 +370,8 @@ class _DiscountsWeekPanelState extends State<DiscountsWeekPanel> {
                                   _section = _Section.grid;
                                   _day = i;
                                 });
+                                widget.onDayChanged?.call(i);
+                                widget.onItemChanged?.call(_itemIndex[i]);
                                 widget.focusNode.requestFocus();
                               },
                               itemBuilder: (context, index, isFocused, height) {
@@ -368,6 +387,8 @@ class _DiscountsWeekPanelState extends State<DiscountsWeekPanel> {
                                       _day = i;
                                       _itemIndex[i] = index;
                                     });
+                                    widget.onDayChanged?.call(i);
+                                    widget.onItemChanged?.call(_itemIndex[i]);
                                     widget.focusNode.requestFocus();
                                     TvDiscountDetailDialog.show(context, d);
                                   },

@@ -37,6 +37,7 @@ class GroupListPanelState extends State<GroupListPanel>
   late final _focus = FocusRequester(isMounted: () => mounted);
   final _listKey = GlobalKey<TvWindowedListState<ChannelGroup>>();
   final FocusNode _emptyFocusNode = FocusNode(debugLabel: 'group_empty');
+  int? _focusedIndex;
 
   @override
   void dispose() {
@@ -45,6 +46,9 @@ class GroupListPanelState extends State<GroupListPanel>
   }
 
   int get _selectedIndex {
+    if (_focusedIndex != null && _focusedIndex! < widget.groups.length) {
+      return _focusedIndex!;
+    }
     final id = widget.selectedGroup?.id;
     if (id == null) return 0;
     final idx = widget.groups.indexWhere((g) => g.id == id);
@@ -74,6 +78,9 @@ class GroupListPanelState extends State<GroupListPanel>
   void didUpdateWidget(covariant GroupListPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     final selChanged = oldWidget.selectedGroup?.id != widget.selectedGroup?.id;
+    if (selChanged) {
+      _focusedIndex = null;
+    }
     if (selChanged && widget.groups.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -120,6 +127,9 @@ class GroupListPanelState extends State<GroupListPanel>
                       initialGlobalIndex: _selectedIndex,
                       showScrollDots: true,
                       onFocusUpFromFirst: widget.onFocusUp,
+                      onFocusedGlobalIndex: (idx) {
+                        _focusedIndex = idx;
+                      },
                       itemBuilder: (
                         context,
                         group,

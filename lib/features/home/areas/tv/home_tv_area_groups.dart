@@ -6,9 +6,13 @@ extension _TvAreaGroups on HomeTvAreaState {
     final scheme = context.scheme;
     final channelProv = context.read<ChannelProvider>();
     final favProv = context.read<FavoritesProvider>();
+    const panelCount = 2;
 
+    // Ancho final fijo: las listas no se re-layoutean mientras el acordeón
+    // abre o cambia de panel.
     return TvAccordionRowPreview(
-      panelCount: 2,
+      panelCount: panelCount,
+      fixedContentWidth: true,
       activeIndex: _groupsPanelIndex,
       colors: [
         scheme.surface.withValues(alpha: 0.8),
@@ -60,80 +64,81 @@ extension _TvAreaGroups on HomeTvAreaState {
         _focusGroupsPanel();
       },
       buildExpandedContent: (index, title) {
-        if (index == 0) {
-          return Actions(
-            actions: {
-              DpadLeftIntent: CallbackAction<DpadLeftIntent>(
-                onInvoke: (_) {
-                  if (_groupsAlphabetActive) return null;
-                  widget.onExitLeft();
-                  return null;
+        final panelWidget = index == 0
+            ? Actions(
+                actions: {
+                  DpadLeftIntent: CallbackAction<DpadLeftIntent>(
+                    onInvoke: (_) {
+                      if (_groupsAlphabetActive) return null;
+                      widget.onExitLeft();
+                      return null;
+                    },
+                  ),
+                  DpadRightIntent: CallbackAction<DpadRightIntent>(
+                    onInvoke: (_) {
+                      if (_groupsAlphabetActive) return null;
+                      _update(() => _groupsPanelIndex = 1);
+                      _focusGroupsChannel();
+                      return null;
+                    },
+                  ),
                 },
-              ),
-              DpadRightIntent: CallbackAction<DpadRightIntent>(
-                onInvoke: (_) {
-                  if (_groupsAlphabetActive) return null;
-                  _update(() => _groupsPanelIndex = 1);
-                  _focusGroupsChannel();
-                  return null;
+                child: GroupListPanel(
+                  key: _groupListPanelKey,
+                  groups: _groups.groups,
+                  selectedGroup: _groups.selectedGroup,
+                  onSelect: _selectGroup,
+                  onLongPress: (g) {
+                    if (_groups.activateAlphabetMode(g)) {
+                      _update(() {});
+                      FocusScrollSync.requestFocusAtIndex(
+                        _groups.alphabetFocusNodes,
+                        0,
+                      );
+                    }
+                  },
+                  onFocusUp: _focusCurrentTab,
+                ),
+              )
+            : Actions(
+                actions: {
+                  DpadLeftIntent: CallbackAction<DpadLeftIntent>(
+                    onInvoke: (_) {
+                      if (_groupsAlphabetActive) return null;
+                      _update(() => _groupsPanelIndex = 0);
+                      _focusSelectedGroup();
+                      return null;
+                    },
+                  ),
+                  DpadRightIntent: CallbackAction<DpadRightIntent>(
+                    onInvoke: (_) {
+                      if (_groupsAlphabetActive) return null;
+                      _viewerFocus.requestFocus();
+                      return null;
+                    },
+                  ),
                 },
-              ),
-            },
-            child: GroupListPanel(
-              key: _groupListPanelKey,
-              groups: _groups.groups,
-              selectedGroup: _groups.selectedGroup,
-              onSelect: _selectGroup,
-              onLongPress: (g) {
-                if (_groups.activateAlphabetMode(g)) {
-                  _update(() {});
-                  FocusScrollSync.requestFocusAtIndex(
-                    _groups.alphabetFocusNodes,
-                    0,
-                  );
-                }
-              },
-              onFocusUp: _focusCurrentTab,
-            ),
-          );
-        }
-        return Actions(
-          actions: {
-            DpadLeftIntent: CallbackAction<DpadLeftIntent>(
-              onInvoke: (_) {
-                if (_groupsAlphabetActive) return null;
-                _update(() => _groupsPanelIndex = 0);
-                _focusSelectedGroup();
-                return null;
-              },
-            ),
-            DpadRightIntent: CallbackAction<DpadRightIntent>(
-              onInvoke: (_) {
-                if (_groupsAlphabetActive) return null;
-                _viewerFocus.requestFocus();
-                return null;
-              },
-            ),
-          },
-          child: ChannelListPanel(
-            key: _groupsChannelPanelKey,
-            selectedCountry: _groups.selectedGroup?.name ?? '',
-            selectedCategory: '',
-            channels: _groups.filteredChannels,
-            selectedChannel: _groups.selectedChannel,
-            onSelect: _selectChannel,
-            onLongPress: () {
-              if (_groups.activateChannelsAlphabetMode()) {
-                _update(() {});
-                FocusScrollSync.requestFocusAtIndex(
-                  _groups.alphabetFocusNodes,
-                  0,
-                );
-              }
-            },
-            onFocusUp: _focusCurrentTab,
-          ),
-        );
+                child: ChannelListPanel(
+                  key: _groupsChannelPanelKey,
+                  selectedCountry: _groups.selectedGroup?.name ?? '',
+                  selectedCategory: '',
+                  channels: _groups.filteredChannels,
+                  selectedChannel: _groups.selectedChannel,
+                  onSelect: _selectChannel,
+                  onLongPress: () {
+                    if (_groups.activateChannelsAlphabetMode()) {
+                      _update(() {});
+                      FocusScrollSync.requestFocusAtIndex(
+                        _groups.alphabetFocusNodes,
+                        0,
+                      );
+                    }
+                  },
+                  onFocusUp: _focusCurrentTab,
+                ),
+              );
+
+        return panelWidget;
       },
     );
   }

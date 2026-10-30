@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/features/home/screens/home_screen.dart';
+import 'package:moai3/features/home/widgets/tv_tab_bar.dart';
 import 'package:moai3/models/device_record.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/state/debug_log_controller.dart';
@@ -150,8 +151,8 @@ void main() {
     await tester.tap(find.bySemanticsLabel('home_rail_tv_title'));
     await tester.pump(const Duration(milliseconds: 300));
 
-    // TV → Destacados → Películas → Series → Agenda.
-    for (var i = 0; i < 4; i++) {
+    // TV → Películas → Agenda (Destacados y Series están ocultas).
+    for (var i = 0; i < 2; i++) {
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pump();
     }
@@ -220,17 +221,24 @@ void main() {
     await pumpHome(tester);
     await tester.tap(find.bySemanticsLabel('home_rail_tv_title'));
     await tester.pump(const Duration(milliseconds: 500));
-    await tester.tap(find.byIcon(MoaiIcons.tvTabBuscar));
+    // El ícono de Buscar también aparece en el panel de búsqueda vacío: se
+    // toca el de la barra de pestañas, y la elegida se reconoce por su título.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(TvTabBar),
+        matching: find.byIcon(MoaiIcons.tvTabBuscar),
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.byIcon(MoaiIcons.tvTabBuscarSelected), findsOneWidget);
+    expect(find.text('home_tab_search'), findsOneWidget);
 
     await tester.tap(find.bySemanticsLabel('home_rail_calendar_title'));
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.byIcon(MoaiIcons.tvTabBuscarSelected), findsNothing);
+    expect(find.text('home_tab_search'), findsNothing);
 
     await tester.tap(find.bySemanticsLabel('home_rail_tv_title'));
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.byIcon(MoaiIcons.tvTabBuscarSelected), findsOneWidget);
+    expect(find.text('home_tab_search'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 5));

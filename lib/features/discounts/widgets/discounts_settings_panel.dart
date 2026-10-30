@@ -20,12 +20,16 @@ class DiscountsSettingsPanel extends StatefulWidget {
     super.key,
     required this.focusNode,
     required this.onKeyLeft,
+    this.initialIndex = 0,
+    this.onSelectedIndexChanged,
   });
 
   final FocusNode focusNode;
 
   /// ← vuelve a la semana.
   final VoidCallback onKeyLeft;
+  final int initialIndex;
+  final ValueChanged<int>? onSelectedIndexChanged;
 
   @override
   State<DiscountsSettingsPanel> createState() => _DiscountsSettingsPanelState();
@@ -59,7 +63,7 @@ class _DiscountsSettingsPanelState extends State<DiscountsSettingsPanel> {
 
   final _listKey = GlobalKey<TvWindowedListState<_Item>>();
   final _service = DiscountsService.instance;
-  int _selected = 0;
+  late int _selected = widget.initialIndex;
 
   String _count(int n) => switch (n) {
     0 => LocaleKeys.discounts_none_selected.tr(),
@@ -106,7 +110,10 @@ class _DiscountsSettingsPanelState extends State<DiscountsSettingsPanel> {
                           itemExtent: _itemExtent,
                           showScrollDots: true,
                           initialGlobalIndex: _selected,
-                          onFocusedGlobalIndex: (i) => _selected = i,
+                          onFocusedGlobalIndex: (i) {
+                            _selected = i;
+                            widget.onSelectedIndexChanged?.call(i);
+                          },
                           itemBuilder:
                               (
                                 context,

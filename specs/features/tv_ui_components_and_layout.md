@@ -92,6 +92,19 @@ El área principal de TV organiza sus flujos en tres pestañas horizontales cont
   - `ArrowRight`: enfoca el visor / reproductor a la derecha.
   - Pulsación larga o atajo alfabético: despliega el panel de salto rápido (`AlphabetJumpPanel`), retornando con la tecla `Back` al listado filtrado.
 
+### 4.3. Acordeón: paneles que se conservan y se abren como cortina (2026-10-30)
+Aplica a todos los usos de `TvAccordionRowPreview` (TV Explorar, TV Marcadores, Películas, Agenda, Descuentos y Ajustes).
+
+- **Paneles montados**: `TvAccordionRowPreview` es `StatefulWidget` y recuerda qué paneles ya se abrieron (`_mountedPanels`). Un panel visitado no se desarma al cambiar de pestaña: queda en `Offstage` y dentro de `ExcludeFocus`, así conserva su estado (ítem elegido, scroll) y no recibe foco mientras está cerrado. Antes cada cambio de panel lo armaba de cero.
+- **Animaciones pausadas**: el panel cerrado va en `TickerMode(enabled: false)`; sus animaciones no corren. La Agenda además no redibuja su refresco de 30 s con el panel cerrado.
+- **Ancho fijo ("cortina")**: con `fixedContentWidth: true` el acordeón arma el contenido con su ancho final (`TvAccordionRowPreview.contentWidth`: panel abierto − pestaña − borde de 1 px por lado sin cristal) dentro de un `OverflowBox`. Mientras anima su `width` (250 ms), el `ClipRect` va descubriendo el contenido sin re-layoutearlo cuadro a cuadro: no se deforman grillas, pósters ni interruptores. Lo usan TV (Explorar y Marcadores), Películas, Agenda, Descuentos y Ajustes; los demás usos (Fuentes, Arcade, color de acento, tablero, detalle, plugins) siguen como antes. Películas usa la misma cuenta para el alto de sus tarjetas.
+- **Selección por panel**: además, cada área guarda el ítem elegido de cada panel (`initialIndex` / `onSelectedIndexChanged` en los paneles de Ajustes, Suscripciones y configuración de Descuentos; día + ítem en Eventos de la Agenda y en la semana de Descuentos). Si el área se vuelve a armar (p. ej. al salir y volver desde el rail), el panel abre en el mismo ítem. En Eventos, el panel sólo cambia de día si el área pide uno distinto del elegido (lunes al salir al rail, domingo al volver de Suscripciones): un redibujo del área no lo saca del encabezado de la semana.
+- **Listas de TV**: `CountryListPanel`, `CategoryListPanel`, `ChannelListPanel` y `GroupListPanel` recuerdan el último ítem enfocado (`_focusedIndex`) y `focusSelected()` vuelve a él en vez de al seleccionado; se olvida cuando cambia la selección o la lista.
+- `TvWindowedList` / `TvWindowedGrid` sólo piden foco a un nodo que `canRequestFocus` (los de un panel cerrado están excluidos); si no, reintentan en el próximo cuadro.
+- **Títulos** de los paneles de Ajustes unificados como "Ajustes de …" (TV, películas y series, agenda deportiva, miremos juntos, generales).
+
+**A medir**: los paneles cerrados siguen reconstruyéndose cuando se redibuja su área (no pintan ni animan). Medir en el Chromecast si pesa en TV Explorar.
+
 ---
 
 ## 5. Indicadores de Scroll y Listas Virtualizadas (`TvWindowedList`)

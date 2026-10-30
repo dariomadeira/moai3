@@ -108,6 +108,10 @@ extension _CalendarEventsKeys on CalendarEventsPanelState {
           _selectedDayIndex--;
           _clampCurrentEventIndex(calendar, days);
         });
+        widget.onDayChanged?.call(_selectedDayIndex);
+        widget.onEventIndexChanged?.call(
+          _selectedEventIndices[_selectedDayIndex] ?? 0,
+        );
         return KeyEventResult.handled;
       } else {
         widget.onKeyLeft();
@@ -121,6 +125,10 @@ extension _CalendarEventsKeys on CalendarEventsPanelState {
           _selectedDayIndex++;
           _clampCurrentEventIndex(calendar, days);
         });
+        widget.onDayChanged?.call(_selectedDayIndex);
+        widget.onEventIndexChanged?.call(
+          _selectedEventIndices[_selectedDayIndex] ?? 0,
+        );
         return KeyEventResult.handled;
       } else {
         widget.onKeyRight();
@@ -137,6 +145,9 @@ extension _CalendarEventsKeys on CalendarEventsPanelState {
           _update(() {
             _selectedEventIndices[_selectedDayIndex] = currentEventIndex - 1;
           });
+          widget.onEventIndexChanged?.call(
+            _selectedEventIndices[_selectedDayIndex] ?? 0,
+          );
           return KeyEventResult.handled;
         }
 
@@ -153,6 +164,9 @@ extension _CalendarEventsKeys on CalendarEventsPanelState {
             _windowStarts[_selectedDayIndex] = newStart;
             _selectedEventIndices[_selectedDayIndex] = target;
           });
+          widget.onEventIndexChanged?.call(
+            _selectedEventIndices[_selectedDayIndex] ?? 0,
+          );
           return KeyEventResult.handled;
         }
       }
@@ -184,6 +198,9 @@ extension _CalendarEventsKeys on CalendarEventsPanelState {
           _update(() {
             _selectedEventIndices[_selectedDayIndex] = currentEventIndex + 1;
           });
+          widget.onEventIndexChanged?.call(
+            _selectedEventIndices[_selectedDayIndex] ?? 0,
+          );
           return KeyEventResult.handled;
         }
 
@@ -198,6 +215,9 @@ extension _CalendarEventsKeys on CalendarEventsPanelState {
             _windowStarts[_selectedDayIndex] = newStart;
             _selectedEventIndices[_selectedDayIndex] = currentEventIndex + 1;
           });
+          widget.onEventIndexChanged?.call(
+            _selectedEventIndices[_selectedDayIndex] ?? 0,
+          );
           return KeyEventResult.handled;
         }
       }
@@ -265,6 +285,10 @@ extension _CalendarEventsKeys on CalendarEventsPanelState {
       final actions = _getAvailableHeaderActions();
       _headerActionIndex = _headerActionIndex.clamp(0, actions.length - 1);
     });
+    widget.onDayChanged?.call(_selectedDayIndex);
+    widget.onEventIndexChanged?.call(
+      _selectedEventIndices[_selectedDayIndex] ?? 0,
+    );
   }
 
   void _showEventDetails(BuildContext context, CalendarEvent event) {

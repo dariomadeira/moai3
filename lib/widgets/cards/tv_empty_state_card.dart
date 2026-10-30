@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
@@ -58,6 +59,11 @@ class TvEmptyStateCard extends StatelessWidget {
         }
         if (key == LogicalKeyboardKey.arrowRight && onFocusRight != null) {
           onFocusRight!.call();
+          return KeyEventResult.handled;
+        }
+        // OK del control hace lo mismo que el toque (p. ej. reintentar).
+        if (onTap != null && TvKeyHandler.isActionKey(key)) {
+          onTap!.call();
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;

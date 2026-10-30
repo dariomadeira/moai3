@@ -7,6 +7,8 @@ import 'package:moai3/config/app_info.dart';
 import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/services/update_service.dart';
 import 'package:moai3/state/channel_provider.dart';
+import 'package:moai3/state/featured_movies_provider.dart';
+import 'package:moai3/utils/moai_formats.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/update_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
@@ -15,16 +17,20 @@ import 'package:moai3/widgets/tv_common/tv_value_chip.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
-enum _AboutItemType { channelsLoaded, checkUpdates }
+enum _AboutItemType { channelsLoaded, moviesInLibrary, checkUpdates }
 
 class SettingsAboutPanel extends StatefulWidget {
   final FocusNode focusNode;
   final VoidCallback onKeyLeft;
+  final int initialIndex;
+  final ValueChanged<int>? onSelectedIndexChanged;
 
   const SettingsAboutPanel({
     super.key,
     required this.focusNode,
     required this.onKeyLeft,
+    this.initialIndex = 0,
+    this.onSelectedIndexChanged,
   });
 
   @override
@@ -36,12 +42,22 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
   static const double _itemExtent = 70.0;
 
   final _listKey = GlobalKey<TvWindowedListState<_AboutItemType>>();
-  int _selectedIndex = 0;
+  late int _selectedIndex = widget.initialIndex;
   bool _isChecking = false;
   String? _statusChip;
 
   void focusSelected() {
     _listKey.currentState?.ensureVisible(_selectedIndex);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // El total de la biblioteca se pide recién al abrir Acerca de.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(context.read<FeaturedMoviesProvider?>()?.loadLibraryTotal());
+    });
   }
 
   Future<void> _checkUpdate() async {
@@ -90,7 +106,26 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
       valueText = LocaleKeys.settings_about_empty.tr();
     }
 
-    const items = _AboutItemType.values;
+    // Películas sólo con login y catálogo (como en el rail).
+    final (moviesAvailable, moviesTotal, moviesLoading) = context.select(
+      (FeaturedMoviesProvider? p) => (
+        p?.isSectionAvailable(FeaturedMoviesProvider.sectionMovies) ?? false,
+        p?.libraryTotal,
+        p?.libraryTotalLoading ?? false,
+      ),
+    );
+    final moviesText = moviesTotal != null
+        ? LocaleKeys.movies_count.tr(
+            namedArgs: {'count': MoaiFormats.thousands(moviesTotal)},
+          )
+        : moviesLoading
+        ? LocaleKeys.settings_about_loading.tr()
+        : '—';
+
+    final items = [
+      for (final item in _AboutItemType.values)
+        if (item != _AboutItemType.moviesInLibrary || moviesAvailable) item,
+    ];
 
     if (_selectedIndex >= items.length) {
       _selectedIndex = items.length - 1;
@@ -118,9 +153,10 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
                   final image = Image.asset(
                     'assets/images/moaiAbout.png',
                     height: narrow ? 60 : 76,
-                    cacheHeight: ((narrow ? 60 : 76) *
-                            MediaQuery.devicePixelRatioOf(context))
-                        .ceil(),
+                    cacheHeight:
+                        ((narrow ? 60 : 76) *
+                                MediaQuery.devicePixelRatioOf(context))
+                            .ceil(),
                     width: narrow ? constraints.maxWidth : null,
                     fit: BoxFit.contain,
                   );
@@ -193,6 +229,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
                           initialGlobalIndex: _selectedIndex,
                           onFocusedGlobalIndex: (idx) {
                             _selectedIndex = idx;
+                            widget.onSelectedIndexChanged?.call(idx);
                           },
                           itemBuilder:
                               (
@@ -212,6 +249,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
                                     context: context,
                                     item: item,
                                     valueText: valueText,
+                                    moviesText: moviesText,
                                     scheme: scheme,
                                     focusNode: focusNode,
                                     onKeyUp: onKeyUp,
@@ -236,6 +274,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
     required BuildContext context,
     required _AboutItemType item,
     required String valueText,
+    required String moviesText,
     required ColorScheme scheme,
     required FocusNode focusNode,
     required VoidCallback onKeyUp,
@@ -252,6 +291,18 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
           onKeyDown: onKeyDown,
           trailingBuilder: (context, isFocused) {
             return TvValueChip(text: valueText, isFocused: isFocused);
+          },
+        );
+      case _AboutItemType.moviesInLibrary:
+        return TvTile(
+          focusNode: focusNode,
+          label: LocaleKeys.settings_about_movies.tr(),
+          icon: MoaiIcons.vodMovie,
+          onKeyLeft: widget.onKeyLeft,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+          trailingBuilder: (context, isFocused) {
+            return TvValueChip(text: moviesText, isFocused: isFocused);
           },
         );
       case _AboutItemType.checkUpdates:

@@ -32,6 +32,9 @@ class CalendarEventsPanel extends StatefulWidget {
   final VoidCallback onKeyLeft;
   final VoidCallback onKeyRight;
   final int initialDayIndex;
+  final int initialEventIndex;
+  final ValueChanged<int>? onDayChanged;
+  final ValueChanged<int>? onEventIndexChanged;
   final ValueChanged<Channel>? onTuneChannel;
 
   const CalendarEventsPanel({
@@ -40,6 +43,9 @@ class CalendarEventsPanel extends StatefulWidget {
     required this.onKeyLeft,
     required this.onKeyRight,
     this.initialDayIndex = 0,
+    this.initialEventIndex = 0,
+    this.onDayChanged,
+    this.onEventIndexChanged,
     this.onTuneChannel,
   });
 
@@ -62,6 +68,12 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
 
   /// Día de la semana seleccionado (0 = Lunes, ..., 6 = Domingo)
   late int _selectedDayIndex;
+
+  @visibleForTesting
+  int get debugSelectedDay => _selectedDayIndex;
+
+  @visibleForTesting
+  bool get debugInHeader => _focusSection == _FocusSection.header;
 
   static const int _windowSize = 4;
 
@@ -97,6 +109,11 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
   void initState() {
     super.initState();
     _selectedDayIndex = widget.initialDayIndex.clamp(0, 6);
+    _selectedEventIndices[_selectedDayIndex] = widget.initialEventIndex;
+    if (widget.initialEventIndex >= _windowSize) {
+      _windowStarts[_selectedDayIndex] =
+          widget.initialEventIndex - _windowSize + 1;
+    }
     _focusSection = _FocusSection.grid;
     _hadFocus = widget.focusNode.hasFocus;
     widget.focusNode.addListener(_onFocusChanged);
@@ -104,8 +121,9 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
     // Ticker periódico: mientras el panel de calendario esté en pantalla,
     // redibuja cada 30 segundos para reflejar en tiempo real el paso de partidos
     // a EN VIVO o a FINALIZADO sin necesidad de tocar ningún botón.
+    // Con el panel cerrado en el acordeón (TickerMode apagado) no redibuja.
     _tickerTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) {
+      if (mounted && TickerMode.getValuesNotifier(context).value.enabled) {
         setState(() {});
       }
     });
@@ -114,9 +132,17 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
   @override
   void didUpdateWidget(covariant CalendarEventsPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.initialDayIndex != widget.initialDayIndex) {
-      _selectedDayIndex = widget.initialDayIndex.clamp(0, 6);
+    // Cada cambio de día se avisa al área (onDayChanged), así que el área
+    // pasa el día elegido salvo que pida otro (lunes al salir al rail,
+    // domingo al ir o volver de Suscripciones). Se compara con el día
+    // actual, no con el widget anterior: ése puede haber quedado viejo.
+    // Al saltar se usa el evento que ese día ya recordaba;
+    // [initialEventIndex] sólo vale al armarse el panel.
+    final day = widget.initialDayIndex.clamp(0, 6);
+    if (day != _selectedDayIndex) {
+      _selectedDayIndex = day;
       _focusSection = _FocusSection.grid;
+      widget.onEventIndexChanged?.call(_selectedEventIndices[day] ?? 0);
     }
     if (oldWidget.focusNode != widget.focusNode) {
       oldWidget.focusNode.removeListener(_onFocusChanged);
@@ -309,6 +335,8 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                             _selectedDayIndex = dayIdx;
                             _selectedEventIndices[dayIdx] = eventIdx;
                           });
+                          widget.onDayChanged?.call(dayIdx);
+                          widget.onEventIndexChanged?.call(eventIdx);
                           widget.focusNode.requestFocus();
                           if (eventIdx < dayEvents.length) {
                             final ev = dayEvents[eventIdx];
@@ -320,6 +348,10 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                             _focusSection = _FocusSection.grid;
                             _selectedDayIndex = dayIdx;
                           });
+                          widget.onDayChanged?.call(dayIdx);
+                          widget.onEventIndexChanged?.call(
+                            _selectedEventIndices[dayIdx] ?? 0,
+                          );
                           widget.focusNode.requestFocus();
                         },
                       ),

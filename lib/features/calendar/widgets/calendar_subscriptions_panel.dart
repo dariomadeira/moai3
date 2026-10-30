@@ -15,11 +15,15 @@ import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
 class CalendarSubscriptionsPanel extends StatefulWidget {
   final FocusNode focusNode;
   final VoidCallback onKeyLeft;
+  final int initialIndex;
+  final ValueChanged<int>? onSelectedIndexChanged;
 
   const CalendarSubscriptionsPanel({
     super.key,
     required this.focusNode,
     required this.onKeyLeft,
+    this.initialIndex = 0,
+    this.onSelectedIndexChanged,
   });
 
   @override
@@ -33,7 +37,21 @@ class CalendarSubscriptionsPanelState
   static const double _itemExtent = 70.0; // 62px card + 8px gap vertical
 
   final _listKey = GlobalKey<TvWindowedListState<SportSubscription>>();
-  int _selectedIndex = 0;
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex;
+  }
+
+  @override
+  void didUpdateWidget(covariant CalendarSubscriptionsPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialIndex != widget.initialIndex) {
+      _selectedIndex = widget.initialIndex;
+    }
+  }
 
   void focusSelected() {
     _listKey.currentState?.ensureVisible(_selectedIndex);
@@ -97,6 +115,7 @@ class CalendarSubscriptionsPanelState
                                 initialGlobalIndex: _selectedIndex,
                                 onFocusedGlobalIndex: (idx) {
                                   _selectedIndex = idx;
+                                  widget.onSelectedIndexChanged?.call(idx);
                                 },
                                 itemBuilder:
                                     (

@@ -251,7 +251,7 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
     final global = _windowStart + clamped;
     if (global < 0 || global >= _nodes.length) return;
     final node = _nodeFor(global);
-    if (node.context != null) {
+    if (node.context != null && node.canRequestFocus) {
       node.requestFocus();
     } else if (attempts > 0) {
       SchedulerBinding.instance.addPostFrameCallback((_) {

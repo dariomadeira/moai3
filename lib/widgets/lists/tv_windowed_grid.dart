@@ -277,7 +277,7 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
     final clamped = local < 0 ? 0 : (local > maxLocal ? maxLocal : local);
     _localFocus = clamped;
     final node = _nodeAt(clamped);
-    if (node.context != null) {
+    if (node.context != null && node.canRequestFocus) {
       node.requestFocus();
     } else if (attempts > 0) {
       SchedulerBinding.instance.addPostFrameCallback((_) {

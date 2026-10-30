@@ -540,8 +540,7 @@ class MoiamovApiService {
           logLine(
             '🚫 La salida de red fue rechazada. Reintentá con otro nodo.',
           );
-          lastResolutionError =
-              LocaleKeys.movies_error_region.tr();
+          lastResolutionError = LocaleKeys.movies_error_region.tr();
           return false;
         }
         if (_applyActiveResult(actDecoded)) {
@@ -798,6 +797,77 @@ class MoiamovApiService {
     }
   }
 
+  /// Películas de una categoría del catálogo, paginadas (`v3/getShelveData`,
+  /// SPEC-45 §8). `columnType` va `"2"`: con `"movie"` el servidor contesta
+  /// bien pero vacío. La página 1 empieza con las mismas películas que la
+  /// fila del catálogo. `null` si no hay sesión o el pedido falla.
+  Future<List<MovieItem>?> fetchShelf(
+    int columnId, {
+    int page = 1,
+    required int pageSize,
+    Duration timeout = const Duration(seconds: 6),
+  }) async {
+    final data = await _shelfData(columnId, page, pageSize, timeout);
+    if (data == null) return null;
+    return [
+      for (final raw in (data['assetList'] as List?) ?? const [])
+        if (raw is Map<String, dynamic>)
+          if (_searchItem(raw) case final movie when movie.isMovie) movie,
+    ];
+  }
+
+  /// Cuántas películas tiene la categoría (`assetListTotalSize`); pide una
+  /// sola para que la respuesta sea liviana. `null` si falla.
+  Future<int?> fetchShelfTotal(
+    int columnId, {
+    Duration timeout = const Duration(seconds: 6),
+  }) async {
+    final data = await _shelfData(columnId, 1, 1, timeout);
+    return int.tryParse('${data?['assetListTotalSize'] ?? ''}');
+  }
+
+  /// `data` descifrada de `v3/getShelveData`; `null` si no hay sesión o falla.
+  Future<Map?> _shelfData(
+    int columnId,
+    int page,
+    int pageSize,
+    Duration timeout,
+  ) async {
+    if (_currentUserToken.isEmpty || columnId <= 0) return null;
+    final body = await _postEncrypted(
+      _vodClient,
+      '${_cleanUrl(defaultBaseUrl)}/api/portalCore/v3/getShelveData',
+      {
+        'userToken': _currentUserToken,
+        'userId': _currentUserId,
+        'portalCode': _currentPortalCode,
+        'columnId': columnId,
+        'columnType': '2',
+        'pageSize': pageSize,
+        'pageNum': page,
+        'numDisplay': pageSize,
+        'encryptVersion': 1,
+      },
+      timeout,
+    );
+    if (body == null) return null;
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is! Map<String, dynamic>) return null;
+      if (decoded['returnCode']?.toString() != '0') {
+        logLine(
+          'getShelveData $columnId rechazado: ${decoded['returnCode']} (${decoded['errorMessage']})',
+        );
+        return null;
+      }
+      final data = _decodeData(decoded['data']);
+      return data is Map ? data : null;
+    } catch (e) {
+      logLine('⚠️ getShelveData $columnId: respuesta inválida: $e');
+      return null;
+    }
+  }
+
   /// Los resultados traen el estreno (`releaseTime`), que el catálogo no.
   static MovieItem _searchItem(Map<String, dynamic> raw) {
     final released = raw['releaseTime']?.toString() ?? '';
@@ -882,8 +952,7 @@ class MoiamovApiService {
             '⚠️ startPlayVOD returnCode=$returnCode (${decoded['errorMessage']})',
           );
           if (returnCode == 'aaa100028') {
-            lastResolutionError =
-                LocaleKeys.movies_error_session_expired.tr();
+            lastResolutionError = LocaleKeys.movies_error_session_expired.tr();
           } else if (decoded['errorMessage'] != null &&
               decoded['errorMessage'].toString().isNotEmpty) {
             lastResolutionError = decoded['errorMessage'].toString();
@@ -1149,8 +1218,7 @@ class MoiamovApiService {
     if (_currentSnField.isEmpty) {
       logLine('↻ Obteniendo snToken para asociar dispositivo...');
       final fp = await _deviceFingerprint();
-      final ioClient = HttpClient()
-        ..badCertificateCallback = _acceptPortalCert;
+      final ioClient = HttpClient()..badCertificateCallback = _acceptPortalCert;
       _trackClient(ioClient);
       try {
         final sn = await _fetchSnToken(
@@ -1201,8 +1269,7 @@ class MoiamovApiService {
       logLine(
         '❌ No se encontraron calidades de reproducción para "${movie.name}"',
       );
-      lastResolutionError ??=
-          LocaleKeys.movies_error_no_play_options.tr();
+      lastResolutionError ??= LocaleKeys.movies_error_no_play_options.tr();
       return null;
     }
 
@@ -1223,8 +1290,7 @@ class MoiamovApiService {
       logLine(
         '❌ La calidad ${selectedQuality.quality} no tiene pistas de audio válidas',
       );
-      lastResolutionError ??=
-          LocaleKeys.movies_error_no_audio.tr();
+      lastResolutionError ??= LocaleKeys.movies_error_no_audio.tr();
       return null;
     }
 
@@ -1291,8 +1357,7 @@ class MoiamovApiService {
 
     if (streamUrl == null) {
       logLine('❌ No se pudo obtener la URL de streaming');
-      lastResolutionError ??=
-          LocaleKeys.movies_error_unresolved_stream.tr();
+      lastResolutionError ??= LocaleKeys.movies_error_unresolved_stream.tr();
       return null;
     }
 

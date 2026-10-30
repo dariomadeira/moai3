@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:moai3/features/home/widgets/tv_movie_card.dart';
+import 'package:moai3/features/movies/widgets/movie_poster_grid.dart';
 import 'package:moai3/features/movies/controllers/movie_search_controller.dart';
 import 'package:moai3/features/search/widgets/search_panel.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
@@ -37,21 +37,18 @@ class MovieSearchPanel extends StatefulWidget {
 }
 
 class _MovieSearchPanelState extends State<MovieSearchPanel> {
-  static const int _columns = 5;
-  static const double _gap = 12;
-
-  final ScrollController _scroll = ScrollController();
-  final List<FocusNode> _resultNodes = [];
+  /// Un solo foco para todos los resultados ([MoviePosterGrid]).
+  final FocusNode _resultsFocus = FocusNode(debugLabel: 'movie_search_results');
   final List<FocusNode> _historyNodes = [];
 
   MovieSearchController get _search => widget.controller;
 
   @override
   void dispose() {
-    for (final node in [..._resultNodes, ..._historyNodes]) {
+    for (final node in _historyNodes) {
       node.dispose();
     }
-    _scroll.dispose();
+    _resultsFocus.dispose();
     super.dispose();
   }
 
@@ -68,8 +65,8 @@ class _MovieSearchPanelState extends State<MovieSearchPanel> {
   void _focusBody() {
     if (_search.showHistory) {
       if (_historyNodes.isNotEmpty) _historyNodes.first.requestFocus();
-    } else if (_resultNodes.isNotEmpty) {
-      _resultNodes.first.requestFocus();
+    } else if (_search.results.isNotEmpty) {
+      _resultsFocus.requestFocus();
     }
   }
 
@@ -80,29 +77,71 @@ class _MovieSearchPanelState extends State<MovieSearchPanel> {
     _focusField();
   }
 
+  /// OK en una reciente: la busca (si no es la actual) y la sube al principio.
   void _searchRecent(String query) {
     _search.queryController.text = query;
-    _search.search(query);
+    _search.submit(query);
     _focusField();
   }
 
-  void _focusResult(int index) {
-    if (index < 0 || index >= _resultNodes.length) return;
-    _resultNodes[index].requestFocus();
+  /// "Borrar búsquedas": vacía las recientes y el foco vuelve al campo.
+  void _clearHistory() {
+    _search.clearHistory();
+    _focusField();
   }
 
-  void _onResultFocused(int index) {
-    final context = _resultNodes[index].context;
-    if (context != null) {
-      Scrollable.ensureVisible(
-        context,
-        alignment: index < _columns ? 0 : 0.8,
-        duration: const Duration(milliseconds: 240),
-        curve: Curves.easeOutCubic,
-      );
+  /// Mueve el foco entre las pastillas de recientes (la última es "Borrar
+  /// búsquedas") según dónde quedaron en el [Wrap]: ←/→ dentro de la fila
+  /// (← al principio sale a la grilla), ↑/↓ a la pastilla más cercana de la
+  /// fila de arriba o de abajo (↑ desde la primera vuelve al campo).
+  void _moveChip(int from, TraversalDirection direction) {
+    final rects = [
+      for (final node in _historyNodes) node.context == null ? null : node.rect,
+    ];
+    final here = rects[from];
+    if (here == null) return;
+    bool sameRow(Rect? other) =>
+        other != null && (other.center.dy - here.center.dy).abs() < 4;
+
+    switch (direction) {
+      case TraversalDirection.left:
+        if (from > 0 && sameRow(rects[from - 1])) {
+          _historyNodes[from - 1].requestFocus();
+        } else {
+          widget.onExitLeft();
+        }
+      case TraversalDirection.right:
+        if (from + 1 < rects.length && sameRow(rects[from + 1])) {
+          _historyNodes[from + 1].requestFocus();
+        }
+      case TraversalDirection.up:
+      case TraversalDirection.down:
+        final up = direction == TraversalDirection.up;
+        int? best;
+        double? bestRowDy;
+        double? bestDx;
+        for (var i = 0; i < rects.length; i++) {
+          final r = rects[i];
+          if (r == null || sameRow(r)) continue;
+          final dy = r.center.dy - here.center.dy;
+          if (up ? dy >= 0 : dy <= 0) continue;
+          // La fila más cercana y, en ella, la más cercana en horizontal.
+          final rowDy = dy.abs();
+          final dx = (r.center.dx - here.center.dx).abs();
+          if (bestRowDy == null ||
+              rowDy < bestRowDy - 4 ||
+              ((rowDy - bestRowDy).abs() <= 4 && dx < bestDx!)) {
+            best = i;
+            bestRowDy = rowDy;
+            bestDx = dx;
+          }
+        }
+        if (best != null) {
+          _historyNodes[best].requestFocus();
+        } else if (up) {
+          _focusField();
+        }
     }
-    final lastRow = (_search.results.length - 1) ~/ _columns;
-    if (index ~/ _columns == lastRow) _search.loadMore();
   }
 
   @override
@@ -110,12 +149,14 @@ class _MovieSearchPanelState extends State<MovieSearchPanel> {
     return ListenableBuilder(
       listenable: Listenable.merge([_search, _search.queryController]),
       builder: (context, _) {
+        // Una por búsqueda reciente y la última para "Borrar búsquedas".
         _syncNodes(
           _historyNodes,
-          _search.showHistory ? _search.history.length : 0,
+          _search.showHistory && _search.history.isNotEmpty
+              ? _search.history.length + 1
+              : 0,
           'movie_search_recent',
         );
-        _syncNodes(_resultNodes, _search.results.length, 'movie_search_result');
         return Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 14, 8),
           child: Column(
@@ -149,7 +190,8 @@ class _MovieSearchPanelState extends State<MovieSearchPanel> {
             onFocusLeft: widget.onExitLeft,
             onFocusRight: hasText ? widget.clearFocusNode.requestFocus : null,
             onFocusDown: _focusBody,
-            onSubmitted: _search.search,
+            // Sólo con "Buscar" del teclado: ni por letra ni al cerrarlo.
+            onSubmitted: _search.submit,
           ),
         ),
         if (hasText) ...[
@@ -230,25 +272,30 @@ class _MovieSearchPanelState extends State<MovieSearchPanel> {
             ),
           ),
         ),
+        // Una al lado de la otra; si no entran, pasan a la fila siguiente.
+        // Al final, "Borrar búsquedas".
         Expanded(
-          child: ListView.separated(
-            padding: EdgeInsets.zero,
-            itemCount: history.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 6),
-            itemBuilder: (context, i) => Align(
-              alignment: Alignment.centerLeft,
-              child: _RecentSearchTile(
-                text: history[i],
-                focusNode: _historyNodes[i],
-                onTap: () => _searchRecent(history[i]),
-                onKeyUp: i == 0
-                    ? _focusField
-                    : _historyNodes[i - 1].requestFocus,
-                onKeyDown: i < history.length - 1
-                    ? _historyNodes[i + 1].requestFocus
-                    : null,
-                onKeyLeft: widget.onExitLeft,
-              ),
+          child: SingleChildScrollView(
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (var i = 0; i < history.length; i++)
+                  _RecentSearchTile(
+                    text: history[i],
+                    icon: MoaiIcons.moviesSearchRecent,
+                    focusNode: _historyNodes[i],
+                    onTap: () => _searchRecent(history[i]),
+                    onMove: (direction) => _moveChip(i, direction),
+                  ),
+                _RecentSearchTile(
+                  text: LocaleKeys.movies_search_clear_history.tr(),
+                  icon: MoaiIcons.delete,
+                  focusNode: _historyNodes[history.length],
+                  onTap: _clearHistory,
+                  onMove: (direction) => _moveChip(history.length, direction),
+                ),
+              ],
             ),
           ),
         ),
@@ -256,99 +303,20 @@ class _MovieSearchPanelState extends State<MovieSearchPanel> {
     );
   }
 
+  /// Resultados en la grilla de Películas ([MoviePosterGrid]): un solo foco,
+  /// alturas fijas y la página siguiente al acercarse al final.
   Widget _buildResults() {
-    final results = _search.results;
-    final rows = (results.length + _columns - 1) ~/ _columns;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final colWidth =
-            (constraints.maxWidth - (_columns - 1) * _gap) / _columns;
-        // Como la grilla de Películas: afiche 262:370 + barra del título.
-        final cardHeight = colWidth * (370 / 262) + 30;
-        return ScrollConfiguration(
-          behavior: const ScrollBehavior().copyWith(scrollbars: false),
-          child: ListView.builder(
-            controller: _scroll,
-            padding: const EdgeInsets.only(bottom: 8),
-            itemCount: rows + (_search.isLoadingMore ? 1 : 0),
-            itemBuilder: (context, row) {
-              if (row >= rows) {
-                return const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              return Padding(
-                padding: const EdgeInsets.only(bottom: _gap),
-                child: SizedBox(
-                  height: cardHeight,
-                  child: Row(
-                    children: [
-                      for (int c = 0; c < _columns; c++) ...[
-                        if (c > 0) const SizedBox(width: _gap),
-                        Expanded(
-                          child: row * _columns + c < results.length
-                              ? _buildCard(row * _columns + c)
-                              : const SizedBox.shrink(),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildCard(int index) {
-    final movie = _search.results[index];
-    final col = index % _columns;
-    return Focus(
-      canRequestFocus: false,
-      skipTraversal: true,
-      onFocusChange: (focused) {
-        if (focused) _onResultFocused(index);
-      },
-      child: TvMovieCard(
-        key: ValueKey(
-          movie.contentId.isNotEmpty ? movie.contentId : '${movie.name}_$index',
-        ),
-        movie: movie,
-        focusNode: _resultNodes[index],
-        onTap: () => widget.onOpenMovie(movie),
-        onKeyLeft: () {
-          if (col > 0) {
-            _focusResult(index - 1);
-          } else {
-            widget.onExitLeft();
-          }
-          return true;
-        },
-        onKeyRight: () {
-          if (col < _columns - 1) _focusResult(index + 1);
-          return true;
-        },
-        onKeyUp: () {
-          if (index < _columns) {
-            _focusField();
-          } else {
-            _focusResult(index - _columns);
-          }
-        },
-        onKeyDown: () {
-          final below = index + _columns;
-          if (below < _resultNodes.length) {
-            _focusResult(below);
-          } else if (index ~/ _columns <
-              (_resultNodes.length - 1) ~/ _columns) {
-            // La fila de abajo está incompleta: a su última película.
-            _focusResult(_resultNodes.length - 1);
-          }
-        },
-      ),
+    return MoviePosterGrid(
+      movies: _search.results,
+      focusNode: _resultsFocus,
+      onOpen: widget.onOpenMovie,
+      // Otra búsqueda: la selección y el scroll vuelven al principio.
+      resetKey: _search.query,
+      loadingMore: _search.isLoadingMore,
+      onNearEnd: _search.loadMore,
+      onExitLeft: widget.onExitLeft,
+      onExitUp: _focusField,
+      horizontalPadding: 0,
     );
   }
 }
@@ -388,22 +356,21 @@ class _Message extends StatelessWidget {
   }
 }
 
-/// Una búsqueda reciente: OK la repite.
+/// Una pastilla de las recientes: una búsqueda (OK la repite) o "Borrar
+/// búsquedas". Las flechas las resuelve el panel según dónde quedó.
 class _RecentSearchTile extends StatefulWidget {
   final String text;
+  final IconData icon;
   final FocusNode focusNode;
   final VoidCallback onTap;
-  final VoidCallback onKeyUp;
-  final VoidCallback? onKeyDown;
-  final VoidCallback onKeyLeft;
+  final ValueChanged<TraversalDirection> onMove;
 
   const _RecentSearchTile({
     required this.text,
+    required this.icon,
     required this.focusNode,
     required this.onTap,
-    required this.onKeyUp,
-    required this.onKeyDown,
-    required this.onKeyLeft,
+    required this.onMove,
   });
 
   @override
@@ -420,18 +387,15 @@ class _RecentSearchTileState extends State<_RecentSearchTile> {
     final content = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          MoaiIcons.moviesSearchRecent,
-          size: MoaiIconSizes.sm,
-          color: color,
-        ),
+        Icon(widget.icon, size: MoaiIconSizes.sm, color: color),
         const SizedBox(width: 10),
-        Text(
-          widget.text,
-          style: MoaiText.body(
-            context,
-            fontSize: 14,
-            color: color,
+        // Una búsqueda muy larga se corta en vez de desbordar la fila.
+        Flexible(
+          child: Text(
+            widget.text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: MoaiText.body(context, fontSize: 14, color: color),
           ),
         ),
       ],
@@ -453,15 +417,18 @@ class _RecentSearchTileState extends State<_RecentSearchTile> {
       onKeyEvent: (node, event) {
         if (event is! KeyDownEvent) return KeyEventResult.ignored;
         final key = event.logicalKey;
-        if (key == LogicalKeyboardKey.arrowUp) {
-          widget.onKeyUp();
-        } else if (key == LogicalKeyboardKey.arrowDown) {
-          widget.onKeyDown?.call();
-        } else if (key == LogicalKeyboardKey.arrowLeft) {
-          widget.onKeyLeft();
+        final direction = switch (key) {
+          LogicalKeyboardKey.arrowUp => TraversalDirection.up,
+          LogicalKeyboardKey.arrowDown => TraversalDirection.down,
+          LogicalKeyboardKey.arrowLeft => TraversalDirection.left,
+          LogicalKeyboardKey.arrowRight => TraversalDirection.right,
+          _ => null,
+        };
+        if (direction != null) {
+          widget.onMove(direction);
         } else if (TvKeyHandler.isActionKey(key)) {
           widget.onTap();
-        } else if (key != LogicalKeyboardKey.arrowRight) {
+        } else {
           return KeyEventResult.ignored;
         }
         return KeyEventResult.handled;

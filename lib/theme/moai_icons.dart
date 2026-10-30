@@ -817,6 +817,9 @@ abstract final class MoaiIcons {
   /// Resultados del catálogo guardado: el servidor no contestó.
   static const moviesSearchOffline = HugeIcons.wifiDisconnected01;
 
+  /// Tarjeta "Ver todas" al final de cada categoría de la grilla.
+  static const moviesShowAll = HugeIcons.dashboardSquare01;
+
   /// Tarjeta: película.
   static const vodMovie = HugeIcons.clapperboard;
 
