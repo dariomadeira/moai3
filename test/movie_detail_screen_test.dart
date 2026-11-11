@@ -18,7 +18,6 @@ import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/widgets/buttons/moai_pill_button.dart';
 import 'package:moai3/widgets/buttons/tv_back_pill.dart';
-import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
 import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 import 'helpers/spanish_translations.dart';
@@ -279,7 +278,6 @@ void main() {
       Future<ResolvedPlayStream?> Function(MovieItem)? resolveStream,
       Future<String?> Function(MovieItem)? resolveYear,
       Future<bool> Function(String videoId)? openTrailer,
-      bool glass = false,
       MovieRecommendationsProvider? recommendations,
     }) async {
       useSpanishTranslations();
@@ -296,16 +294,11 @@ void main() {
               if (recommendations != null)
                 ChangeNotifierProvider.value(value: recommendations),
             ],
-            child: Builder(
-              builder: (_) {
-                final detail = MovieDetailScreen(
-                  movie: movie,
-                  resolveStream: resolveStream ?? (_) async => null,
-                  resolveYear: resolveYear,
-                  openTrailer: openTrailer ?? (_) async => true,
-                );
-                return glass ? MoaiGlassScope(child: detail) : detail;
-              },
+            child: MovieDetailScreen(
+              movie: movie,
+              resolveStream: resolveStream ?? (_) async => null,
+              resolveYear: resolveYear,
+              openTrailer: openTrailer ?? (_) async => true,
             ),
           ),
         ),
@@ -313,14 +306,10 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    Color pillColor(WidgetTester tester, String label) => tester
-        .widget<TvMetaPill>(
-          find.ancestor(
-            of: find.text(label),
-            matching: find.byType(TvMetaPill),
-          ),
-        )
-        .foreground!;
+    /// El color del número de una etiqueta (la nota va en la estrella y el
+    /// número; la etiqueta es de cristal como las demás).
+    Color pillColor(WidgetTester tester, String label) =>
+        tester.widget<Text>(find.text(label)).style!.color!;
 
     String? focused() => FocusManager.instance.primaryFocus?.debugLabel;
 
@@ -443,35 +432,8 @@ void main() {
       },
     );
 
-    testWidgets('Score entre 5.0 y 7.0 usa plata y menor a 5.0 usa rojo', (
-      tester,
-    ) async {
-      await pumpDetail(
-        tester,
-        MovieItem(contentId: '101', name: 'Pelicula Media', score: '6.5'),
-      );
-      expect(pillColor(tester, '6.5'), const Color(0xFFE2E8F0));
-
-      await pumpDetail(
-        tester,
-        MovieItem(contentId: '102', name: 'Pelicula Baja', score: '4.2'),
-      );
-      expect(pillColor(tester, '4.2'), const Color(0xFFF87171));
-    });
-
-    testWidgets('en tema claro el puntaje usa tonos oscuros legibles', (
-      tester,
-    ) async {
-      await pumpDetail(
-        tester,
-        MovieItem(contentId: '103', name: 'Clara', score: '8.1'),
-        brightness: Brightness.light,
-      );
-      expect(pillColor(tester, '8.1'), const Color(0xFFB45309));
-    });
-
     testWidgets(
-      'en cristal el puntaje es una etiqueta como las demás y la nota '
+      'el puntaje es una etiqueta de cristal como las demás y la nota '
       'colorea la estrella y el número',
       (tester) async {
         Future<void> expectScore(
@@ -482,7 +444,6 @@ void main() {
           await pumpDetail(
             tester,
             MovieItem(contentId: score, name: 'Nota', score: score),
-            glass: true,
             brightness: brightness,
           );
           final pill = find.ancestor(

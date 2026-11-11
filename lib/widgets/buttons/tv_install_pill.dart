@@ -3,7 +3,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Píldora de estado y acción para instalación de extensiones/plugins.
 ///
@@ -35,35 +34,11 @@ class TvInstallPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    // Cristal: "Instalar" es la acción (acento con brillo); "Instalado" es un
-    // estado tranquilo (cristal tenue con el tilde en el acento).
-    final glass = MoaiGlassScope.enabledOf(context);
-
-    final Color bg;
-    final Color fg;
-
-    if (glass) {
-      // "Instalado" es un estado: la pastilla de los géneros de película
-      // (`TvMovieGenreChip`) en verde sólido, con texto blanco.
-      bg = isInstalled ? installedColor : scheme.primary;
-      fg = isInstalled ? Colors.white : scheme.onPrimary;
-    } else if (isInstalled) {
-      if (isFocused) {
-        bg = scheme.onPrimary.withValues(alpha: 0.2);
-        fg = scheme.onPrimary;
-      } else {
-        bg = scheme.tertiaryContainer;
-        fg = scheme.onTertiaryContainer;
-      }
-    } else {
-      if (isFocused) {
-        bg = scheme.onPrimary;
-        fg = scheme.primary;
-      } else {
-        bg = scheme.primary;
-        fg = scheme.onPrimary;
-      }
-    }
+    // "Instalar" es la acción (acento con brillo); "Instalado" es un estado:
+    // la pastilla de los géneros de película (`TvMovieGenreChip`) en verde
+    // sólido, con texto blanco.
+    final bg = isInstalled ? installedColor : scheme.primary;
+    final fg = isInstalled ? Colors.white : scheme.onPrimary;
 
     final isDownloading = downloadProgress != null;
 
@@ -120,9 +95,7 @@ class TvInstallPill extends StatelessWidget {
             ),
     );
 
-    final Decoration? glassDecoration = !glass
-        ? null
-        : isInstalled
+    final Decoration decoration = isInstalled
         ? const ShapeDecoration(color: installedColor, shape: StadiumBorder())
         : BoxDecoration(
             borderRadius: BorderRadius.circular(20),
@@ -133,33 +106,19 @@ class TvInstallPill extends StatelessWidget {
             ),
           );
 
-    if (glassDecoration != null) {
-      return Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
-        child: Ink(
-          decoration: glassDecoration,
-          child: onPressed != null
-              ? InkWell(
-                  onTap: onPressed,
-                  borderRadius: BorderRadius.circular(20),
-                  child: content,
-                )
-              : content,
-        ),
-      );
-    }
-
     return Material(
-      color: bg,
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(20),
-      child: onPressed != null
-          ? InkWell(
-              onTap: onPressed,
-              borderRadius: BorderRadius.circular(20),
-              child: content,
-            )
-          : content,
+      child: Ink(
+        decoration: decoration,
+        child: onPressed != null
+            ? InkWell(
+                onTap: onPressed,
+                borderRadius: BorderRadius.circular(20),
+                child: content,
+              )
+            : content,
+      ),
     );
   }
 }

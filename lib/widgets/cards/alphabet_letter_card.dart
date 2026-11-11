@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_focus_style.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 class AlphabetLetterCard extends StatefulWidget {
   final String letter;
@@ -97,14 +96,11 @@ class _AlphabetLetterCardState extends State<AlphabetLetterCard> {
             child: Container(
               width: 26,
               height: 26,
-              // En cristal el foco es el del rail (color sólido con brillo y
-              // halo); en reposo la letra va suelta.
-              decoration: MoaiGlassScope.enabledOf(context) && focused
+              // El foco es el del rail (color sólido con brillo y halo); en
+              // reposo la letra va suelta.
+              decoration: focused
                   ? MoaiFocusStyle.decoration(scheme, color: widget.focusColor)
-                  : BoxDecoration(
-                      color: focused ? scheme.primary : Colors.transparent,
-                      shape: BoxShape.circle,
-                    ),
+                  : null,
               alignment: Alignment.center,
               // Las mayúsculas no tienen parte de abajo: centradas en la
               // caja del texto quedan 1 punto altas.

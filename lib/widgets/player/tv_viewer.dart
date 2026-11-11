@@ -398,12 +398,12 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
             ],
           );
 
-    final watchParty = context.watch<WatchPartyProvider?>() ?? _watchParty;
-
-    final isWatchPartyActive =
-        effectiveFullScreen &&
-        (watchParty?.enabled ?? false) &&
-        (watchParty?.hasFriendsInSameChannel ?? false);
+    // Sólo el sí/no: el visor no se reconstruye con cada aviso de Miremos
+    // juntos (presencia, amigos) que no lo cambia.
+    final watchPartyHere = context.select<WatchPartyProvider?, bool>(
+      (p) => (p?.enabled ?? false) && (p?.hasFriendsInSameChannel ?? false),
+    );
+    final isWatchPartyActive = effectiveFullScreen && watchPartyHere;
 
     final baseColor = scheme.surface.withValues(alpha: 0.8);
     final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);

@@ -69,27 +69,14 @@ class MoaiGlass extends StatelessWidget {
   /// Con sombra; una pieza anidada dentro de otro cristal va sin ella.
   final bool elevated;
 
-  /// REDISEÑO (2026-10-30): piezas sobre el panel esmerilado (referencia
-  /// estilo visionOS): vidrio más claro que el panel, con filo de luz blanco.
-  /// Mismo material con y sin foco; el foco sólo cambia el borde. Los
-  /// colores, los del modo ([MoaiPalette]: `glassCard`, `glassChip`,
-  /// `glassRim`).
-
-  /// PRUEBA (2026-11-03, del artículo de glassmorphism): filo de luz con
-  /// degradado (fuerte arriba a la izquierda, casi nada abajo a la derecha)
-  /// en vez del parejo [_lightRim], como si la luz viniera de arriba. Es
-  /// sólo pintura (sin desenfoque): no cuesta. Con foco sigue el borde del
-  /// acento. Para volver al parejo: false.
-  static const bool specularRim = true;
-
-  /// El borde encima del vidrio claro: con foco, el del acento; si no, el
-  /// filo de luz (con degradado si [specularRim]).
-  Decoration _rimFor(
-    ColorScheme scheme,
-    MoaiPalette palette,
-    BorderRadius radius,
-  ) {
-    if (!focused && specularRim) {
+  /// Piezas sobre el panel esmerilado (referencia estilo visionOS): vidrio
+  /// más claro que el panel, con filo de luz con degradado (fuerte arriba a
+  /// la izquierda, casi nada abajo a la derecha), como si la luz viniera de
+  /// arriba. Mismo material con y sin foco; el foco cambia el filo por el
+  /// borde del acento. Los colores, los del modo ([MoaiPalette]: `glassCard`,
+  /// `glassChip`, `specularRim`).
+  Decoration _rimFor(ColorScheme scheme, MoaiPalette palette) {
+    if (!focused) {
       return _GlassRim(
         radius: borderRadius,
         rim: palette.specularRim,
@@ -98,18 +85,17 @@ class MoaiGlass extends StatelessWidget {
       );
     }
     return BoxDecoration(
-      borderRadius: radius,
-      border: Border.all(
-        color: focused ? scheme.primary : palette.glassRim,
-        width: focused ? 2 : 1,
-      ),
+      borderRadius: BorderRadius.circular(borderRadius),
+      border: Border.all(color: scheme.primary, width: 2),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (tint == null) return _cleanly(context);
-    return _previousBuild(context);
+    final tint = this.tint;
+    if (tint != null) return _tinted(context, tint);
+    if (frosted) return _frosted(context);
+    return _clear(context);
   }
 
   /// Panel grande: vidrio esmerilado estilo visionOS (referencia del usuario
@@ -154,8 +140,7 @@ class MoaiGlass extends StatelessWidget {
     );
   }
 
-  Widget _cleanly(BuildContext context) {
-    if (frosted) return _frosted(context);
+  Widget _clear(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final palette = MoaiPalette.of(context);
     final radius = BorderRadius.circular(borderRadius);
@@ -176,59 +161,36 @@ class MoaiGlass extends StatelessWidget {
             : null,
       ),
       // Borde por encima: con foco crece sin mover el contenido.
-      foregroundDecoration: _rimFor(scheme, palette, radius),
+      foregroundDecoration: _rimFor(scheme, palette),
       padding: padding,
       alignment: alignment,
       child: child,
     );
   }
 
-  /// ANTES (a limpiar): cristal con degradado, brillo y borde especular según
-  /// el tema. Ahora sólo lo usan las piezas con [tint].
-  Widget _previousBuild(BuildContext context) {
+  /// Una pieza teñida (p. ej. `scheme.primary` para una activa): degradado
+  /// del tinte, brillo arriba y borde especular del mismo color.
+  Widget _tinted(BuildContext context, Color tint) {
     final scheme = Theme.of(context).colorScheme;
     final dark = scheme.brightness == Brightness.dark;
     final radius = BorderRadius.circular(borderRadius);
-    final tint = this.tint;
 
-    List<Color> fill;
-    if (tint != null) {
-      fill = dark
-          ? [tint.withValues(alpha: 0.30), tint.withValues(alpha: 0.14)]
-          : [tint.withValues(alpha: 0.22), tint.withValues(alpha: 0.10)];
-    } else {
-      fill = dark
-          ? [
-              Color.alphaBlend(
-                Colors.white.withValues(alpha: solid ? 0.02 : 0.10),
-                scheme.surface.withValues(alpha: solid ? 0.45 : 0.42),
-              ),
-              Color.alphaBlend(
-                Colors.white.withValues(alpha: solid ? 0.0 : 0.03),
-                scheme.surface.withValues(alpha: solid ? 0.38 : 0.30),
-              ),
-            ]
-          : [
-              Colors.white.withValues(alpha: solid ? 0.55 : 0.62),
-              Colors.white.withValues(alpha: solid ? 0.42 : 0.34),
-            ];
-    }
+    var fill = dark
+        ? [tint.withValues(alpha: 0.30), tint.withValues(alpha: 0.14)]
+        : [tint.withValues(alpha: 0.22), tint.withValues(alpha: 0.10)];
 
     if (focused) {
       final wash = scheme.primary.withValues(alpha: dark ? 0.10 : 0.08);
       fill = [for (final c in fill) Color.alphaBlend(wash, c)];
     }
 
-    final rimLight = tint ?? Colors.white;
     final rim = focused
         ? List.filled(3, scheme.primary)
         : dark
         ? [
-            rimLight.withValues(
-              alpha: tint != null ? 0.55 : (solid ? 0.14 : 0.32),
-            ),
-            rimLight.withValues(alpha: 0.04),
-            rimLight.withValues(alpha: solid ? 0.05 : 0.12),
+            tint.withValues(alpha: 0.55),
+            tint.withValues(alpha: 0.04),
+            tint.withValues(alpha: solid ? 0.05 : 0.12),
           ]
         : [
             Colors.white.withValues(alpha: 0.95),
@@ -351,19 +313,6 @@ class _GlassRimPainter extends BoxPainter {
   }
 }
 
-/// Marca un subárbol que está sobre el fondo ambiente: ahí los componentes
-/// compartidos (p. ej. el acordeón) se dibujan de cristal. Fuera de él (diálogos,
-/// pantallas que aún usan la imagen de fondo) mantienen su estilo opaco.
-class MoaiGlassScope extends InheritedWidget {
-  const MoaiGlassScope({super.key, required super.child});
-
-  static bool enabledOf(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<MoaiGlassScope>() != null;
-
-  @override
-  bool updateShouldNotify(MoaiGlassScope oldWidget) => false;
-}
-
 /// Cristal oscuro para lo que va sobre video: el claro se lava. Sin desenfoque,
 /// para no cargar cada cuadro.
 BoxDecoration moaiVideoGlassDecoration({double radius = 14}) => BoxDecoration(
@@ -375,39 +324,6 @@ BoxDecoration moaiVideoGlassDecoration({double radius = 14}) => BoxDecoration(
   ),
   border: Border.all(color: const Color(0x2EFFFFFF)),
 );
-
-/// Superficie de un diálogo sobre el fondo ambiente: sólida (flota sobre la
-/// pantalla oscurecida), un tono más clara arriba, borde de luz tenue y sombra
-/// amplia. Sin manchas de luz: en un recuadro chico compiten con la pantalla.
-BoxDecoration moaiDialogDecoration(ColorScheme scheme, {double radius = 20}) {
-  final dark = scheme.brightness == Brightness.dark;
-  return BoxDecoration(
-    borderRadius: BorderRadius.circular(radius),
-    gradient: LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: dark
-          ? [
-              Color.alphaBlend(
-                Colors.white.withValues(alpha: 0.04),
-                scheme.surfaceContainer,
-              ),
-              scheme.surfaceContainerLow,
-            ]
-          : [scheme.surfaceContainerLowest, scheme.surfaceContainerLow],
-    ),
-    border: Border.all(
-      color: (dark ? Colors.white : scheme.onSurface).withValues(alpha: 0.10),
-    ),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: dark ? 0.55 : 0.18),
-        blurRadius: 40,
-        offset: const Offset(0, 16),
-      ),
-    ],
-  );
-}
 
 /// "Pozo" de cristal: zona que agrupa contenido dentro de un panel o diálogo
 /// (listas, estados vacíos) sin pesar.

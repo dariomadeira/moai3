@@ -192,18 +192,11 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
     final recordingSecs = coordinator?.recordingSeconds ?? 0;
     final remainingSeconds = (30 - recordingSecs).clamp(0, 30);
 
-    final backgroundColor = isRecording
-        ? scheme.error
-        : (_isMicFocused ? scheme.primary : scheme.surfaceContainerHighest);
-
     // Cristal: como los botones de Favoritos (tenue en reposo; con foco o
     // grabando, el color pleno con brillo y halo).
-    final glass = MoaiGlassScope.enabledOf(context);
     final foregroundColor = isRecording
         ? scheme.onError
-        : (_isMicFocused
-              ? scheme.onPrimary
-              : (glass ? scheme.onSurface : scheme.onSurfaceVariant));
+        : (_isMicFocused ? scheme.onPrimary : scheme.onSurface);
 
     return Focus(
       focusNode: _micFocusNode,
@@ -285,17 +278,12 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
             horizontal: isRecording ? 12 : 10,
             vertical: 6,
           ),
-          decoration: glass
-              ? moaiGlassButtonDecoration(
-                  scheme,
-                  focused: _isMicFocused || isRecording,
-                  accent: isRecording ? scheme.error : scheme.primary,
-                  radius: 20,
-                )
-              : BoxDecoration(
-                  color: backgroundColor,
-                  borderRadius: BorderRadius.circular(20),
-                ),
+          decoration: moaiGlassButtonDecoration(
+            scheme,
+            focused: _isMicFocused || isRecording,
+            accent: isRecording ? scheme.error : scheme.primary,
+            radius: 20,
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

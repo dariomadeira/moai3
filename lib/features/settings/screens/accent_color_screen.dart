@@ -50,7 +50,6 @@ class _AccentColorScreenState extends State<AccentColorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
     final theme = context.watch<ThemeProvider>();
     final isAutoAccent = theme.autoAccent;
 
@@ -109,7 +108,6 @@ class _AccentColorScreenState extends State<AccentColorScreen> {
                       child: TvAccordionRowPreview(
                         panelCount: 1,
                         activeIndex: 0,
-                        colors: [scheme.surface.withValues(alpha: 0.8)],
                         titles: [LocaleKeys.settings_general_accent.tr()],
                         icons: const [MoaiIcons.palette],
                         onPanelTap: (_) {},

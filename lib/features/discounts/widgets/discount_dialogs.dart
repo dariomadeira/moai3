@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/widgets/tv_common/tv_info_row.dart';
 import 'package:moai3/features/discounts/discount_format.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
@@ -317,60 +318,6 @@ class _TvDiscountDetailDialogState extends State<TvDiscountDetailDialog> {
     super.dispose();
   }
 
-  /// Un dato: ícono en el acento en una etiqueta de cristal, el nombre en gris y
-  /// el valor en negro (como el detalle de un evento de la Agenda).
-  Widget _detail(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    final scheme = context.scheme;
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: moaiGlassTagDecoration(scheme, radius: 12),
-          child: Icon(
-            icon,
-            size: MoaiIconSizes.md,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: MoaiText.body(
-                  context,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 1),
-              Text(
-                value,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: MoaiText.body(
-                  context,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   /// Los 7 días de la semana: los que vale encendidos en el color del
   /// rubro, los demás de cristal apagado.
   Widget _weekdays(BuildContext context, Discount d, Color color) {
@@ -566,8 +513,7 @@ class _TvDiscountDetailDialogState extends State<TvDiscountDetailDialog> {
                         if (j > i) const SizedBox(width: 16),
                         Expanded(
                           child: j < details.length
-                              ? _detail(
-                                  context,
+                              ? TvInfoRow(
                                   icon: details[j].$1,
                                   label: details[j].$2,
                                   value: details[j].$3,

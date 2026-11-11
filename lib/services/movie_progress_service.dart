@@ -182,9 +182,4 @@ class MovieProgressService {
     );
     return record;
   }
-
-  static Future<void> clearProgress(String contentId) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('$_prefix$contentId');
-  }
 }

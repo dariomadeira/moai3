@@ -9,7 +9,6 @@ import 'package:moai3/services/supabase_presence_service.dart';
 import 'package:moai3/state/theme_provider.dart';
 import 'package:moai3/theme/moai_theme.dart';
 import 'package:moai3/widgets/feedback/notification_helper.dart';
-import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 class MoaiApp extends StatefulWidget {
   const MoaiApp({
@@ -57,6 +56,10 @@ class _MoaiAppState extends State<MoaiApp> {
       deviceId: deviceId,
       online: false,
     );
+    // En segundo plano (p. ej. un tráiler en YouTube) suelta las imágenes
+    // decodificadas que no están en pantalla: menos memoria, menos chances
+    // de que Android cierre la app. Al volver salen del caché en disco.
+    PaintingBinding.instance.imageCache.clear();
   }
 
   @override
@@ -102,11 +105,6 @@ class _MoaiAppState extends State<MoaiApp> {
       theme: _lightTheme,
       darkTheme: _darkTheme,
       debugShowCheckedModeBanner: false,
-      // Toda la app va sobre el fondo ambiente: los componentes compartidos
-      // (paneles, fichas, switches) se dibujan de cristal en todas las rutas
-      // y diálogos.
-      builder: (context, child) =>
-          MoaiGlassScope(child: child ?? const SizedBox.shrink()),
     );
   }
 }

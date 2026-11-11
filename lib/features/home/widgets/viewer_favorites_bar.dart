@@ -52,9 +52,6 @@ class ViewerFavoritesBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
 
-    final baseColor = scheme.surface.withValues(alpha: 0.8);
-    final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
-
     final content = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -164,23 +161,14 @@ class ViewerFavoritesBar extends StatelessWidget {
       ],
     );
 
-    // Mismo cristal que los paneles del acordeón; fuera, estilo opaco.
+    // Mismo cristal que los paneles del acordeón.
     return RepaintBoundary(
-      child: MoaiGlassScope.enabledOf(context)
-          ? MoaiGlass(
-              borderRadius: 16,
-              solid: true,
-              elevated: false,
-              child: content,
-            )
-          : Container(
-              decoration: BoxDecoration(
-                color: baseColor,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderColor),
-              ),
-              child: content,
-            ),
+      child: MoaiGlass(
+        borderRadius: 16,
+        solid: true,
+        elevated: false,
+        child: content,
+      ),
     );
   }
 }

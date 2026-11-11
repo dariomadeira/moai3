@@ -34,7 +34,6 @@ void main() {
             height: 600,
             child: CountryListPanel(
               key: key,
-              title: 'Grupos',
               countries: countries,
               selectedCountry: selected,
               tunedCountry: selected,
@@ -159,8 +158,6 @@ void main() {
             width: 420,
             height: 600,
             child: CategoryListPanel(
-              title: 'Categorías',
-              selectedCountry: 'Argentina',
               categories: List.generate(20, (i) => 'Categoría $i'),
               selectedCategory: 'Categoría 1',
               tunedCategory: 'Categoría 1',

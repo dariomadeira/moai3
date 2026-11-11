@@ -73,34 +73,10 @@ class _TvIconActionButtonState extends State<TvIconActionButton> {
     final scheme = context.scheme;
     // Cristal: tenue en reposo (la fila no se rellena al enfocarse, así que
     // [parentFocused] no cambia colores); con foco, acento con brillo y halo.
-    final glass = MoaiGlassScope.enabledOf(context);
-
-    final Color bg;
-    final Color fg;
-
-    if (glass) {
-      // El relleno lo da [moaiGlassButtonDecoration].
-      bg = Colors.transparent;
-      fg = _isFocused
-          ? (widget.destructive ? _onDestructiveFill : scheme.onPrimary)
-          : (widget.destructive ? scheme.error : scheme.onSurface);
-    } else if (_isFocused) {
-      if (widget.parentFocused) {
-        bg = scheme.onPrimary;
-        fg = scheme.primary;
-      } else {
-        bg = scheme.primary;
-        fg = scheme.onPrimary;
-      }
-    } else {
-      if (widget.parentFocused) {
-        bg = scheme.onPrimary.withValues(alpha: 0.16);
-        fg = scheme.onPrimary;
-      } else {
-        bg = scheme.surfaceContainerHighest.withValues(alpha: 0.5);
-        fg = scheme.onSurfaceVariant;
-      }
-    }
+    // El relleno lo da [moaiGlassButtonDecoration].
+    final fg = _isFocused
+        ? (widget.destructive ? _onDestructiveFill : scheme.onPrimary)
+        : (widget.destructive ? scheme.error : scheme.onSurface);
 
     return Focus(
       focusNode: widget.focusNode,
@@ -132,7 +108,7 @@ class _TvIconActionButtonState extends State<TvIconActionButton> {
       child: AnimatedScale(
         scale: _isFocused ? 1.08 : 1.0,
         duration: const Duration(milliseconds: 100),
-        child: glass ? _glassButton(scheme, fg) : _solidButton(bg, fg),
+        child: _glassButton(scheme, fg),
       ),
     );
   }
@@ -153,22 +129,6 @@ class _TvIconActionButtonState extends State<TvIconActionButton> {
           accent: widget.destructive ? _destructiveFill : null,
         ),
         child: Icon(widget.icon, color: fg, size: MoaiIconSizes.md),
-      ),
-    );
-  }
-
-  Widget _solidButton(Color bg, Color fg) {
-    return Material(
-      color: bg,
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        onTap: widget.onPressed,
-        borderRadius: BorderRadius.circular(10),
-        child: SizedBox(
-          width: 36,
-          height: 36,
-          child: Icon(widget.icon, color: fg, size: MoaiIconSizes.md),
-        ),
       ),
     );
   }

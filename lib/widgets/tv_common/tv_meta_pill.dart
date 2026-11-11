@@ -64,15 +64,14 @@ class TvMetaPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    // En cristal, la píldora neutra (sin color o con el violeta por defecto)
-    // pasa a cristal tenue; los colores con significado (calidad, puntaje)
-    // se respetan.
-    final glass =
-        MoaiGlassScope.enabledOf(context) &&
-        (color == null ||
-            color == scheme.tertiaryContainer ||
-            glassForeground != null);
-    if (glass) return _buildGlass(context, scheme);
+    // La píldora neutra (sin color o con el violeta por defecto) es de
+    // cristal tenue; los colores con significado (calidad, puntaje) se
+    // respetan.
+    final neutral =
+        color == null ||
+        color == scheme.tertiaryContainer ||
+        glassForeground != null;
+    if (neutral) return _buildGlass(context, scheme);
     final bg = color ?? scheme.tertiaryContainer;
     final fg = foreground ?? scheme.onTertiaryContainer;
 

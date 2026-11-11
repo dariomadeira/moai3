@@ -696,7 +696,6 @@ abstract class  LocaleKeys {
   static const plugins_update_empty = 'plugins_update_empty';
   static const search_field_hint = 'search_field_hint';
   static const search_field_label = 'search_field_label';
-  static const search_hint_open_keyboard = 'search_hint_open_keyboard';
   static const search_hint_with_filter = 'search_hint_with_filter';
   static const search_min_chars_prompt = 'search_min_chars_prompt';
   static const search_no_results = 'search_no_results';

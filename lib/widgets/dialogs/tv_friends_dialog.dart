@@ -32,6 +32,9 @@ part 'tv_friends/friend_tile.dart';
 part 'tv_friends/request_tile.dart';
 part 'tv_friends/friends_search.dart';
 
+part 'tv_friends/tv_friends_actions.dart';
+part 'tv_friends/tv_friends_search_flow.dart';
+
 /// Diálogo de amigos de "Mirar juntos": tres paneles en acordeón, como
 /// Ajustes. ←/→ pasan de panel, ↑/↓ recorren el panel abierto y ↓ al final
 /// va a Cerrar.
@@ -268,322 +271,11 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
     }, immediate: true);
   }
 
-  Future<void> _handleAddFriend([String? customCode]) async {
-    final rawInput = (customCode ?? _codeController.text).trim().toUpperCase();
-
-    // Sin código no se abre otro modal: se avisa y se vuelve al campo.
-    if (rawInput.isEmpty) {
-      setState(() {
-        _errorMessage = LocaleKeys.friend_add_dialog_error_length;
-      });
-      _codeFocus.requestFocus();
-      return;
-    }
-
-    setState(() {
-      _isSubmitting = true;
-      _addingByCode = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final watchParty = context.read<WatchPartyProvider>();
-      final added = await watchParty.addFriend(rawInput);
-      _codeController.clear();
-      if (mounted) {
-        MoaiSnackBar.show(
-          context,
-          message: LocaleKeys.friends_request_sent.tr(
-            namedArgs: {'name': added.displayName},
-          ),
-          icon: MoaiIcons.checkCircle,
-        );
-      }
-    } catch (e) {
-      if (mounted) setState(() => _errorMessage = _errorKey(e));
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-          _addingByCode = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _handleAcceptRequest(FriendInfo request) async {
-    setState(() {
-      _isSubmitting = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final watchParty = context.read<WatchPartyProvider>();
-      await watchParty.acceptFriendRequest(request);
-    } catch (e) {
-      if (mounted) setState(() => _errorMessage = _errorKey(e));
-    } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-        // La aceptada pasó a Amigos: el foco sigue en la lista.
-        _requestsIndex = 0;
-        _focusPanel();
-      }
-    }
-  }
-
-  /// Mirar juntos: cierra el modal y sintoniza el canal del amigo. Si no
-  /// está conectado, no mira nada o el canal no está en la lista propia, lo
-  /// avisa y el modal queda abierto.
-  void _watchWithFriend(FriendInfo friend) {
-    final channelName = friend.displayChannelName;
-    final String? notice;
-    Channel? channel;
-    if (!friend.isOnline) {
-      notice = LocaleKeys.friends_not_online.tr(
-        namedArgs: {'name': friend.displayName},
-      );
-    } else if (channelName == null) {
-      notice = LocaleKeys.home_friends_not_watching.tr(
-        namedArgs: {'name': friend.displayName},
-      );
-    } else {
-      final channels = context.read<ChannelProvider?>()?.allChannels;
-      channel = HomeFriendsItem.channelOf(friend, channels ?? const []);
-      notice = channel == null
-          ? LocaleKeys.home_friends_channel_missing.tr(
-              namedArgs: {'channel': channelName},
-            )
-          : null;
-    }
-    if (channel == null) {
-      MoaiSnackBar.showInfo(context, message: notice!);
-      return;
-    }
-    final onTune = widget.onTuneChannel;
-    final provider = context.read<ChannelProvider>();
-    Navigator.of(context).pop();
-    if (onTune != null) {
-      onTune(channel);
-    } else {
-      provider.selectChannel(channel);
-    }
-  }
-
-  /// Confirmación destructiva (Cancelar enfocado, a la izquierda del botón
-  /// rojo). `true` si confirmó.
-  Future<bool> _confirm({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String confirmLabel,
-  }) async {
-    final confirmed = await showTvGeneralDialog<bool>(
-      context: context,
-      barrierLabel: 'FriendsConfirm',
-      builder: (dialogContext) => _ConfirmDialog(
-        icon: icon,
-        title: title,
-        subtitle: subtitle,
-        confirmLabel: confirmLabel,
-      ),
-    );
-    return confirmed == true;
-  }
-
-  Future<void> _confirmDeleteFriend(FriendInfo friend) async {
-    final confirmed = await _confirm(
-      icon: MoaiIcons.personRemove,
-      title: LocaleKeys.friends_delete_confirm_title.tr(),
-      subtitle: LocaleKeys.friends_delete_confirm_desc.tr(
-        namedArgs: {'name': friend.displayName},
-      ),
-      confirmLabel: LocaleKeys.common_delete.tr(),
-    );
-    if (confirmed && mounted) {
-      try {
-        await context.read<WatchPartyProvider>().removeFriend(friend.deviceId);
-      } catch (_) {
-        // Silencioso
-      }
-    }
-    if (mounted) _focusPanel();
-  }
-
-  /// Rechazar una solicitud: se borra su pedido. Si te vuelve a agregar,
-  /// aparece otra vez.
-  Future<void> _confirmRejectRequest(FriendInfo request) async {
-    final confirmed = await confirmFriendReject(context, request);
-    if (confirmed && mounted) {
-      try {
-        await context.read<WatchPartyProvider>().rejectFriendRequest(request);
-      } catch (e) {
-        if (mounted) {
-          setState(
-            () => _errorMessage = _errorKey(
-              e,
-              fallback: LocaleKeys.friends_reject_error,
-            ),
-          );
-        }
-      }
-    }
-    if (mounted) {
-      _requestsIndex = 0;
-      _focusPanel();
-    }
-  }
-
-  // --- Buscar por apodo y mandar la solicitud (panel Agregar y buscar) ---
-
-  _SearchStatus _statusOf(FriendInfo user, WatchPartyProvider watchParty) {
-    bool has(Iterable<FriendInfo> list) =>
-        list.any((f) => f.deviceId == user.deviceId);
-    if (has(watchParty.mutualFriends)) return _SearchStatus.friend;
-    // Agregado pero no me agregó: ya le mandé la solicitud.
-    if (has(watchParty.friends)) return _SearchStatus.sent;
-    if (has(watchParty.friendRequests)) return _SearchStatus.incoming;
-    return _SearchStatus.newUser;
-  }
-
-  String _statusLabel(_SearchStatus status) => switch (status) {
-    _SearchStatus.newUser => LocaleKeys.friends_search_status_new.tr(),
-    _SearchStatus.friend => LocaleKeys.friends_search_status_friend.tr(),
-    _SearchStatus.sent => LocaleKeys.friends_search_status_sent.tr(),
-    _SearchStatus.incoming => LocaleKeys.friends_search_status_incoming.tr(),
-  };
-
-  /// Busca [raw] y, si trae algo, pasa el foco al primero. Todo lo que no
-  /// es la lista (faltan letras, nada, falló) se muestra en su lugar.
-  Future<void> _search(String raw) async {
-    final query = raw.trim();
-    if (query.length < 2) {
-      setState(() {
-        _searchQuery = query;
-        _searchResults = null;
-        _searchNotice = LocaleKeys.friends_search_short;
-      });
-      _searchFocus.requestFocus();
-      return;
-    }
-
-    setState(() {
-      _searching = true;
-      _searchNotice = null;
-      _searchQuery = query;
-    });
-    try {
-      final results = await context.read<WatchPartyProvider>().searchUsers(
-        query,
-      );
-      if (!mounted) return;
-      setState(() {
-        _searchResults = results;
-        _searchIndex = 0;
-      });
-      if (results.isNotEmpty) _focusSearchResults();
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _searchResults = null;
-          _searchNotice = LocaleKeys.friends_search_error;
-        });
-      }
-    } finally {
-      if (mounted) setState(() => _searching = false);
-    }
-  }
-
   /// Hay algo para borrar: sólo entonces se ve la X.
   bool get _canClearSearch =>
       _searchController.text.isNotEmpty ||
       _searchResults != null ||
       _searchNotice != null;
-
-  /// La X: borra lo escrito y lo que se había encontrado.
-  void _clearSearch() {
-    _searchController.clear();
-    setState(() {
-      _searchQuery = '';
-      _searchResults = null;
-      _searchNotice = null;
-      _searchIndex = 0;
-    });
-    _searchFocus.requestFocus();
-  }
-
-  /// ↓ desde el buscador o la X: al primer resultado, al aviso que ocupa su
-  /// lugar o, si no hay nada, a Cerrar.
-  void _focusBelowSearch() {
-    if (_searchResults?.isNotEmpty ?? false) {
-      _focusSearchResults(index: 0);
-    } else if (_focusable(_searchEmptyFocus)) {
-      _searchEmptyFocus.requestFocus();
-    } else {
-      _closeFocus.requestFocus();
-    }
-  }
-
-  /// ↑ desde Cerrar en Agregar y buscar: vuelve a lo que está arriba de
-  /// Cerrar (el resultado donde había quedado, el aviso o el buscador), no
-  /// al principio del panel.
-  void _focusAboveClose() {
-    if (_panel != TvFriendsDialog.addPanel) return _focusPanel();
-    if (_searchResults?.isNotEmpty ?? false) {
-      _focusSearchResults();
-    } else if (_focusable(_searchEmptyFocus)) {
-      _searchEmptyFocus.requestFocus();
-    } else {
-      _searchFocus.requestFocus();
-    }
-  }
-
-  /// Enfoca un resultado: [index] o donde había quedado. En el acto si la
-  /// lista ya está armada; si no (recién llegó), en los cuadros siguientes.
-  void _focusSearchResults({int? index}) {
-    if (index != null) _searchIndex = index;
-    _focus.request(() {
-      final list = _searchListKey.currentState;
-      if (list == null || !_focusable(_panelFocus[_panel])) return false;
-      list.ensureVisible(_searchIndex);
-      return true;
-    }, immediate: true);
-  }
-
-  /// OK sobre un resultado: le manda la solicitud (o acepta la suya). Si ya
-  /// es amigo o ya se la mandaste, sólo lo avisa.
-  Future<void> _sendRequestTo(FriendInfo user) async {
-    final watchParty = context.read<WatchPartyProvider>();
-    final status = _statusOf(user, watchParty);
-    if (status == _SearchStatus.friend || status == _SearchStatus.sent) {
-      MoaiSnackBar.showInfo(context, message: _statusLabel(status));
-      return;
-    }
-    final name = {'name': user.displayName};
-    setState(() {
-      _isSubmitting = true;
-      _errorMessage = null;
-    });
-    try {
-      await watchParty.addFriend(user.userCode);
-      if (mounted) {
-        MoaiSnackBar.show(
-          context,
-          message: status == _SearchStatus.incoming
-              ? LocaleKeys.friends_request_accepted.tr(namedArgs: name)
-              : LocaleKeys.friends_request_sent.tr(namedArgs: name),
-          icon: MoaiIcons.checkCircle,
-        );
-      }
-    } catch (e) {
-      if (mounted) setState(() => _errorMessage = _errorKey(e));
-    } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-        _focusSearchResults();
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -642,10 +334,6 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
             child: TvAccordionRowPreview(
               panelCount: TvFriendsDialog.panelCount,
               activeIndex: _panel,
-              colors: List.filled(
-                TvFriendsDialog.panelCount,
-                scheme.surface.withValues(alpha: 0.8),
-              ),
               titles: titles,
               icons: icons,
               onPanelTap: _selectPanel,
@@ -729,6 +417,9 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
     if (key == LogicalKeyboardKey.arrowUp) return KeyEventResult.handled;
     return KeyEventResult.ignored;
   }
+
+  /// Para las extensiones de los `part` (setState es protegido).
+  void _update(VoidCallback fn) => setState(fn);
 }
 
 /// Pide confirmar el rechazo de la solicitud de [request] (en el modal y en

@@ -7,6 +7,7 @@ import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/widgets/cards/channel_grid_tile.dart';
 import 'package:moai3/widgets/cards/tv_list_card_leading_logo.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
+import 'package:moai3/widgets/tv_common/tv_focus_ring.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'helpers/spanish_translations.dart';
 
@@ -139,7 +140,9 @@ void main() {
     expect(find.text('AR'), findsNWidgets(2));
   });
 
-  testWidgets('el foco es el borde de 2 px, como en Favoritos', (tester) async {
+  testWidgets('el foco es el anillo del acento, como en Favoritos', (
+    tester,
+  ) async {
     final channels = List.generate(6, (i) => _channel('$i'));
     final key = await pumpPanel(tester, channels, selected: channels.first);
 
@@ -151,17 +154,10 @@ void main() {
     final tile = find.byWidgetPredicate(
       (w) => w is ChannelGridTile && w.channel.id == '1',
     );
-    final borders = find.descendant(
-      of: tile,
-      matching: find.byWidgetPredicate((w) {
-        if (w is! AnimatedContainer) return false;
-        final d = w.decoration;
-        return d is BoxDecoration &&
-            d.border is Border &&
-            (d.border! as Border).top.width == 2;
-      }),
+    final ring = tester.widget<TvFocusRing>(
+      find.descendant(of: tile, matching: find.byType(TvFocusRing)),
     );
-    expect(borders, findsOneWidget);
+    expect(ring.focused, isTrue);
   });
 
   testWidgets('el check sigue al canal sintonizado, no al de la navegación', (

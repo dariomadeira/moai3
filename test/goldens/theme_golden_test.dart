@@ -37,7 +37,6 @@ import 'package:moai3/widgets/buttons/moai_pill_button.dart';
 import 'package:moai3/widgets/buttons/tv_back_pill.dart';
 import 'package:moai3/widgets/tv_common/moai_count_badge.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
-import 'package:moai3/widgets/tv_common/moai_glass_pill.dart';
 import 'package:moai3/widgets/tv_common/moai_status_tag.dart';
 import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 import 'package:moai3/widgets/tv_common/tv_value_chip.dart';
@@ -86,11 +85,9 @@ Future<void> _pumpSheet(
     MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: dark ? MoaiTheme.dark(_seed) : MoaiTheme.light(_seed),
-      home: MoaiGlassScope(
-        child: DecoratedBox(
-          decoration: dark ? _darkBackdrop : _lightBackdrop,
-          child: Material(type: MaterialType.transparency, child: child),
-        ),
+      home: DecoratedBox(
+        decoration: dark ? _darkBackdrop : _lightBackdrop,
+        child: Material(type: MaterialType.transparency, child: child),
       ),
     ),
   );
@@ -215,7 +212,6 @@ class _Sheet extends StatelessWidget {
             _box(moaiGlassChipDecoration(scheme, highlighted: true)),
           ),
           _sample('pozo', _box(moaiGlassWellDecoration(scheme))),
-          _sample('diálogo', _box(moaiDialogDecoration(scheme))),
           _sample('video', _box(moaiVideoGlassDecoration())),
           _sample(
             'meta',
@@ -233,7 +229,6 @@ class _Sheet extends StatelessWidget {
             MoaiStatusTag(label: 'EN VIVO', color: scheme.error),
           ),
           _sample('contador', const MoaiCountBadge(count: 3)),
-          _sample('pill', const MoaiGlassPill(label: 'Estreno')),
           _sample(
             'valor',
             const Row(

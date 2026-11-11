@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/widgets/tv_common/tv_info_row.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/models/calendar_event.dart';
@@ -120,60 +121,6 @@ class _CalendarEventDialogContentState
     );
   }
 
-  /// Un dato del evento: ícono en el acento en una etiqueta de cristal, el nombre
-  /// en gris y el valor en negro.
-  Widget _detailRow(
-    BuildContext context,
-    ColorScheme scheme, {
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: moaiGlassTagDecoration(scheme, radius: 12),
-          child: Icon(
-            icon,
-            size: MoaiIconSizes.md,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: MoaiText.body(
-                  context,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 1),
-              Text(
-                value,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: MoaiText.body(
-                  context,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   /// Título chico de una columna ("Dónde verlo").
   Widget _sectionTitle(BuildContext context, ColorScheme scheme, String text) {
     return Padding(
@@ -217,9 +164,7 @@ class _CalendarEventDialogContentState
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _detailRow(
-            context,
-            scheme,
+          TvInfoRow(
             icon: MoaiIcons.calendarDialogTime,
             label: LocaleKeys.calendar_event_time.tr(),
             value: event.timeConfirmed
@@ -234,18 +179,14 @@ class _CalendarEventDialogContentState
                   ),
           ),
           divider,
-          _detailRow(
-            context,
-            scheme,
+          TvInfoRow(
             icon: MoaiIcons.calendarDialogSport,
             label: LocaleKeys.calendar_event_sport.tr(),
             value: event.sessionType?.tr() ?? event.competition,
           ),
           if (hasBroadcaster) ...[
             divider,
-            _detailRow(
-              context,
-              scheme,
+            TvInfoRow(
               icon: MoaiIcons.calendarDialogBroadcast,
               label: LocaleKeys.calendar_event_broadcaster.tr(),
               value: event.broadcaster!,

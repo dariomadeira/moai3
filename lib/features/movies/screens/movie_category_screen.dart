@@ -261,7 +261,6 @@ class MovieCategoryScreenState extends State<MovieCategoryScreen> {
     return TvAccordionRowPreview(
       panelCount: 1,
       activeIndex: 0,
-      colors: [scheme.surface.withValues(alpha: 0.8)],
       titles: [tabTitle],
       icons: const [MoaiIcons.tvAccordionMovies],
       svgIcons: [if (widget.series) MoaiIcons.seriesSvg else null],

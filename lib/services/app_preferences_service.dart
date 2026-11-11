@@ -26,9 +26,6 @@ class AppPreferences {
   bool readPreferenceBool(String key, {bool defaultValue = false}) =>
       _prefs.getBool(key) ?? defaultValue;
 
-  /// `null` si la clave no existe (distinto de `false` guardado).
-  bool? readOptionalBool(String key) => _prefs.getBool(key);
-
   /// `null` si la clave no existe.
   int? readOptionalInt(String key) => _prefs.getInt(key);
 
@@ -49,8 +46,5 @@ class AppPreferences {
   List<String> readStringList(String key) =>
       _prefs.getStringList(key) ?? const [];
 
-  int readPreferenceInt(String key) => _prefs.getInt(key) ?? 0;
-
   Future<void> saveInt(String key, int value) => _prefs.setInt(key, value);
 }
-

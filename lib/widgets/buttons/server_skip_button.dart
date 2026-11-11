@@ -35,10 +35,7 @@ class _ServerSkipButtonState extends State<ServerSkipButton> {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final glass = MoaiGlassScope.enabledOf(context);
-    final fg = _isFocused
-        ? scheme.onPrimary
-        : (glass ? scheme.onSurface : scheme.onSurfaceVariant);
+    final fg = _isFocused ? scheme.onPrimary : scheme.onSurface;
 
     return Focus(
       focusNode: widget.focusNode,
@@ -83,16 +80,11 @@ class _ServerSkipButtonState extends State<ServerSkipButton> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: glass
-              ? moaiGlassButtonDecoration(
-                  scheme,
-                  focused: _isFocused,
-                  radius: 10,
-                )
-              : BoxDecoration(
-                  color: _isFocused ? scheme.primary : scheme.surface,
-                  borderRadius: BorderRadius.circular(10),
-                ),
+          decoration: moaiGlassButtonDecoration(
+            scheme,
+            focused: _isFocused,
+            radius: 10,
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

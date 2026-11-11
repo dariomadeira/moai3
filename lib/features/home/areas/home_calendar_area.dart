@@ -7,7 +7,6 @@ import 'package:moai3/features/home/areas/home_area.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/models/channel.dart';
-import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
 /// Área principal de Calendario Deportivo: Acordeón de 2 paneles (Eventos y Suscripciones).
@@ -72,11 +71,6 @@ class HomeCalendarAreaState extends HomeAreaState<HomeCalendarArea> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    final panelColors = [
-      scheme.surface.withValues(alpha: 0.8),
-      scheme.surface.withValues(alpha: 0.8),
-    ];
     final titles = [
       LocaleKeys.calendar_panel_events_title.tr(),
       LocaleKeys.calendar_panel_subscriptions_title.tr(),
@@ -87,7 +81,6 @@ class HomeCalendarAreaState extends HomeAreaState<HomeCalendarArea> {
     return TvAccordionRowPreview(
       panelCount: 2,
       activeIndex: _panel,
-      colors: panelColors,
       titles: titles,
       icons: HomeCalendarArea.icons,
       onPanelTap: _openPanel,

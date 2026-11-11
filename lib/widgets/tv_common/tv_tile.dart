@@ -163,12 +163,9 @@ class _TvTileState extends State<TvTile> {
             iconColor: widget.iconColor,
             padding: widget.padding,
             minHeight: widget.minHeight,
-            // En cristal el foco no rellena la ficha, así que el trailing
-            // conserva sus colores normales.
-            trailing: widget.trailingBuilder?.call(
-              context,
-              isFocused && !MoaiGlassScope.enabledOf(context),
-            ),
+            // El foco no rellena la ficha, así que el trailing conserva sus
+            // colores normales.
+            trailing: widget.trailingBuilder?.call(context, false),
           ),
         ),
       ),
@@ -200,31 +197,9 @@ class _TvTileChrome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    // Sobre el fondo ambiente la ficha es de cristal; fuera (diálogos,
-    // pantallas con imagen de fondo) mantiene el estilo opaco.
-    final glass = MoaiGlassScope.enabledOf(context);
-    // En cristal el foco no rellena la ficha: los colores no cambian.
-    final solidFocus = isFocused && !glass;
-    final bg = isFocused ? scheme.primary : scheme.surfaceContainerLow;
-    final titleColor = solidFocus ? scheme.onPrimary : scheme.onSurface;
-    final descColor = solidFocus
-        ? scheme.onPrimary.withValues(alpha: 0.85)
-        : scheme.onSurfaceVariant;
-    final iconBg = isFocused
-        ? scheme.onPrimary.withValues(alpha: 0.18)
-        : scheme.primaryContainer;
-    // En cristal el ícono va suelto (como en el rail), en color sólido.
-    final ownColor = this.iconColor;
-    final iconColor = glass
-        // Sin color propio, el acento (2026-11-10; antes un índigo fijo).
-        ? (ownColor ?? scheme.primary)
-        : (solidFocus
-              ? scheme.onPrimary
-              : (ownColor ?? scheme.onPrimaryContainer));
-
-    final borderColor = isFocused
-        ? scheme.primary
-        : scheme.outlineVariant.withValues(alpha: 0.12);
+    // El foco no rellena la ficha: los colores no cambian. El ícono va
+    // suelto (como en el rail), en color sólido; sin color propio, el acento.
+    final iconColor = this.iconColor ?? scheme.primary;
 
     final iconGlyph = Padding(
       padding: const EdgeInsets.all(8),
@@ -240,21 +215,7 @@ class _TvTileChrome extends StatelessWidget {
 
         return Row(
           children: [
-            if (icon != null) ...[
-              // Sin fondo ocupa el mismo lugar, así los títulos siguen
-              // alineados.
-              if (glass)
-                iconGlyph
-              else
-                Material(
-                  color: iconBg,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: iconGlyph,
-                ),
-              const SizedBox(width: 14),
-            ],
+            if (icon != null) ...[iconGlyph, const SizedBox(width: 14)],
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,7 +227,7 @@ class _TvTileChrome extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: MoaiText.body(
                       context,
-                      color: titleColor,
+                      color: scheme.onSurface,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -278,7 +239,7 @@ class _TvTileChrome extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: MoaiText.body(
                         context,
-                        color: descColor,
+                        color: scheme.onSurfaceVariant,
                         fontSize: 12,
                         height: 1.3,
                         fontWeight: FontWeight.w500,
@@ -308,37 +269,23 @@ class _TvTileChrome extends StatelessWidget {
     final innerPadding =
         padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 10);
 
-    if (glass) {
-      // Cristal discreto; el foco es el mismo de los widgets del Inicio
-      // (borde del acento y tinte suave).
-      return MoaiGlass(
-        borderRadius: 16,
-        elevated: false,
-        solid: true,
-        focused: isFocused,
-        padding: innerPadding,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minHeight: (constraints.minHeight - innerPadding.vertical).clamp(
-              0.0,
-              double.infinity,
-            ),
-          ),
-          child: content,
-        ),
-      );
-    }
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 120),
-      constraints: constraints,
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor),
-      ),
+    // Cristal discreto; el foco es el mismo de los widgets del Inicio
+    // (borde del acento y tinte suave).
+    return MoaiGlass(
+      borderRadius: 16,
+      elevated: false,
+      solid: true,
+      focused: isFocused,
       padding: innerPadding,
-      child: content,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: (constraints.minHeight - innerPadding.vertical).clamp(
+            0.0,
+            double.infinity,
+          ),
+        ),
+        child: content,
+      ),
     );
   }
 }

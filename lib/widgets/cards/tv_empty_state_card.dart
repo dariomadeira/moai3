@@ -74,10 +74,10 @@ class TvEmptyStateCard extends StatelessWidget {
           builder: (context) {
             final isFocused = Focus.of(context).hasFocus;
             final content = _content(context, scheme, isFocused);
-            // En cristal el foco es el de [MoaiGlass] (borde del acento y
-            // tinte suave), igual que el resto de los componentes; en reposo
-            // queda transparente.
-            if (isFocused && MoaiGlassScope.enabledOf(context)) {
+            // El foco es el de [MoaiGlass] (borde del acento y tinte suave),
+            // igual que el resto de los componentes; en reposo queda
+            // transparente.
+            if (isFocused) {
               return Padding(
                 padding:
                     margin ??

@@ -34,11 +34,9 @@ class HomeLiveTvAreaState extends HomeAreaState<HomeLiveTvArea> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return TvAccordionRowPreview(
       panelCount: 1,
       activeIndex: 0,
-      colors: [scheme.surface.withValues(alpha: 0.8)],
       titles: [LocaleKeys.live_tv_panel_title.tr()],
       icons: const [MoaiIcons.railLiveTv],
       onPanelTap: (_) {},

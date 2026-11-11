@@ -174,7 +174,6 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                       child: TvAccordionRowPreview(
                         panelCount: 1,
                         activeIndex: 0,
-                        colors: [scheme.surface.withValues(alpha: 0.8)],
                         titles: [LocaleKeys.arcade_action_select_game.tr()],
                         icons: const [MoaiIcons.arcadeActionSelectGame],
                         onPanelTap: (_) {},

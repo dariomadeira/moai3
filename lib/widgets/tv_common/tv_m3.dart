@@ -98,25 +98,6 @@ class _TvFocusButtonState extends State<TvFocusButton> {
     if (mounted) setState(() => _focused = widget.focusNode.hasFocus);
   }
 
-  (Color bg, Color fg) _colors(ColorScheme scheme) {
-    if (_focused) {
-      if (widget.variant == TvButtonVariant.destructive) {
-        return (scheme.error, scheme.onError);
-      }
-      return (scheme.primary, scheme.onPrimary);
-    }
-    switch (widget.variant) {
-      case TvButtonVariant.secondary:
-        return (scheme.secondary, scheme.onSecondary);
-      case TvButtonVariant.tonal:
-        return (scheme.primaryContainer, scheme.onPrimaryContainer);
-      case TvButtonVariant.surface:
-        return (scheme.surfaceContainerHighest, scheme.onSurface);
-      case TvButtonVariant.destructive:
-        return (scheme.errorContainer, scheme.onErrorContainer);
-    }
-  }
-
   /// Estilo cristal: en reposo cristal tenue (texto del tema, rojo si es
   /// destructivo); con foco, acento con brillo y halo como el rail.
   (Color bg, Color fg) _glassColors(ColorScheme scheme) {
@@ -132,8 +113,7 @@ class _TvFocusButtonState extends State<TvFocusButton> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final glass = MoaiGlassScope.enabledOf(context);
-    final (bg, fg) = glass ? _glassColors(scheme) : _colors(scheme);
+    final (bg, fg) = _glassColors(scheme);
     final enabled = widget.onPressed != null && !widget.loading;
     // [label] vacío con ícono: botón redondo de sólo ícono (p. ej. la X).
     final iconOnly = widget.label.isEmpty && widget.icon != null;
@@ -148,12 +128,14 @@ class _TvFocusButtonState extends State<TvFocusButton> {
             widget.onArrowUp!();
             return KeyEventResult.handled;
           }
-          if (key == LogicalKeyboardKey.arrowDown && widget.onArrowDown != null) {
+          if (key == LogicalKeyboardKey.arrowDown &&
+              widget.onArrowDown != null) {
             _cancelHoldTimer();
             widget.onArrowDown!();
             return KeyEventResult.handled;
           }
-          if (key == LogicalKeyboardKey.arrowLeft && widget.onArrowLeft != null) {
+          if (key == LogicalKeyboardKey.arrowLeft &&
+              widget.onArrowLeft != null) {
             _cancelHoldTimer();
             widget.onArrowLeft!();
             return KeyEventResult.handled;
@@ -199,18 +181,13 @@ class _TvFocusButtonState extends State<TvFocusButton> {
         }
         return KeyEventResult.ignored;
       },
-      child: AnimatedScale(
-        // En cristal el foco ya lo marcan el color y el halo; el zoom hacía que
-        // el botón invadiera el margen (p. ej. en el borde de un modal).
-        scale: _focused && !glass ? 1.02 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOutCubic,
-        child: _glassFrame(
-          glass: glass,
-          scheme: scheme,
-          bg: bg,
-          child: Material(
-          color: glass ? Colors.transparent : bg,
+      // Sin zoom con foco: ya lo marcan el color y el halo, y el zoom hacía
+      // que el botón invadiera el margen (p. ej. en el borde de un modal).
+      child: _glassFrame(
+        scheme: scheme,
+        bg: bg,
+        child: Material(
+          color: Colors.transparent,
           shadowColor: Colors.transparent,
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
@@ -271,20 +248,17 @@ class _TvFocusButtonState extends State<TvFocusButton> {
             ),
           ),
         ),
-        ),
       ),
     );
   }
 
   /// Marco del botón en estilo cristal: cristal tenue en reposo y, con foco,
-  /// relleno con brillo arriba y halo. Fuera del cristal no agrega nada.
+  /// relleno con brillo arriba y halo.
   Widget _glassFrame({
-    required bool glass,
     required ColorScheme scheme,
     required Color bg,
     required Widget child,
   }) {
-    if (!glass) return child;
     if (!_focused) {
       return MoaiGlass(
         borderRadius: widget.radius,
@@ -309,4 +283,3 @@ class _TvFocusButtonState extends State<TvFocusButton> {
     );
   }
 }
-

@@ -7,7 +7,6 @@ import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/theme/moai_icons.dart';
-import 'package:moai3/theme/moai_text.dart';
 
 /// Sección Descuentos del rail (SPEC-43): acordeón de 2 paneles, la semana
 /// y Configurar. Más adelante, las listas de compras.
@@ -74,17 +73,11 @@ class HomeDiscountsAreaState extends HomeAreaState<HomeDiscountsArea> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
-
     // Ancho final fijo: las tarjetas de comercios no se deforman mientras el
     // acordeón abre o cambia de panel.
     return TvAccordionRowPreview(
       panelCount: 2,
       activeIndex: _panel,
-      colors: [
-        scheme.surface.withValues(alpha: 0.8),
-        scheme.surface.withValues(alpha: 0.8),
-      ],
       titles: [
         LocaleKeys.discounts_panel_week.tr(),
         LocaleKeys.discounts_settings_title.tr(),

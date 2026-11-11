@@ -3,7 +3,6 @@ part of '../home_tv_area.dart';
 /// Pestaña Marcadores: grupos y sus canales.
 extension _TvAreaGroups on HomeTvAreaState {
   Widget _buildGroupsAccordion(BuildContext context) {
-    final scheme = context.scheme;
     final channelProv = context.read<ChannelProvider>();
     final favProv = context.read<FavoritesProvider>();
     const panelCount = 2;
@@ -14,10 +13,6 @@ extension _TvAreaGroups on HomeTvAreaState {
       panelCount: panelCount,
       fixedContentWidth: true,
       activeIndex: _groupsPanelIndex,
-      colors: [
-        scheme.surface.withValues(alpha: 0.8),
-        scheme.surface.withValues(alpha: 0.8),
-      ],
       titles: [
         LocaleKeys.home_panel_groups.tr(),
         LocaleKeys.home_panel_channels.tr(),

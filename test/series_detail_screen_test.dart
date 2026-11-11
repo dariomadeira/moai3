@@ -6,7 +6,6 @@ import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/models/series_models.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
-import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -125,15 +124,13 @@ void main() {
           theme: ThemeData(brightness: Brightness.dark),
           home: ChangeNotifierProvider(
             create: (_) => TvSettingsProvider(prefs),
-            child: MoaiGlassScope(
-              child: SeriesDetailScreen(
-                series: MovieItem(
-                  contentId: open,
-                  name: 'Caballos lentos T$number',
-                  programType: 'teleplay',
-                ),
-                fetchSeason: fetch,
+            child: SeriesDetailScreen(
+              series: MovieItem(
+                contentId: open,
+                name: 'Caballos lentos T$number',
+                programType: 'teleplay',
               ),
+              fetchSeason: fetch,
             ),
           ),
         ),

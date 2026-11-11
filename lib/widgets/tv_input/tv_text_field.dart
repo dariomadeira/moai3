@@ -232,29 +232,11 @@ class _TvTextFieldState extends State<TvTextField> {
     final hasValue = _controller.text.isNotEmpty;
     final interactive = widget.enabled;
 
-    // Mismo lenguaje visual que SettingsActionRow: fill, icono en chip, sin trailing.
-    // En cristal, igual que TvTile: el foco es un borde (no rellena) y el
-    // ícono va suelto en el acento.
-    final glass = MoaiGlassScope.enabledOf(context);
-    final solidFocus = _focused && !glass;
-    final bg = _focused ? scheme.primary : scheme.surfaceContainerLow;
-    final titleColor = solidFocus ? scheme.onPrimary : scheme.onSurface;
-    final valueColor = solidFocus
-        ? scheme.onPrimary.withValues(alpha: hasValue ? 1 : 0.85)
-        : (hasValue ? scheme.onSurfaceVariant : scheme.onSurfaceVariant);
-    final iconBg = _focused
-        ? scheme.onPrimary.withValues(alpha: 0.18)
-        : scheme.primaryContainer;
-    final iconColor = glass
-        // Como el de las fichas (TvTile): el acento.
-        ? (widget.accent ?? scheme.primary)
-        : (_focused ? scheme.onPrimary : scheme.onPrimaryContainer);
+    // Igual que TvTile: el foco es un borde (no rellena) y el ícono va
+    // suelto en el acento.
+    final iconColor = widget.accent ?? scheme.primary;
 
     final leading = widget.leadingIcon ?? MoaiIcons.keyboard;
-
-    final borderColor = _focused
-        ? scheme.primary
-        : scheme.outlineVariant.withValues(alpha: 0.12);
 
     final iconGlyph = Padding(
       padding: EdgeInsets.all(widget.dense ? 8 : 10),
@@ -271,8 +253,7 @@ class _TvTextFieldState extends State<TvTextField> {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: interactive ? _openKeyboard : null,
-        splashColor: (solidFocus ? scheme.onPrimary : scheme.onSurface)
-            .withValues(alpha: 0.1),
+        splashColor: scheme.onSurface.withValues(alpha: 0.1),
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: widget.dense ? 12 : 14,
@@ -280,16 +261,7 @@ class _TvTextFieldState extends State<TvTextField> {
           ),
           child: Row(
             children: [
-              if (glass)
-                iconGlyph
-              else
-                Material(
-                  color: iconBg,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: iconGlyph,
-                ),
+              iconGlyph,
               SizedBox(width: widget.dense ? 12 : 14),
               Expanded(
                 child: Column(
@@ -302,7 +274,7 @@ class _TvTextFieldState extends State<TvTextField> {
                       overflow: TextOverflow.ellipsis,
                       style: MoaiText.body(
                         context,
-                        color: titleColor,
+                        color: scheme.onSurface,
                         fontSize: widget.dense ? 14 : 15,
                         fontWeight: FontWeight.w700,
                       ),
@@ -314,7 +286,7 @@ class _TvTextFieldState extends State<TvTextField> {
                       overflow: TextOverflow.ellipsis,
                       style: MoaiText.body(
                         context,
-                        color: valueColor,
+                        color: scheme.onSurfaceVariant,
                         fontSize: widget.dense ? 12 : 13,
                         height: 1.3,
                         fontWeight: FontWeight.w500,
@@ -330,7 +302,7 @@ class _TvTextFieldState extends State<TvTextField> {
     );
 
     final accent = widget.accent;
-    final field = glass && accent != null
+    final field = accent != null
         ? TvFocusRing(
             focused: _focused,
             color: accent,
@@ -342,21 +314,11 @@ class _TvTextFieldState extends State<TvTextField> {
               child: content,
             ),
           )
-        : glass
-        ? MoaiGlass(
+        : MoaiGlass(
             borderRadius: 16,
             elevated: false,
             solid: true,
             focused: _focused,
-            child: content,
-          )
-        : AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: borderColor),
-            ),
             child: content,
           );
 

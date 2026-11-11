@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/features/home/widgets/alphabet_jump_panel.dart';
-import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 void main() {
   /// Color de arriba del fondo de la letra (null = sin fondo).
@@ -11,6 +10,8 @@ void main() {
       of: find.byKey(ValueKey('alpha-$letter')),
       matching: find.byType(DecoratedBox),
     );
+    // En reposo la letra va suelta: sin caja.
+    if (box.evaluate().isEmpty) return null;
     final d =
         tester.widget<DecoratedBox>(box.first).decoration as BoxDecoration;
     final color = d.gradient?.colors.last ?? d.color;
@@ -23,12 +24,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: MoaiGlassScope(
-            child: SizedBox(
-              width: 38,
-              height: 400,
-              child: AlphabetJumpPanel(letters: letters, onLetterTap: (_) {}),
-            ),
+          body: SizedBox(
+            width: 38,
+            height: 400,
+            child: AlphabetJumpPanel(letters: letters, onLetterTap: (_) {}),
           ),
         ),
       ),

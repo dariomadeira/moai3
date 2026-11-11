@@ -7,8 +7,7 @@ extension MoaiThemeContext on BuildContext {
 /// Tipografía Moai, local en `assets/fonts`.
 /// REDISEÑO (2026-10-30): Varela Round para todo, elegida por el usuario
 /// entre las redondeadas libres (Cera Round, la de hugeicons.com, es paga).
-/// Tiene un solo peso: títulos y negritas las sintetiza Flutter. ANTES (a
-/// limpiar si se confirma): M PLUS Rounded 1c, Onest y Unbounded.
+/// Tiene un solo peso: títulos y negritas las sintetiza Flutter.
 abstract final class MoaiText {
   static const String bodyFamily = 'VarelaRound';
 
@@ -28,7 +27,8 @@ abstract final class MoaiText {
   /// Desde este tamaño un título va con [headlineFamily].
   static const double headlineMinSize = 20;
 
-  /// Un título. Con [fontSize] de [headlineMinSize] o más va con Unbounded;
+  /// Un título. Con [fontSize] de [headlineMinSize] o más va con
+  /// [headlineFamily];
   /// [headline] lo fuerza (p. ej. títulos de categoría más chicos).
   static TextStyle display(
     BuildContext context, {

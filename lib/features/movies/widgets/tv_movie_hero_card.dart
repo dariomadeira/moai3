@@ -8,7 +8,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/services/movie_image_cache.dart';
 import 'package:moai3/widgets/buttons/moai_pill_button.dart';
-import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/utils/image_decode.dart';
 
 /// Tarjeta visual cinematográfica 16:9 para la pantalla de detalle de películas en Smart TV.
@@ -111,16 +110,13 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final glass = MoaiGlassScope.enabledOf(context);
     final frame = BoxDecoration(
       borderRadius: BorderRadius.circular(16),
       border: Border.all(
         color: _isFocused
             ? scheme.primary
-            : glass
-            ? Colors.white.withValues(alpha: 0.14)
-            : scheme.outlineVariant.withValues(alpha: 0.35),
-        width: _isFocused ? (glass ? 2 : 2.5) : 1.0,
+            : Colors.white.withValues(alpha: 0.14),
+        width: _isFocused ? 2 : 1.0,
       ),
     );
 
@@ -165,12 +161,11 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
           curve: Curves.easeOutCubic,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
-            // En cristal el borde va pintado encima de la imagen (como en
-            // [MoaiGlass]): no ocupa lugar y el foco no mueve la foto.
-            decoration: glass ? null : frame,
-            foregroundDecoration: glass ? frame : null,
+            // El borde va pintado encima de la imagen (como en [MoaiGlass]):
+            // no ocupa lugar y el foco no mueve la foto.
+            foregroundDecoration: frame,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(glass ? 16 : 14),
+              borderRadius: BorderRadius.circular(16),
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -221,10 +216,8 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
   }
 
   Widget _buildImageCarousel(ColorScheme scheme) {
-    // Sin imagen: en cristal un "pozo" tenue en vez de un bloque opaco.
-    final emptyColor = MoaiGlassScope.enabledOf(context)
-        ? Colors.white.withValues(alpha: 0.04)
-        : scheme.surfaceContainerHigh;
+    // Sin imagen: un "pozo" tenue en vez de un bloque opaco.
+    final emptyColor = Colors.white.withValues(alpha: 0.04);
     final images = _effectiveImages;
     if (images.isEmpty) {
       return Container(

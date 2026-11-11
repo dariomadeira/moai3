@@ -83,13 +83,11 @@ void main() {
         ChangeNotifierProvider.value(
           value: watchParty,
           child: MaterialApp(
-            home: MoaiGlassScope(
-              child: Builder(
-                builder: (context) => Scaffold(
-                  body: TextButton(
-                    onPressed: () => TvFriendsDialog.show(context),
-                    child: const Text('abrir'),
-                  ),
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: TextButton(
+                  onPressed: () => TvFriendsDialog.show(context),
+                  child: const Text('abrir'),
                 ),
               ),
             ),

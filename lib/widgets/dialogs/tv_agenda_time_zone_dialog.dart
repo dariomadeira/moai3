@@ -99,7 +99,7 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final selectedId = context.watch<AgendaClockProvider>().zone.id;
+    final selectedId = context.select((AgendaClockProvider s) => s.zone.id);
 
     return TvDialog(
       width: 500,

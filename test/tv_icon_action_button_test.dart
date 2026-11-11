@@ -4,7 +4,6 @@ import 'package:moai3/theme/moai_accent_colors.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_theme.dart';
 import 'package:moai3/widgets/buttons/tv_icon_action_button.dart';
-import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 void main() {
   /// El borrar de Extensiones, enfocado, en cristal.
@@ -15,17 +14,15 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: dark ? MoaiTheme.dark(seed) : MoaiTheme.light(seed),
-        home: MoaiGlassScope(
-          child: Scaffold(
-            body: Center(
-              child: TvIconActionButton(
-                focusNode: focus,
-                tooltip: 'Quitar',
-                icon: MoaiIcons.delete,
-                destructive: true,
-                onPressed: () {},
-                parentFocused: true,
-              ),
+        home: Scaffold(
+          body: Center(
+            child: TvIconActionButton(
+              focusNode: focus,
+              tooltip: 'Quitar',
+              icon: MoaiIcons.delete,
+              destructive: true,
+              onPressed: () {},
+              parentFocused: true,
             ),
           ),
         ),

@@ -19,6 +19,10 @@ import 'package:moai3/state/movie_recommendations_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:provider/provider.dart';
 
+part 'movie_player/movie_player_recommend.dart';
+part 'movie_player/movie_player_seek.dart';
+part 'movie_player/movie_player_keys.dart';
+
 /// Pantalla completa de reproducción de películas para Smart TV.
 ///
 /// Controles: OK pausa/reanuda; ←/→ buscan (mantenidas aceleran) y el salto
@@ -347,79 +351,6 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
     _reloadAt(seekFailed ? _beforeLastSeek : _currentPosition);
   }
 
-  void _maybeAskRecommendation() {
-    if (_recommendSettled || !widget.saveProgress) return;
-    final remaining = _totalDuration - _currentPosition;
-    if (_totalDuration <= _recommendWindow ||
-        remaining > _recommendWindow ||
-        remaining <= Duration.zero) {
-      return;
-    }
-    // Sin pisar lo que se esté usando: se reintenta en la próxima vuelta.
-    if (_isBuffering ||
-        !_isPlaying ||
-        _hasError ||
-        _openMenu != null ||
-        _selectedMenu != null ||
-        _scrubTarget != null) {
-      return;
-    }
-    _recommendSettled = true;
-    final recommendations = context.read<MovieRecommendationsProvider?>();
-    if (recommendations == null ||
-        !recommendations.canRecommend ||
-        !recommendations.shouldAsk(widget.movie.contentId)) {
-      return;
-    }
-    // Arranca en Cancelar: un OK distraído no recomienda.
-    setState(() => _recommendAnswer = MovieRecommendAnswer.cancel);
-    _recommendTimer = Timer(_recommendVisibleFor, _closeRecommendPrompt);
-  }
-
-  void _closeRecommendPrompt() {
-    _recommendTimer?.cancel();
-    if (mounted) setState(() => _recommendAnswer = null);
-  }
-
-  KeyEventResult _onRecommendKey(KeyEvent event) {
-    if (event is! KeyDownEvent) return KeyEventResult.handled;
-    final key = event.logicalKey;
-    final answer = _recommendAnswer!;
-    if (key == LogicalKeyboardKey.arrowLeft ||
-        key == LogicalKeyboardKey.arrowRight) {
-      final step = key == LogicalKeyboardKey.arrowLeft ? -1 : 1;
-      const answers = MovieRecommendAnswer.values;
-      setState(() {
-        _recommendAnswer =
-            answers[(answer.index + step).clamp(0, answers.length - 1)];
-      });
-    } else if (TvKeyHandler.isActionKey(key)) {
-      _applyRecommendAnswer(answer);
-    } else if (_isBackKey(key)) {
-      _closeRecommendPrompt();
-    }
-    return KeyEventResult.handled;
-  }
-
-  void _applyRecommendAnswer(MovieRecommendAnswer answer) {
-    _closeRecommendPrompt();
-    final recommendations = context.read<MovieRecommendationsProvider?>();
-    if (recommendations == null) return;
-    switch (answer) {
-      case MovieRecommendAnswer.yes:
-        unawaited(recommendations.setVote(widget.movie, MovieVote.up));
-        MoaiSnackBar.show(
-          context,
-          message: LocaleKeys.movies_recommend_sent.tr(),
-          icon: MoaiIcons.vodRecommend,
-        );
-      case MovieRecommendAnswer.no:
-        unawaited(recommendations.setVote(widget.movie, MovieVote.down));
-      case MovieRecommendAnswer.cancel:
-        break;
-    }
-  }
-
   /// Desde dónde arranca la próxima carga del video.
   Duration _loadPosition = Duration.zero;
 
@@ -531,65 +462,10 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
     }
   }
 
-  /// ←/→: mueve el destino de la búsqueda sin tocar el video todavía.
-  /// Mantenida ([repeat]) acelera.
-  void _scrub({required bool forward, required bool repeat}) {
-    if (_totalDuration <= Duration.zero) return;
-    _scrubRepeats = repeat ? _scrubRepeats + 1 : 0;
-    final target = MovieScrub.target(
-      from: _scrubTarget ?? _currentPosition,
-      forward: forward,
-      repeats: _scrubRepeats,
-      total: _totalDuration,
-    );
-    _osdTimer?.cancel();
-    setState(() {
-      _showOsd = true;
-      _scrubTarget = target;
-    });
-    _scrubCommitTimer?.cancel();
-    _scrubCommitTimer = Timer(_scrubCommitDelay, _commitScrub);
-  }
-
-  /// Salta al destino de la búsqueda (una sola vez).
-  void _commitScrub() {
-    _scrubCommitTimer?.cancel();
-    final target = _scrubTarget;
-    if (target == null || !mounted) return;
-    setState(() => _scrubTarget = null);
-    _seekTo(target);
-    _resetOsdTimer();
-  }
-
-  void _cancelScrub() {
-    _scrubCommitTimer?.cancel();
-    if (_scrubTarget != null && mounted) {
-      setState(() => _scrubTarget = null);
-    }
-  }
-
   /// Dónde estaba antes del último salto y cuándo fue: si el salto termina
   /// en error, reintentar vuelve ahí en vez de repetir el salto que falló.
   Duration _beforeLastSeek = Duration.zero;
   DateTime? _lastSeekAt;
-
-  Future<void> _seekTo(Duration target) async {
-    if (_totalDuration > Duration.zero &&
-        target >= _totalDuration - _recommendWindow) {
-      _recommendSettled = true;
-    }
-    _beforeLastSeek = _currentPosition;
-    _lastSeekAt = DateTime.now();
-    _seekSettlesAt = DateTime.now().add(const Duration(seconds: 3));
-    setState(() => _currentPosition = target);
-    if (_titan.active) {
-      // Primero salta Ranger y después el reproductor: mientras, cargando.
-      setState(() => _isBuffering = true);
-      await _titan.beforeSeek(target);
-      if (!mounted) return;
-    }
-    await _engine.seekTo(target);
-  }
 
   Future<void> _handleBack() async {
     if (_scrubTarget != null) {
@@ -668,158 +544,6 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
       key == LogicalKeyboardKey.escape ||
       key == LogicalKeyboardKey.backspace ||
       key == LogicalKeyboardKey.goBack;
-
-  /// Con un menú abierto: ↑/↓ recorren, OK elige, ← o atrás lo cierran.
-  KeyEventResult _onMenuKey(KeyEvent event) {
-    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
-      return KeyEventResult.ignored;
-    }
-    final key = event.logicalKey;
-    final last = _menuOptions.length - 1;
-    if (key == LogicalKeyboardKey.arrowUp ||
-        key == LogicalKeyboardKey.arrowDown) {
-      final step = key == LogicalKeyboardKey.arrowUp ? -1 : 1;
-      setState(() => _menuIndex = (_menuIndex + step).clamp(0, last));
-      _resetOsdTimer();
-    } else if (event is KeyDownEvent) {
-      if (TvKeyHandler.isActionKey(key)) {
-        _applyMenuOption(_menuIndex);
-      } else if (key == LogicalKeyboardKey.arrowLeft || _isBackKey(key)) {
-        setState(() => _openMenu = null);
-        _resetOsdTimer();
-      }
-    }
-    return KeyEventResult.handled;
-  }
-
-  /// En las píldoras: ←/→ recorren, OK abre, ↑ o atrás vuelven a la barra.
-  KeyEventResult _onMenuBarKey(KeyEvent event) {
-    if (event is! KeyDownEvent) return KeyEventResult.handled;
-    final key = event.logicalKey;
-    final menus = _menus;
-    final at = menus.indexOf(_selectedMenu!);
-    if (key == LogicalKeyboardKey.arrowLeft ||
-        key == LogicalKeyboardKey.arrowRight) {
-      final step = key == LogicalKeyboardKey.arrowLeft ? -1 : 1;
-      setState(() {
-        _selectedMenu = menus[(at + step).clamp(0, menus.length - 1)];
-      });
-    } else if (TvKeyHandler.isActionKey(key)) {
-      _openSelectedMenu();
-    } else if (key == LogicalKeyboardKey.arrowUp || _isBackKey(key)) {
-      setState(() => _selectedMenu = null);
-    }
-    _resetOsdTimer();
-    return KeyEventResult.handled;
-  }
-
-  /// Abre el menú de la píldora con el foco en lo que está en uso.
-  void _openSelectedMenu() {
-    setState(() {
-      _openMenu = _selectedMenu;
-      final current = _menuOptions.indexWhere((o) => o.current);
-      _menuIndex = current < 0 ? 0 : current;
-    });
-  }
-
-  /// Aplica la opción [index] del menú abierto. Audio y subtítulo valen para
-  /// esta película (el ajuste general no cambia; el audio queda recordado) y
-  /// se fijan al cargar el video: se recarga en el mismo punto. El tamaño se
-  /// ve al instante y queda abierto para probar.
-  void _applyMenuOption(int index) {
-    final resumeAt = _startAt ?? _currentPosition;
-    switch (_openMenu) {
-      case MoviePlayerMenu.audio:
-        final option = _audioOptions[index];
-        final changed = option != _currentAudio;
-        setState(() => _selectedMenu = _openMenu = null);
-        if (changed) {
-          _chosenAudio = option;
-          _preferredAudio = option.code;
-          _preferredAudioOccurrence = option.occurrence;
-          if (widget.saveProgress) {
-            unawaited(
-              MovieAudioChoices.save(
-                widget.movie.contentId,
-                code: option.code,
-                occurrence: option.occurrence,
-              ),
-            );
-          }
-          _reloadAt(resumeAt);
-        } else {
-          _resetOsdTimer();
-        }
-      case MoviePlayerMenu.subtitles:
-        final next = index == 0 ? null : _subtitleOptions[index - 1];
-        final changed = next?.url != _subtitle?.url;
-        setState(() => _selectedMenu = _openMenu = null);
-        if (changed) {
-          _subtitle = next;
-          _reloadAt(resumeAt);
-        } else {
-          _resetOsdTimer();
-        }
-      case MoviePlayerMenu.size:
-        context.read<TvSettingsProvider?>()?.setMovieSubtitleSize(
-          MovieSubtitleSize.values[index],
-        );
-        _resetOsdTimer();
-      case null:
-        break;
-    }
-  }
-
-  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
-    if (_recommendAnswer != null) return _onRecommendKey(event);
-    if (_openMenu != null) return _onMenuKey(event);
-    if (_selectedMenu != null) return _onMenuBarKey(event);
-    final key = event.logicalKey;
-    final isArrow =
-        key == LogicalKeyboardKey.arrowLeft ||
-        key == LogicalKeyboardKey.arrowRight;
-
-    // Las flechas mantenidas aceleran la búsqueda; el resto sólo al apretar.
-    if (isArrow && (event is KeyDownEvent || event is KeyRepeatEvent)) {
-      if (_hasError) return KeyEventResult.handled;
-      _scrub(
-        forward: key == LogicalKeyboardKey.arrowRight,
-        repeat: event is KeyRepeatEvent,
-      );
-      return KeyEventResult.handled;
-    }
-    if (event is! KeyDownEvent) return KeyEventResult.ignored;
-
-    if (TvKeyHandler.isActionKey(key)) {
-      if (_hasError) {
-        _retry();
-      } else if (_scrubTarget != null) {
-        _commitScrub();
-      } else {
-        _togglePlayPause();
-      }
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.arrowDown &&
-        !_hasError &&
-        _scrubTarget == null &&
-        _menus.isNotEmpty) {
-      setState(() => _selectedMenu = _menus.first);
-      _resetOsdTimer();
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.arrowUp ||
-        key == LogicalKeyboardKey.arrowDown ||
-        key == LogicalKeyboardKey.contextMenu) {
-      _resetOsdTimer();
-      return KeyEventResult.handled;
-    }
-    if (_isBackKey(key)) {
-      _handleBack();
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -962,6 +686,9 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
       ),
     );
   }
+
+  /// Para las extensiones de los `part` (setState es protegido).
+  void _update(VoidCallback fn) => setState(fn);
 }
 
 /// Oscurece suavemente arriba y abajo para que los controles se lean sin

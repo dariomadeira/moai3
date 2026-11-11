@@ -6,7 +6,6 @@ import 'package:hugeicons_plus/hugeicons_plus.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/dialogs/tv_voice_test_dialog.dart';
-import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/tv_common/moai_status_tag.dart';
 
 import 'helpers/real_fonts.dart';
@@ -125,9 +124,7 @@ void main() {
       tester.view.devicePixelRatio = 2.0;
       addTearDown(() => tester.view.reset());
 
-      await tester.pumpWidget(
-        wrap(const MoaiGlassScope(child: TvVoiceTestDialog())),
-      );
+      await tester.pumpWidget(wrap(const TvVoiceTestDialog()));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 

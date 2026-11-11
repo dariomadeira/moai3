@@ -1,10 +1,12 @@
-"""PRUEBA (2026-11-02): fondo desenfocado a partir de `assets/images/new font.jpg`.
+"""El fondo claro de la app, desenfocado a partir de `new_font.jpg`.
 
-Uso: python gen_background_new.py <fuente.jpg> <fondo.webp> <vidrio.webp>
+Uso: py -3 gen_background_new.py new_font.jpg \
+    ../../assets/images/background_light.webp \
+    ../../assets/images/background_light_blur.webp
 
 El fondo es la foto (misma resolución) con desenfoque gaussiano; el del
 vidrio esmerilado sale de ese mismo fondo, a la mitad de resolución y con
-radio 30, como `background_color_blur.webp`.
+radio 30.
 """
 import sys
 

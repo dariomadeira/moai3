@@ -12,7 +12,6 @@ import 'package:moai3/features/settings/widgets/settings_watch_party_panel.dart'
 import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/focus/settings_panel_layout.dart';
 import 'package:moai3/models/channel.dart';
-import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
 /// Acordeón de Ajustes. Es dueño de sus [FocusNode]; el padre solo recuerda
@@ -85,11 +84,6 @@ class _HomeSettingsAreaState extends HomeAreaState<HomeSettingsArea> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    final panelColors = List.filled(
-      SettingsPanelLayout.panelCount,
-      scheme.surface.withValues(alpha: 0.8),
-    );
     final titles = [
       // Las pestañas, con el nombre corto; el encabezado de cada panel
       // conserva el título largo ("Ajustes de TV").
@@ -106,7 +100,6 @@ class _HomeSettingsAreaState extends HomeAreaState<HomeSettingsArea> {
     return TvAccordionRowPreview(
       panelCount: SettingsPanelLayout.panelCount,
       activeIndex: _panel,
-      colors: panelColors,
       titles: titles,
       icons: HomeSettingsArea.icons,
       onPanelTap: _selectPanel,

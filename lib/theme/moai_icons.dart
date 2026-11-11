@@ -700,12 +700,6 @@ abstract final class MoaiIcons {
   /// Zona horaria.
   static const timeZone = HugeIcons.globe;
 
-  /// Actualizar catálogo de películas.
-  static const catalogSync = HugeIcons.refresh;
-
-  /// Sin catálogo descargado.
-  static const catalogEmpty = HugeIcons.cloudAlert;
-
   /// Actualización de la app.
   static const appUpdate = HugeIcons.downloadSquare02;
 
@@ -939,9 +933,6 @@ abstract final class MoaiIcons {
 
   /// Duración.
   static const vodDuration = HugeIcons.clock01;
-
-  /// Solicitud de amistad enviada, esperando respuesta.
-  static const friendPending = HugeIcons.clock01;
 
   /// Calidad de video.
   static const vodQuality = HugeIcons.hd;

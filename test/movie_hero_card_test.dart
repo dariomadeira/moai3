@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/features/movies/widgets/movie_hero_card.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/widgets/buttons/moai_pill_button.dart';
-import 'package:moai3/widgets/tv_common/moai_glass_pill.dart';
 
 import 'helpers/real_fonts.dart';
 import 'helpers/spanish_translations.dart';
@@ -162,8 +161,6 @@ void main() {
     expect(interesting.left - play.right, closeTo(10, 0.01));
     expect(more.left - interesting.right, closeTo(10, 0.01));
     expect(next.left - prev.right, closeTo(10, 0.01));
-    // Sin etiquetas de géneros arriba del título.
-    expect(find.byType(MoaiGlassPill), findsNothing);
   });
 
   testWidgets('textos largos no desbordan, ni en una tarjeta chica', (

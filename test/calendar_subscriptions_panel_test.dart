@@ -48,9 +48,6 @@ void main() {
     expect(find.text('calendar_sub_f1_name'), findsOneWidget);
     expect(find.text('calendar_sub_lpf_name'), findsOneWidget);
 
-    // Verify Switches are present
-    expect(find.byType(Switch), findsWidgets);
-
     focusNode.dispose();
   });
 

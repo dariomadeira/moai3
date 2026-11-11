@@ -1,6 +1,5 @@
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/features/bootstrap/screens/overlap_config_screen.dart';
 import 'package:moai3/features/home/widgets/home_clock.dart';
@@ -62,9 +61,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
       _SettingsGeneralItemType.plugins,
       _SettingsGeneralItemType.overscan,
       _SettingsGeneralItemType.weatherLocation,
-      // Modo oscuro (2026-11-10): por ahora sólo en debug, mientras se arma;
-      // al terminarlo se muestra en release también.
-      if (kDebugMode) _SettingsGeneralItemType.darkMode,
+      _SettingsGeneralItemType.darkMode,
       _SettingsGeneralItemType.accentColor,
       _SettingsGeneralItemType.muteUiSounds,
     ];
@@ -244,7 +241,9 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
           onKeyDown: onKeyDown,
         );
       case _SettingsGeneralItemType.muteUiSounds:
-        final muted = context.watch<TvSettingsProvider>().uiSoundsDisabled;
+        final muted = context.select(
+          (TvSettingsProvider s) => s.uiSoundsDisabled,
+        );
         return TvSettingsSwitchRow(
           focusNode: focusNode,
           icon: MoaiIcons.volumeOff,

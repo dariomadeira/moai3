@@ -5,8 +5,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/features/home/widgets/home_row_window.dart';
-import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/movies/widgets/movie_detail_parts.dart';
+import 'package:moai3/features/movies/widgets/movie_detail_shell.dart';
 import 'package:moai3/features/movies/widgets/tv_movie_genre_chip.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
@@ -14,15 +14,11 @@ import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/models/series_models.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/services/movie_image_cache.dart';
-import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/widgets/buttons/tv_back_pill.dart';
-import 'package:moai3/widgets/tv_common/moai_ambient_background.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/tv_common/moai_svg_icon.dart';
 import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
-import 'package:provider/provider.dart';
 
 /// Detalle de una serie: la ficha como la de una película, la lista de
 /// temporadas (si hay más de una) y los capítulos de la elegida, como
@@ -282,139 +278,57 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final overlapX = context.select(
-      (TvSettingsProvider s) => s.overlapPaddingX,
-    );
-    final overlapY = context.select(
-      (TvSettingsProvider s) => s.overlapPaddingY,
-    );
-    final tabTitle = LocaleKeys.series_detail_tab.tr();
-
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          const Positioned.fill(
-            child: IgnorePointer(child: MoaiAmbientBackground()),
-          ),
-          SafeArea(
-            top: false,
-            bottom: false,
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: overlapX,
-                vertical: overlapY,
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SizedBox(
-                    width: 54,
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 9),
-                        TvBackPill(
-                          focusNode: _backFocus,
-                          onKeyRight: _focusEpisodes,
-                          onKeyDown: _focusEpisodes,
-                          onPressed: () => Navigator.of(context).maybePop(),
-                        ),
-                        const Spacer(),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
-                      child: TvAccordionRowPreview(
-                        panelCount: 1,
-                        activeIndex: 0,
-                        colors: [scheme.surface.withValues(alpha: 0.85)],
-                        titles: [tabTitle],
-                        icons: const [MoaiIcons.vodPoster],
-                        svgIcons: const [MoaiIcons.seriesSvg],
-                        onPanelTap: (_) {},
-                        buildExpandedContent: (index, title) =>
-                            _content(context, scheme),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+    return MovieDetailShell(
+      backFocusNode: _backFocus,
+      onBackForward: _focusEpisodes,
+      tabTitle: LocaleKeys.series_detail_tab.tr(),
+      svgIcon: MoaiIcons.seriesSvg,
+      ambientUrl: _info.ambientBackdrop,
+      content: _content(context, scheme),
     );
   }
 
   Widget _content(BuildContext context, ColorScheme scheme) {
     final info = _info;
-    final ambientUrl = info.ambientBackdrop;
     final image = info.stageImages.isNotEmpty
         ? info.stageImages.first
         : info.effectiveBackdrop;
-    return ClipRRect(
-      borderRadius: const BorderRadius.only(
-        topRight: Radius.circular(15),
-        bottomRight: Radius.circular(15),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (ambientUrl != null && ambientUrl.isNotEmpty)
-            Positioned(
-              top: 0,
-              right: 0,
-              width: movieDetailAmbientWidth,
-              height: movieDetailAmbientHeight,
-              child: IgnorePointer(
-                child: MovieDetailAmbient(imageUrl: ambientUrl),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(flex: 6, child: _infoColumn(context, scheme)),
+              const SizedBox(width: 24),
+              // Sin la vista previa, su lugar queda libre (se ve la
+              // foto difuminada de arriba).
+              if (showPreview)
                 Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(flex: 6, child: _infoColumn(context, scheme)),
-                      const SizedBox(width: 24),
-                      // Sin la vista previa, su lugar queda libre (se ve la
-                      // foto difuminada de arriba).
-                      if (showPreview)
-                        Expanded(
-                          flex: 5,
-                          child: Align(
-                            alignment: Alignment.bottomCenter,
-                            child: AspectRatio(
-                              aspectRatio: 16 / 9,
-                              child: _image(scheme, image),
-                            ),
-                          ),
-                        )
-                      else
-                        const Spacer(flex: 5),
-                    ],
+                  flex: 5,
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: _image(scheme, image),
+                    ),
                   ),
-                ),
-                if (_hasSeasonList) ...[
-                  const SizedBox(height: 14),
-                  _rowLabel(LocaleKeys.series_seasons_label.tr()),
-                  _seasonList(),
-                ],
-                const SizedBox(height: 12),
-                _rowLabel(LocaleKeys.series_episodes_label.tr()),
-                _episodeGrid(context, scheme),
-              ],
-            ),
+                )
+              else
+                const Spacer(flex: 5),
+            ],
           ),
+        ),
+        if (_hasSeasonList) ...[
+          const SizedBox(height: 14),
+          _rowLabel(LocaleKeys.series_seasons_label.tr()),
+          _seasonList(),
         ],
-      ),
+        const SizedBox(height: 12),
+        _rowLabel(LocaleKeys.series_episodes_label.tr()),
+        _episodeGrid(context, scheme),
+      ],
     );
   }
 

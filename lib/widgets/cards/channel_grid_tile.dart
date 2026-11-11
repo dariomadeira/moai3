@@ -105,8 +105,7 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
         ? rawTag.toUpperCase()
         : null;
 
-    final glass = MoaiGlassScope.enabledOf(context);
-    final labelColor = glass ? scheme.onSurface : itemStyle.foregroundColor;
+    final labelColor = scheme.onSurface;
     const padding = EdgeInsets.symmetric(horizontal: 4, vertical: 4);
 
     final content = Column(
@@ -183,30 +182,19 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
       ],
     );
 
-    final Widget chrome = glass
-        ? TvFocusRing(
-            // Foco: borde del acento y una sombrita del mismo color, como los
-            // botones de las listas.
-            focused: isFocused,
-            color: accent,
-            child: MoaiGlass(
-              borderRadius: 10,
-              elevated: false,
-              solid: true,
-              padding: padding,
-              child: content,
-            ),
-          )
-        : AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            padding: padding,
-            decoration: BoxDecoration(
-              color: itemStyle.backgroundColor,
-              borderRadius: BorderRadius.circular(10),
-              border: itemStyle.border,
-            ),
-            child: content,
-          );
+    final Widget chrome = TvFocusRing(
+      // Foco: borde del acento y una sombrita del mismo color, como los
+      // botones de las listas.
+      focused: isFocused,
+      color: accent,
+      child: MoaiGlass(
+        borderRadius: 10,
+        elevated: false,
+        solid: true,
+        padding: padding,
+        child: content,
+      ),
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: ChannelGridTile.gap / 2),

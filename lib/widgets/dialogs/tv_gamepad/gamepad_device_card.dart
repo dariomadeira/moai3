@@ -14,16 +14,7 @@ class _GamepadDeviceCard extends StatelessWidget {
 
     return Row(
       children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: moaiGlassTagDecoration(scheme, radius: 12),
-          child: Icon(
-            MoaiIcons.gamepad,
-            size: MoaiIconSizes.md,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
+        const MoaiGlassIconTag(icon: MoaiIcons.gamepad, size: 44),
         const SizedBox(width: 12),
         Expanded(
           child: Column(

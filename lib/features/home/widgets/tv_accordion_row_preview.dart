@@ -7,7 +7,6 @@ import 'package:moai3/widgets/tv_common/moai_glass.dart';
 class TvAccordionRowPreview extends StatefulWidget {
   final int panelCount;
   final int activeIndex;
-  final List<Color> colors;
   final List<String> titles;
   final List<IconData> icons;
 
@@ -38,7 +37,6 @@ class TvAccordionRowPreview extends StatefulWidget {
     super.key,
     required this.panelCount,
     required this.activeIndex,
-    required this.colors,
     required this.titles,
     required this.icons,
     this.svgIcons,
@@ -51,22 +49,14 @@ class TvAccordionRowPreview extends StatefulWidget {
     this.frostedPanels = true,
   });
 
-  /// Ancho de la pestaña de un panel: el panel entero en cristal (no tiene
-  /// borde) y, sin cristal, menos el borde de 1 px de cada lado. Si en
-  /// cristal se le restaran los 2 px, el ícono y el título quedarían 1 px
-  /// corridos a la izquierda.
-  static double tabWidthFor({required bool glass}) =>
-      glass ? collapsedWidth : collapsedWidth - 2.0;
-
-  /// Ancho del contenido del panel abierto: el panel menos su pestaña y, sin
-  /// cristal, el borde de 1 px de cada lado.
+  /// Ancho del contenido del panel abierto: el panel menos su pestaña (el
+  /// cristal no tiene borde que restar).
   static double contentWidth({
     required double totalWidth,
     required int panelCount,
-    required bool glass,
   }) {
     final expanded = totalWidth - (collapsedWidth + gap) * (panelCount - 1);
-    final width = expanded - tabWidthFor(glass: glass) - (glass ? 0.0 : 2.0);
+    final width = expanded - collapsedWidth;
     return width < 0 ? 0 : width;
   }
 
@@ -151,14 +141,9 @@ class _TvAccordionRowPreviewState extends State<TvAccordionRowPreview>
         final expandedWidth =
             totalWidth - (collapsedWidth * (widget.panelCount - 1)) - totalGaps;
 
-        final scheme = Theme.of(context).colorScheme;
-        final borderExpanded = scheme.outlineVariant.withValues(alpha: 0.48);
-        final borderCollapsed = scheme.outlineVariant.withValues(alpha: 0.38);
-        final glass = MoaiGlassScope.enabledOf(context);
         final contentWidth = TvAccordionRowPreview.contentWidth(
           totalWidth: totalWidth,
           panelCount: widget.panelCount,
-          glass: glass,
         );
 
         final extra = (expandedWidth - collapsedWidth).clamp(
@@ -170,13 +155,7 @@ class _TvAccordionRowPreviewState extends State<TvAccordionRowPreview>
         // (los mismos widgets no se vuelven a construir cuadro a cuadro).
         final panels = List<Widget>.generate(
           widget.panelCount,
-          (index) => _panel(
-            index,
-            contentWidth: contentWidth,
-            glass: glass,
-            borderExpanded: borderExpanded,
-            borderCollapsed: borderCollapsed,
-          ),
+          (index) => _panel(index, contentWidth: contentWidth),
         );
 
         return RepaintBoundary(
@@ -209,23 +188,15 @@ class _TvAccordionRowPreviewState extends State<TvAccordionRowPreview>
   }
 
   /// Un panel sin su ancho (lo pone la animación).
-  Widget _panel(
-    int index, {
-    required double contentWidth,
-    required bool glass,
-    required Color borderExpanded,
-    required Color borderCollapsed,
-  }) {
+  Widget _panel(int index, {required double contentWidth}) {
     final isExpanded = widget.activeIndex == index;
-    final tabWidth = TvAccordionRowPreview.tabWidthFor(glass: glass);
+    const tabWidth = TvAccordionRowPreview.collapsedWidth;
     final title = widget.titles[index];
     final icon = widget.icons[index];
     final showAlphabet =
         widget.alphabetModePanelIndex == index &&
         widget.alphabetPanelBuilder != null;
     final hasBeenMounted = _mountedPanels.contains(index);
-
-    final baseColor = widget.colors[index];
 
     final panelContent = Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -288,23 +259,11 @@ class _TvAccordionRowPreviewState extends State<TvAccordionRowPreview>
       ],
     );
 
-    if (glass) {
-      return MoaiGlass(
-        borderRadius: MoaiGlass.panelRadius,
-        solid: true,
-        elevated: false,
-        frosted: widget.frostedPanels,
-        child: panelContent,
-      );
-    }
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: baseColor,
-        borderRadius: BorderRadius.circular(MoaiGlass.panelRadius),
-        border: Border.all(
-          color: isExpanded ? borderExpanded : borderCollapsed,
-        ),
-      ),
+    return MoaiGlass(
+      borderRadius: MoaiGlass.panelRadius,
+      solid: true,
+      elevated: false,
+      frosted: widget.frostedPanels,
       child: panelContent,
     );
   }

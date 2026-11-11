@@ -193,7 +193,6 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                       child: TvAccordionRowPreview(
                         panelCount: 1,
                         activeIndex: 0,
-                        colors: [scheme.surface.withValues(alpha: 0.8)],
                         titles: [
                           LocaleKeys.settings_general_plugins_title.tr(),
                         ],

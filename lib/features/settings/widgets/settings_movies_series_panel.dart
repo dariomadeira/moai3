@@ -177,7 +177,9 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
   }) {
     switch (item) {
       case _SettingsMoviesSeriesItemType.audioLanguage:
-        final language = context.watch<TvSettingsProvider>().movieAudioLanguage;
+        final language = context.select(
+          (TvSettingsProvider s) => s.movieAudioLanguage,
+        );
         return SettingsAudioLanguageRow(
           focusNode: focusNode,
           selected: language,
@@ -205,7 +207,9 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
           onKeyDown: onKeyDown,
         );
       case _SettingsMoviesSeriesItemType.subtitleSize:
-        final size = context.watch<TvSettingsProvider>().movieSubtitleSize;
+        final size = context.select(
+          (TvSettingsProvider s) => s.movieSubtitleSize,
+        );
         return SettingsSubtitleSizeRow(
           focusNode: focusNode,
           selected: size,
@@ -218,7 +222,9 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
           onKeyDown: onKeyDown,
         );
       case _SettingsMoviesSeriesItemType.homeTrailers:
-        final show = context.watch<TvSettingsProvider>().showHomeTrailers;
+        final show = context.select(
+          (TvSettingsProvider s) => s.showHomeTrailers,
+        );
         return TvSettingsSwitchRow(
           focusNode: focusNode,
           icon: MoaiIcons.vodTrailer,

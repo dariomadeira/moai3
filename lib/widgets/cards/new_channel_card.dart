@@ -64,11 +64,9 @@ class _NewChannelCardState extends State<NewChannelCard> {
       focused: isFocused,
       selected: widget.isSelected,
     );
-    // Sobre el fondo ambiente el ítem es de cristal, como [TvIconListCard];
-    // el foco no rellena, así que texto y etiqueta no cambian.
-    final glass = MoaiGlassScope.enabledOf(context);
-    final solidFocus = isFocused && !glass;
-    final labelColor = glass ? scheme.onSurface : itemStyle.foregroundColor;
+    // El ítem es de cristal; el foco no rellena, así que texto y etiqueta no
+    // cambian.
+    final labelColor = scheme.onSurface;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -91,9 +89,7 @@ class _NewChannelCardState extends State<NewChannelCard> {
           child: SizedBox(
             width: double.infinity,
             child: _chrome(
-              glass: glass,
               isFocused: isFocused,
-              itemStyle: itemStyle,
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final metrics = TvListCardMetrics.forWidth(
@@ -104,11 +100,9 @@ class _NewChannelCardState extends State<NewChannelCard> {
                   final tag = (rawTag != null && rawTag.isNotEmpty)
                       ? rawTag.toUpperCase()
                       : null;
-                  // En cristal y con lugar, debajo del nombre: categoría y
-                  // país ("Deportes · Argentina").
-                  final info = glass && constraints.maxWidth >= 220
-                      ? _infoLine()
-                      : null;
+                  // Con lugar, debajo del nombre: categoría y país
+                  // ("Deportes · Argentina").
+                  final info = constraints.maxWidth >= 220 ? _infoLine() : null;
 
                   return Row(
                     children: [
@@ -157,42 +151,9 @@ class _NewChannelCardState extends State<NewChannelCard> {
                           ],
                         ),
                       ),
-                      if (tag != null &&
-                          glass &&
-                          constraints.maxWidth >= 130) ...[
+                      if (tag != null && constraints.maxWidth >= 130) ...[
                         const SizedBox(width: 8),
                         ChannelSourceTag(channel: widget.channel, tag: tag),
-                      ] else if (tag != null &&
-                          constraints.maxWidth >= 130) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: solidFocus
-                                ? itemStyle.foregroundColor.withValues(
-                                    alpha: 0.18,
-                                  )
-                                : scheme.tertiaryContainer,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            tag,
-                            maxLines: 1,
-                            style: MoaiText.body(
-                              context,
-                              fontSize: 9.0,
-                              fontWeight: FontWeight.w700,
-                              height: 1.0,
-                              letterSpacing: 0.5,
-                              color: solidFocus
-                                  ? itemStyle.foregroundColor
-                                  : scheme.onTertiaryContainer,
-                            ),
-                          ),
-                        ),
                       ],
                     ],
                   );
@@ -217,34 +178,17 @@ class _NewChannelCardState extends State<NewChannelCard> {
     return parts.isEmpty ? null : parts.join(' · ');
   }
 
-  /// Fondo del ítem: cristal (foco con borde del acento, elegido teñido) o
-  /// el estilo opaco de siempre.
-  Widget _chrome({
-    required bool glass,
-    required bool isFocused,
-    required TvListCardStyle itemStyle,
-    required Widget child,
-  }) {
+  /// Fondo del ítem: cristal (foco con borde del acento, elegido teñido).
+  Widget _chrome({required bool isFocused, required Widget child}) {
     const padding = EdgeInsets.symmetric(horizontal: 6, vertical: 6);
-    if (glass) {
-      return MoaiGlass(
-        borderRadius: 12,
-        elevated: false,
-        solid: true,
-        tint: widget.isSelected ? context.scheme.primary : null,
-        focused: isFocused,
-        padding: padding,
-        child: child,
-      );
-    }
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 120),
+
+    return MoaiGlass(
+      borderRadius: 12,
+      elevated: false,
+      solid: true,
+      tint: widget.isSelected ? context.scheme.primary : null,
+      focused: isFocused,
       padding: padding,
-      decoration: BoxDecoration(
-        color: itemStyle.backgroundColor,
-        borderRadius: BorderRadius.circular(12),
-        border: itemStyle.border,
-      ),
       child: child,
     );
   }

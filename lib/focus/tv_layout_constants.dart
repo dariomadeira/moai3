@@ -1,7 +1,5 @@
 /// Métricas de layout TV: listas verticales y barra de favoritos del visor.
 abstract final class TvLayoutConstants {
-  static const double countryItemHeight = 56.0;
-  static const double categoryItemHeight = 56.0;
   static const double alphabetItemHeight = 36.0;
 
   static const double viewerFavoriteTileWidth = 104.0;
@@ -12,4 +10,3 @@ abstract final class TvLayoutConstants {
   static const double viewerFavoritesBarPaddingEnd = 8.0;
   static const double viewerFavoritesBarScrollInset = 4.0;
 }
-

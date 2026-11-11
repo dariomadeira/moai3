@@ -3,21 +3,10 @@ part of '../tv_pin_dialog.dart';
 /// Casillas del PIN y teclado numérico.
 extension _TvPinDialogViews on _TvPinDialogState {
   Widget _buildPinBoxes(ColorScheme scheme) {
-    // En cristal las casillas van en un "pozo" y son chips: llenas, teñidas
-    // del acento; la actual, con borde del acento; las vacías, tenues.
-    final glass = MoaiGlassScope.enabledOf(context);
-    return Container(
+    // Las casillas son chips, sin "pozo" detrás: llenas, teñidas del acento;
+    // la actual, con borde del acento; las vacías, tenues.
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      // En cristal, sin "pozo" detrás: sólo las casillas.
-      decoration: glass
-          ? null
-          : BoxDecoration(
-              color: scheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: scheme.outlineVariant.withValues(alpha: 0.25),
-              ),
-            ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -25,41 +14,23 @@ extension _TvPinDialogViews on _TvPinDialogState {
           final isFilled = index < _digits.length;
           final isCurrent = index == _digits.length;
 
-          final Color boxBg;
-          if (isFilled) {
-            boxBg = scheme.primaryContainer;
-          } else if (isCurrent) {
-            boxBg = scheme.surface;
-          } else {
-            boxBg = scheme.surface.withValues(alpha: 0.5);
-          }
-
-          final boxBorderColor = isCurrent
-              ? scheme.primary.withValues(alpha: 0.7)
-              : scheme.outlineVariant.withValues(alpha: isFilled ? 0.45 : 0.25);
-
           return Container(
             width: 44,
             height: 48,
             margin: const EdgeInsets.symmetric(horizontal: 5),
             // Cristal: piezas de vidrio blanco como los botones (las llenas,
             // con el tinte del acento); la actual, además, borde del acento.
-            decoration: glass
-                ? moaiGlassButtonDecoration(
-                    scheme,
-                    focused: false,
-                    highlighted: isFilled,
-                    radius: 12,
-                  ).copyWith(
-                    border: isCurrent
-                        ? Border.all(color: scheme.primary, width: 1.5)
-                        : null,
-                  )
-                : BoxDecoration(
-                    color: glass ? Colors.transparent : boxBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: boxBorderColor),
-                  ),
+            decoration:
+                moaiGlassButtonDecoration(
+                  scheme,
+                  focused: false,
+                  highlighted: isFilled,
+                  radius: 12,
+                ).copyWith(
+                  border: isCurrent
+                      ? Border.all(color: scheme.primary, width: 1.5)
+                      : null,
+                ),
             alignment: Alignment.center,
             child: AnimatedScale(
               scale: isFilled ? 1.0 : (isCurrent ? 1.0 : 0.7),
@@ -278,32 +249,12 @@ extension _TvPinDialogViews on _TvPinDialogState {
           builder: (context) {
             final isFocused = Focus.of(context).hasFocus;
 
-            final Color bg;
-            final Color fg;
-
-            // Cristal: teclas como los botones de los encabezados; la de
-            // acción va resaltada.
-            final glass = MoaiGlassScope.enabledOf(context);
-
-            if (isFocused) {
-              bg = scheme.primary;
-              fg = scheme.onPrimary;
-            } else if (glass) {
-              bg = Colors.transparent;
-              // Borrar y ✕: blancas como los números, con el ícono en su
-              // color (naranja y rojo).
-              fg = iconColor ?? scheme.onSurface;
-            } else if (isAction) {
-              bg = scheme.primaryContainer;
-              fg = scheme.onPrimaryContainer;
-            } else {
-              bg = scheme.surface;
-              fg = scheme.onSurface;
-            }
-
-            final borderColor = isFocused
-                ? scheme.onPrimary.withValues(alpha: 0.6)
-                : scheme.outlineVariant.withValues(alpha: 0.35);
+            // Teclas como los botones de los encabezados. Borrar y ✕:
+            // blancas como los números, con el ícono en su color (naranja y
+            // rojo).
+            final fg = isFocused
+                ? scheme.onPrimary
+                : (iconColor ?? scheme.onSurface);
 
             return Material(
               color: Colors.transparent,
@@ -314,17 +265,11 @@ extension _TvPinDialogViews on _TvPinDialogState {
                   duration: const Duration(milliseconds: 140),
                   width: 72,
                   height: 40,
-                  decoration: glass
-                      ? moaiGlassButtonDecoration(
-                          scheme,
-                          focused: isFocused,
-                          radius: 12,
-                        )
-                      : BoxDecoration(
-                          color: bg,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: borderColor),
-                        ),
+                  decoration: moaiGlassButtonDecoration(
+                    scheme,
+                    focused: isFocused,
+                    radius: 12,
+                  ),
                   alignment: Alignment.center,
                   child: label != null
                       ? Text(label, style: MoaiText.body(context, color: fg))

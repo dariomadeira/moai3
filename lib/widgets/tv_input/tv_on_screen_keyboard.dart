@@ -325,31 +325,13 @@ class _TvKeyButtonState extends State<_TvKeyButton> {
     final scheme = Theme.of(context).colorScheme;
     final focused = widget.focusNode.hasFocus;
 
-    final glass = MoaiGlassScope.enabledOf(context);
-
-    // Gboard M3 Expressive: letras blancas, funciones pastel azul, sin bordes.
-    // En cristal: todas las teclas de vidrio blanco (como las del PIN); las
-    // de función, con el ícono o el texto en su color. Con foco, el acento.
-    final Color bg;
-    final Color fg;
-    if (glass) {
-      bg = focused ? scheme.primary : Colors.transparent;
-      fg = focused ? scheme.onPrimary : _glassKeyColor(widget.action, scheme);
-    } else if (focused) {
-      bg = scheme.primary;
-      fg = scheme.onPrimary;
-    } else if (widget.emphasized) {
-      bg = scheme.primaryContainer;
-      fg = scheme.onPrimaryContainer;
-    } else {
-      bg = scheme.surface;
-      fg = scheme.onSurface;
-    }
+    // Todas las teclas de vidrio blanco (como las del PIN); las de función,
+    // con el ícono o el texto en su color. Con foco, el acento.
+    final fg = focused
+        ? scheme.onPrimary
+        : _glassKeyColor(widget.action, scheme);
 
     // Borde muy sutil para delimitar cada tecla en reposo, más visible al enfocar.
-    final borderColor = focused
-        ? scheme.onPrimary.withValues(alpha: 0.6)
-        : scheme.outlineVariant.withValues(alpha: 0.35);
 
     const radius = 12.0;
 
@@ -415,33 +397,19 @@ class _TvKeyButtonState extends State<_TvKeyButton> {
         return KeyEventResult.ignored;
       },
       // Cristal: sin Material/Ink (recortaban el halo y no animaban parejo).
-      child: glass
-          ? GestureDetector(
-              onTap: widget.onPressed,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 120),
-                height: 34,
-                decoration: moaiGlassButtonDecoration(
-                  scheme,
-                  focused: focused,
-                  radius: radius,
-                ),
-                child: Center(child: childContent),
-              ),
-            )
-          : Material(
-              color: bg,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(radius),
-                side: BorderSide(color: borderColor),
-              ),
-              child: InkWell(
-                onTap: widget.onPressed,
-                splashColor: fg.withValues(alpha: 0.12),
-                highlightColor: fg.withValues(alpha: 0.08),
-                child: SizedBox(height: 34, child: Center(child: childContent)),
-              ),
-            ),
+      child: GestureDetector(
+        onTap: widget.onPressed,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          height: 34,
+          decoration: moaiGlassButtonDecoration(
+            scheme,
+            focused: focused,
+            radius: radius,
+          ),
+          child: Center(child: childContent),
+        ),
+      ),
     );
   }
 }
@@ -513,32 +481,11 @@ class _TvActionButtonState extends State<_TvActionButton> {
     final scheme = Theme.of(context).colorScheme;
     final focused = widget.focusNode.hasFocus;
 
-    final glass = MoaiGlassScope.enabledOf(context);
-
-    // Siguiente = secondary (CTA distinto del foco primary de las teclas).
-    // En cristal: Cancelar es cristal neutro y Listo cristal con tinte de
-    // acento; con foco, acento con brillo.
-    final Color bg;
-    final Color fg;
-    if (glass) {
-      bg = scheme.primary;
-      fg = focused
-          ? scheme.onPrimary
-          : (widget.filled ? scheme.primary : scheme.onSurface);
-    } else if (focused) {
-      bg = scheme.primary;
-      fg = scheme.onPrimary;
-    } else if (widget.filled) {
-      bg = scheme.secondary;
-      fg = scheme.onSecondary;
-    } else {
-      bg = scheme.primaryContainer;
-      fg = scheme.onPrimaryContainer;
-    }
-
-    final borderColor = focused
-        ? scheme.onPrimary.withValues(alpha: 0.6)
-        : scheme.outlineVariant.withValues(alpha: 0.35);
+    // Cancelar es cristal neutro y Listo cristal con tinte de acento; con
+    // foco, acento con brillo.
+    final fg = focused
+        ? scheme.onPrimary
+        : (widget.filled ? scheme.primary : scheme.onSurface);
 
     return Focus(
       focusNode: widget.focusNode,
@@ -570,21 +517,7 @@ class _TvActionButtonState extends State<_TvActionButton> {
         }
         return KeyEventResult.ignored;
       },
-      child: glass
-          ? _glassButton(scheme, focused, fg)
-          : Material(
-              color: bg,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-                side: BorderSide(color: borderColor),
-              ),
-              child: InkWell(
-                onTap: widget.onPressed,
-                borderRadius: BorderRadius.circular(18),
-                splashColor: fg.withValues(alpha: 0.12),
-                child: _label(context, fg),
-              ),
-            ),
+      child: _glassButton(scheme, focused, fg),
     );
   }
 

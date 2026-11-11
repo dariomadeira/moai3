@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Selector segmentado tipo píldora para menús TV.
 ///
@@ -43,16 +42,13 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
     final accent = widget.accentColor ?? scheme.primary;
     final focused = widget.isFocused;
 
-    // Sobre fila enfocada (fondo primary) usamos onPrimary con opacidad.
-    // En reposo, aplicamos el mismo degradado sutil y borde de TvTabBar / TvAccordionRowPreview.
-    // Sobre el fondo ambiente: riel de cristal como la pista del switch, la
-    // opción elegida en el acento y, editando, borde del acento.
-    final glass = MoaiGlassScope.enabledOf(context);
+    // Riel de cristal como la pista del switch, la opción elegida en el
+    // acento y, editando, flechas del acento.
     final dark = scheme.brightness == Brightness.dark;
     final glassLine = dark ? Colors.white : scheme.onSurface;
 
     final BoxDecoration trackDecoration;
-    if (glass && !dark) {
+    if (!dark) {
       // Como un botón de cristal sin foco, pero más blanco que la ficha
       // (que va al 45 %): el riel se lee como una pieza de vidrio encima.
       trackDecoration = BoxDecoration(
@@ -71,28 +67,11 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
           ),
         ],
       );
-    } else if (glass) {
+    } else {
       trackDecoration = BoxDecoration(
         color: glassLine.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: glassLine.withValues(alpha: 0.14)),
-      );
-    } else if (focused) {
-      trackDecoration = BoxDecoration(
-        color: scheme.onPrimary.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: widget.isEditing ? scheme.onPrimary : Colors.transparent,
-          width: 2,
-        ),
-      );
-    } else {
-      final baseColor = scheme.surface;
-      final borderColor = scheme.outlineVariant.withValues(alpha: 0.30);
-      trackDecoration = BoxDecoration(
-        color: baseColor,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: borderColor),
       );
     }
 
@@ -105,53 +84,23 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
           final isSelected = option == widget.selectedValue;
           final isHovered = option == _hoveredItem;
 
-          late final Color bg;
-          late final Color border;
-          late final Color fg;
+          const border = Colors.transparent;
+          final Color bg;
+          final Color fg;
           Gradient? gradient;
-
-          if (glass) {
-            border = Colors.transparent;
-            if (isSelected) {
-              bg = accent;
-              gradient = LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color.lerp(accent, Colors.white, 0.15)!, accent],
-              );
-              fg = scheme.onPrimary;
-            } else {
-              bg = isHovered
-                  ? glassLine.withValues(alpha: 0.08)
-                  : Colors.transparent;
-              fg = isHovered ? scheme.onSurface : scheme.onSurfaceVariant;
-            }
-          } else if (focused) {
-            if (isSelected) {
-              bg = scheme.onPrimary;
-              fg = accent;
-              border = scheme.onPrimary;
-            } else if (isHovered) {
-              bg = scheme.onPrimary.withValues(alpha: 0.18);
-              border = scheme.onPrimary.withValues(alpha: 0.45);
-              fg = scheme.onPrimary;
-            } else {
-              bg = Colors.transparent;
-              border = Colors.transparent;
-              fg = scheme.onPrimary.withValues(alpha: 0.78);
-            }
-          } else if (isSelected) {
-            bg = scheme.primaryContainer;
-            fg = scheme.onPrimaryContainer;
-            border = Colors.transparent;
-          } else if (isHovered) {
-            bg = scheme.onSurface.withValues(alpha: 0.1);
-            border = scheme.outline.withValues(alpha: 0.3);
-            fg = scheme.onSurface;
+          if (isSelected) {
+            bg = accent;
+            gradient = LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color.lerp(accent, Colors.white, 0.15)!, accent],
+            );
+            fg = scheme.onPrimary;
           } else {
-            bg = Colors.transparent;
-            border = Colors.transparent;
-            fg = scheme.onSurfaceVariant;
+            bg = isHovered
+                ? glassLine.withValues(alpha: 0.08)
+                : Colors.transparent;
+            fg = isHovered ? scheme.onSurface : scheme.onSurfaceVariant;
           }
 
           return MouseRegion(
@@ -195,7 +144,7 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
     );
 
     if (!widget.isEditing) return track;
-    final arrowColor = glass ? scheme.primary : scheme.onPrimary;
+    final arrowColor = scheme.primary;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

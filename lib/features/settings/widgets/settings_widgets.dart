@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
@@ -112,41 +111,7 @@ class TvSettingsSwitchRow extends StatelessWidget {
       onKeyRight: onKeyRight,
       onKeyUp: onKeyUp,
       onKeyDown: onKeyDown,
-      trailingBuilder: (context, isFocused) {
-        if (MoaiGlassScope.enabledOf(context)) {
-          return _GlassSwitch(value: value);
-        }
-        final scheme = context.scheme;
-
-        final trackColor = isFocused
-            ? (value
-                  ? scheme.onPrimary
-                  : scheme.onPrimary.withValues(alpha: 0.3))
-            : (value ? scheme.primary : scheme.surfaceContainerHighest);
-
-        final thumbColor = isFocused
-            ? (value ? scheme.primary : scheme.onPrimary.withValues(alpha: 0.7))
-            : (value ? scheme.onPrimary : scheme.outline);
-
-        final outlineColor = isFocused
-            ? (value
-                  ? Colors.transparent
-                  : scheme.onPrimary.withValues(alpha: 0.5))
-            : (value ? Colors.transparent : scheme.outlineVariant);
-
-        return IgnorePointer(
-          child: Switch(
-            value: value,
-            onChanged: (_) {},
-            activeTrackColor: trackColor,
-            inactiveTrackColor: trackColor,
-            activeThumbColor: thumbColor,
-            inactiveThumbColor: thumbColor,
-            trackOutlineColor: WidgetStateProperty.all(outlineColor),
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-        );
-      },
+      trailingBuilder: (context, isFocused) => _GlassSwitch(value: value),
     );
   }
 }

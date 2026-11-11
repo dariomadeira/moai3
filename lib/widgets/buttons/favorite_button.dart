@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/state/favorites_provider.dart';
-import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/buttons/tv_glass_icon_pill.dart';
 
-class FavoriteButton extends StatefulWidget {
+/// Agrega o saca el canal de Favoritos; con el canal ya favorito, el
+/// corazón lleno en el acento.
+class FavoriteButton extends StatelessWidget {
   final Channel channel;
   final FocusNode focusNode;
   final VoidCallback? onKeyLeft;
@@ -27,133 +26,23 @@ class FavoriteButton extends StatefulWidget {
   });
 
   @override
-  State<FavoriteButton> createState() => _FavoriteButtonState();
-}
-
-class _FavoriteButtonState extends State<FavoriteButton> {
-  bool _isFocused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _isFocused = widget.focusNode.hasFocus;
-  }
-
-  @override
-  void didUpdateWidget(covariant FavoriteButton oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.focusNode != oldWidget.focusNode) {
-      _isFocused = widget.focusNode.hasFocus;
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (widget.channel.isAdult) {
-      return const SizedBox.shrink();
-    }
-
-    final scheme = context.scheme;
+    if (channel.isAdult) return const SizedBox.shrink();
     final isFav = context.select<FavoritesProvider, bool>(
-      (state) => state.isFavorite(widget.channel),
+      (state) => state.isFavorite(channel),
     );
-    final isFocused = _isFocused || widget.focusNode.hasFocus;
-
-    final glass = MoaiGlassScope.enabledOf(context);
-
-    final Color bgColor;
-    final Color iconColor;
-
-    if (glass) {
-      bgColor = Colors.transparent;
-      iconColor = isFocused
-          ? scheme.onPrimary
-          : (isFav ? scheme.primary : scheme.onSurface);
-    } else if (isFocused) {
-      bgColor = scheme.primary;
-      iconColor = scheme.onPrimary;
-    } else if (isFav) {
-      bgColor = scheme.primaryContainer;
-      iconColor = scheme.onPrimaryContainer;
-    } else {
-      bgColor = scheme.surfaceContainerHighest;
-      iconColor = scheme.onSurfaceVariant;
-    }
-
-    return Focus(
-      focusNode: widget.focusNode,
-      onFocusChange: (focused) {
-        setState(() {
-          _isFocused = focused;
-        });
-      },
-      onKeyEvent: (node, event) {
-        if (event is KeyDownEvent) {
-          final key = event.logicalKey;
-          if (key == LogicalKeyboardKey.arrowLeft) {
-            if (widget.onKeyLeft != null) {
-              widget.onKeyLeft!();
-              return KeyEventResult.handled;
-            }
-          } else if (key == LogicalKeyboardKey.arrowRight) {
-            if (widget.onKeyRight != null) {
-              widget.onKeyRight!();
-              return KeyEventResult.handled;
-            }
-            return KeyEventResult.ignored;
-          } else if (key == LogicalKeyboardKey.arrowDown) {
-            if (widget.onKeyDown != null) {
-              widget.onKeyDown!();
-              return KeyEventResult.handled;
-            }
-            return KeyEventResult.ignored;
-          } else if (key == LogicalKeyboardKey.arrowUp) {
-            if (widget.onKeyUp != null) {
-              widget.onKeyUp!();
-              return KeyEventResult.handled;
-            }
-            return KeyEventResult.ignored;
-          } else if (TvKeyHandler.isActionKey(key)) {
-            context.read<FavoritesProvider>().toggleFavorite(widget.channel);
-            return KeyEventResult.handled;
-          }
-        }
-        return KeyEventResult.ignored;
-      },
-      child: GestureDetector(
-        onTap: () {
-          context.read<FavoritesProvider>().toggleFavorite(widget.channel);
-        },
-        child: AnimatedScale(
-          scale: isFocused ? 1.08 : 1.0,
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOutCubic,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            width: 44,
-            height: 24,
-            decoration: glass
-                ? moaiGlassButtonDecoration(
-                    scheme,
-                    focused: isFocused,
-                    highlighted: isFav,
-                  )
-                : BoxDecoration(
-                    color: bgColor,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-            child: Center(
-              child: Icon(
-                isFav
-                    ? MoaiIcons.tvFavoritesHeartSelected
-                    : MoaiIcons.tvFavoritesHeart,
-                color: iconColor,
-                size: MoaiIconSizes.sm,
-              ),
-            ),
-          ),
-        ),
-      ),
+    return TvGlassIconPill(
+      focusNode: focusNode,
+      onKeyLeft: onKeyLeft,
+      onKeyRight: onKeyRight,
+      onKeyUp: onKeyUp,
+      onKeyDown: onKeyDown,
+      icon: isFav
+          ? MoaiIcons.tvFavoritesHeartSelected
+          : MoaiIcons.tvFavoritesHeart,
+      highlighted: isFav,
+      onPressed: () =>
+          context.read<FavoritesProvider>().toggleFavorite(channel),
     );
   }
 }

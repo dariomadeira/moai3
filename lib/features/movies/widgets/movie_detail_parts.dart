@@ -8,7 +8,6 @@ import 'package:moai3/services/movie_image_cache.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/utils/image_decode.dart';
-import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 
 /// Piezas de la ficha que comparten el detalle de películas y el de series.
@@ -82,21 +81,18 @@ class MovieDetailTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final glass = MoaiGlassScope.enabledOf(context);
     final title = Text(
       text,
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
       style: MoaiText.display(
         context,
-        color: glass ? Colors.white : scheme.onSurface,
+        color: Colors.white,
         fontSize: 22,
         fontWeight: FontWeight.w800,
         height: 1.15,
       ),
     );
-    if (!glass) return title;
     return Align(
       alignment: Alignment.centerLeft,
       child: ShaderMask(
@@ -136,36 +132,13 @@ TvMetaPill? movieScorePill(BuildContext context, MovieItem movie) {
   final scoreText = movie.formattedScore;
   if (scoreText == null || scoreText.isEmpty) return null;
 
-  final scheme = Theme.of(context).colorScheme;
   final val = double.tryParse(movie.score ?? '');
-  // En tema claro, el mismo tono más oscuro para que se lea sobre el fondo.
   final dark = Theme.of(context).brightness == Brightness.dark;
 
-  final Color bg;
-  final Color fg;
-
-  if (val != null) {
-    if (val > 7.0) {
-      // > 7.0: Amarillo / Dorado
-      bg = const Color(0xFFF59E0B).withValues(alpha: 0.22);
-      fg = dark ? const Color(0xFFFBBF24) : const Color(0xFFB45309);
-    } else if (val >= 5.0) {
-      // 5.0 a 7.0: Plata / Gris
-      bg = const Color(0xFF94A3B8).withValues(alpha: 0.24);
-      fg = dark ? const Color(0xFFE2E8F0) : const Color(0xFF475569);
-    } else {
-      // < 5.0: Rojo
-      bg = const Color(0xFFEF4444).withValues(alpha: 0.24);
-      fg = dark ? const Color(0xFFF87171) : const Color(0xFFB91C1C);
-    }
-  } else {
-    bg = scheme.tertiaryContainer;
-    fg = scheme.onTertiaryContainer;
-  }
-
-  // En cristal, la etiqueta es como las de al lado (año, duración) y el
-  // color de la nota va en la estrella y el número, en el tono que se lee
-  // sobre el blanco (en el oscuro, sobre el ahumado: el claro de arriba).
+  // La etiqueta es como las de al lado (año, duración) y el color de la nota
+  // va en la estrella y el número, en el tono que se lee sobre el blanco (en
+  // el oscuro, sobre el ahumado: el claro de arriba). Dorado arriba de 7,
+  // plata hasta 5, rojo debajo.
   final Color? onGlass = val == null
       ? null
       : val > 7.0
@@ -176,8 +149,6 @@ TvMetaPill? movieScorePill(BuildContext context, MovieItem movie) {
 
   return TvMetaPill(
     dense: true,
-    color: bg,
-    foreground: fg,
     glassForeground: onGlass,
     icon: MoaiIcons.vodRatingFilled,
     label: scoreText,

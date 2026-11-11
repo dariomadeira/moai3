@@ -692,7 +692,6 @@
   "plugins_update_empty": "El host nativo no devolvió datos al actualizar el plugin",
   "search_field_hint": "Toca para abrir el teclado",
   "search_field_label": "Buscar canal",
-  "search_hint_open_keyboard": "",
   "search_hint_with_filter": "Mantén pulsado OK para filtrar",
   "search_min_chars_prompt": "Al menos {n} caracteres\npara iniciar la búsqueda.",
   "search_no_results": "No se encontraron canales.",

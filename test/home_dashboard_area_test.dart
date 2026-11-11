@@ -7,7 +7,6 @@ import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
 import 'package:moai3/features/home/areas/home_dashboard_area.dart';
 import 'package:moai3/features/home/widgets/home_continue_card.dart';
-import 'package:moai3/features/home/widgets/home_event_tile.dart';
 import 'package:moai3/features/home/widgets/home_movie_strip.dart';
 import 'package:moai3/features/home/widgets/home_trailers_card.dart';
 import 'package:moai3/features/home/widgets/home_watchlist_big_card.dart';
@@ -557,7 +556,7 @@ void main() {
       );
       expect(card.movies.map((m) => m.name), ['Coco', 'Up']);
       expect(card.watched['c0'], closeTo(0.5, 0.001));
-      expect(find.text('Seguir viendo'), findsOneWidget);
+      expect(find.text('Seguir'), findsOneWidget);
     });
 
     testWidgets('no aparece si Películas no está en el rail', (tester) async {
@@ -742,31 +741,6 @@ void main() {
       calendar.debugSetEvents([event('a', start)]);
       await pumpHome(tester, calendar: calendar);
       expect(find.byType(HomeEventsCard), findsOneWidget);
-    });
-
-    testWidgets('la tarjeta de evento con foto (guardada) se arma', (
-      tester,
-    ) async {
-      useSpanishTranslations();
-      final now = ArgentinaTime.now();
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Center(
-            child: SizedBox(
-              width: 122,
-              height: 140,
-              child: HomeEventTile(
-                event: event('a', now.add(const Duration(hours: 1))),
-                artwork: EventArtwork.pathFor('nfl'),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('Partido a'), findsOneWidget);
-      expect(HomeEventTile.shortTag(event('b', now)), 'nfl');
-      expect(tester.takeException(), isNull);
     });
   });
 

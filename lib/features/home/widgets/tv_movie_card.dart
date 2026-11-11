@@ -138,9 +138,7 @@ class _TvMovieCardState extends State<TvMovieCard> {
     final isFocused =
         widget.isSelected ??
         (_isFocused || (widget.focusNode?.hasFocus ?? false));
-    // Sobre el fondo ambiente la tarjeta es de cristal; fuera, estilo opaco.
-    final glass = MoaiGlassScope.enabledOf(context);
-    final emptyColor = _emptyWellColor(scheme, glass: glass);
+    final emptyColor = _emptyWellColor(scheme);
 
     final card = GestureDetector(
       onTap: () {
@@ -148,10 +146,8 @@ class _TvMovieCardState extends State<TvMovieCard> {
         widget.onTap();
       },
       child: _movieCardChrome(
-        glass: glass,
         isFocused: isFocused,
-        scheme: scheme,
-        child: _content(context, scheme, isFocused, emptyColor),
+        child: _content(context, scheme, emptyColor),
       ),
     );
     if (widget.isSelected != null) return card;
@@ -198,13 +194,7 @@ class _TvMovieCardState extends State<TvMovieCard> {
   }
 
   /// Póster y título.
-  Widget _content(
-    BuildContext context,
-    ColorScheme scheme,
-    bool isFocused,
-    Color emptyColor,
-  ) {
-    final glass = MoaiGlassScope.enabledOf(context);
+  Widget _content(BuildContext context, ColorScheme scheme, Color emptyColor) {
     final movie = widget.movie;
     final name = movie.name;
     // Las horizontales vienen de hasta 4096 px: se decodifican chicas.
@@ -252,74 +242,42 @@ class _TvMovieCardState extends State<TvMovieCard> {
           ),
       ],
     );
-    if (glass) {
-      // REDISEÑO: el póster redondeado de los cuatro lados y abajo el
-      // nombre centrado (el margen lo pone el marco).
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(TvMovieCard.posterRadius),
-              child: posterStack,
-            ),
+    // El póster redondeado de los cuatro lados y abajo el nombre centrado
+    // (el margen lo pone el marco).
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(TvMovieCard.posterRadius),
+            child: posterStack,
           ),
-          SizedBox(
-            height: TvMovieCard.titleBarHeight,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Flexible(
-                    child: Text(
-                      name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: MoaiText.body(
-                        context,
-                        fontSize: 12,
-                        color: scheme.onSurface,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(child: posterStack),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        ),
+        SizedBox(
+          height: TvMovieCard.titleBarHeight,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Expanded(
+                Flexible(
                   child: Text(
                     name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                     style: MoaiText.body(
                       context,
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      color: isFocused ? scheme.primary : scheme.onSurface,
+                      fontSize: 12,
+                      color: scheme.onSurface,
                     ),
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -354,49 +312,26 @@ class _ProgressBar extends StatelessWidget {
   }
 }
 
-/// Marco de la tarjeta: cristal o el estilo opaco de siempre. REDISEÑO: en
-/// cristal, como los días de Descuentos (borde del acento con foco), con el
-/// contenido a [TvMovieCard.posterInset] del borde, salvo abajo, donde ya
-/// deja aire la barra del nombre.
-Widget _movieCardChrome({
-  required bool glass,
-  required bool isFocused,
-  required ColorScheme scheme,
-  required Widget child,
-}) {
-  if (glass) {
-    const inset = TvMovieCard.posterInset;
-    return MoaiGlass(
-      borderRadius: TvMovieCard.radius,
-      elevated: false,
-      solid: true,
-      focused: isFocused,
-      padding: const EdgeInsets.fromLTRB(inset, inset, inset, 0),
-      child: child,
-    );
-  }
-  return AnimatedContainer(
-    duration: const Duration(milliseconds: 140),
-    decoration: BoxDecoration(
-      color: scheme.surface,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(
-        color: isFocused
-            ? scheme.primary
-            : scheme.outlineVariant.withValues(alpha: 0.48),
-        width: isFocused ? 2.5 : 1.0,
-      ),
-    ),
+/// Marco de la tarjeta: cristal como los días de Descuentos (borde del
+/// acento con foco), con el contenido a [TvMovieCard.posterInset] del borde,
+/// salvo abajo, donde ya deja aire la barra del nombre.
+Widget _movieCardChrome({required bool isFocused, required Widget child}) {
+  const inset = TvMovieCard.posterInset;
+  return MoaiGlass(
+    borderRadius: TvMovieCard.radius,
+    elevated: false,
+    solid: true,
+    focused: isFocused,
+    padding: const EdgeInsets.fromLTRB(inset, inset, inset, 0),
     child: child,
   );
 }
 
-/// Fondo del lugar del póster cuando no hay imagen: en cristal un "pozo"
-/// tenue en vez de un bloque opaco.
-Color _emptyWellColor(ColorScheme scheme, {required bool glass}) => glass
-    ? (scheme.brightness == Brightness.dark ? Colors.white : scheme.onSurface)
-          .withValues(alpha: 0.04)
-    : scheme.surfaceContainerLowest;
+/// Fondo del lugar del póster cuando no hay imagen: un "pozo" tenue en vez
+/// de un bloque opaco.
+Color _emptyWellColor(ColorScheme scheme) =>
+    (scheme.brightness == Brightness.dark ? Colors.white : scheme.onSurface)
+        .withValues(alpha: 0.04);
 
 /// Último casillero de una categoría de la grilla: abre la categoría
 /// completa (SPEC-44 §3.3). Mismo tamaño y marco que [TvMovieCard]; como
@@ -416,23 +351,18 @@ class TvShowAllCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final glass = MoaiGlassScope.enabledOf(context);
     return GestureDetector(
       onTap: onTap,
       child: _movieCardChrome(
-        glass: glass,
         isFocused: isSelected,
-        scheme: scheme,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(
-            glass ? TvMovieCard.posterRadius : 10,
-          ),
+          borderRadius: BorderRadius.circular(TvMovieCard.posterRadius),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
                 child: ColoredBox(
-                  color: _emptyWellColor(scheme, glass: glass),
+                  color: _emptyWellColor(scheme),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

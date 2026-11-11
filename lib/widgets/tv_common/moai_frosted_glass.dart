@@ -11,22 +11,10 @@ import 'package:moai3/widgets/tv_common/moai_ambient_background.dart';
 /// El fondo de la app es una imagen fija (`MoaiAmbientBackground`), así que
 /// en vez de desenfocar en vivo (caro en el Chromecast y se recalcula con
 /// cada cambio del panel) el panel dibuja una copia ya desenfocada del mismo
-/// fondo (`background_blur.webp`), alineada con la pantalla: se ve el fondo
-/// borroso "a través" del vidrio y no cuesta nada.
+/// fondo ([MoaiAmbientBackground.blurredAssetFor]), alineada con la
+/// pantalla: se ve el fondo borroso "a través" del vidrio y no cuesta nada.
 class MoaiFrostedBackdrop extends StatefulWidget {
   const MoaiFrostedBackdrop({super.key});
-
-  /// Copia desenfocada de `assets/images/background.webp` (mitad de
-  /// resolución, desenfoque gaussiano).
-  // PRUEBA (2026-11-01): la de `background_color.webp` (mitad de
-  // resolución, desenfoque gaussiano de radio 30). La de antes:
-  // 'assets/images/background_blur.webp'.
-  // PRUEBA (2026-11-02, descartada el 2026-11-03): la de
-  // `background_new.webp` ('assets/images/background_new_blur.webp').
-  // PRUEBA (2026-11-03): sigue al fondo elegido en
-  // `trialBackground` de moai_ambient_background.dart. El aprobado:
-  // 'assets/images/background_color_blur.webp'.
-  static const String blurredAsset = MoaiAmbientBackground.blurredAsset;
 
   @override
   State<MoaiFrostedBackdrop> createState() => _MoaiFrostedBackdropState();

@@ -141,8 +141,6 @@ class _HeaderBackButtonState extends State<_HeaderBackButton> {
     final scheme = context.scheme;
     // Cristal: como los botones de los encabezados (tenue en reposo; con
     // foco, acento con brillo y halo).
-    final glass = MoaiGlassScope.enabledOf(context);
-    final bg = _isFocused ? scheme.primary : scheme.surfaceContainerLow;
     final fg = _isFocused ? scheme.onPrimary : scheme.onSurface;
 
     return Focus(
@@ -162,16 +160,14 @@ class _HeaderBackButtonState extends State<_HeaderBackButton> {
         );
       },
       child: Material(
-        color: glass ? Colors.transparent : bg,
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(16),
         child: Ink(
-          decoration: glass
-              ? moaiGlassButtonDecoration(
-                  scheme,
-                  focused: _isFocused,
-                  radius: 16,
-                )
-              : null,
+          decoration: moaiGlassButtonDecoration(
+            scheme,
+            focused: _isFocused,
+            radius: 16,
+          ),
           child: InkWell(
             onTap: widget.onPressed,
             borderRadius: BorderRadius.circular(16),

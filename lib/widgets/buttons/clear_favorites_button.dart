@@ -1,17 +1,16 @@
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/widgets/feedback/notification_helper.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/buttons/tv_glass_icon_pill.dart';
 
-class ClearFavoritesButton extends StatefulWidget {
+/// Limpia los favoritos, con confirmación.
+class ClearFavoritesButton extends StatelessWidget {
   final FocusNode focusNode;
   final VoidCallback? onKeyLeft;
   final VoidCallback? onKeyRight;
@@ -27,27 +26,6 @@ class ClearFavoritesButton extends StatefulWidget {
     this.onKeyDown,
   });
 
-  @override
-  State<ClearFavoritesButton> createState() => _ClearFavoritesButtonState();
-}
-
-class _ClearFavoritesButtonState extends State<ClearFavoritesButton> {
-  bool _isFocused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _isFocused = widget.focusNode.hasFocus;
-  }
-
-  @override
-  void didUpdateWidget(covariant ClearFavoritesButton oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.focusNode != oldWidget.focusNode) {
-      _isFocused = widget.focusNode.hasFocus;
-    }
-  }
-
   void _showClearConfirmDialog(BuildContext context) {
     showTvGeneralDialog(
       context: context,
@@ -59,79 +37,16 @@ class _ClearFavoritesButtonState extends State<ClearFavoritesButton> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    final isFocused = _isFocused || widget.focusNode.hasFocus;
-
-    final glass = MoaiGlassScope.enabledOf(context);
-    final Color bgColor = isFocused
-        ? scheme.error
-        : scheme.surfaceContainerHighest;
-    final Color iconColor = isFocused
-        ? scheme.onError
-        : (glass ? scheme.onSurface : scheme.onSurfaceVariant);
-
-    return Focus(
-      focusNode: widget.focusNode,
-      onFocusChange: (focused) => setState(() => _isFocused = focused),
-      onKeyEvent: (node, event) {
-        if (event is KeyDownEvent) {
-          final key = event.logicalKey;
-          if (key == LogicalKeyboardKey.arrowLeft && widget.onKeyLeft != null) {
-            widget.onKeyLeft!();
-            return KeyEventResult.handled;
-          }
-          if (key == LogicalKeyboardKey.arrowRight &&
-              widget.onKeyRight != null) {
-            widget.onKeyRight!();
-            return KeyEventResult.handled;
-          }
-          if (key == LogicalKeyboardKey.arrowDown && widget.onKeyDown != null) {
-            widget.onKeyDown!();
-            return KeyEventResult.handled;
-          }
-          if (key == LogicalKeyboardKey.arrowUp && widget.onKeyUp != null) {
-            widget.onKeyUp!();
-            return KeyEventResult.handled;
-          }
-          if (TvKeyHandler.isActionKey(key)) {
-            _showClearConfirmDialog(context);
-            return KeyEventResult.handled;
-          }
-        }
-        return KeyEventResult.ignored;
-      },
-      child: Tooltip(
-        message: LocaleKeys.favorites_clear_all.tr(),
-        child: GestureDetector(
-          onTap: () => _showClearConfirmDialog(context),
-          child: AnimatedScale(
-            scale: isFocused ? 1.08 : 1.0,
-            duration: const Duration(milliseconds: 150),
-            curve: Curves.easeOutCubic,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              width: 44,
-              height: 24,
-              decoration: glass
-                  ? moaiGlassButtonDecoration(scheme, focused: isFocused)
-                  : BoxDecoration(
-                      color: bgColor,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-              child: Center(
-                child: Icon(
-                  MoaiIcons.tvFavoritesClear,
-                  color: iconColor,
-                  size: MoaiIconSizes.sm,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => TvGlassIconPill(
+    focusNode: focusNode,
+    onKeyLeft: onKeyLeft,
+    onKeyRight: onKeyRight,
+    onKeyUp: onKeyUp,
+    onKeyDown: onKeyDown,
+    icon: MoaiIcons.tvFavoritesClear,
+    tooltip: LocaleKeys.favorites_clear_all.tr(),
+    onPressed: () => _showClearConfirmDialog(context),
+  );
 }
 
 class _ClearConfirmDialogContent extends StatefulWidget {

@@ -61,34 +61,16 @@ class TvDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    // Usamos scheme.surface igual que los paneles de TvAccordionRowPreview
-    // para lograr el fondo oscuro característico y contraste perfecto con los TvTile
-    final baseColor = scheme.surface;
-    final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
-    final glass = MoaiGlassScope.enabledOf(context);
-
     return Center(
       child: Material(
         color: Colors.transparent,
         child: Container(
           width: width,
           margin: const EdgeInsets.symmetric(horizontal: 24),
-          decoration: glass
-              ? null
-              : BoxDecoration(
-                  color: baseColor,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: borderColor),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-          child: _surface(
-            glass: glass,
+          // El vidrio esmerilado de los paneles grandes (el fondo
+          // desenfocado a través, velo blanco suave, filo de luz y sombra).
+          child: MoaiGlass(
+            frosted: true,
             child: Stack(
               children: [
                 Padding(
@@ -122,7 +104,6 @@ class TvDialog extends StatelessWidget {
                                 children: [
                                   if (titleWidget != null || title != null)
                                     _titleGradient(
-                                      glass: glass,
                                       child:
                                           titleWidget ??
                                           Text(
@@ -196,20 +177,10 @@ class TvDialog extends StatelessWidget {
   }
 }
 
-/// Superficie del diálogo en cristal: el vidrio esmerilado de los paneles
-/// grandes (el fondo desenfocado a través, velo blanco suave, filo de luz y
-/// sombra). Antes era un relleno sólido casi blanco que no se leía como
-/// cristal y apagaba todo lo de adentro.
-Widget _surface({required bool glass, required Widget child}) {
-  if (!glass) return child;
-  return MoaiGlass(frosted: true, child: child);
-}
-
-/// En cristal, el título va con el degradado de dos colores de los
-/// encabezados de los paneles (en todos los diálogos). El Align ajusta el
-/// degradado al ancho del texto.
-Widget _titleGradient({required bool glass, required Widget child}) {
-  if (!glass) return child;
+/// El título va con el degradado de dos colores de los encabezados de los
+/// paneles (en todos los diálogos). El Align ajusta el degradado al ancho
+/// del texto.
+Widget _titleGradient({required Widget child}) {
   return Align(
     alignment: Alignment.centerLeft,
     child: ShaderMask(
@@ -286,60 +257,21 @@ class _TvDialogButtonState extends State<TvDialogButton> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    final Color bgColor;
-    final Color fgColor;
-
-    if (_isFocused) {
-      if (widget.variant == TvDialogButtonVariant.destructive) {
-        bgColor = scheme.error;
-        fgColor = scheme.onError;
-      } else {
-        bgColor = scheme.primary;
-        fgColor = scheme.onPrimary;
-      }
-    } else {
-      switch (widget.variant) {
-        case TvDialogButtonVariant.primary:
-          bgColor = scheme.primaryContainer;
-          fgColor = scheme.onPrimaryContainer;
-        case TvDialogButtonVariant.neutral:
-          bgColor = scheme.surfaceContainerHighest;
-          fgColor = scheme.onSurfaceVariant;
-        case TvDialogButtonVariant.destructive:
-          bgColor = scheme.errorContainer;
-          fgColor = scheme.onErrorContainer;
-      }
-    }
-
-    // Cristal: en reposo píldora de cristal (con tinte de acento si es la
-    // principal); con foco, acento (o error) con brillo y halo.
-    final glass = MoaiGlassScope.enabledOf(context);
+    // Los botones de cristal del Inicio: blancos con filo de luz; con foco,
+    // el acento (o el rojo de error) con brillo y halo. La principal sin
+    // foco va blanca con el texto en el acento (sin vidrio teñido).
     final destructive = widget.variant == TvDialogButtonVariant.destructive;
-    final Decoration decoration;
-    final Color fg;
-    if (!glass) {
-      decoration = BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-      );
-      fg = fgColor;
-    } else {
-      // Los botones de cristal del Inicio: blancos con filo de luz; con
-      // foco, el acento (o el rojo de error) con brillo y halo. La principal
-      // sin foco va blanca con el texto en el acento (sin vidrio teñido).
-      final primary = widget.variant == TvDialogButtonVariant.primary;
-      decoration = moaiGlassButtonDecoration(
-        scheme,
-        focused: _isFocused,
-
-        accent: destructive ? scheme.error : null,
-      );
-      fg = _isFocused
-          ? fgColor
-          : (destructive
-                ? scheme.error
-                : (primary ? scheme.primary : scheme.onSurface));
-    }
+    final primary = widget.variant == TvDialogButtonVariant.primary;
+    final decoration = moaiGlassButtonDecoration(
+      scheme,
+      focused: _isFocused,
+      accent: destructive ? scheme.error : null,
+    );
+    final fg = _isFocused
+        ? (destructive ? scheme.onError : scheme.onPrimary)
+        : (destructive
+              ? scheme.error
+              : (primary ? scheme.primary : scheme.onSurface));
 
     return Focus(
       focusNode: widget.focusNode,
@@ -375,27 +307,20 @@ class _TvDialogButtonState extends State<TvDialogButton> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
           // Más delicado: píldora baja, como los botones del Inicio.
-          padding: EdgeInsets.symmetric(
-            horizontal: glass ? 16 : 20,
-            vertical: glass ? 7 : 10,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
           decoration: decoration,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (widget.icon != null) ...[
-                Icon(
-                  widget.icon,
-                  size: glass ? MoaiIconSizes.sm : MoaiIconSizes.md,
-                  color: fg,
-                ),
+                Icon(widget.icon, size: MoaiIconSizes.sm, color: fg),
                 const SizedBox(width: 8),
               ],
               Text(
                 widget.label,
                 style: MoaiText.body(
                   context,
-                  fontSize: glass ? 12 : 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: fg,
                 ),

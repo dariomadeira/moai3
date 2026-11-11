@@ -4,8 +4,8 @@ import 'package:moai3/theme/moai_text.dart';
 
 import 'helpers/real_fonts.dart';
 
-/// Los tests de desbordes cargan las fuentes reales: esto confirma que de
-/// verdad cargaron (con la fuente de prueba de Flutter todo mide igual).
+/// Los tests de desbordes cargan la fuente real: esto confirma que de verdad
+/// cargó (con la fuente de prueba de Flutter todo mide igual).
 void main() {
   setUpAll(loadRealFonts);
 
@@ -20,15 +20,10 @@ void main() {
     return painter.width;
   }
 
-  test('las fuentes reales están cargadas', () {
-    // Cada familia mide distinto (con la de prueba medirían igual).
-    expect(width('VarelaRound'), isNot(width('Unbounded')));
-    expect(width('Unbounded'), greaterThan(width('Onest') * 1.2));
-    // Y los pesos cambian el ancho (cada peso es su propio archivo).
-    expect(
-      width('MPLUSRounded1c', weight: FontWeight.w800),
-      isNot(width('MPLUSRounded1c', weight: FontWeight.w300)),
-    );
+  test('la fuente real está cargada', () {
+    // Con la de prueba de Flutter (una familia sin cargar cae en ella) mediría
+    // igual.
+    expect(width('VarelaRound'), isNot(width('SinCargar')));
   });
 
   testWidgets('títulos y texto usan Varela Round', (tester) async {

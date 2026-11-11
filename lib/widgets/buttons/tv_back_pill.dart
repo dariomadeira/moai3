@@ -94,8 +94,6 @@ class _TvBackPillState extends State<TvBackPill> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    final bg = _isFocused ? scheme.primary : scheme.primaryContainer;
-    final iconColor = _isFocused ? scheme.onPrimary : scheme.onPrimaryContainer;
     final radius = widget.borderRadius ?? (widget.size / 2);
 
     return Focus(
@@ -135,24 +133,7 @@ class _TvBackPillState extends State<TvBackPill> {
         child: InkWell(
           onTap: _handlePress,
           borderRadius: BorderRadius.circular(radius),
-          child: MoaiGlassScope.enabledOf(context)
-              ? _buildGlass(scheme, radius)
-              : AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  curve: Curves.easeOutCubic,
-                  width: widget.size,
-                  height: widget.size,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: bg,
-                    borderRadius: BorderRadius.circular(radius),
-                  ),
-                  child: Icon(
-                    widget.icon,
-                    color: iconColor,
-                    size: widget.iconSize,
-                  ),
-                ),
+          child: _buildGlass(scheme, radius),
         ),
       ),
     );

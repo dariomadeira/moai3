@@ -14,7 +14,6 @@ void main() {
           child: TvAccordionRowPreview(
             panelCount: 7,
             activeIndex: active,
-            colors: List.filled(7, Colors.white),
             titles: [for (var i = 0; i < 7; i++) 'P$i'],
             icons: List.filled(7, Icons.circle),
             onPanelTap: (_) {},

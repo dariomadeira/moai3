@@ -3,14 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:provider/provider.dart';
-import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/movies/widgets/movie_detail_parts.dart';
+import 'package:moai3/features/movies/widgets/movie_detail_shell.dart';
 import 'package:moai3/features/movies/widgets/tv_movie_genre_chip.dart';
 import 'package:moai3/features/movies/widgets/tv_movie_hero_card.dart';
 import 'package:moai3/models/movie_models.dart';
-import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/widgets/buttons/tv_back_pill.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
 import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
@@ -26,7 +24,6 @@ import 'package:moai3/state/movie_recommendations_provider.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
-import 'package:moai3/widgets/tv_common/moai_ambient_background.dart';
 
 /// Pantalla de detalle de película para Smart TV con diseño Split Cinemático 60/40.
 class MovieDetailScreen extends StatefulWidget {
@@ -276,304 +273,147 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
       (MovieRecommendationsProvider? r) => r?.voteOf(movie.contentId),
     );
 
-    final overlapX = context.select(
-      (TvSettingsProvider s) => s.overlapPaddingX,
-    );
-    final overlapY = context.select(
-      (TvSettingsProvider s) => s.overlapPaddingY,
-    );
-
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          const Positioned.fill(
-            child: IgnorePointer(child: MoaiAmbientBackground()),
-          ),
-          SafeArea(
-            top: false,
-            bottom: false,
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: overlapX,
-                vertical: overlapY,
+    return MovieDetailShell(
+      backFocusNode: _backFocusNode,
+      onBackForward: _heroFocusNode.requestFocus,
+      tabTitle: _tabTitle,
+      ambientUrl: movie.ambientBackdrop,
+      tabBuilder: (index, isExpanded) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Column(
+            children: [
+              const Spacer(),
+              RotatedBox(
+                quarterTurns: 3,
+                child: Text(
+                  _tabTitle,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.fade,
+                  style: MoaiText.display(
+                    context,
+                    color: scheme.onSurface.withValues(alpha: 0.7),
+                    fontSize: 12,
+                    letterSpacing: 1.0,
+                  ),
+                ),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SizedBox(
-                    width: 54,
-                    child: Column(
+              const SizedBox(height: 6),
+              Icon(
+                MoaiIcons.vodPoster,
+                size: MoaiIconSizes.md,
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
+              ),
+            ],
+          ),
+        );
+      },
+      content: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Columna Izquierda: Información de la película y acciones
+          Expanded(flex: 6, child: _buildInfoColumn(context, scheme, movie)),
+          const SizedBox(width: 24),
+          // Columna Derecha: Backdrop 16:9 alineado arriba con Play central
+          Expanded(
+            flex: 5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Spacer(),
+                AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: TvMovieHeroCard(
+                    focusNode: _heroFocusNode,
+                    imageUrl: movie.stageImages.isNotEmpty
+                        ? movie.stageImages.first
+                        : movie.effectiveBackdrop,
+                    imageUrls: movie.stageImages,
+                    movieTitle: movie.displayName,
+                    isLoading: _isLoadingStream,
+                    // Siempre "Reproducir": si hay
+                    // dónde retomar, se pregunta al
+                    // tocarlo.
+                    playLabel: LocaleKeys.movies_play.tr(),
+                    onPressed: _onPlayPressed,
+                    onArrowLeft: _backFocusNode.requestFocus,
+                    onArrowDown: _isTrailer
+                        ? null
+                        : _watchlistFocusNode.requestFocus,
+                    onArrowUp: _backFocusNode.requestFocus,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Un tráiler no va a Interesantes:
+                // sin botón, mismo lugar para que
+                // la Hero no se mueva.
+                if (_isTrailer)
+                  const SizedBox(height: 38)
+                else
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const SizedBox(height: 9),
-                        TvBackPill(
-                          focusNode: _backFocusNode,
-                          onKeyRight: _heroFocusNode.requestFocus,
-                          onKeyDown: _heroFocusNode.requestFocus,
-                          onPressed: () => Navigator.of(context).maybePop(),
+                        TvFocusButton(
+                          focusNode: _watchlistFocusNode,
+                          label: _inWatchlist
+                              ? LocaleKeys.movies_watchlist_added.tr()
+                              : LocaleKeys.movies_watchlist_add.tr(),
+                          icon: _inWatchlist
+                              ? MoaiIcons.vodWatchlistRemove
+                              : MoaiIcons.vodWatchlist,
+                          variant: _inWatchlist
+                              ? TvButtonVariant.tonal
+                              : TvButtonVariant.surface,
+                          height: 38,
+                          fontSize: 13,
+                          radius: 20,
+                          onPressed: _toggleWatchlist,
+                          onArrowLeft: _backFocusNode.requestFocus,
+                          onArrowRight: canRecommend
+                              ? _voteUpFocusNode.requestFocus
+                              : null,
+                          onArrowUp: _heroFocusNode.requestFocus,
                         ),
-                        const Spacer(),
+                        if (canRecommend) ...[
+                          const SizedBox(width: 10),
+                          TvFocusButton(
+                            focusNode: _voteUpFocusNode,
+                            label: '',
+                            icon: MoaiIcons.vodRecommend,
+                            variant: vote == MovieVote.up
+                                ? TvButtonVariant.secondary
+                                : TvButtonVariant.surface,
+                            height: 38,
+                            fontSize: 13,
+                            radius: 20,
+                            onPressed: () => _toggleVote(MovieVote.up),
+                            onArrowLeft: _watchlistFocusNode.requestFocus,
+                            onArrowRight: _voteDownFocusNode.requestFocus,
+                            onArrowUp: _heroFocusNode.requestFocus,
+                          ),
+                          const SizedBox(width: 10),
+                          TvFocusButton(
+                            focusNode: _voteDownFocusNode,
+                            label: '',
+                            icon: MoaiIcons.vodNotRecommend,
+                            variant: vote == MovieVote.down
+                                ? TvButtonVariant.secondary
+                                : TvButtonVariant.surface,
+                            height: 38,
+                            fontSize: 13,
+                            radius: 20,
+                            onPressed: () => _toggleVote(MovieVote.down),
+                            onArrowLeft: _voteUpFocusNode.requestFocus,
+                            onArrowUp: _heroFocusNode.requestFocus,
+                          ),
+                        ],
                       ],
                     ),
                   ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
-                      child: TvAccordionRowPreview(
-                        panelCount: 1,
-                        activeIndex: 0,
-                        colors: [scheme.surface.withValues(alpha: 0.85)],
-                        titles: [_tabTitle],
-                        icons: const [MoaiIcons.vodPoster],
-                        onPanelTap: (_) {},
-                        tabBuilder: (index, isExpanded) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            child: Column(
-                              children: [
-                                const Spacer(),
-                                RotatedBox(
-                                  quarterTurns: 3,
-                                  child: Text(
-                                    _tabTitle,
-                                    maxLines: 1,
-                                    softWrap: false,
-                                    overflow: TextOverflow.fade,
-                                    style: MoaiText.display(
-                                      context,
-                                      color: scheme.onSurface.withValues(
-                                        alpha: 0.7,
-                                      ),
-                                      fontSize: 12,
-                                      letterSpacing: 1.0,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Icon(
-                                  MoaiIcons.vodPoster,
-                                  size: MoaiIconSizes.md,
-                                  color: scheme.onSurfaceVariant.withValues(
-                                    alpha: 0.85,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                        buildExpandedContent: (index, title) {
-                          // Fondo ambiental superior: se muestra siempre que haya imagen
-                          // (si hay una sola foto, se duplica difuminada en la esquina).
-                          final ambientUrl = movie.ambientBackdrop;
-                          final showAmbient =
-                              ambientUrl != null && ambientUrl.isNotEmpty;
-
-                          return ClipRRect(
-                            borderRadius: const BorderRadius.only(
-                              topRight: Radius.circular(15),
-                              bottomRight: Radius.circular(15),
-                            ),
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                // Imagen ambiental difuminada en la esquina superior derecha
-                                if (showAmbient)
-                                  Positioned(
-                                    top: 0,
-                                    right: 0,
-                                    width: movieDetailAmbientWidth,
-                                    height: movieDetailAmbientHeight,
-                                    child: IgnorePointer(
-                                      child: MovieDetailAmbient(
-                                        imageUrl: ambientUrl,
-                                      ),
-                                    ),
-                                  ),
-
-                                // Contenido en primer plano
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 18,
-                                    vertical: 14,
-                                  ),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      // Columna Izquierda: Información de la película y acciones
-                                      Expanded(
-                                        flex: 6,
-                                        child: _buildInfoColumn(
-                                          context,
-                                          scheme,
-                                          movie,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 24),
-                                      // Columna Derecha: Backdrop 16:9 alineado arriba con Play central
-                                      Expanded(
-                                        flex: 5,
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.stretch,
-                                          children: [
-                                            const Spacer(),
-                                            AspectRatio(
-                                              aspectRatio: 16 / 9,
-                                              child: TvMovieHeroCard(
-                                                focusNode: _heroFocusNode,
-                                                imageUrl:
-                                                    movie.stageImages.isNotEmpty
-                                                    ? movie.stageImages.first
-                                                    : movie.effectiveBackdrop,
-                                                imageUrls: movie.stageImages,
-                                                movieTitle: movie.displayName,
-                                                isLoading: _isLoadingStream,
-                                                // Siempre "Reproducir": si hay
-                                                // dónde retomar, se pregunta al
-                                                // tocarlo.
-                                                playLabel: LocaleKeys
-                                                    .movies_play
-                                                    .tr(),
-                                                onPressed: _onPlayPressed,
-                                                onArrowLeft:
-                                                    _backFocusNode.requestFocus,
-                                                onArrowDown: _isTrailer
-                                                    ? null
-                                                    : _watchlistFocusNode
-                                                          .requestFocus,
-                                                onArrowUp:
-                                                    _backFocusNode.requestFocus,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 12),
-                                            // Un tráiler no va a Interesantes:
-                                            // sin botón, mismo lugar para que
-                                            // la Hero no se mueva.
-                                            if (_isTrailer)
-                                              const SizedBox(height: 38)
-                                            else
-                                              Align(
-                                                alignment:
-                                                    Alignment.centerRight,
-                                                child: Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    TvFocusButton(
-                                                      focusNode:
-                                                          _watchlistFocusNode,
-                                                      label: _inWatchlist
-                                                          ? LocaleKeys
-                                                                .movies_watchlist_added
-                                                                .tr()
-                                                          : LocaleKeys
-                                                                .movies_watchlist_add
-                                                                .tr(),
-                                                      icon: _inWatchlist
-                                                          ? MoaiIcons
-                                                                .vodWatchlistRemove
-                                                          : MoaiIcons
-                                                                .vodWatchlist,
-                                                      variant: _inWatchlist
-                                                          ? TvButtonVariant
-                                                                .tonal
-                                                          : TvButtonVariant
-                                                                .surface,
-                                                      height: 38,
-                                                      fontSize: 13,
-                                                      radius: 20,
-                                                      onPressed:
-                                                          _toggleWatchlist,
-                                                      onArrowLeft:
-                                                          _backFocusNode
-                                                              .requestFocus,
-                                                      onArrowRight: canRecommend
-                                                          ? _voteUpFocusNode
-                                                                .requestFocus
-                                                          : null,
-                                                      onArrowUp: _heroFocusNode
-                                                          .requestFocus,
-                                                    ),
-                                                    if (canRecommend) ...[
-                                                      const SizedBox(width: 10),
-                                                      TvFocusButton(
-                                                        focusNode:
-                                                            _voteUpFocusNode,
-                                                        label: '',
-                                                        icon: MoaiIcons
-                                                            .vodRecommend,
-                                                        variant:
-                                                            vote == MovieVote.up
-                                                            ? TvButtonVariant
-                                                                  .secondary
-                                                            : TvButtonVariant
-                                                                  .surface,
-                                                        height: 38,
-                                                        fontSize: 13,
-                                                        radius: 20,
-                                                        onPressed: () =>
-                                                            _toggleVote(
-                                                              MovieVote.up,
-                                                            ),
-                                                        onArrowLeft:
-                                                            _watchlistFocusNode
-                                                                .requestFocus,
-                                                        onArrowRight:
-                                                            _voteDownFocusNode
-                                                                .requestFocus,
-                                                        onArrowUp:
-                                                            _heroFocusNode
-                                                                .requestFocus,
-                                                      ),
-                                                      const SizedBox(width: 10),
-                                                      TvFocusButton(
-                                                        focusNode:
-                                                            _voteDownFocusNode,
-                                                        label: '',
-                                                        icon: MoaiIcons
-                                                            .vodNotRecommend,
-                                                        variant:
-                                                            vote ==
-                                                                MovieVote.down
-                                                            ? TvButtonVariant
-                                                                  .secondary
-                                                            : TvButtonVariant
-                                                                  .surface,
-                                                        height: 38,
-                                                        fontSize: 13,
-                                                        radius: 20,
-                                                        onPressed: () =>
-                                                            _toggleVote(
-                                                              MovieVote.down,
-                                                            ),
-                                                        onArrowLeft:
-                                                            _voteUpFocusNode
-                                                                .requestFocus,
-                                                        onArrowUp:
-                                                            _heroFocusNode
-                                                                .requestFocus,
-                                                      ),
-                                                    ],
-                                                  ],
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              ],
             ),
           ),
         ],

@@ -124,10 +124,6 @@ extension _TvAreaLayout on HomeTvAreaState {
                               panelCount: panelCount,
                               fixedContentWidth: true,
                               activeIndex: active,
-                              colors: List.filled(
-                                panelCount,
-                                scheme.surface.withValues(alpha: 0.8),
-                              ),
                               titles: _titles(showTvLog),
                               icons: _icons(showTvLog),
                               alphabetModePanelIndex: exploreAlphabetPanelIndex,
@@ -327,10 +323,8 @@ extension _TvAreaLayout on HomeTvAreaState {
                               // El panel activo, que puede no ser Canales
                               // (Buscar, Marcadores, otro panel del acordeón).
                               onFocusLeft: _focusActiveContent,
-                              onKeyUp: () => _focusFavoritesActions(
-                                favChannels,
-                                channel,
-                              ),
+                              onKeyUp: () =>
+                                  _focusFavoritesActions(favChannels, channel),
                               // Última fila: ↓ no tiene adónde ir.
                               onKeyDown: () {},
                             ),

@@ -31,7 +31,6 @@ dependencies:
   flutter:
     sdk: flutter
 
-  dynamic_color: ^1.9.0
   easy_localization: ^3.0.8
   go_router: ^18.0.2
   shared_preferences: ^2.5.5
@@ -44,7 +43,6 @@ dependencies:
   flutter_cache_manager: ^3.4.2
   supabase_flutter: ^2.8.0
   uuid: ^4.5.1
-  intl: ^0.20.3
   lottie: ^3.3.1
   # 1.3.4 en pub aún trae .so a 4 KB; la rama android_16kb los alinea a 16 KB.
   openvpn_flutter:
@@ -91,8 +89,6 @@ flutter:
     - assets/translations/
     - assets/svgs/
     - assets/images/
-    # Fondo de cada tipo de evento: <id de la suscripción>.webp + default.webp.
-    - assets/images/events/
     # Avatares de amigos (moai_1..9.webp, de assets_src/avatars/moais.jpg).
     - assets/images/avatars/
     - assets/vpn/
@@ -107,50 +103,9 @@ flutter:
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package
 
-  # Tipografía local nativa (Nunito cuerpo / Quicksand títulos).
+  # Tipografía local: Varela Round en toda la interfaz. Un solo peso: las
+  # negritas las sintetiza Flutter.
   fonts:
-    # REDISEÑO (elegida por el usuario): toda la interfaz. Un solo peso: las
-    # negritas las sintetiza Flutter.
     - family: VarelaRound
       fonts:
         - asset: assets/fonts/varela-round-v21-latin-regular.ttf
-    # ANTES (en pausa): M PLUS Rounded 1c (no le gustó: poco redondeada).
-    - family: MPLUSRounded1c
-      fonts:
-        - asset: assets/fonts/m-plus-rounded-1c-v22-latin-regular.ttf
-        - asset: assets/fonts/m-plus-rounded-1c-v22-latin-300.ttf
-          weight: 300
-        - asset: assets/fonts/m-plus-rounded-1c-v22-latin-500.ttf
-          weight: 500
-        - asset: assets/fonts/m-plus-rounded-1c-v22-latin-700.ttf
-          weight: 700
-        - asset: assets/fonts/m-plus-rounded-1c-v22-latin-800.ttf
-          weight: 800
-    # ANTES (en pausa hasta confirmar M PLUS Rounded 1c): cuerpo.
-    - family: Onest
-      fonts:
-        - asset: assets/fonts/onest-v11-latin-regular.ttf
-        - asset: assets/fonts/onest-v11-latin-300.ttf
-          weight: 300
-        - asset: assets/fonts/onest-v11-latin-500.ttf
-          weight: 500
-        - asset: assets/fonts/onest-v11-latin-600.ttf
-          weight: 600
-        - asset: assets/fonts/onest-v11-latin-700.ttf
-          weight: 700
-        - asset: assets/fonts/onest-v11-latin-800.ttf
-          weight: 800
-    # ANTES (en pausa hasta confirmar M PLUS Rounded 1c): títulos grandes.
-    - family: Unbounded
-      fonts:
-        - asset: assets/fonts/unbounded-v12-latin-regular.ttf
-        - asset: assets/fonts/unbounded-v12-latin-300.ttf
-          weight: 300
-        - asset: assets/fonts/unbounded-v12-latin-500.ttf
-          weight: 500
-        - asset: assets/fonts/unbounded-v12-latin-600.ttf
-          weight: 600
-        - asset: assets/fonts/unbounded-v12-latin-700.ttf
-          weight: 700
-        - asset: assets/fonts/unbounded-v12-latin-800.ttf
-          weight: 800

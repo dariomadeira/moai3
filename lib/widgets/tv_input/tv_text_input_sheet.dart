@@ -196,10 +196,6 @@ class _TvTextInputSheetState extends State<_TvTextInputSheet> {
     final afterCursor = isHint ? '' : text.substring(cursor);
     final width = _isCompact ? 268.0 : 520.0;
 
-    final baseColor = scheme.surface;
-    final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
-    final glass = MoaiGlassScope.enabledOf(context);
-
     // IMPORTANTE (Android TV + GoRouter):
     // Back llega como pop de sistema. Solo PopScope debe cerrar el dialog.
     // NO bindar goBack → Navigator.pop: eso + el pop de sistema saca Home/app.
@@ -216,22 +212,10 @@ class _TvTextInputSheetState extends State<_TvTextInputSheet> {
             child: Container(
               width: width,
               margin: const EdgeInsets.symmetric(horizontal: 24),
-              decoration: glass
-                  ? null
-                  : BoxDecoration(
-                      color: baseColor,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: borderColor),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.5),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-              child: _frostedIfGlass(
-                glass: glass,
+              // El vidrio esmerilado de los paneles grandes (como los
+              // diálogos).
+              child: MoaiGlass(
+                frosted: true,
                 child: Stack(
                   children: [
                     Padding(
@@ -241,22 +225,13 @@ class _TvTextInputSheetState extends State<_TvTextInputSheet> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Container(
-                            decoration: MoaiGlassScope.enabledOf(context)
-                                // Pieza de vidrio blanco (como los botones), no un pozo gris.
-                                ? moaiGlassButtonDecoration(
-                                    scheme,
-                                    focused: false,
-                                    radius: 14,
-                                  )
-                                : BoxDecoration(
-                                    color: scheme.surfaceContainerLow,
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: scheme.outlineVariant.withValues(
-                                        alpha: 0.25,
-                                      ),
-                                    ),
-                                  ),
+                            // Pieza de vidrio blanco (como los botones), no
+                            // un pozo gris.
+                            decoration: moaiGlassButtonDecoration(
+                              scheme,
+                              focused: false,
+                              radius: 14,
+                            ),
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
                               child: Column(
@@ -405,11 +380,4 @@ class _BlinkingCursorState extends State<_BlinkingCursor>
       ),
     );
   }
-}
-
-/// En cristal, el vidrio esmerilado de los paneles grandes (como los
-/// diálogos): antes era un relleno sólido casi blanco.
-Widget _frostedIfGlass({required bool glass, required Widget child}) {
-  if (!glass) return child;
-  return MoaiGlass(frosted: true, child: child);
 }

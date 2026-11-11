@@ -108,8 +108,9 @@ class _HomeArcadeAreaState extends HomeAreaState<HomeArcadeArea> {
 
   @override
   Widget build(BuildContext context) {
-    final canPlayTogether =
-        context.watch<WatchPartyProvider?>()?.hasOnlineFriends ?? false;
+    final canPlayTogether = context.select<WatchPartyProvider?, bool>(
+      (p) => p?.hasOnlineFriends ?? false,
+    );
     if (!canPlayTogether && _playTogetherFocus.hasFocus) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && !_startFocus.hasFocus) {
@@ -118,8 +119,6 @@ class _HomeArcadeAreaState extends HomeAreaState<HomeArcadeArea> {
       });
     }
 
-    final scheme = Theme.of(context).colorScheme;
-    final panelColors = [scheme.surface.withValues(alpha: 0.8)];
     // La pestaña dice sólo «Arcade», como el rail; el encabezado, el título
     // largo.
     final titles = [LocaleKeys.home_rail_arcade_title.tr()];
@@ -128,7 +127,6 @@ class _HomeArcadeAreaState extends HomeAreaState<HomeArcadeArea> {
     return TvAccordionRowPreview(
       panelCount: 1,
       activeIndex: 0,
-      colors: panelColors,
       titles: titles,
       icons: icons,
       onPanelTap: (_) {},

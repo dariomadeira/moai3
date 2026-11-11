@@ -74,7 +74,6 @@ extension _TvAreaExplore on HomeTvAreaState {
         },
         child: CountryListPanel(
           key: _countryPanelKey,
-          title: title,
           countries: _browser.countries,
           countryFlags: _browser.countryFlags,
           selectedCountry: _browser.selectedCountry,
@@ -111,8 +110,6 @@ extension _TvAreaExplore on HomeTvAreaState {
         },
         child: CategoryListPanel(
           key: _categoryPanelKey,
-          title: title,
-          selectedCountry: _browser.selectedCountry,
           categories: _browser.categories,
           selectedCategory: _browser.selectedCategory,
           onSelect: _selectCategory,
