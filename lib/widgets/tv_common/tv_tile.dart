@@ -4,6 +4,7 @@ import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
+import 'package:moai3/widgets/tv_common/moai_svg_icon.dart';
 
 /// Misma ficha que [TvTile]: diseño idéntico, puede usarse para tiles de solo lectura
 /// o tiles compuestos que gestionan sus propios focos internos (ej. botones de acción).
@@ -53,6 +54,10 @@ class TvTile extends StatefulWidget {
   final String? description;
   final IconData? icon;
 
+  /// Ícono SVG en lugar de [icon] (p. ej. el de Series, que no está en la
+  /// fuente de íconos).
+  final String? svgIcon;
+
   /// Color propio del ícono (p. ej. el del deporte), siempre pleno. Sin él,
   /// el acento.
   final Color? iconColor;
@@ -72,6 +77,7 @@ class TvTile extends StatefulWidget {
     required this.label,
     this.description,
     this.icon,
+    this.svgIcon,
     this.iconColor,
     this.trailingBuilder,
     this.onPressed,
@@ -160,6 +166,7 @@ class _TvTileState extends State<TvTile> {
             label: widget.label,
             description: widget.description,
             icon: widget.icon,
+            svgIcon: widget.svgIcon,
             iconColor: widget.iconColor,
             padding: widget.padding,
             minHeight: widget.minHeight,
@@ -178,6 +185,7 @@ class _TvTileChrome extends StatelessWidget {
   final String label;
   final String? description;
   final IconData? icon;
+  final String? svgIcon;
   final Color? iconColor;
   final Widget? trailing;
   final EdgeInsetsGeometry? padding;
@@ -188,6 +196,7 @@ class _TvTileChrome extends StatelessWidget {
     required this.label,
     this.description,
     this.icon,
+    this.svgIcon,
     this.iconColor,
     this.trailing,
     this.padding,
@@ -203,7 +212,9 @@ class _TvTileChrome extends StatelessWidget {
 
     final iconGlyph = Padding(
       padding: const EdgeInsets.all(8),
-      child: Icon(icon, size: MoaiIconSizes.lg, color: iconColor),
+      child: svgIcon == null
+          ? Icon(icon, size: MoaiIconSizes.lg, color: iconColor)
+          : MoaiSvgIcon(svgIcon!, size: MoaiIconSizes.lg, color: iconColor),
     );
 
     final content = LayoutBuilder(
@@ -215,7 +226,10 @@ class _TvTileChrome extends StatelessWidget {
 
         return Row(
           children: [
-            if (icon != null) ...[iconGlyph, const SizedBox(width: 14)],
+            if (icon != null || svgIcon != null) ...[
+              iconGlyph,
+              const SizedBox(width: 14),
+            ],
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -175,6 +175,27 @@ class MovieItem {
     addedAt: addedAt,
   );
 
+  /// La misma con otro nombre (p. ej. una temporada con el de la serie, sin
+  /// "T2").
+  MovieItem withName(String name) => MovieItem(
+    contentId: contentId,
+    name: name,
+    alias: alias,
+    poster: poster,
+    backdrop: backdrop,
+    backdrops: backdrops,
+    score: score,
+    year: year,
+    description: description,
+    director: director,
+    actorDisplay: actorDisplay,
+    duration: duration,
+    tags: tags,
+    programType: programType,
+    youtubeTrailerKey: youtubeTrailerKey,
+    addedAt: addedAt,
+  );
+
   /// Imagen de fondo / horizontal preferida (fallback al poster)
   String? get effectiveBackdrop =>
       backdrop ?? (backdrops.isNotEmpty ? backdrops.first : poster);

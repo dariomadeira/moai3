@@ -46,46 +46,60 @@ class FeaturedMoviesProvider extends ChangeNotifier {
 
   final Future<int?> Function(int columnId) _fetchShelfTotal;
 
-  /// Categoría "Todos" (en el servidor "All", toda la biblioteca), tomada
-  /// del catálogo al cargar Películas.
-  int? _allColumnId;
+  /// Categoría "Todos" de cada sección (en el servidor "All", toda la
+  /// biblioteca), tomada del catálogo al cargarla.
+  final Map<String, int> _allColumnIds = {};
 
-  int? _libraryTotal;
-  bool _libraryTotalLoading = false;
+  final Map<String, int> _libraryTotals = {};
+  final Set<String> _libraryTotalLoading = {};
 
-  /// Se pidió el total antes de que Películas terminara de cargar.
-  bool _libraryTotalWanted = false;
+  /// Secciones cuyo total se pidió antes de que terminaran de cargar.
+  final Set<String> _libraryTotalWanted = {};
 
   /// Películas en toda la biblioteca (Acerca de); `null` mientras no se sabe.
-  int? get libraryTotal => _libraryTotal;
+  int? get libraryTotal => libraryTotalFor(sectionMovies);
+
+  /// El total de "Todos" de [section] (en Series cuenta **temporadas**:
+  /// cada una es un ítem del portal); `null` mientras no se sabe o si la
+  /// sección no tiene "Todos".
+  int? libraryTotalFor(String section) => _libraryTotals[section];
 
   bool get libraryTotalLoading =>
-      _libraryTotalLoading || (_libraryTotalWanted && _libraryTotal == null);
+      _libraryTotalLoading.contains(sectionMovies) ||
+      (_libraryTotalWanted.contains(sectionMovies) && libraryTotal == null);
 
-  /// Pide una vez por sesión el total de "Todos". Si Películas todavía no
-  /// cargó (o está cargando), lo pide apenas termina. Nunca falla.
-  Future<void> loadLibraryTotal() async {
-    if (_libraryTotal != null || _libraryTotalLoading) return;
-    if (!isSectionAvailable(sectionMovies)) return;
-    final allId = _allColumnId;
+  /// Pide una vez por sesión el total de "Todos" de [section]. Si la sección
+  /// todavía no cargó (o está cargando), lo pide apenas termina. Nunca falla.
+  Future<void> loadLibraryTotal({String section = sectionMovies}) async {
+    if (_libraryTotals.containsKey(section) ||
+        _libraryTotalLoading.contains(section)) {
+      return;
+    }
+    if (!isSectionAvailable(section)) return;
+    final allId = _allColumnIds[section];
     if (allId == null) {
-      final pending = !_libraryTotalWanted;
-      _libraryTotalWanted = true;
+      // Ya cargó y no tiene "Todos": no hay total.
+      if (loadedOnceFor(section) && !isLoadingFor(section)) {
+        if (_libraryTotalWanted.remove(section)) notifyListeners();
+        return;
+      }
+      final pending = _libraryTotalWanted.add(section);
       if (pending) notifyListeners();
-      if (!isLoadingFor(sectionMovies) && !loadedOnceFor(sectionMovies)) {
-        unawaited(loadSection(sectionMovies));
+      if (!isLoadingFor(section) && !loadedOnceFor(section)) {
+        unawaited(loadSection(section));
       }
       return;
     }
-    _libraryTotalLoading = true;
+    _libraryTotalLoading.add(section);
     notifyListeners();
     try {
-      _libraryTotal = await _fetchShelfTotal(allId);
+      final total = await _fetchShelfTotal(allId);
+      if (total != null) _libraryTotals[section] = total;
     } catch (e) {
-      debugPrint('⚠️ [Catálogo] Total de la biblioteca: $e');
+      debugPrint('⚠️ [Catálogo] Total de la biblioteca ($section): $e');
     } finally {
-      _libraryTotalLoading = false;
-      _libraryTotalWanted = false;
+      _libraryTotalLoading.remove(section);
+      _libraryTotalWanted.remove(section);
       notifyListeners();
     }
   }
@@ -155,8 +169,8 @@ class FeaturedMoviesProvider extends ChangeNotifier {
     _shelfInFlight.clear();
     _seriesColumns.clear();
     _shelfGeneration++;
-    _allColumnId = null;
-    _libraryTotal = null;
+    _allColumnIds.clear();
+    _libraryTotals.clear();
     notifyListeners();
   }
 
@@ -372,12 +386,15 @@ class FeaturedMoviesProvider extends ChangeNotifier {
         section,
       );
       final columns = result?.categories ?? const <CategoryColumn>[];
-      if (section == sectionMovies) {
-        // "All" llega como "Todos" (CategoryColumn.fromJson).
-        _allColumnId = columns
-            .where((c) => normalizeText(c.columnName) == 'todos')
-            .map((c) => c.columnId)
-            .firstOrNull;
+      // "All" llega como "Todos" (CategoryColumn.fromJson).
+      final allId = columns
+          .where((c) => normalizeText(c.columnName) == 'todos')
+          .map((c) => c.columnId)
+          .firstOrNull;
+      if (allId != null) {
+        _allColumnIds[section] = allId;
+      } else {
+        _allColumnIds.remove(section);
       }
       // Los tráileres del catálogo no se muestran en ningún lado (los
       // adelantos del Inicio vienen de TMDb).
@@ -497,8 +514,8 @@ class FeaturedMoviesProvider extends ChangeNotifier {
       state.isLoading = false;
       notifyListeners();
       // Acerca de pidió el total mientras Películas cargaba.
-      if (section == sectionMovies && _libraryTotalWanted) {
-        unawaited(loadLibraryTotal());
+      if (_libraryTotalWanted.contains(section)) {
+        unawaited(loadLibraryTotal(section: section));
       }
     }
   }

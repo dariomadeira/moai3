@@ -48,7 +48,17 @@ class MovieHeroCard extends StatefulWidget {
     this.elevated = true,
     this.initialIndex = 0,
     this.onMovieChanged,
+    this.playLabel,
+    this.showMore = true,
   });
+
+  /// El botón principal; por defecto "Reproducir". Las series dicen "Ver
+  /// serie" (abre el detalle: desde acá no se sabe qué capítulo).
+  final String? playLabel;
+
+  /// El botón "…" (abre el detalle). Las series no lo llevan: el principal
+  /// ya abre el detalle.
+  final bool showMore;
 
   /// Película con que empieza (el Inicio la va rotando entre arranques).
   final int initialIndex;
@@ -131,7 +141,7 @@ class MovieHeroCardState extends State<MovieHeroCard> {
   List<MovieHeroAction> get _actions => [
     MovieHeroAction.play,
     MovieHeroAction.interesting,
-    MovieHeroAction.more,
+    if (widget.showMore) MovieHeroAction.more,
     if (widget.movies.length > 1) ...[
       MovieHeroAction.previous,
       MovieHeroAction.next,
@@ -471,7 +481,7 @@ class MovieHeroCardState extends State<MovieHeroCard> {
                       selected,
                       kind: MoaiPillButtonKind.glass,
                       icon: MoaiIcons.vodPlay,
-                      label: LocaleKeys.movies_play.tr(),
+                      label: widget.playLabel ?? LocaleKeys.movies_play.tr(),
                     ),
                     const SizedBox(width: _gap),
                     _button(
@@ -485,13 +495,15 @@ class MovieHeroCardState extends State<MovieHeroCard> {
                           ? LocaleKeys.movies_hero_watchlist_added.tr()
                           : LocaleKeys.movies_hero_watchlist_add.tr(),
                     ),
-                    const SizedBox(width: _gap),
-                    _button(
-                      MovieHeroAction.more,
-                      selected,
-                      kind: MoaiPillButtonKind.round,
-                      icon: MoaiIcons.moviesMore,
-                    ),
+                    if (widget.showMore) ...[
+                      const SizedBox(width: _gap),
+                      _button(
+                        MovieHeroAction.more,
+                        selected,
+                        kind: MoaiPillButtonKind.round,
+                        icon: MoaiIcons.moviesMore,
+                      ),
+                    ],
                   ],
                 ),
               ),

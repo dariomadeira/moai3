@@ -454,6 +454,7 @@ class _HomeScreenState extends State<HomeScreen> {
         sectionColor: TvVerticalNavRail.seriesColor,
         emptyMessage: LocaleKeys.movies_empty_series.tr(),
         searchEnabled: true,
+        promoBanner: true,
         onExitLeft: _focusRail,
       ),
       HomeSection.tv => HomeTvArea(

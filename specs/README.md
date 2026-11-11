@@ -63,7 +63,7 @@ Todas las decisiones de diseño, contratos de plugins, modelos de datos y flujos
 - [SPEC-45: Buscador de películas](features/movie_search.md)  
   *Segundo panel "Buscar" en Películas (y en Series); búsqueda en el servidor (`searchByName`) con limpieza, paginado, recientes y respaldo en el catálogo guardado.*
 - [SPEC-46: Series](features/series.md)  
-  *Detalle (temporadas repetidas, una por número), reproducción de capítulos con paso automático al siguiente y a la próxima temporada, vistos (número verde en píldora), OK mantenido para marcar, "Seguir series", "Marcadas" de series y borrar lo visto.*
+  *Detalle (temporadas repetidas, una por número), tarjeta grande de series (arriba de Series y en el Inicio), reproducción de capítulos con paso automático al siguiente y a la próxima temporada, vistos (número verde en píldora), OK mantenido para marcar, "Seguir series", "Marcadas" de series y borrar lo visto.*
 - [SPEC-51: Recomendaciones entre amigos (películas y series)](features/movie_recommendations.md)  
   *👍/👎 en el detalle y al final (película o cada temporada), tablas `movie_recommendations` y `series_recommendations` en Supabase, tarjetas "Recomendadas" en el Inicio ("Hasta T3" en series).*
 

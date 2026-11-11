@@ -14,6 +14,7 @@
 > - `lib/features/home/widgets/home_trailers_card.dart`  
 > - `lib/features/home/widgets/home_arcade_card.dart`  
 > - `lib/features/home/widgets/home_clock.dart`  
+> - `lib/services/home_hero_rotation.dart` (rotación de las destacadas), `lib/features/movies/movie_promo.dart`  
 > - `lib/features/home/widgets/weather_kind.dart` (tipo de tiempo para el ícono del clima)  
 > - `lib/features/home/widgets/tv_vertical_nav_rail.dart`  
 
@@ -34,7 +35,7 @@ Lista con páginas de **4 lugares** (`_windowSize = 4`; alto = alto disponible /
 
 | # | Tarjeta | Lugares | Se muestra si | Color |
 |---|---------|:---:|---------------|-------|
-| 1 | Película destacada (+ recuadro libre a la derecha, reservado para "Series destacadas") | 2 | Películas en el rail y hay estrenos | — |
+| 1 | Película y serie destacadas (§3.0) | 2 | Películas en el rail, hay estrenos y (con Series en el rail) Series terminó de cargar | — |
 | 2 | Clima | 1 | siempre | según el tiempo (`weatherKindOf`) |
 | 3 | Eventos | 1 | hay eventos de hoy sin terminar | — |
 | 4 | Seguir (películas) | 2 | Películas en el rail y alguna empezada | 16A34A |
@@ -50,6 +51,12 @@ Lista con páginas de **4 lugares** (`_windowSize = 4`; alto = alto disponible /
 | 14 | Arcade | 1 | plugin instalado y una ROM activa | 585EDC |
 
 Las tarjetas son de cristal sólido (`MoaiGlass`); el color es el de su ícono.
+
+### 3.0 Fila destacada (película + serie)
+- Dos `MovieHeroCard` lado a lado, cada una a la mitad: a la izquierda la película destacada (estrenos de TMDb, Reproducir / Marcar / …) y a la derecha la **serie destacada** (`pickPromoSeries`, SPEC-46 §7.1: "Ver serie" abre el detalle, Marcar, sin "…"). Con Series fuera del rail o sin series, el recuadro de la derecha queda vacío.
+- **Aparecen juntas** (2026-11-11): la fila espera a que el catálogo de Series termine de cargar (y su rotación esté leída) en vez de mostrar el recuadro en blanco hasta que llegaran las series. Si Series cargó y no hay ninguna para mostrar, sale igual con el recuadro vacío.
+- → desde el último botón de la película pasa a la serie; ← desde la serie vuelve; ↑/↓ igual desde las dos.
+- **Rotación entre arranques** (`HomeHeroRotation.movies` y `.series`, claves `home_hero_last_movie` / `home_hero_last_series`): cada arranque empieza con el título que sigue al último visto (pasar con las flechas también lo recuerda). La tarjeta grande de arriba de Películas o Series arranca con el mismo que eligió el Inicio si está en su lista (`chosenIndex`); si no, con la primera.
 
 ### 3.1 Clima
 Ícono animado (56) a la izquierda, temperatura (40), condición, máx/mín, sensación y lluvia; a la derecha la tira por hora. El lugar es `WeatherProvider.placeName`: con ubicación automática muestra la **región**, no el barrio que devuelve la geolocalización por IP (antes salía "Liberdade"). La ubicación automática sale de la IP (cae donde el proveedor tiene el nodo, no en el pueblo); para eso está la localidad elegida a mano. Su búsqueda usa **Open-Meteo** (`geocoding-api.open-meteo.com`, GeoNames, sin clave; Argentina primero), porque el buscador de WeatherAPI no tiene pueblos chicos (para "Quines" sólo daba el de España); si falla, cae al de WeatherAPI. El clima se sigue pidiendo a WeatherAPI, por coordenadas.

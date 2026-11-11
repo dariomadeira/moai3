@@ -12,20 +12,33 @@ import 'helpers/spanish_translations.dart';
 
 /// Películas disponibles con un total fijo; cuenta los pedidos.
 class _FakeMovies extends FeaturedMoviesProvider {
-  _FakeMovies({required this.available, this.total});
+  _FakeMovies({required this.available, this.total, this.seasons});
 
   final bool available;
   final int? total;
+
+  /// Total de "Todos" de Series (temporadas).
+  final int? seasons;
   int requests = 0;
 
   @override
   bool isSectionAvailable(String section) => available;
 
   @override
-  int? get libraryTotal => requests > 0 ? total : null;
+  int? get libraryTotal =>
+      libraryTotalFor(FeaturedMoviesProvider.sectionMovies);
 
   @override
-  Future<void> loadLibraryTotal() async {
+  int? libraryTotalFor(String section) => requests == 0
+      ? null
+      : section == FeaturedMoviesProvider.sectionSeries
+      ? seasons
+      : total;
+
+  @override
+  Future<void> loadLibraryTotal({
+    String section = FeaturedMoviesProvider.sectionMovies,
+  }) async {
     requests++;
     notifyListeners();
   }
@@ -63,9 +76,23 @@ void main() {
   testWidgets('muestra el total de películas de la biblioteca', (tester) async {
     final movies = _FakeMovies(available: true, total: 31419);
     await pump(tester, movies);
-    expect(movies.requests, 1);
+    expect(movies.requests, 2);
     expect(find.text('Películas disponibles'), findsOneWidget);
     expect(find.text('31.419 películas'), findsOneWidget);
+  });
+
+  testWidgets('con "Todos" en Series muestra las temporadas', (tester) async {
+    final movies = _FakeMovies(available: true, total: 31419, seasons: 12345);
+    await pump(tester, movies);
+    expect(movies.requests, 2);
+    expect(find.text('Temporadas disponibles'), findsOneWidget);
+    expect(find.text('12.345 temporadas'), findsOneWidget);
+  });
+
+  testWidgets('sin total de Series no hay fila de temporadas', (tester) async {
+    await pump(tester, _FakeMovies(available: true, total: 31419));
+    expect(find.text('Películas disponibles'), findsOneWidget);
+    expect(find.text('Temporadas disponibles'), findsNothing);
   });
 
   testWidgets('sin catálogo de películas no muestra la fila', (tester) async {

@@ -14,6 +14,7 @@
 > - `lib/services/series_watchlist_service.dart` ("Marcadas" de series)  
 > - `lib/features/home/areas/home_dashboard_series.dart`, `lib/features/home/widgets/home_series_continue_card.dart`, `home_series_watchlist_card.dart` (Inicio, SPEC-42)  
 > - `lib/focus/opening_focus_guard.dart` (foco al abrir, SPEC-30)  
+> - `lib/features/movies/movie_promo.dart` (`pickPromoSeries`, `pickBestSeries`), `lib/features/movies/widgets/movie_hero_card.dart` (tarjeta grande)  
 > - Recomendar series a los amigos: SPEC-51 §7.  
 
 ---
@@ -23,7 +24,6 @@
 Las series del catálogo (sección **Series** del rail, mismo sistema que Películas: grilla sin repetidas, "Ver todas" y buscador, SPEC-44/45) se pueden abrir, reproducir capítulo por capítulo, marcar como vistas, retomar desde el Inicio y guardar para después.
 
 ### Non-Goals
-- "Series destacadas" en el Inicio (lugar reservado a la derecha de la película destacada).
 - Títulos o imágenes por capítulo: el portal no los trae (sólo número y, a veces, duración).
 
 ---
@@ -89,9 +89,18 @@ Las series del catálogo (sección **Series** del rail, mismo sistema que Pelíc
 - Tarjeta del Inicio "Marcadas" de series (cian, SPEC-42): OK abre el detalle; mantener OK pregunta y la desmarca; "Desmarcar todas".
 - Al empezarla (anotada en Seguir series) sale de Marcadas.
 
+## 7.1 Tarjeta grande de series (2026-11-11)
+
+- **Qué series**: sólo las mejores del **catálogo** (decisión del usuario: sin las recomendaciones de los amigos), igual que el banner de Películas. `pickPromoSeries` (`lib/features/movies/movie_promo.dart`): una por serie (de cada serie, la temporada de mejor puntaje), con el nombre sin "T2", primero las de este año o del anterior con puntaje mayor a 7 y después las mejor puntuadas de cualquier año; hasta 6 y sólo con imagen horizontal.
+- **Arriba de Series** (`HomeMoviesArea(promoBanner: true)`, como Películas): `MovieHeroCard` con **"Ver serie"** (abre el detalle: desde acá no se sabe qué capítulo), **Marcar** (series marcadas) y sin "…" (`playLabel`, `showMore: false`). Debajo, **"Lo mejor del 2026"** de series (`pickBestSeries`, del catálogo porque TMDb no tiene series): una por serie, las recientes mejor puntuadas primero, sin las del banner. Sin esa fila el banner ocupaba toda la pantalla.
+- **En el Inicio**, a la derecha de la película destacada (SPEC-42 §3.0).
+- Las dos arrancan con la misma serie: la que eligió el Inicio (`HomeHeroRotation.series`, SPEC-42 §3.0).
+
 ## 8. Ajustes
 
-En **Ajustes › Películas y series** (SPEC-39 §2): **Borrar series vistas** (confirmación Cancelar / Borrar) borra vistos, puntos de retomar y "Seguir series". No toca Marcadas.
+En **Ajustes › Películas y series** (SPEC-39 §2): **Borrar series vistas** (ícono `HugeIcons.bodySoap`; confirmación Cancelar / Borrar) borra vistos, puntos de retomar y "Seguir series". No toca Marcadas.
+
+En **Ajustes › Acerca de**, "Temporadas disponibles": el total de la categoría "Todos" del catálogo de Series (`FeaturedMoviesProvider.libraryTotalFor(sectionSeries)`). Cuenta **temporadas**, no series: cada temporada es un ítem del portal, y contar series exigiría bajar y agrupar todo el catálogo. Usa el ícono de Series del rail (`TvTile.svgIcon`). Sin "Todos" en el catálogo, no hay fila.
 
 ## 9. Criterios de aceptación
 

@@ -888,6 +888,11 @@ abstract final class MoaiIcons {
   /// Tarjeta: película.
   static const vodMovie = HugeIcons.clapperboard;
 
+  /// Ajustes › Películas y series: borrar películas vistas.
+  static const clearWatchedMovies = HugeIcons.clean;
+
+  /// Ajustes › Películas y series: borrar series vistas.
+  static const clearWatchedSeries = HugeIcons.bodySoap;
   /// Tarjeta: tráiler.
   static const vodTrailer = HugeIcons.video01;
 

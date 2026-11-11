@@ -268,7 +268,9 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
         final series = item == _SettingsMoviesSeriesItemType.clearSeries;
         return TvTile(
           focusNode: focusNode,
-          icon: MoaiIcons.delete,
+          icon: series
+              ? MoaiIcons.clearWatchedSeries
+              : MoaiIcons.clearWatchedMovies,
           label:
               (series
                       ? LocaleKeys.settings_movies_clear_series
@@ -297,7 +299,9 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
       context: context,
       barrierLabel: 'ClearWatched',
       builder: (dialogContext) => TvDialog(
-        icon: MoaiIcons.delete,
+        icon: series
+            ? MoaiIcons.clearWatchedSeries
+            : MoaiIcons.clearWatchedMovies,
         title:
             (series
                     ? LocaleKeys.settings_movies_clear_series_title

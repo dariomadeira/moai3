@@ -59,8 +59,8 @@ El panel 1 tiene estas filas (2026-11-11):
 | Tamaño de subtítulos | |
 | Adelantos en el Inicio | Muestra u oculta la tarjeta (SPEC-42 §3.5) |
 | **Frecuencia de actualización** | Con la fecha del catálogo en la descripción |
-| **Borrar películas vistas** | Confirma (Cancelar / Borrar, rojo) y borra lo visto y por dónde iba cada película; Marcadas no cambia (SPEC-44 §2.4) |
-| **Borrar series vistas** | Confirma y borra capítulos vistos, puntos de retomar y "Seguir series"; Marcadas no cambia (SPEC-46 §8) |
+| **Borrar películas vistas** (escoba, `HugeIcons.clean`) | Confirma (Cancelar / Borrar, rojo) y borra lo visto y por dónde iba cada película; Marcadas no cambia (SPEC-44 §2.4) |
+| **Borrar series vistas** (jabón, `HugeIcons.bodySoap`) | Confirma y borra capítulos vistos, puntos de retomar y "Seguir series"; Marcadas no cambia (SPEC-46 §8) |
 
 ---
 

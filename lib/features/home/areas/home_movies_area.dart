@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/features/home/widgets/home_watchlist_big_card.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
@@ -23,8 +22,10 @@ import 'package:moai3/features/movies/widgets/movie_search_panel.dart';
 import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/models/movie_models.dart';
+import 'package:moai3/services/home_hero_rotation.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/services/movie_watchlist_service.dart';
+import 'package:moai3/services/series_watchlist_service.dart';
 import 'package:moai3/state/featured_movies_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -239,6 +240,15 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
   void initState() {
     super.initState();
     _gridFocus.addListener(_onGridFocusChange);
+    // El banner arranca con lo que eligió el Inicio: si la rotación no se
+    // leyó todavía (se abrió la sección sin pasar por el Inicio), se lee.
+    if (widget.promoBanner && !_rotation.isLoaded) {
+      unawaited(
+        _rotation.load().then((_) {
+          if (mounted) setState(() {});
+        }),
+      );
+    }
     if (widget.searchEnabled) {
       _search = MovieSearchController(
         series: widget.section == FeaturedMoviesProvider.sectionSeries,
@@ -300,6 +310,13 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
     );
   }
 
+  /// La sección Series (el banner muestra series y abre su detalle).
+  bool get _isSeries => widget.section == FeaturedMoviesProvider.sectionSeries;
+
+  /// Con qué empieza el banner: lo que eligió la tarjeta del Inicio.
+  HomeHeroRotation get _rotation =>
+      _isSeries ? HomeHeroRotation.series : HomeHeroRotation.movies;
+
   /// Banner y "Lo mejor del año" (sin las del banner) para este catálogo.
   void _refreshTop(List<MovieItem> bestSource) {
     _bestSource = bestSource;
@@ -307,7 +324,14 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
       _banner = _best = const [];
       return;
     }
-    _banner = pickPromoMovies(_categories);
+    _banner = _isSeries
+        ? pickPromoSeries(_categories)
+        : pickPromoMovies(_categories);
+    if (_isSeries) {
+      // TMDb no tiene series: la fila sale del catálogo, como el banner.
+      _best = pickBestSeries(_categories, count: _bestCount, exclude: _banner);
+      return;
+    }
     final inBanner = {for (final m in _banner) normalizeText(m.name)};
     _best = List.unmodifiable(
       bestSource

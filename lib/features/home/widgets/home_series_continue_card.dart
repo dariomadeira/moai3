@@ -21,15 +21,11 @@ class HomeSeriesContinueCard extends StatelessWidget {
     required this.items,
     required this.selectedIndex,
     this.isFocused = false,
-    this.loadingKey,
   });
 
   final List<SeriesContinueItem> items;
   final int selectedIndex;
   final bool isFocused;
-
-  /// La serie que se está abriendo (`seriesKey`): muestra que carga.
-  final String? loadingKey;
 
   /// [selectedIndex] del botón "Quitar todas".
   static const int clearAllIndex = HomeMovieBigCard.actionIndex;
@@ -73,7 +69,6 @@ class HomeSeriesContinueCard extends StatelessWidget {
       isFocused: isFocused,
       watched: {for (final item in items) item.entry.seriesKey: ?item.progress},
       badges: {for (final item in items) item.entry.seriesKey: badgeOf(item)},
-      loadingId: loadingKey,
     );
   }
 }

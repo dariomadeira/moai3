@@ -154,13 +154,7 @@ extension _HomeMoviesView on HomeMoviesAreaState {
         const SizedBox(height: HomeMoviesAreaState._listPadding),
         SizedBox(
           height: _headerHeight,
-          child: _buildHeader(
-            context,
-            scheme,
-            cat.columnName,
-            // Con "Ver todas" la cantidad mostrada no dice cuántas hay.
-            count: cat.hasMore ? null : cat.movies.length,
-          ),
+          child: _buildHeader(context, scheme, cat.columnName),
         ),
         for (
           var r = _firstRow;
@@ -189,18 +183,32 @@ extension _HomeMoviesView on HomeMoviesAreaState {
   /// la fila; arriba no hay nada.
   Widget _buildBanner() {
     final watchlist = MovieWatchlistService.instance;
+    // Series: "Ver serie" abre el detalle (no se sabe qué capítulo) y Marcar
+    // va a las series marcadas (SPEC-46 §7).
+    final series = SeriesWatchlistService.instance;
     return ListenableBuilder(
-      listenable: watchlist,
+      listenable: Listenable.merge([watchlist, series]),
       builder: (context, _) => MovieHeroCard(
         movies: _banner,
         focusNode: _bannerFocus,
         wideImage: true,
         tintFromImage: true,
         elevated: false,
-        onPlay: (movie) => playMovie(context, movie),
+        playLabel: _isSeries ? LocaleKeys.series_open.tr() : null,
+        showMore: !_isSeries,
+        // Arranca con la que eligió el Inicio (si está acá) y recuerda la
+        // que se elija con las flechas.
+        initialIndex: _rotation.chosenIndex(_banner),
+        onMovieChanged: _rotation.remember,
+        onPlay: (movie) =>
+            _isSeries ? _onMovieTap(movie) : playMovie(context, movie),
         onOpen: _onMovieTap,
-        onToggleInteresting: watchlist.toggle,
-        isInteresting: (movie) => watchlist.contains(movie.contentId),
+        onToggleInteresting: (movie) => _isSeries
+            ? series.toggle(movie, [movie.contentId])
+            : watchlist.toggle(movie),
+        isInteresting: (movie) => _isSeries
+            ? series.contains([movie.contentId])
+            : watchlist.contains(movie.contentId),
         onExitLeft: widget.onExitLeft,
         onExitRight: _openSearch,
         onExitUp: () {},
@@ -209,12 +217,8 @@ extension _HomeMoviesView on HomeMoviesAreaState {
     );
   }
 
-  Widget _buildHeader(
-    BuildContext context,
-    ColorScheme scheme,
-    String title, {
-    int? count,
-  }) {
+  /// Sin contador: el usuario lo sacó (2026-11-11).
+  Widget _buildHeader(BuildContext context, ColorScheme scheme, String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 12),
       child: Align(
@@ -241,19 +245,6 @@ extension _HomeMoviesView on HomeMoviesAreaState {
                 ),
               ),
             ),
-            if (count != null) ...[
-              const SizedBox(width: 10),
-              // Sólido, del color de la sección en el rail (Películas naranja,
-              // Series cian).
-              TvMetaPill(
-                label: '$count',
-                tint: widget.sectionColor,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 3,
-                ),
-              ),
-            ],
           ],
         ),
       ),

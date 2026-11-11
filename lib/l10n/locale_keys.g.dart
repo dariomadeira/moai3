@@ -724,6 +724,7 @@ abstract class  LocaleKeys {
   static const series_episodes_one = 'series_episodes_one';
   static const series_next_episode = 'series_next_episode';
   static const series_next_season = 'series_next_season';
+  static const series_open = 'series_open';
   static const series_recommend_prompt = 'series_recommend_prompt';
   static const series_seasons_count = 'series_seasons_count';
   static const series_seasons_label = 'series_seasons_label';
@@ -733,6 +734,7 @@ abstract class  LocaleKeys {
   static const settings_about_empty = 'settings_about_empty';
   static const settings_about_loading = 'settings_about_loading';
   static const settings_about_movies = 'settings_about_movies';
+  static const settings_about_seasons = 'settings_about_seasons';
   static const settings_about_subtitle = 'settings_about_subtitle';
   static const settings_about_title = 'settings_about_title';
   static const settings_about_up_to_date = 'settings_about_up_to_date';

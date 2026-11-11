@@ -107,6 +107,6 @@ Para ejecutar el análisis estático y la suite completa de pruebas:
 # Análisis estático de código Dart
 flutter analyze
 
-# Ejecutar la suite de tests (801 al 2026-11-11)
+# Ejecutar la suite de tests (808 al 2026-11-11)
 flutter test
 ```

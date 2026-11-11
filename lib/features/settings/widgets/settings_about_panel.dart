@@ -21,7 +21,12 @@ import 'package:moai3/widgets/tv_common/tv_value_chip.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
-enum _AboutItemType { channelsLoaded, moviesInLibrary, checkUpdates }
+enum _AboutItemType {
+  channelsLoaded,
+  moviesInLibrary,
+  seasonsInLibrary,
+  checkUpdates,
+}
 
 class SettingsAboutPanel extends StatefulWidget {
   final FocusNode focusNode;
@@ -60,7 +65,11 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
     // El total de la biblioteca se pide recién al abrir Acerca de.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      unawaited(context.read<FeaturedMoviesProvider?>()?.loadLibraryTotal());
+      final movies = context.read<FeaturedMoviesProvider?>();
+      unawaited(movies?.loadLibraryTotal());
+      unawaited(
+        movies?.loadLibraryTotal(section: FeaturedMoviesProvider.sectionSeries),
+      );
     });
   }
 
@@ -131,9 +140,31 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
           )
         : '';
 
+    // Series: el total de "Todos" cuenta temporadas (cada una es un ítem del
+    // portal), así que se rotula "Temporadas disponibles". Sin "Todos" en
+    // el catálogo de Series, no hay fila.
+    final (seriesAvailable, seasonsTotal) = context.select(
+      (FeaturedMoviesProvider? p) => (
+        p?.isSectionAvailable(FeaturedMoviesProvider.sectionSeries) ?? false,
+        p?.libraryTotalFor(FeaturedMoviesProvider.sectionSeries),
+      ),
+    );
+    final showSeasons =
+        seriesAvailable && seasonsTotal != null && seasonsTotal > 0;
+    final seasonsText = showSeasons
+        ? LocaleKeys.series_seasons_count.tr(
+            namedArgs: {'count': MoaiFormats.thousands(seasonsTotal)},
+          )
+        : '';
+
     final items = [
       for (final item in _AboutItemType.values)
-        if (item != _AboutItemType.moviesInLibrary || showMovies) item,
+        if (switch (item) {
+          _AboutItemType.moviesInLibrary => showMovies,
+          _AboutItemType.seasonsInLibrary => showSeasons,
+          _ => true,
+        })
+          item,
     ];
 
     if (_selectedIndex >= items.length) {
@@ -215,6 +246,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
                                       item: item,
                                       valueText: valueText,
                                       moviesText: moviesText,
+                                      seasonsText: seasonsText,
                                       scheme: scheme,
                                       focusNode: focusNode,
                                       onKeyUp: onKeyUp,
@@ -241,6 +273,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
     required _AboutItemType item,
     required String valueText,
     required String moviesText,
+    required String seasonsText,
     required ColorScheme scheme,
     required FocusNode focusNode,
     required VoidCallback onKeyUp,
@@ -269,6 +302,18 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
           onKeyDown: onKeyDown,
           trailingBuilder: (context, isFocused) {
             return TvValueChip(text: moviesText, isFocused: isFocused);
+          },
+        );
+      case _AboutItemType.seasonsInLibrary:
+        return TvTile(
+          focusNode: focusNode,
+          label: LocaleKeys.settings_about_seasons.tr(),
+          svgIcon: MoaiIcons.seriesSvg,
+          onKeyLeft: widget.onKeyLeft,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+          trailingBuilder: (context, isFocused) {
+            return TvValueChip(text: seasonsText, isFocused: isFocused);
           },
         );
       case _AboutItemType.checkUpdates:

@@ -30,6 +30,7 @@ import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/features/movies/movie_playback.dart';
+import 'package:moai3/features/movies/movie_promo.dart';
 import 'package:moai3/features/movies/screens/movie_detail_screen.dart';
 import 'package:moai3/features/movies/screens/series_detail_screen.dart';
 import 'package:moai3/features/movies/widgets/movie_hero_card.dart';
@@ -154,9 +155,10 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     SeriesContinueService.changes.addListener(_onSeriesChanged);
     SeriesWatchlistService.instance.addListener(_onSeriesWatchlistChanged);
     unawaited(SeriesWatchlistService.instance.ensureLoaded());
-    if (!HomeHeroRotation.isLoaded) {
+    for (final rotation in [HomeHeroRotation.movies, HomeHeroRotation.series]) {
+      if (rotation.isLoaded) continue;
       unawaited(
-        HomeHeroRotation.load().then((_) {
+        rotation.load().then((_) {
           if (mounted) setState(() {});
         }),
       );
@@ -234,9 +236,23 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     });
   }
 
+  /// Las series de la tarjeta de la derecha ([pickPromoSeries]); se vuelven
+  /// a elegir sólo si cambia el catálogo de Series.
+  List<MovieItem> _heroSeries = const [];
+  List<CategoryColumn>? _heroSeriesSource;
+  final FocusNode _seriesHeroFocus = FocusNode(debugLabel: 'home_series_hero');
+
+  void _updateHeroSeries(List<CategoryColumn>? categories) {
+    if (identical(categories, _heroSeriesSource)) return;
+    _heroSeriesSource = categories;
+    _heroSeries = categories == null ? const [] : pickPromoSeries(categories);
+  }
+
   /// REDISEÑO: la fila destacada, un ítem de la lista que ocupa dos lugares:
   /// la tarjeta de la película a la mitad del ancho (a 2/3 quedaba muy
-  /// estirada) y, en la otra mitad, un recuadro de cristal.
+  /// estirada) y, en la otra mitad, la de series (las mejores del catálogo,
+  /// como el banner de Series; sin series, un recuadro vacío). → desde la de
+  /// películas pasa a la de series y ← vuelve.
   Widget _buildHero(
     List<MovieItem> movies,
     FocusNode focusNode,
@@ -255,8 +271,8 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
                 movies: movies,
                 focusNode: focusNode,
                 tintFromImage: true,
-                initialIndex: HomeHeroRotation.startIndex(movies),
-                onMovieChanged: HomeHeroRotation.remember,
+                initialIndex: HomeHeroRotation.movies.startIndex(movies),
+                onMovieChanged: HomeHeroRotation.movies.remember,
                 onPlay: (movie) async {
                   await playMovie(context, movie);
                   await _reloadProgress();
@@ -266,20 +282,43 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
                 isInteresting: (movie) =>
                     MovieWatchlistService.instance.contains(movie.contentId),
                 onExitLeft: widget.onExitLeft,
+                onExitRight: _heroSeries.isEmpty
+                    ? null
+                    : _seriesHeroFocus.requestFocus,
                 onExitUp: onKeyUp,
                 onExitDown: onKeyDown,
               ),
             ),
             const SizedBox(width: 16),
-            // REDISEÑO: recuadro al lado de la tarjeta, con el mismo cristal
-            // que las tarjetas de abajo; por ahora vacío.
-            const Expanded(
-              child: MoaiGlass(
-                borderRadius: 16,
-                solid: true,
-                elevated: false,
-                child: SizedBox.expand(),
-              ),
+            Expanded(
+              child: _heroSeries.isEmpty
+                  ? const MoaiGlass(
+                      borderRadius: 16,
+                      solid: true,
+                      elevated: false,
+                      child: SizedBox.expand(),
+                    )
+                  : MovieHeroCard(
+                      movies: _heroSeries,
+                      focusNode: _seriesHeroFocus,
+                      tintFromImage: true,
+                      initialIndex: HomeHeroRotation.series.startIndex(
+                        _heroSeries,
+                      ),
+                      onMovieChanged: HomeHeroRotation.series.remember,
+                      playLabel: LocaleKeys.series_open.tr(),
+                      showMore: false,
+                      onPlay: _openSeriesDetail,
+                      onOpen: _openSeriesDetail,
+                      onToggleInteresting: (series) => SeriesWatchlistService
+                          .instance
+                          .toggle(series, [series.contentId]),
+                      isInteresting: (series) => SeriesWatchlistService.instance
+                          .contains([series.contentId]),
+                      onExitLeft: focusNode.requestFocus,
+                      onExitUp: onKeyUp,
+                      onExitDown: onKeyDown,
+                    ),
             ),
           ],
         );
@@ -318,6 +357,7 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     _hourTimer?.cancel();
     _arcadeAction.dispose();
     _panelFocusNode.dispose();
+    _seriesHeroFocus.dispose();
     super.dispose();
   }
 
@@ -360,6 +400,27 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
       (FeaturedMoviesProvider? p) =>
           p?.isSectionAvailable(FeaturedMoviesProvider.sectionSeries) ?? false,
     );
+    // La fila destacada sale con las dos tarjetas juntas: espera a que
+    // Series termine de cargar (si está en el rail). Si cargó y no hay
+    // series para mostrar, sale igual con el recuadro vacío.
+    final seriesReady =
+        !seriesVisible ||
+        HomeHeroRotation.series.isLoaded &&
+            context.select(
+              (FeaturedMoviesProvider? p) =>
+                  (p?.loadedOnceFor(FeaturedMoviesProvider.sectionSeries) ??
+                      true) &&
+                  !(p?.isLoadingFor(FeaturedMoviesProvider.sectionSeries) ??
+                      false),
+            );
+    // La tarjeta de series a la derecha de la destacada.
+    _updateHeroSeries(
+      context.select(
+        (FeaturedMoviesProvider? p) => seriesVisible
+            ? p?.categoriesFor(FeaturedMoviesProvider.sectionSeries)
+            : null,
+      ),
+    );
     // La fila "Estrenos de Cartelera" (de TMDb), si Películas ya cargó.
     final trending = context.select(
       (FeaturedMoviesProvider? p) => p
@@ -369,7 +430,7 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     );
     // Sin saber todavía cuál vio la vez anterior, la destacada espera (si
     // no, empezaría por la primera y saltaría).
-    final heroMovies = moviesVisible && HomeHeroRotation.isLoaded
+    final heroMovies = moviesVisible && HomeHeroRotation.movies.isLoaded
         ? (trending?.movies.take(_heroCount).toList() ?? const <MovieItem>[])
         : const <MovieItem>[];
     final trailers = context.select(
@@ -386,7 +447,7 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
           r?.items ?? const <FriendRecommendation>[],
     );
     final items = _visibleWidgets(
-      hasHero: heroMovies.isNotEmpty,
+      hasHero: heroMovies.isNotEmpty && seriesReady,
       hasEventsToday: hasEventsToday,
       watchPartyEnabled: watchPartyEnabled,
       hasFriendRequests: hasFriendRequests,
