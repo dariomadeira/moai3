@@ -14,6 +14,7 @@ class SettingsOptionRow<T> extends StatefulWidget {
     required this.focusNode,
     required this.label,
     required this.icon,
+    this.iconColor,
     required this.options,
     required this.selected,
     required this.onChanged,
@@ -29,6 +30,9 @@ class SettingsOptionRow<T> extends StatefulWidget {
   final String label;
   final String? description;
   final IconData icon;
+
+  /// Color propio del ícono (ver [TvTile.iconColor]).
+  final Color? iconColor;
   final List<T> options;
   final T selected;
   final ValueChanged<T> onChanged;
@@ -121,6 +125,7 @@ class _SettingsOptionRowState<T> extends State<SettingsOptionRow<T>> {
       label: widget.label,
       description: widget.description,
       icon: widget.icon,
+      iconColor: widget.iconColor,
       onPressed: () => _setEditing(true),
       onKeyLeft: widget.onKeyLeft,
       onKeyRight: widget.onKeyRight,

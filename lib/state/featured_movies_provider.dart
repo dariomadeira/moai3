@@ -13,8 +13,8 @@ class _CatalogSectionState {
   List<MovieItem> items = [];
   List<CategoryColumn> categories = [];
 
-  /// Adelantos de la sección, fuera de [items] y [categories].
-  List<MovieItem> trailers = const [];
+  /// "Lo mejor del año" (sólo Películas): la fila de arriba de la grilla.
+  List<MovieItem> bestOfYear = const [];
   bool isLoading = false;
   String? errorMessage;
   String? errorDetail;
@@ -126,6 +126,10 @@ class FeaturedMoviesProvider extends ChangeNotifier {
   /// Categorías con un pedido en curso: no se piden dos veces.
   final Set<int> _shelfInFlight = {};
 
+  /// Categorías de Series: de su lista del servidor se guardan las series
+  /// (de las demás, las películas).
+  final Set<int> _seriesColumns = {};
+
   /// Cambia con cada catálogo nuevo: un pedido que vuelve después no mezcla
   /// datos del catálogo anterior.
   int _shelfGeneration = 0;
@@ -149,6 +153,7 @@ class FeaturedMoviesProvider extends ChangeNotifier {
     _shelfPages.clear();
     _shelfEnded.clear();
     _shelfInFlight.clear();
+    _seriesColumns.clear();
     _shelfGeneration++;
     _allColumnId = null;
     _libraryTotal = null;
@@ -196,15 +201,20 @@ class FeaturedMoviesProvider extends ChangeNotifier {
     final page = (_shelfPages[id] ?? 0) + 1;
     _shelfInFlight.add(id);
     try {
-      final movies = await _fetchShelf(id, page);
+      final items = await _fetchShelf(id, page);
       if (generation != _shelfGeneration) return;
-      if (movies == null) {
+      if (items == null) {
         failed.add(id);
         return;
       }
-      _shelves[id] = [...?_shelves[id], ...movies];
+      final series = _seriesColumns.contains(id);
+      _shelves[id] = [
+        ...?_shelves[id],
+        ...items.where((m) => series ? m.isSeries : m.isMovie),
+      ];
       _shelfPages[id] = page;
-      if (movies.length < shelfPageSize) _shelfEnded.add(id);
+      // Con lo que mandó el servidor: lo filtrado no dice si hay más.
+      if (items.length < shelfPageSize) _shelfEnded.add(id);
     } catch (e) {
       failed.add(id);
       debugPrint('⚠️ [Catálogo] Lista de la categoría $id: $e');
@@ -296,17 +306,15 @@ class FeaturedMoviesProvider extends ChangeNotifier {
     return _stateFor(section).items;
   }
 
-  /// Adelantos (tráileres) de la sección: no están en la grilla, los muestra
-  /// la tarjeta "Adelantos" del Inicio.
-  List<MovieItem> trailersFor(String section) =>
-      _sections[section]?.trailers ?? const [];
-
   List<CategoryColumn> categoriesFor(String section) {
     if (section == sectionFeatured && !_sections.containsKey(section)) {
       return categories;
     }
     return _stateFor(section).categories;
   }
+
+  List<MovieItem> bestOfYearFor(String section) =>
+      _sections[section]?.bestOfYear ?? const [];
 
   bool isLoadingFor(String section) {
     if (section == sectionFeatured && !_sections.containsKey(section)) {
@@ -371,29 +379,23 @@ class FeaturedMoviesProvider extends ChangeNotifier {
             .map((c) => c.columnId)
             .firstOrNull;
       }
-      // Los adelantos (tráileres) no van en la grilla: tienen su propia
-      // tarjeta en el Inicio ([trailersFor]).
+      // Los tráileres del catálogo no se muestran en ningún lado (los
+      // adelantos del Inicio vienen de TMDb).
       final flat = <MovieItem>[];
-      final trailers = <MovieItem>[];
       final seen = <String>{};
       for (final column in columns) {
         for (final movie in column.movies) {
+          if (movie.isCatalogTrailer) continue;
           final key = movie.contentId.isNotEmpty
               ? movie.contentId
               : '${movie.name}|${movie.poster}';
-          if (seen.add(key)) {
-            (movie.isTrailer ? trailers : flat).add(movie);
-          }
+          if (seen.add(key)) flat.add(movie);
         }
       }
       state.items = flat;
-      state.trailers = trailers;
-      // Los adelantos del Inicio no esperan a la grilla (TMDb y las listas
-      // del servidor tardan unos segundos); la grilla sigue cargando.
-      if (section == sectionMovies) notifyListeners();
       var categories = [
         for (final column in columns)
-          if (column.movies.where((m) => !m.isTrailer).toList()
+          if (column.movies.where((m) => !m.isCatalogTrailer).toList()
               case final movies when movies.isNotEmpty)
             CategoryColumn(
               columnId: column.columnId,
@@ -409,9 +411,12 @@ class FeaturedMoviesProvider extends ChangeNotifier {
       final serverColumns = {for (final c in categories) c.columnId};
       final shelfDeadline = DateTime.now().add(shelfWait);
       final failedShelves = <int>{};
+      // Películas y Series: sin repetidas, completas y con "Ver todas".
+      final uniqueGrid = section == sectionMovies || section == sectionSeries;
+      if (section == sectionSeries) _seriesColumns.addAll(serverColumns);
       // Primera página de las que se ve que van a perder películas y todavía
       // no tienen nada; las páginas siguientes, sólo si siguen cortas.
-      final firstShelves = section == sectionMovies
+      final firstShelves = uniqueGrid
           ? _loadShelves(
               MovieGridCatalog.columnsNeedingMore(
                 categories,
@@ -423,6 +428,12 @@ class FeaturedMoviesProvider extends ChangeNotifier {
           : Future<void>.value();
 
       if (section == sectionMovies) {
+        // A la par de Estrenos (comparten la caché de TMDb); sin TMDb sale
+        // con el respaldo local.
+        final bestOfYear = TmdbTrendingService.instance.buildBestOfYear(
+          allCatalogMovies: flat,
+          wait: _trendingWait,
+        );
         try {
           // La grilla espera a TMDb como mucho [_trendingWait]: después sale
           // sin la fila (sumarla más tarde correría el foco). Lo que llegue
@@ -462,6 +473,16 @@ class FeaturedMoviesProvider extends ChangeNotifier {
           failed: failedShelves,
           deadline: shelfDeadline,
         );
+        state.bestOfYear = await bestOfYear;
+      } else if (section == sectionSeries) {
+        // Sin las filas de TMDb (Estrenos, Mejor puntuadas): son de películas.
+        categories = await _uniqueMovieGrid(
+          categories,
+          serverColumns: serverColumns,
+          firstRound: firstShelves,
+          failed: failedShelves,
+          deadline: shelfDeadline,
+        );
       }
 
       state.categories = categories;
@@ -471,7 +492,6 @@ class FeaturedMoviesProvider extends ChangeNotifier {
       state.errorDetail = '$e';
       state.items = [];
       state.categories = [];
-      state.trailers = const [];
       state.loadedOnce = true;
     } finally {
       state.isLoading = false;

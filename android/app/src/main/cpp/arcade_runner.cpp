@@ -11,6 +11,8 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 #include <condition_variable>
 #include <chrono>
 #include "libretro.h"
@@ -44,6 +46,10 @@ static std::atomic<uint16_t> g_input_bitmask_p1{0};
 static std::atomic<uint16_t> g_input_bitmask_p2{0};
 static std::atomic<bool> g_is_running{false};
 static std::atomic<bool> g_is_paused{false};
+// Se pidió salir mientras cargaba: la carga en curso no debe arrancar el juego.
+static std::atomic<bool> g_stop_requested{false};
+// Solo se toca desde el hilo de carga/parada de ArcadeEmulatorManager.
+static bool g_game_loaded = false;
 static std::thread g_emu_thread;
 
 // --- Netplay lockstep ---
@@ -55,6 +61,8 @@ static std::mutex g_netplay_mutex;
 static std::condition_variable g_netplay_cv;
 static std::unordered_map<int64_t, uint16_t> g_netplay_local_inputs;
 static std::unordered_map<int64_t, uint16_t> g_netplay_remote_inputs;
+// Inputs locales ya programados que Dart todavía no le mandó al otro TV.
+static std::vector<std::pair<int64_t, uint16_t>> g_netplay_outbound_inputs;
 static std::atomic<uint16_t> g_netplay_pending_local_mask{0};
 static constexpr int64_t kNetplayWaitMs = 500;
 
@@ -195,8 +203,8 @@ public:
     }
 
     size_t available_read() const {
-        size_t w = write_head.load(std::memory_order_relaxed);
-        size_t r = read_head.load(std::memory_order_relaxed);
+        size_t w = write_head.load(std::memory_order_acquire);
+        size_t r = read_head.load(std::memory_order_acquire);
         if (w >= r) return w - r;
         return RING_BUFFER_SIZE - (r - w);
     }
@@ -385,9 +393,14 @@ static int16_t core_input_state_cb(unsigned port, unsigned device, unsigned inde
 
 static bool netplay_wait_inputs_for_frame(int64_t frame) {
    std::unique_lock<std::mutex> lock(g_netplay_mutex);
-   // Registrar input local actual para este frame si aún no está.
-   if (g_netplay_local_inputs.find(frame) == g_netplay_local_inputs.end()) {
-      g_netplay_local_inputs[frame] = g_netplay_pending_local_mask.load();
+   // El mando de ahora se juega dentro de `delay` frames, en los dos TV: da
+   // tiempo a que llegue y evita que cada frame espere a la red. Una sola vez
+   // por frame, aunque se reintente: lo aplicado acá y lo enviado son lo mismo.
+   const int64_t scheduled = frame + g_netplay_delay_frames.load();
+   if (g_netplay_local_inputs.find(scheduled) == g_netplay_local_inputs.end()) {
+      const uint16_t mask = g_netplay_pending_local_mask.load();
+      g_netplay_local_inputs[scheduled] = mask;
+      g_netplay_outbound_inputs.emplace_back(scheduled, mask);
    }
    const auto deadline = std::chrono::steady_clock::now() +
                          std::chrono::milliseconds(kNetplayWaitMs);
@@ -435,8 +448,7 @@ static void emulation_loop() {
       if (!g_is_paused.load() && core_retro_run) {
          if (g_netplay_enabled.load()) {
             const int64_t frame = g_netplay_frame.load();
-            // Delay: no ejecutamos hasta tener inputs del frame actual;
-            // el delay se percibe porque ambos lados alinean tras handshake.
+            // No se ejecuta hasta tener los dos inputs de este frame.
             if (!netplay_wait_inputs_for_frame(frame)) {
                LOGI("Netplay: timeout esperando input remoto en frame %lld",
                     (long long)frame);
@@ -575,10 +587,11 @@ static bool ensure_core_loaded() {
    return true;
 }
 
-JNIEXPORT void JNICALL
+JNIEXPORT jboolean JNICALL
 Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeLoadRom(JNIEnv *env, jobject thiz, jstring path_jstr) {
    const char *path = env->GetStringUTFChars(path_jstr, nullptr);
    LOGI("Solicitando cargar ROM: %s", path);
+   bool started = false;
 
    if (path) {
       std::string s_path(path);
@@ -596,11 +609,23 @@ Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeLoadRom(JNIEnv *env, job
       g_emu_thread.join();
    }
    stop_aaudio();
+   if (g_game_loaded && core_retro_unload_game) {
+      core_retro_unload_game();
+   }
+   g_game_loaded = false;
 
    if (ensure_core_loaded() && core_retro_load_game) {
       struct retro_game_info game_info = { path, nullptr, 0, nullptr };
       if (core_retro_load_game(&game_info)) {
          LOGI("ROM cargada exitosamente en el core FBNeo.");
+         g_game_loaded = true;
+      } else {
+         LOGE("El core no pudo cargar la ROM: %s", path);
+      }
+
+      if (g_game_loaded && g_stop_requested.load()) {
+         LOGI("Salida pedida durante la carga: no se arranca el juego.");
+      } else if (g_game_loaded) {
 
          // Obtener tasa de muestreo recomendada por el core o fallback a 44100Hz
          int32_t sample_rate = 44100;
@@ -623,12 +648,17 @@ Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeLoadRom(JNIEnv *env, job
          g_is_running.store(true);
          g_is_paused.store(false);
          g_emu_thread = std::thread(emulation_loop);
-      } else {
-         LOGE("El core no pudo cargar la ROM: %s", path);
+         started = true;
       }
    }
 
    env->ReleaseStringUTFChars(path_jstr, path);
+   return started ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT void JNICALL
+Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeRequestStop(JNIEnv *env, jobject thiz) {
+   g_stop_requested.store(true);
 }
 
 JNIEXPORT void JNICALL
@@ -653,24 +683,43 @@ Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeSendPlayerInputMask(JNIE
 JNIEXPORT void JNICALL
 Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeNetplayEnable(JNIEnv *env, jobject thiz, jboolean enabled, jint delayFrames, jboolean isHost) {
    std::lock_guard<std::mutex> lock(g_netplay_mutex);
+   const int delay = delayFrames > 0 ? delayFrames : 3;
    g_netplay_enabled.store(enabled == JNI_TRUE);
-   g_netplay_delay_frames.store(delayFrames > 0 ? delayFrames : 3);
+   g_netplay_delay_frames.store(delay);
    g_netplay_is_host.store(isHost == JNI_TRUE);
    g_netplay_frame.store(0);
    g_netplay_local_inputs.clear();
    g_netplay_remote_inputs.clear();
+   g_netplay_outbound_inputs.clear();
    g_netplay_pending_local_mask.store(0);
+   // Los primeros frames no tienen input programado: nada apretado, en ambos.
+   if (enabled == JNI_TRUE) {
+      for (int64_t frame = 0; frame < delay; ++frame) {
+         g_netplay_local_inputs[frame] = 0;
+         g_netplay_remote_inputs[frame] = 0;
+      }
+   }
    LOGI("Netplay %s delay=%d host=%d", enabled ? "ON" : "OFF", delayFrames, (int)isHost);
 }
 
-JNIEXPORT void JNICALL
-Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeNetplaySubmitLocalInput(JNIEnv *env, jobject thiz, jlong frame, jint mask) {
+// Devuelve [frame, máscara, frame, máscara…] de lo que falta mandar.
+JNIEXPORT jlongArray JNICALL
+Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeNetplayDrainLocalInputs(JNIEnv *env, jobject thiz) {
+   std::vector<jlong> flat;
    {
       std::lock_guard<std::mutex> lock(g_netplay_mutex);
-      g_netplay_local_inputs[(int64_t)frame] = static_cast<uint16_t>(mask);
-      g_netplay_pending_local_mask.store(static_cast<uint16_t>(mask));
+      flat.reserve(g_netplay_outbound_inputs.size() * 2);
+      for (const auto& input : g_netplay_outbound_inputs) {
+         flat.push_back(static_cast<jlong>(input.first));
+         flat.push_back(static_cast<jlong>(input.second));
+      }
+      g_netplay_outbound_inputs.clear();
    }
-   g_netplay_cv.notify_all();
+   jlongArray result = env->NewLongArray(static_cast<jsize>(flat.size()));
+   if (result && !flat.empty()) {
+      env->SetLongArrayRegion(result, 0, static_cast<jsize>(flat.size()), flat.data());
+   }
+   return result;
 }
 
 JNIEXPORT void JNICALL
@@ -680,11 +729,6 @@ Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeNetplaySubmitRemoteInput
       g_netplay_remote_inputs[(int64_t)frame] = static_cast<uint16_t>(mask);
    }
    g_netplay_cv.notify_all();
-}
-
-JNIEXPORT jlong JNICALL
-Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeNetplayGetFrame(JNIEnv *env, jobject thiz) {
-   return (jlong)g_netplay_frame.load();
 }
 
 JNIEXPORT void JNICALL
@@ -734,10 +778,12 @@ Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeStop(JNIEnv *env, jobjec
    }
    stop_aaudio();
 
-   if (core_retro_unload_game) {
+   if (g_game_loaded && core_retro_unload_game) {
       core_retro_unload_game();
       LOGI("Juego descargado limpiamente de FBNeo.");
    }
+   g_game_loaded = false;
+   g_stop_requested.store(false);
    g_input_bitmask_p1.store(0);
    g_input_bitmask_p2.store(0);
    g_netplay_enabled.store(false);
@@ -745,6 +791,7 @@ Java_com_infomak_moai_games_ArcadeEmulatorManager_nativeStop(JNIEnv *env, jobjec
       std::lock_guard<std::mutex> lock(g_netplay_mutex);
       g_netplay_local_inputs.clear();
       g_netplay_remote_inputs.clear();
+      g_netplay_outbound_inputs.clear();
    }
    // NOTA: NO llamamos a core_retro_deinit() ni dlclose() porque libfbneo.so
    // permanece en el espacio de memoria de Android y su re-inicialización

@@ -12,32 +12,57 @@ import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/movie_watchlist_service.dart';
 import 'package:moai3/services/movie_progress_service.dart';
+import 'package:moai3/services/movie_recommendations_api.dart';
+import 'package:moai3/state/movie_recommendations_provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
+import 'package:moai3/widgets/buttons/moai_pill_button.dart';
 import 'package:moai3/widgets/buttons/tv_back_pill.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
 import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 import 'helpers/spanish_translations.dart';
 
+class _VotesApi extends MovieRecommendationsApi {
+  @override
+  Future<List<Map<String, dynamic>>> fetch(List<String> friendIds) async =>
+      const [];
+
+  @override
+  Future<void> recommend(String deviceId, MovieItem movie) async {}
+
+  @override
+  Future<void> remove(String deviceId, String contentId) async {}
+}
+
 void main() {
   group('MovieItem Content Type & Helpers Tests', () {
-    test('la categoría "Tráiler" del catálogo se llama "Adelantos"', () {
+    test(
+      'tráiler del catálogo: por tipo o por la palabra, con tilde o sin',
+      () {
+        MovieItem item(String name, [String? type]) =>
+            MovieItem(contentId: name, name: name, programType: type);
+
+        expect(item('Weapons', 'trailer').isCatalogTrailer, isTrue);
+        expect(item('(Tráiler)Weapons').isCatalogTrailer, isTrue);
+        expect(item('Superman - TRAILER').isCatalogTrailer, isTrue);
+        expect(item('Coco', 'movie').isCatalogTrailer, isFalse);
+        expect(item('Trailers de verano').isCatalogTrailer, isFalse);
+        // Ninguno es un adelanto del Inicio (esos traen video de YouTube).
+        expect(item('Weapons', 'trailer').isTrailer, isFalse);
+      },
+    );
+
+    test('displayName: "Adelanto - …" sólo en los adelantos del Inicio', () {
       useSpanishTranslations();
-      CategoryColumn column(String name) =>
-          CategoryColumn.fromJson({'columnId': 1, 'name': name});
-
-      expect(column('Tráiler').columnName, 'Adelantos');
-      expect(column('Trailer').columnName, 'Adelantos');
-      expect(column('Comedia').columnName, 'Comedia');
-    });
-
-    test('displayName: "Adelanto - …" sin la marca del catálogo', () {
-      useSpanishTranslations();
-      MovieItem trailer(String name) =>
-          MovieItem(contentId: name, name: name, programType: 'trailer');
-
-      expect(trailer('(Tráiler)Weapons').displayName, 'Adelanto - Weapons');
-      expect(trailer('(Trailer) Superman').displayName, 'Adelanto - Superman');
-      expect(trailer('Jorge Polaco').displayName, 'Adelanto - Jorge Polaco');
+      expect(
+        MovieItem(
+          contentId: 'tmdb_1',
+          name: 'Weapons',
+          youtubeTrailerKey: 'abc',
+        ).displayName,
+        'Adelanto - Weapons',
+      );
       expect(
         MovieItem(
           contentId: '1',
@@ -45,6 +70,48 @@ void main() {
           programType: 'movie',
         ).displayName,
         'Weapons',
+      );
+    });
+
+    test('elenco: un espacio después de cada coma', () {
+      String? cast(String? raw) =>
+          MovieItem(contentId: '1', name: 'X', actorDisplay: raw).formattedCast;
+
+      expect(
+        cast('Sam Worthington,Zoe Saldana,Sigourney Weaver'),
+        'Sam Worthington, Zoe Saldana, Sigourney Weaver',
+      );
+      expect(cast('Uno ,  Dos,'), 'Uno, Dos');
+      expect(cast(' , '), isNull);
+      expect(cast(null), isNull);
+    });
+
+    test('director: un espacio después de cada coma, como el elenco', () {
+      String? director(String? raw) =>
+          MovieItem(contentId: '1', name: 'X', director: raw).formattedDirector;
+
+      expect(
+        director('Tom Verica,Sheree Folkson,Alrick Riley'),
+        'Tom Verica, Sheree Folkson, Alrick Riley',
+      );
+      expect(director('James Cameron'), 'James Cameron');
+      expect(director(' , '), isNull);
+      expect(director(null), isNull);
+    });
+
+    test('el video del adelanto se guarda y se relee', () {
+      final movie = MovieItem.fromJson(
+        MovieItem(
+          contentId: 'tmdb_1',
+          name: 'Weapons',
+          youtubeTrailerKey: 'abc',
+        ).toJson(),
+      );
+      expect(movie.youtubeTrailerKey, 'abc');
+      expect(movie.isTrailer, isTrue);
+      expect(
+        MovieItem(contentId: '1', name: 'Coco').toJson(),
+        isNot(contains('youtubeTrailerKey')),
       );
     });
 
@@ -84,7 +151,7 @@ void main() {
         name: 'Inception Trailer Oficial',
         programType: 'trailer',
       );
-      expect(trailer.isTrailer, isTrue);
+      expect(trailer.isCatalogTrailer, isTrue);
       expect(trailer.isMovie, isFalse);
 
       final tenzing = MovieItem(
@@ -101,25 +168,28 @@ void main() {
       ]);
     });
 
-    test('el año guardado: sólo 4 dígitos, y se descarta la fecha de subida vieja', () {
-      // Lo que guardaba la versión anterior: la fecha de `shelveTime`.
-      final old = MovieItem.fromJson({
-        'contentId': '1',
-        'name': 'Rocky',
-        'year': '2025-08-10',
-      });
-      expect(old.formattedYear, isNull);
+    test(
+      'el año guardado: sólo 4 dígitos, y se descarta la fecha de subida vieja',
+      () {
+        // Lo que guardaba la versión anterior: la fecha de `shelveTime`.
+        final old = MovieItem.fromJson({
+          'contentId': '1',
+          'name': 'Rocky',
+          'year': '2025-08-10',
+        });
+        expect(old.formattedYear, isNull);
 
-      final fromRelease = MovieItem.fromJson({
-        'contentId': '2',
-        'name': 'Rocky',
-        'releaseTime': '1976-11-21',
-      });
-      expect(fromRelease.formattedYear, '1976');
-      // Al guardar queda sólo el año y al volver a leerlo se conserva.
-      expect(fromRelease.toJson()['year'], '1976');
-      expect(MovieItem.fromJson(fromRelease.toJson()).formattedYear, '1976');
-    });
+        final fromRelease = MovieItem.fromJson({
+          'contentId': '2',
+          'name': 'Rocky',
+          'releaseTime': '1976-11-21',
+        });
+        expect(fromRelease.formattedYear, '1976');
+        // Al guardar queda sólo el año y al volver a leerlo se conserva.
+        expect(fromRelease.toJson()['year'], '1976');
+        expect(MovieItem.fromJson(fromRelease.toJson()).formattedYear, '1976');
+      },
+    );
 
     test(
       'Parsea backdrops múltiples de posterList y genera stageImages distintas al backdrop principal',
@@ -208,6 +278,9 @@ void main() {
       Brightness brightness = Brightness.dark,
       Future<ResolvedPlayStream?> Function(MovieItem)? resolveStream,
       Future<String?> Function(MovieItem)? resolveYear,
+      Future<bool> Function(String videoId)? openTrailer,
+      bool glass = false,
+      MovieRecommendationsProvider? recommendations,
     }) async {
       useSpanishTranslations();
       tester.view.physicalSize = const Size(1920, 1080);
@@ -217,12 +290,22 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData(brightness: brightness),
-          home: ChangeNotifierProvider(
-            create: (_) => TvSettingsProvider(prefs),
-            child: MovieDetailScreen(
-              movie: movie,
-              resolveStream: resolveStream ?? (_) async => null,
-              resolveYear: resolveYear,
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (_) => TvSettingsProvider(prefs)),
+              if (recommendations != null)
+                ChangeNotifierProvider.value(value: recommendations),
+            ],
+            child: Builder(
+              builder: (_) {
+                final detail = MovieDetailScreen(
+                  movie: movie,
+                  resolveStream: resolveStream ?? (_) async => null,
+                  resolveYear: resolveYear,
+                  openTrailer: openTrailer ?? (_) async => true,
+                );
+                return glass ? MoaiGlassScope(child: detail) : detail;
+              },
             ),
           ),
         ),
@@ -240,6 +323,54 @@ void main() {
         .foreground!;
 
     String? focused() => FocusManager.instance.primaryFocus?.debugLabel;
+
+    group('votar', () {
+      final movie = MovieItem(contentId: 'm1', name: 'Coco');
+
+      testWidgets('sin amigos no hay botones', (tester) async {
+        await pumpDetail(tester, movie);
+
+        expect(find.byIcon(MoaiIcons.vodRecommend), findsNothing);
+        expect(find.byIcon(MoaiIcons.vodNotRecommend), findsNothing);
+      });
+
+      testWidgets('se elige 👍 o 👎 desde Marcar y se puede cambiar', (
+        tester,
+      ) async {
+        final votes = MovieRecommendationsProvider(
+          api: _VotesApi(),
+          isWatched: (_) async => false,
+        );
+        votes.setFriends(deviceId: 'yo', friends: const {'ana': 'Ana'});
+        await tester.runAsync(votes.ensureLoaded);
+        await pumpDetail(tester, movie, recommendations: votes);
+
+        Future<void> press(LogicalKeyboardKey key) async {
+          await tester.sendKeyEvent(key);
+          await tester.pump();
+          await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+          await tester.pump();
+        }
+
+        await press(LogicalKeyboardKey.arrowDown);
+        expect(focused(), 'movie_detail_watchlist');
+        await press(LogicalKeyboardKey.arrowRight);
+        expect(focused(), 'movie_detail_up');
+
+        await press(LogicalKeyboardKey.select);
+        expect(votes.voteOf('m1'), MovieVote.up);
+
+        await press(LogicalKeyboardKey.arrowRight);
+        expect(focused(), 'movie_detail_down');
+        await press(LogicalKeyboardKey.select);
+        expect(votes.voteOf('m1'), MovieVote.down);
+
+        await press(LogicalKeyboardKey.select);
+        expect(votes.voteOf('m1'), isNull);
+
+        await tester.pump(const Duration(seconds: 5));
+      });
+    });
 
     testWidgets(
       'Muestra información detallada, botón back, hero card y score pill',
@@ -280,7 +411,7 @@ void main() {
 
         // Marcar como interesante es un botón aparte; Reproducir vive en la Hero.
         expect(find.byType(TvFocusButton), findsOneWidget);
-        expect(find.text('Marcar como interesante'), findsOneWidget);
+        expect(find.text('Marcar'), findsOneWidget);
         expect(find.byType(TvMovieHeroCard), findsOneWidget);
         expect(
           find.descendant(
@@ -290,6 +421,25 @@ void main() {
           findsOneWidget,
         );
         expect(find.text('Reproducir'), findsOneWidget);
+        // El mismo botón que la tarjeta grande del Inicio: vidrio, y con la
+        // Hero enfocada (arranca así), el foco de la app.
+        final play = tester.widget<MoaiPillButton>(
+          find.ancestor(
+            of: find.text('Reproducir'),
+            matching: find.byType(MoaiPillButton),
+          ),
+        );
+        expect(play.kind, MoaiPillButtonKind.glass);
+        expect(play.selected, isTrue);
+        expect(play.loading, isFalse);
+
+        // Con foco en Marcar, el botón queda de vidrio sin foco.
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<MoaiPillButton>(find.byType(MoaiPillButton)).selected,
+          isFalse,
+        );
       },
     );
 
@@ -320,6 +470,47 @@ void main() {
       expect(pillColor(tester, '8.1'), const Color(0xFFB45309));
     });
 
+    testWidgets(
+      'en cristal el puntaje es una etiqueta como las demás y la nota '
+      'colorea la estrella y el número',
+      (tester) async {
+        Future<void> expectScore(
+          String score,
+          Color color, {
+          Brightness brightness = Brightness.light,
+        }) async {
+          await pumpDetail(
+            tester,
+            MovieItem(contentId: score, name: 'Nota', score: score),
+            glass: true,
+            brightness: brightness,
+          );
+          final pill = find.ancestor(
+            of: find.text(score),
+            matching: find.byType(TvMetaPill),
+          );
+          expect(tester.widget<Text>(find.text(score)).style!.color, color);
+          expect(
+            tester
+                .widget<Icon>(
+                  find.descendant(of: pill, matching: find.byType(Icon)),
+                )
+                .color,
+            color,
+          );
+        }
+
+        await expectScore('8.1', const Color(0xFFD97706));
+        await expectScore('6.5', const Color(0xFF64748B));
+        await expectScore('4.2', const Color(0xFFDC2626));
+        // En el oscuro, los mismos tonos aclarados (sobre el ahumado).
+        const dark = Brightness.dark;
+        await expectScore('8.1', const Color(0xFFFBBF24), brightness: dark);
+        await expectScore('6.5', const Color(0xFFCBD5E1), brightness: dark);
+        await expectScore('4.2', const Color(0xFFF87171), brightness: dark);
+      },
+    );
+
     testWidgets('oculta el título original si es igual al nombre', (
       tester,
     ) async {
@@ -343,21 +534,20 @@ void main() {
           tester,
           MovieItem(
             contentId: 't1',
-            name: '(Tráiler)Weapons',
-            alias: '(Trailer)Weapons',
+            name: 'Weapons',
+            alias: 'Weapons',
             duration: '02:08:00',
-            programType: 'trailer',
+            youtubeTrailerKey: 'abc',
           ),
         );
 
         expect(find.text('Adelanto - Weapons'), findsOneWidget);
-        expect(find.text('(Tráiler)Weapons'), findsNothing);
         // La pestaña lateral dice "Adelanto", no "Película".
         expect(find.text('Adelanto'), findsOneWidget);
         expect(find.text('Película'), findsNothing);
-        // El alias sin la marca es igual al nombre: no se repite.
+        // El alias es igual al nombre: no se repite.
         expect(find.text('Weapons'), findsNothing);
-        expect(find.text('Marcar como interesante'), findsNothing);
+        expect(find.text('Marcar'), findsNothing);
         expect(find.byType(TvFocusButton), findsNothing);
         expect(find.text('2h 8m'), findsNothing);
         expect(find.text('Reproducir'), findsOneWidget);
@@ -370,6 +560,55 @@ void main() {
         expect(focused(), 'movie_detail_hero');
       },
     );
+
+    testWidgets('adelanto: Reproducir abre YouTube con su video', (
+      tester,
+    ) async {
+      final opened = <String>[];
+      var resolved = 0;
+      await pumpDetail(
+        tester,
+        MovieItem(
+          contentId: 'tmdb_1',
+          name: 'Weapons',
+          youtubeTrailerKey: 'abc',
+        ),
+        openTrailer: (id) async {
+          opened.add(id);
+          return true;
+        },
+        resolveStream: (_) async {
+          resolved++;
+          return null;
+        },
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(opened, ['abc']);
+      // No pasa por el portal.
+      expect(resolved, 0);
+      expect(find.text('No se pudo abrir YouTube.'), findsNothing);
+    });
+
+    testWidgets('adelanto: si YouTube no abre, lo avisa', (tester) async {
+      await pumpDetail(
+        tester,
+        MovieItem(
+          contentId: 'tmdb_1',
+          name: 'Weapons',
+          youtubeTrailerKey: 'abc',
+        ),
+        openTrailer: (_) async => false,
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.text('No se pudo abrir YouTube.'), findsOneWidget);
+      // El aviso se va solo.
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+    });
 
     testWidgets('sin sinopsis muestra el texto de reemplazo', (tester) async {
       await pumpDetail(tester, MovieItem(contentId: '105', name: 'Muda'));
@@ -475,19 +714,19 @@ void main() {
       final movie = MovieItem(contentId: '108', name: 'Querida');
       await pumpDetail(tester, movie);
 
-      await tester.tap(find.text('Marcar como interesante'));
+      await tester.tap(find.text('Marcar'));
       await tester.pumpAndSettle();
-      expect(find.text('Quitar de interesantes'), findsOneWidget);
+      expect(find.text('Desmarcar'), findsOneWidget);
       expect(MovieWatchlistService.instance.contains('108'), isTrue);
 
       // Pantalla nueva: arranca marcada.
       await tester.pumpWidget(const SizedBox());
       await pumpDetail(tester, movie);
-      expect(find.text('Quitar de interesantes'), findsOneWidget);
+      expect(find.text('Desmarcar'), findsOneWidget);
 
-      await tester.tap(find.text('Quitar de interesantes'));
+      await tester.tap(find.text('Desmarcar'));
       await tester.pumpAndSettle();
-      expect(find.text('Marcar como interesante'), findsOneWidget);
+      expect(find.text('Marcar'), findsOneWidget);
       expect(MovieWatchlistService.instance.contains('108'), isFalse);
     });
 
@@ -502,7 +741,7 @@ void main() {
         await tester.sendKeyEvent(LogicalKeyboardKey.enter);
         await tester.pumpAndSettle();
 
-        expect(find.text('Quitar de interesantes'), findsOneWidget);
+        expect(find.text('Desmarcar'), findsOneWidget);
         expect(MovieWatchlistService.instance.contains('115'), isTrue);
       },
     );
@@ -524,49 +763,71 @@ void main() {
         await tester.pumpAndSettle();
         expect(focused(), 'movie_detail_hero');
 
-        // Sinopsis corta: no hay nada que scrollear, ← va directo al back.
+        // ← va directo al back.
         await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
         await tester.pumpAndSettle();
         expect(focused(), 'movie_detail_back');
       },
     );
 
-    testWidgets('sinopsis larga: se enfoca con ← y ↑/↓ la scrollean', (
-      tester,
-    ) async {
+    /// El texto de la sinopsis (no el rótulo "Sinopsis").
+    Text synopsis(WidgetTester tester, String start) =>
+        tester.widget<Text>(find.textContaining(start));
+
+    testWidgets('sinopsis corta: letra de 12 y entera', (tester) async {
       await pumpDetail(
         tester,
-        MovieItem(
-          contentId: '110',
-          name: 'Larga',
-          description: List.filled(200, 'Una historia muy larga.').join(' '),
+        MovieItem(contentId: '112', name: 'Corta', description: 'Una corta.'),
+      );
+      expect(synopsis(tester, 'Una corta').style!.fontSize, 12);
+      // Sin scroll propio (el único es el del acordeón de la pantalla).
+      expect(
+        find.ancestor(
+          of: find.textContaining('Una'),
+          matching: find.byType(Scrollable),
         ),
+        findsOneWidget,
       );
-      final scrollable = tester.state<ScrollableState>(
-        find
-            .ancestor(
-              of: find.textContaining('Una historia'),
-              matching: find.byType(Scrollable),
-            )
-            .first,
-      );
-      expect(scrollable.position.pixels, 0);
+    });
 
+    testWidgets('sinopsis larga: sin foco ni scroll, achica la letra y entra', (
+      tester,
+    ) async {
+      // Entra con una letra más chica que 12.
+      final medium = List.filled(260, 'Una historia larga.').join(' ');
+      await pumpDetail(
+        tester,
+        MovieItem(contentId: '110', name: 'Larga', description: medium),
+      );
+      final size = synopsis(tester, 'Una historia').style!.fontSize!;
+      expect(size, lessThan(12));
+      expect(size, greaterThanOrEqualTo(10));
+      // Sin scroll propio (el único es el del acordeón de la pantalla).
+      expect(
+        find.ancestor(
+          of: find.textContaining('Una'),
+          matching: find.byType(Scrollable),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+
+      // ← desde la Hero va directo al back: la sinopsis no se enfoca.
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
       await tester.pumpAndSettle();
-      expect(focused(), 'movie_detail_synopsis');
+      expect(focused(), 'movie_detail_back');
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.pumpAndSettle();
-      expect(scrollable.position.pixels, greaterThan(0));
-
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
-      await tester.pumpAndSettle();
-      expect(scrollable.position.pixels, 0);
-
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
-      await tester.pumpAndSettle();
-      expect(focused(), 'movie_detail_hero');
+      // Ni con la más chica entra: se corta con "…" sin desbordar.
+      final huge = List.filled(500, 'Una historia larguísima.').join(' ');
+      await pumpDetail(
+        tester,
+        MovieItem(contentId: '113', name: 'Enorme', description: huge),
+      );
+      final text = synopsis(tester, 'Una historia');
+      expect(text.style!.fontSize, 10);
+      expect(text.overflow, TextOverflow.ellipsis);
+      expect(text.maxLines, isNotNull);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('Reproducir muestra Cargando y avisa si no hay stream', (
@@ -582,6 +843,10 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pump();
       expect(find.text('Cargando...'), findsOneWidget);
+      expect(
+        tester.widget<MoaiPillButton>(find.byType(MoaiPillButton)).loading,
+        isTrue,
+      );
 
       pending.complete(null);
       await tester.pump();
@@ -610,30 +875,31 @@ void main() {
       expect(find.textContaining('SocketException'), findsNothing);
     });
 
-    testWidgets('con una sola imagen también muestra el fondo ambiental difuminado', (
-      tester,
-    ) async {
-      await pumpDetail(
-        tester,
-        MovieItem(
-          contentId: '113',
-          name: 'Una foto',
-          backdrop: 'https://example.com/a.jpg',
-        ),
-      );
-      expect(find.byType(ShaderMask), findsWidgets);
+    testWidgets(
+      'con una sola imagen también muestra el fondo ambiental difuminado',
+      (tester) async {
+        await pumpDetail(
+          tester,
+          MovieItem(
+            contentId: '113',
+            name: 'Una foto',
+            backdrop: 'https://example.com/a.jpg',
+          ),
+        );
+        expect(find.byType(ShaderMask), findsWidgets);
 
-      await pumpDetail(
-        tester,
-        MovieItem(
-          contentId: '114',
-          name: 'Dos fotos',
-          backdrop: 'https://example.com/a.jpg',
-          backdrops: const ['https://example.com/b.jpg'],
-        ),
-      );
-      expect(find.byType(ShaderMask), findsWidgets);
-    });
+        await pumpDetail(
+          tester,
+          MovieItem(
+            contentId: '114',
+            name: 'Dos fotos',
+            backdrop: 'https://example.com/a.jpg',
+            backdrops: const ['https://example.com/b.jpg'],
+          ),
+        );
+        expect(find.byType(ShaderMask), findsWidgets);
+      },
+    );
 
     testWidgets(
       'resuelve el año de estreno perezosamente si el catálogo no lo trae',
@@ -644,11 +910,7 @@ void main() {
           score: '8.1',
         );
 
-        await pumpDetail(
-          tester,
-          rocky,
-          resolveYear: (_) async => '1976',
-        );
+        await pumpDetail(tester, rocky, resolveYear: (_) async => '1976');
 
         expect(find.text('1976'), findsOneWidget);
       },

@@ -74,17 +74,15 @@ class _SourceTileState extends State<_SourceTile> {
       minHeight: 0,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       label: widget.source.nombre,
-      description: 'v${widget.source.version} · ${_formatChannelsCount(widget.source.canales.length)}',
+      description:
+          'v${widget.source.version} · ${_formatChannelsCount(widget.source.canales.length)}',
       icon: MoaiIcons.plugin,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (_availableVersion != null) ...[
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 6,
-                vertical: 1.5,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
               decoration: BoxDecoration(
                 color: isFocused
                     ? scheme.onPrimary.withValues(alpha: 0.22)
@@ -128,6 +126,7 @@ class _SourceTileState extends State<_SourceTile> {
             focusNode: widget.removeFocus,
             tooltip: LocaleKeys.sources_remove.tr(),
             icon: MoaiIcons.delete,
+            destructive: true,
             onPressed: widget.onRemove,
             parentFocused: isFocused,
             onKeyLeft: () => widget.updateFocus.requestFocus(),

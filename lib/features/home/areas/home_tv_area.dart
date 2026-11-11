@@ -33,6 +33,7 @@ import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/focus/focus_scroll_sync.dart';
 import 'package:moai3/focus/tv_intents.dart';
 import 'package:moai3/focus/tv_panel_layout.dart';
+import 'package:moai3/focus/tv_shortcuts.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/models/channel_group.dart';
 import 'package:moai3/services/modal_route_tracker.dart';
@@ -262,7 +263,10 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
   }
 
   @override
-  Widget build(BuildContext context) => _buildLayout(context);
+  Widget build(BuildContext context) => Actions(
+    actions: TvShortcuts.noGeometricFocus,
+    child: _buildLayout(context),
+  );
 
   @override
   void dispose() {
@@ -361,6 +365,13 @@ class HomeTvAreaState extends HomeAreaState<HomeTvArea>
 
   /// Permite a áreas externas (ej. Calendario) sintonizar un canal directamente.
   void selectChannel(Channel channel) => _selectChannel(channel);
+
+  /// Mirar juntos desde el modal de amigos: el canal del amigo y el foco al
+  /// visor (cuando el modal ya se cerró).
+  void _tuneFromFriend(Channel channel) {
+    _selectChannel(channel);
+    WidgetsBinding.instance.addPostFrameCallback((_) => requestViewerFocus());
+  }
 
   /// Solicita foco para el reproductor de TV desde áreas externas tras sintonizar.
   void requestViewerFocus() {

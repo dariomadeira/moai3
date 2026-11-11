@@ -2,7 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/features/discounts/discount_format.dart';
 import 'package:moai3/features/discounts/widgets/discount_dialogs.dart';
-import 'package:moai3/features/home/widgets/home_card.dart';
+import 'package:moai3/features/home/widgets/home_card_parts.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/models/discount_models.dart';
 import 'package:moai3/services/discounts_service.dart';
@@ -47,7 +47,7 @@ class _HomeDiscountsItemState extends State<HomeDiscountsItem> {
 
   late bool _focused = widget.focusNode.hasFocus;
 
-  /// Elegido: el botón "Mis bancos" o un día (0 = hoy).
+  /// Día elegido (0 = hoy). Sin bancos el foco es del botón "Configurar".
   int _index = 0;
 
   final _service = DiscountsService.instance;
@@ -62,7 +62,7 @@ class _HomeDiscountsItemState extends State<HomeDiscountsItem> {
 
   void _press() {
     final open = widget.onOpen;
-    if (_index == _banksButton || !_service.hasSelectedBanks) {
+    if (!_service.hasSelectedBanks) {
       // Sin la sección (tests), los bancos directo.
       if (open == null) {
         TvDiscountBanksDialog.show(context);
@@ -85,7 +85,8 @@ class _HomeDiscountsItemState extends State<HomeDiscountsItem> {
           onFocusChange: (f) => setState(() => _focused = f),
           onPress: _press,
           onLeft: () {
-            if (_index > _banksButton) {
+            // Con bancos sólo están los días (el botón sale sin bancos).
+            if (_service.hasSelectedBanks && _index > 0) {
               setState(() => _index--);
             } else {
               widget.onKeyLeft();
@@ -118,7 +119,8 @@ class _HomeDiscountsItemState extends State<HomeDiscountsItem> {
   }
 }
 
-/// Lo que se ve de la tarjeta: resumen con el botón y la semana.
+/// Lo que se ve de la tarjeta: resumen (como el de Eventos) y la semana. Sin
+/// bancos, en lugar de la semana, el aviso y el botón "Configurar".
 class HomeDiscountsCard extends StatelessWidget {
   const HomeDiscountsCard({
     super.key,
@@ -142,42 +144,44 @@ class HomeDiscountsCard extends StatelessWidget {
   /// [selectedIndex] del botón "Mis bancos".
   static const int banksIndex = -1;
 
+  /// REDISEÑO: el color de la tarjeta (su ícono).
+  static const Color color = Color(0xFFCA8A04);
+
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    final onDay = isFocused && hasBanks && selectedIndex != banksIndex;
-
-    return HomeCard(
-      glow: HomeCardColors.discounts,
+    // REDISEÑO: el cristal de las tarjetas del Inicio, sin halo de color
+    // (como el clima).
+    return MoaiGlass(
+      borderRadius: 16,
+      solid: true,
+      elevated: false,
       padding: const EdgeInsets.fromLTRB(20, 10, 12, 10),
       child: Row(
         children: [
           SizedBox(
-            width: 214,
-            child: _Summary(
+            width: HomeCardSummary.width,
+            // La línea no cambia al elegir un día: OK se sobreentiende.
+            child: HomeCardSummary(
+              label: LocaleKeys.discounts_panel_week.tr(),
+              icon: MoaiIcons.railDiscounts,
+              color: color,
+              title: LocaleKeys.discounts_title.tr(),
               line: !hasBanks
                   ? LocaleKeys.discounts_choose_banks.tr()
-                  : onDay
-                  ? LocaleKeys.discounts_hint.tr()
                   : LocaleKeys.discounts_subtitle.tr(),
-              highlightLine: onDay || !hasBanks,
-              buttonFocused: isFocused && selectedIndex == banksIndex,
+              highlightLine: !hasBanks,
             ),
           ),
-          Container(
-            width: 1,
-            height: 72,
-            margin: const EdgeInsets.only(right: 12),
-            color: scheme.onSurface.withValues(alpha: 0.08),
-          ),
+          const HomeCardDivider(margin: EdgeInsets.only(right: 12)),
           Expanded(
             child: !hasBanks
-                ? _Message(LocaleKeys.discounts_empty_banks.tr())
+                ? _NoBanks(isFocused: isFocused)
                 : week.every((d) => d.discounts.isEmpty)
                 ? _Message(
                     isLoading
                         ? LocaleKeys.discounts_loading.tr()
                         : LocaleKeys.discounts_none_week.tr(),
+                    centered: true,
                   )
                 : Row(
                     children: [
@@ -201,93 +205,25 @@ class HomeDiscountsCard extends StatelessWidget {
   }
 }
 
-class _Summary extends StatelessWidget {
-  const _Summary({
-    required this.line,
-    required this.highlightLine,
-    required this.buttonFocused,
-  });
+/// Sin bancos: aviso y botón "Configurar" (OK sobre la tarjeta).
+class _NoBanks extends StatelessWidget {
+  const _NoBanks({required this.isFocused});
 
-  final String line;
-  final bool highlightLine;
-  final bool buttonFocused;
+  final bool isFocused;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Row(
-          children: [
-            Icon(
-              MoaiIcons.discounts,
-              size: MoaiIconSizes.lg,
-              color: scheme.primary,
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                LocaleKeys.discounts_title.tr(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: MoaiText.display(
-                  context,
-                  color: scheme.onSurface,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                  height: 1.15,
-                ),
-              ),
-            ),
-          ],
+        Expanded(child: _Message(LocaleKeys.discounts_empty_banks.tr())),
+        const SizedBox(width: 16),
+        HomeGlassButton(
+          icon: MoaiIcons.discountBanks,
+          label: LocaleKeys.discounts_configure.tr(),
+          focused: isFocused,
+          large: true,
         ),
-        const SizedBox(height: 2),
-        Text(
-          line,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: MoaiText.body(
-            context,
-            color: highlightLine ? scheme.primary : scheme.onSurfaceVariant,
-            fontSize: 11.5,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: moaiGlassButtonDecoration(
-            scheme,
-            focused: buttonFocused,
-            radius: 16,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                MoaiIcons.discountBanks,
-                size: MoaiIconSizes.sm,
-                color: buttonFocused ? scheme.onPrimary : scheme.primary,
-              ),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  LocaleKeys.discounts_configure.tr(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: MoaiText.body(
-                    context,
-                    color: buttonFocused ? scheme.onPrimary : scheme.onSurface,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        const SizedBox(width: 8),
       ],
     );
   }
@@ -348,10 +284,12 @@ class _DayColumn extends StatelessWidget {
             best?.merchant ?? LocaleKeys.discounts_none_short.tr(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            // Más chica que el resto: en columnas angostas los rubros
+            // ("Combustible") entran enteros.
             style: MoaiText.body(
               context,
               color: scheme.onSurface,
-              fontSize: 11,
+              fontSize: 9.5,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -372,22 +310,27 @@ class _DayColumn extends StatelessWidget {
 }
 
 class _Message extends StatelessWidget {
-  const _Message(this.text);
+  const _Message(this.text, {this.centered = false});
 
   final String text;
+
+  /// Solo en la franja (sin el botón al lado): centrado y más chico, como el
+  /// aviso de Amigos.
+  final bool centered;
 
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: Alignment.centerLeft,
+      alignment: centered ? Alignment.center : Alignment.centerLeft,
       child: Text(
         text,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
+        textAlign: centered ? TextAlign.center : TextAlign.start,
         style: MoaiText.body(
           context,
           color: context.scheme.onSurfaceVariant,
-          fontSize: 14,
+          fontSize: centered ? 12 : 14,
         ),
       ),
     );

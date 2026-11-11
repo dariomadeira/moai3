@@ -9,17 +9,22 @@ import 'package:moai3/services/calendar/argentina_time.dart';
 /// Servicio para consultar el calendario oficial de Fórmula 1 vía API pública Jolpica/Ergast.
 class F1CalendarService {
   static const String endpoint = 'https://api.jolpi.ca/ergast/f1/current.json';
+  static const Duration _responseTimeout = Duration(seconds: 15);
 
   static Future<List<CalendarEvent>> fetchF1Events() async {
+    final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
     try {
-      final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
       final request = await client.getUrl(Uri.parse(endpoint));
       request.headers.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
       request.headers.set('Accept', 'application/json');
 
-      final response = await request.close();
+      // Con límite: toda la Agenda espera esta respuesta.
+      final response = await request.close().timeout(_responseTimeout);
       if (response.statusCode == 200) {
-        final body = await response.transform(utf8.decoder).join();
+        final body = await response
+            .transform(utf8.decoder)
+            .join()
+            .timeout(_responseTimeout);
         final data = json.decode(body) as Map<String, dynamic>;
 
         final mrData = data['MRData'] as Map<String, dynamic>?;
@@ -37,6 +42,8 @@ class F1CalendarService {
       }
     } catch (e) {
       debugPrint('[F1CalendarService] Error al obtener calendario F1: $e');
+    } finally {
+      client.close();
     }
 
     // Si la API falla o estamos offline, recurrir al calendario oficial de respaldo

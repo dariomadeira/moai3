@@ -67,6 +67,29 @@ class DiscountsService extends ChangeNotifier {
   bool _loading = false;
   Future<void>? _loaded;
 
+  /// Último intento de bajar sin [refresh] forzado: sin internet, entrar y
+  /// salir de la sección no repite las consultas.
+  DateTime? _lastAttempt;
+  static const _retryAfter = Duration(minutes: 15);
+
+  /// Semanas y comercios ya calculados: la grilla los pide en cada tecla. Se
+  /// borran con cualquier cambio ([notifyListeners]).
+  final Map<(DateTime, int, DiscountRubro?), List<DayDiscounts>> _weekCache =
+      {};
+  List<DiscountMerchant>? _merchantsCache;
+  static const _maxCachedWeeks = 16;
+
+  @override
+  void notifyListeners() {
+    _clearCaches();
+    super.notifyListeners();
+  }
+
+  void _clearCaches() {
+    _weekCache.clear();
+    _merchantsCache = null;
+  }
+
   /// Bancos y billeteras que se pueden elegir (los que MODO muestra).
   List<DiscountBank> get banks => _banks;
 
@@ -96,6 +119,8 @@ class DiscountsService extends ChangeNotifier {
   /// Los comercios de las promos de los rubros elegidos que pueden valer en
   /// mi provincia, por nombre, para elegir "Mis comercios".
   List<DiscountMerchant> get merchants {
+    final cached = _merchantsCache;
+    if (cached != null) return cached;
     final byKey = <String, DiscountMerchant>{};
     for (final d in _discounts) {
       if (d.isGeneric ||
@@ -112,15 +137,22 @@ class DiscountsService extends ChangeNotifier {
         ),
       );
     }
-    return byKey.values.toList()..sort((a, b) => a.key.compareTo(b.key));
+    return _merchantsCache = byKey.values.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
   }
 
   /// Cuándo se bajaron las promos (null: nunca).
   DateTime? get fetchedAt => _fetchedAt;
   bool get isLoading => _loading;
 
-  /// Lee lo guardado y, si es de otro día, actualiza en segundo plano.
-  Future<void> ensureLoaded() => _loaded ??= _load();
+  /// Lee lo guardado y, si es de otro día, actualiza en segundo plano. Se
+  /// llama al mostrar Descuentos: con el TV prendido días, ahí se renueva.
+  Future<void> ensureLoaded() {
+    final loaded = _loaded;
+    if (loaded == null) return _loaded = _load();
+    unawaited(loaded.then((_) => refresh()));
+    return loaded;
+  }
 
   Future<void> _load() async {
     try {
@@ -155,6 +187,11 @@ class DiscountsService extends ChangeNotifier {
       return;
     }
     if (_loading) return;
+    final attempt = _lastAttempt;
+    if (!force && attempt != null && now.difference(attempt) < _retryAfter) {
+      return;
+    }
+    _lastAttempt = now;
     _loading = true;
     notifyListeners();
     try {
@@ -215,8 +252,9 @@ class DiscountsService extends ChangeNotifier {
         '$url&limit=$_pageSize&page=$page&source=web_modo&origin=WEB_MODO',
       );
       bodies.add(body);
-      final pages = (jsonDecode(body) as Map)['pagination']?['total_pages'];
-      if (pages is! num || page >= pages) break;
+      // Cientos de KB: en otro hilo, como el armado de las promos.
+      final pages = await Isolate.run(() => modoTotalPages(body));
+      if (pages == null || page >= pages) break;
     }
     return bodies;
   }
@@ -309,20 +347,28 @@ class DiscountsService extends ChangeNotifier {
       );
 
   /// Los próximos [days] días desde [from] (hoy, mañana…).
-  List<DayDiscounts> week(
-    DateTime from, {
-    int days = 7,
-    DiscountRubro? rubro,
-  }) => [
-    for (var i = 0; i < days; i++)
-      () {
-        final day = DateTime(from.year, from.month, from.day + i);
-        return DayDiscounts(
-          day: day,
-          discounts: discountsOn(day, rubro: rubro),
-        );
-      }(),
-  ];
+  List<DayDiscounts> week(DateTime from, {int days = 7, DiscountRubro? rubro}) {
+    final key = (DateTime(from.year, from.month, from.day), days, rubro);
+    final cached = _weekCache[key];
+    if (cached != null) return cached;
+    // Lo visible no depende del día: se filtra una sola vez.
+    final visible = [
+      for (final d in _discounts)
+        if (isVisible(d) && (rubro == null || d.rubro == rubro)) d,
+    ];
+    final week = List<DayDiscounts>.unmodifiable([
+      for (var i = 0; i < days; i++)
+        () {
+          final day = DateTime(from.year, from.month, from.day + i);
+          return DayDiscounts(
+            day: day,
+            discounts: bestPerMerchant(visible, day, _selected),
+          );
+        }(),
+    ]);
+    if (_weekCache.length >= _maxCachedWeeks) _weekCache.clear();
+    return _weekCache[key] = week;
+  }
 
   /// Los de [day] con alguno de [banks], ordenados por porcentaje (y tope),
   /// quedándose con el mejor de cada comercio.
@@ -361,22 +407,15 @@ class DiscountsService extends ChangeNotifier {
     final file = await _file();
     if (!file.existsSync()) return;
     final path = file.path;
-    final data = await Isolate.run(
-      () => jsonDecode(File(path).readAsStringSync()),
-    );
-    if (data is! Map<String, dynamic>) return;
+    // Cientos de promos: leerlas y armarlas va en otro hilo.
+    final cache = await Isolate.run(() => _readDiscountsFile(path));
+    if (cache == null) return;
     // De otra versión (p. ej. sin rubros): se usa hasta bajar la nueva.
-    _fetchedAt = data['version'] == _cacheVersion
-        ? DateTime.tryParse(data['fetchedAt']?.toString() ?? '')
+    _fetchedAt = cache.version == _cacheVersion
+        ? DateTime.tryParse(cache.fetchedAt ?? '')
         : null;
-    _banks = [
-      for (final b in (data['banks'] as List? ?? const []))
-        if (b is Map<String, dynamic>) DiscountBank.fromJson(b),
-    ];
-    _discounts = [
-      for (final d in (data['discounts'] as List? ?? const []))
-        if (d is Map<String, dynamic>) Discount.fromJson(d),
-    ];
+    _banks = cache.banks;
+    _discounts = cache.discounts;
   }
 
   Future<void> _writeCache() async {
@@ -415,7 +454,39 @@ class DiscountsService extends ChangeNotifier {
     _fetchedAt = null;
     _loading = false;
     _loaded = null;
+    _lastAttempt = null;
+    _clearCaches();
   }
+}
+
+/// Cuántas páginas tiene una respuesta de MODO. Pura: corre en otro hilo.
+num? modoTotalPages(String body) {
+  final pages = (jsonDecode(body) as Map)['pagination']?['total_pages'];
+  return pages is num ? pages : null;
+}
+
+/// Lo guardado en el TV, ya armado. Pura: corre en otro hilo.
+({
+  Object? version,
+  String? fetchedAt,
+  List<DiscountBank> banks,
+  List<Discount> discounts,
+})?
+_readDiscountsFile(String path) {
+  final data = jsonDecode(File(path).readAsStringSync());
+  if (data is! Map<String, dynamic>) return null;
+  return (
+    version: data['version'],
+    fetchedAt: data['fetchedAt']?.toString(),
+    banks: [
+      for (final b in (data['banks'] as List? ?? const []))
+        if (b is Map<String, dynamic>) DiscountBank.fromJson(b),
+    ],
+    discounts: [
+      for (final d in (data['discounts'] as List? ?? const []))
+        if (d is Map<String, dynamic>) Discount.fromJson(d),
+    ],
+  );
 }
 
 /// Arma las promos de las páginas del carrusel de supermercados

@@ -13,7 +13,16 @@ enum VpnProvider {
   vpnGate,
 }
 
-/// Un perfil OpenVPN del arranque.
+/// Protocolo de transporte de un [VpnEndpoint].
+enum VpnProto { udp, tcp }
+
+/// Un perfil OpenVPN del arranque: un servidor con los puertos que atiende.
+///
+/// Del `.ovpn` se usan las claves y el cifrado; el servidor y el puerto los
+/// elige la app ([VpnEndpoint]), uno por intento. Con varios `remote` y
+/// `remote-random`, OpenVPN probaba un puerto al azar y, si no contestaba,
+/// tardaba más que el límite del intento en pasar al siguiente: el mismo
+/// nodo andaba o no según el puerto que le tocara.
 @immutable
 class VpnNode {
   const VpnNode({
@@ -21,136 +30,255 @@ class VpnNode {
     required this.asset,
     required this.provider,
     required this.country,
+    required this.host,
+    required this.ports,
   });
 
   final String id;
   final String asset;
   final VpnProvider provider;
 
-  /// Código ISO del país de salida esperado (`verifyConnection`).
+  /// Código ISO del país de salida esperado.
   final String country;
+
+  /// IP o nombre del servidor (el del `remote` del `.ovpn`).
+  final String host;
+
+  /// Protocolo y puerto, del que más suele andar al que menos.
+  final List<(VpnProto, int)> ports;
+
+  /// Todos sus puntos de conexión, en el orden de preferencia de fábrica.
+  List<VpnEndpoint> get endpoints => [
+    for (final (proto, port) in ports) VpnEndpoint(this, proto, port),
+  ];
 
   @override
   String toString() => id;
 }
 
-/// Nodos disponibles. Agregar uno = sumar el `.ovpn` en `assets/vpn/` y una línea acá.
+/// Un intento posible: nodo, protocolo y puerto.
+@immutable
+class VpnEndpoint {
+  const VpnEndpoint(this.node, this.proto, this.port);
+
+  final VpnNode node;
+  final VpnProto proto;
+  final int port;
+
+  /// Clave del historial, p. ej. `mx_01/udp1194`.
+  String get id => '${node.id}/${proto.name}$port';
+
+  @override
+  bool operator ==(Object other) =>
+      other is VpnEndpoint &&
+      other.node.id == node.id &&
+      other.proto == proto &&
+      other.port == port;
+
+  @override
+  int get hashCode => Object.hash(node.id, proto, port);
+
+  @override
+  String toString() => id;
+}
+
+/// Puertos de los servidores gratuitos de Proton (los mismos en todos). Los
+/// UDP 5060 (SIP) y 51820 (WireGuard) son los que más filtran los routers;
+/// el TCP 443 casi nunca se bloquea.
+const List<(VpnProto, int)> _protonPorts = [
+  (VpnProto.udp, 1194),
+  (VpnProto.udp, 80),
+  (VpnProto.tcp, 443),
+  (VpnProto.udp, 51820),
+  (VpnProto.tcp, 8443),
+  (VpnProto.udp, 4569),
+  (VpnProto.udp, 5060),
+];
+
+/// Nodos disponibles. Agregar uno = sumar el `.ovpn` en `assets/vpn/` y una
+/// línea acá con su servidor y puertos. El orden de la lista es el de
+/// fábrica (sin historial): los japoneses van intercalados para que un
+/// primer arranque pruebe también otro proveedor.
 const List<VpnNode> kVpnNodes = [
   VpnNode(
     id: 'mx_01',
     asset: 'assets/vpn/mexico_01.ovpn',
     provider: VpnProvider.proton,
     country: 'MX',
+    host: '84.20.27.49',
+    ports: _protonPorts,
   ),
   VpnNode(
     id: 'mx_02',
     asset: 'assets/vpn/mexico_02.ovpn',
     provider: VpnProvider.proton,
     country: 'MX',
-  ),
-  VpnNode(
-    id: 'mx_03',
-    asset: 'assets/vpn/mexico_03.ovpn',
-    provider: VpnProvider.proton,
-    country: 'MX',
-  ),
-  VpnNode(
-    id: 'mx_04',
-    asset: 'assets/vpn/mexico_04.ovpn',
-    provider: VpnProvider.proton,
-    country: 'MX',
+    host: '84.20.27.45',
+    ports: _protonPorts,
   ),
   VpnNode(
     id: 'jp_01',
     asset: 'assets/vpn/japan_01.ovpn',
     provider: VpnProvider.vpnGate,
     country: 'JP',
+    host: 'public-vpn-137.opengw.net',
+    ports: [(VpnProto.tcp, 443)],
+  ),
+  VpnNode(
+    id: 'mx_03',
+    asset: 'assets/vpn/mexico_03.ovpn',
+    provider: VpnProvider.proton,
+    country: 'MX',
+    host: '103.88.234.229',
+    ports: _protonPorts,
+  ),
+  VpnNode(
+    id: 'mx_04',
+    asset: 'assets/vpn/mexico_04.ovpn',
+    provider: VpnProvider.proton,
+    country: 'MX',
+    host: '149.102.224.43',
+    ports: _protonPorts,
   ),
   VpnNode(
     id: 'jp_02',
     asset: 'assets/vpn/japan_02.ovpn',
     provider: VpnProvider.vpnGate,
     country: 'JP',
+    host: 'public-vpn-90.opengw.net',
+    ports: [(VpnProto.tcp, 443)],
   ),
 ];
 
-/// Cómo le fue a un intento con un nodo.
+/// Cómo le fue a un intento con un endpoint.
 enum VpnAttempt {
   /// Conectó y dio sesión.
   success,
 
-  /// Falla del nodo: no conectó, salió por otro país o el portal lo rechazó.
+  /// Falla del endpoint: el túnel no subió o el portal rechazó la salida.
   failure,
 
-  /// La red no contestó a tiempo (pasa apenas sube el túnel, con cualquier
-  /// nodo): no dice si el nodo es bueno o malo.
+  /// No dice nada del endpoint: la red no contestó apenas subió el túnel, o
+  /// falló el catálogo (eso es del servidor). Sólo se anota la fecha.
   transient,
 }
 
-/// Historial de un nodo en este dispositivo.
+/// Historial de un endpoint en este dispositivo.
+///
+/// Guarda éxitos e intentos que se van olvidando con el tiempo (vida media
+/// de [VpnNodeRanking.halfLife]): lo de hace un mes casi no pesa, así un
+/// endpoint que falló una vez vuelve solo a ser candidato.
 @immutable
-class VpnNodeStats {
-  const VpnNodeStats({
-    this.score = VpnNodeRanking.neutralScore,
+class VpnEndpointStats {
+  const VpnEndpointStats({
+    this.wins = 0,
+    this.tries = 0,
     this.avgMs,
     this.lastUsed,
+    this.lastWin,
+    this.failStreak = 0,
   });
 
-  /// 0 a 1: qué tan seguido sirvió últimamente.
-  final double score;
+  final double wins;
+  final double tries;
 
   /// Tiempo promedio hasta la sesión lista; null si nunca sirvió.
   final double? avgMs;
 
   final DateTime? lastUsed;
+  final DateTime? lastWin;
 
-  factory VpnNodeStats.fromJson(Map<String, dynamic> json) => VpnNodeStats(
-        score: (json['score'] as num?)?.toDouble() ?? VpnNodeRanking.neutralScore,
+  /// Fallas seguidas desde el último éxito.
+  final int failStreak;
+
+  /// Tasa de éxito con un intento imaginario bueno y otro malo: sin historial
+  /// da 0,5, y un solo resultado no la lleva a los extremos.
+  double get score => (wins + 1) / (tries + 2);
+
+  /// Los mismos datos con los conteos olvidados hasta [now].
+  VpnEndpointStats decayed(DateTime now) {
+    final since = lastUsed;
+    if (since == null || !now.isAfter(since)) return this;
+    final days = now.difference(since).inMinutes / Duration.minutesPerDay;
+    final keep = pow(0.5, days / VpnNodeRanking.halfLife.inDays).toDouble();
+    return VpnEndpointStats(
+      wins: wins * keep,
+      tries: tries * keep,
+      avgMs: avgMs,
+      lastUsed: lastUsed,
+      lastWin: lastWin,
+      failStreak: failStreak,
+    );
+  }
+
+  factory VpnEndpointStats.fromJson(Map<String, dynamic> json) =>
+      VpnEndpointStats(
+        wins: (json['wins'] as num?)?.toDouble() ?? 0,
+        tries: (json['tries'] as num?)?.toDouble() ?? 0,
         avgMs: (json['avgMs'] as num?)?.toDouble(),
         lastUsed: DateTime.tryParse(json['lastUsed'] as String? ?? ''),
+        lastWin: DateTime.tryParse(json['lastWin'] as String? ?? ''),
+        failStreak: (json['failStreak'] as num?)?.toInt() ?? 0,
       );
 
   Map<String, dynamic> toJson() => {
-        'score': score,
-        if (avgMs != null) 'avgMs': avgMs,
-        if (lastUsed != null) 'lastUsed': lastUsed!.toIso8601String(),
-      };
+    'wins': wins,
+    'tries': tries,
+    if (avgMs != null) 'avgMs': avgMs,
+    if (lastUsed != null) 'lastUsed': lastUsed!.toIso8601String(),
+    if (lastWin != null) 'lastWin': lastWin!.toIso8601String(),
+    if (failStreak > 0) 'failStreak': failStreak,
+  };
 }
 
-/// Aprende qué nodo anda mejor en este TV y lo prueba primero.
-/// Cada resultado pesa 30 %; lo anterior, 70 % (lo reciente manda). Un
-/// corte pasajero ([VpnAttempt.transient]) cuenta como empate: no hunde a un
-/// nodo bueno por la red, pero uno que nunca contesta va bajando a neutro.
+/// Resultado de un intento, para anotarlo al final del arranque.
+typedef VpnAttemptResult = ({
+  VpnEndpoint endpoint,
+  VpnAttempt attempt,
+  Duration? elapsed,
+});
+
+/// Aprende qué endpoint (nodo + puerto) anda en este TV y lo prueba primero.
+///
+/// - **El último que anduvo va primero**, salvo que haya fallado
+///   [maxFailStreak] veces seguidas.
+/// - El resto, por tasa de éxito ([VpnEndpointStats.score]); con tasas casi
+///   iguales, el más rápido. Sin historial, el orden de fábrica, que alterna
+///   servidores y puertos para probar de todo.
+/// - Lo viejo se olvida ([halfLife]): no hace falta exploración al azar.
 class VpnNodeRanking {
-  VpnNodeRanking({this.nodes = kVpnNodes, Random? random})
-      : _random = random ?? Random();
+  VpnNodeRanking({this.nodes = kVpnNodes});
 
   static const double neutralScore = 0.5;
-  static const double _keep = 0.7;
 
-  /// Notas a menos de esto se consideran empate y gana el más rápido.
+  /// Tasas a menos de esto se consideran empate y gana el más rápido.
   static const double _tie = 0.05;
 
-  /// Parte de los arranques en que el primer intento va al nodo menos usado.
-  static const double explorationRate = 0.1;
+  /// Fallas seguidas con las que el último bueno pierde el primer puesto.
+  static const int maxFailStreak = 2;
 
-  /// v2: el historial anterior anotaba los cortes de red como fallas del
-  /// nodo (castigaba al primero de cada arranque); se empieza de cero.
-  static const String _prefsKey = 'vpn_node_ranking_v2';
+  /// En cuánto tiempo un resultado pesa la mitad.
+  static const Duration halfLife = Duration(days: 14);
+
+  /// v3: historial por endpoint (antes, por nodo).
+  static const String _prefsKey = 'vpn_endpoint_ranking_v3';
+  static const String _legacyPrefsKey = 'vpn_node_ranking_v2';
 
   final List<VpnNode> nodes;
-  final Random _random;
 
-  Future<Map<String, VpnNodeStats>> load() async {
+  Future<Map<String, VpnEndpointStats>> load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (prefs.containsKey(_legacyPrefsKey)) {
+        await prefs.remove(_legacyPrefsKey);
+      }
       final raw = prefs.getString(_prefsKey);
       if (raw == null) return {};
       final decoded = jsonDecode(raw) as Map<String, dynamic>;
       return decoded.map(
         (id, value) => MapEntry(
           id,
-          VpnNodeStats.fromJson(value as Map<String, dynamic>),
+          VpnEndpointStats.fromJson(value as Map<String, dynamic>),
         ),
       );
     } catch (e) {
@@ -159,7 +287,7 @@ class VpnNodeRanking {
     }
   }
 
-  Future<void> _save(Map<String, VpnNodeStats> stats) async {
+  Future<void> _save(Map<String, VpnEndpointStats> stats) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _prefsKey,
@@ -167,99 +295,172 @@ class VpnNodeRanking {
     );
   }
 
-  /// Nodos en el orden en que conviene probarlos en este arranque.
-  Future<List<VpnNode>> orderedNodes() async {
+  /// Endpoints en el orden en que conviene probarlos en este arranque.
+  Future<List<VpnEndpoint>> orderedEndpoints() async {
     final stats = await load();
-    final ordered = order(
-      nodes,
-      stats,
-      explore: _random.nextDouble() < explorationRate,
-    );
+    final now = DateTime.now();
+    final ordered = order(defaultOrder(nodes), stats, now: now);
     debugPrint(
-      '🔒 [VPN] Ranking: ${ordered.map((n) {
-        final s = stats[n.id];
-        return '${n.id}=${(s?.score ?? neutralScore).toStringAsFixed(2)}';
+      '🔒 [VPN] Ranking: ${ordered.take(6).map((e) {
+        final s = stats[e.id]?.decayed(now);
+        return '$e=${(s?.score ?? neutralScore).toStringAsFixed(2)}';
       }).join(' > ')}',
     );
     return ordered;
   }
 
-  /// Orden por nota (empates por velocidad). Con [explore], el nodo usado
-  /// hace más tiempo (o nunca) pasa al frente.
+  /// Orden de fábrica: una vuelta por servidor, y cada servidor de un mismo
+  /// proveedor arranca por otro puerto (el primero por el 1.º, el segundo
+  /// por el 2.º…). Así, sin historial, los primeros intentos ya prueban
+  /// servidores y puertos distintos en vez de insistir con un puerto que
+  /// quizá la red bloquea.
   @visibleForTesting
-  static List<VpnNode> order(
-    List<VpnNode> nodes,
-    Map<String, VpnNodeStats> stats, {
-    bool explore = false,
+  static List<VpnEndpoint> defaultOrder(List<VpnNode> nodes) {
+    final lists = <List<VpnEndpoint>>[];
+    final seen = <VpnProvider, int>{};
+    for (final node in nodes) {
+      final eps = node.endpoints;
+      if (eps.isEmpty) continue;
+      final nth = seen[node.provider] ?? 0;
+      seen[node.provider] = nth + 1;
+      final shift = nth % eps.length;
+      lists.add([...eps.sublist(shift), ...eps.sublist(0, shift)]);
+    }
+    final rounds = lists.fold(0, (n, l) => max(n, l.length));
+    return [
+      for (var round = 0; round < rounds; round++)
+        for (final l in lists)
+          if (round < l.length) l[round],
+    ];
+  }
+
+  /// Ordena [endpoints] (que vienen en el orden de fábrica) según [stats].
+  @visibleForTesting
+  static List<VpnEndpoint> order(
+    List<VpnEndpoint> endpoints,
+    Map<String, VpnEndpointStats> stats, {
+    DateTime? now,
   }) {
-    VpnNodeStats statsOf(VpnNode n) => stats[n.id] ?? const VpnNodeStats();
-    final ordered = [...nodes]..sort((a, b) {
-        final sa = statsOf(a), sb = statsOf(b);
+    final at = now ?? DateTime.now();
+    final s = {
+      for (final e in endpoints)
+        e.id: (stats[e.id] ?? const VpnEndpointStats()).decayed(at),
+    };
+    final index = {for (var i = 0; i < endpoints.length; i++) endpoints[i]: i};
+    final ordered = [...endpoints]
+      ..sort((a, b) {
+        final sa = s[a.id]!, sb = s[b.id]!;
         if ((sa.score - sb.score).abs() >= _tie) {
           return sb.score.compareTo(sa.score);
         }
-        return (sa.avgMs ?? double.infinity)
-            .compareTo(sb.avgMs ?? double.infinity);
+        final speed = (sa.avgMs ?? double.infinity).compareTo(
+          sb.avgMs ?? double.infinity,
+        );
+        // Sort de Dart no es estable: el índice de fábrica desempata.
+        return speed != 0 ? speed : index[a]!.compareTo(index[b]!);
       });
-    if (explore && ordered.length > 1) {
-      final stalest = ordered.reduce((a, b) {
-        final la = statsOf(a).lastUsed, lb = statsOf(b).lastUsed;
-        if (la == null) return a;
-        if (lb == null) return b;
-        return la.isBefore(lb) ? a : b;
-      });
-      debugPrint('🔒 [VPN] Exploración: primero $stalest');
+
+    // El último que anduvo, adelante (si no viene fallando).
+    VpnEndpoint? sticky;
+    DateTime? stickyWin;
+    for (final e in endpoints) {
+      final st = s[e.id]!;
+      final win = st.lastWin;
+      if (win == null || st.failStreak >= maxFailStreak) continue;
+      if (stickyWin == null || win.isAfter(stickyWin)) {
+        sticky = e;
+        stickyWin = win;
+      }
+    }
+    if (sticky != null) {
       ordered
-        ..remove(stalest)
-        ..insert(0, stalest);
+        ..remove(sticky)
+        ..insert(0, sticky);
     }
     return ordered;
   }
 
-  /// Anota el resultado de un intento con [node].
-  Future<void> record(
-    VpnNode node, {
-    required VpnAttempt attempt,
-    Duration? elapsed,
-  }) async {
+  /// Cómo seguir después de que [failed] no sirvió en este arranque.
+  ///
+  /// Sus hermanos (mismo servidor) pasan al final: si el servidor está caído
+  /// se pierde un solo intento. Con [dropNode] (el portal rechazó la salida
+  /// de ese servidor) se descartan.
+  static List<VpnEndpoint> afterFailure(
+    List<VpnEndpoint> remaining,
+    VpnEndpoint failed, {
+    bool dropNode = false,
+  }) {
+    bool sibling(VpnEndpoint e) => e.node.id == failed.node.id;
+    return [
+      ...remaining.where((e) => !sibling(e)),
+      if (!dropNode) ...remaining.where(sibling),
+    ];
+  }
+
+  /// Anota los resultados de un arranque.
+  Future<void> recordAll(List<VpnAttemptResult> results) async {
+    if (results.isEmpty) return;
     final stats = await load();
-    stats[node.id] = update(
-      stats[node.id] ?? const VpnNodeStats(),
-      attempt: attempt,
-      elapsed: elapsed,
-    );
+    final now = DateTime.now();
+    for (final r in results) {
+      final id = r.endpoint.id;
+      stats[id] = update(
+        stats[id] ?? const VpnEndpointStats(),
+        attempt: r.attempt,
+        elapsed: r.elapsed,
+        now: now,
+      );
+      final verb = switch (r.attempt) {
+        VpnAttempt.success => 'sirvió',
+        VpnAttempt.failure => 'falló',
+        VpnAttempt.transient => 'sin conclusión',
+      };
+      debugPrint(
+        '🔒 [VPN] $id $verb → tasa ${stats[id]!.score.toStringAsFixed(2)}',
+      );
+    }
     await _save(stats);
-    final verb = switch (attempt) {
-      VpnAttempt.success => 'sirvió',
-      VpnAttempt.failure => 'falló',
-      VpnAttempt.transient => 'tuvo un corte de red',
-    };
-    debugPrint(
-      '🔒 [VPN] ${node.id} $verb '
-      '→ nota ${stats[node.id]!.score.toStringAsFixed(2)}',
-    );
   }
 
   @visibleForTesting
-  static VpnNodeStats update(
-    VpnNodeStats old, {
+  static VpnEndpointStats update(
+    VpnEndpointStats old, {
     required VpnAttempt attempt,
     Duration? elapsed,
     DateTime? now,
   }) {
+    final at = now ?? DateTime.now();
+    final d = old.decayed(at);
     final ms = elapsed?.inMilliseconds.toDouble();
-    final success = attempt == VpnAttempt.success;
-    final outcome = switch (attempt) {
-      VpnAttempt.success => 1.0,
-      VpnAttempt.failure => 0.0,
-      VpnAttempt.transient => neutralScore,
-    };
-    return VpnNodeStats(
-      score: _keep * old.score + (1 - _keep) * outcome,
-      avgMs: success && ms != null
-          ? (old.avgMs == null ? ms : _keep * old.avgMs! + (1 - _keep) * ms)
-          : old.avgMs,
-      lastUsed: now ?? DateTime.now(),
-    );
+    switch (attempt) {
+      case VpnAttempt.success:
+        return VpnEndpointStats(
+          wins: d.wins + 1,
+          tries: d.tries + 1,
+          avgMs: ms == null
+              ? d.avgMs
+              : (d.avgMs == null ? ms : 0.7 * d.avgMs! + 0.3 * ms),
+          lastUsed: at,
+          lastWin: at,
+        );
+      case VpnAttempt.failure:
+        return VpnEndpointStats(
+          wins: d.wins,
+          tries: d.tries + 1,
+          avgMs: d.avgMs,
+          lastUsed: at,
+          lastWin: d.lastWin,
+          failStreak: d.failStreak + 1,
+        );
+      case VpnAttempt.transient:
+        return VpnEndpointStats(
+          wins: d.wins,
+          tries: d.tries,
+          avgMs: d.avgMs,
+          lastUsed: at,
+          lastWin: d.lastWin,
+          failStreak: d.failStreak,
+        );
+    }
   }
 }

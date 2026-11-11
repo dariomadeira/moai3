@@ -138,7 +138,6 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
     return TvDialog(
       width: 580,
       icon: MoaiIcons.locationSearch,
-      iconColor: scheme.primary,
       iconBgColor: scheme.primary.withValues(alpha: 0.15),
       title: LocaleKeys.weather_location_dialog_title.tr(),
       subtitle: LocaleKeys.weather_location_dialog_subtitle.tr(),
@@ -231,7 +230,7 @@ class _TvWeatherLocationDialogState extends State<TvWeatherLocationDialog> {
               height: 26,
               child: CircularProgressIndicator(
                 strokeWidth: 2.6,
-                color: scheme.primary,
+                color: scheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 12),

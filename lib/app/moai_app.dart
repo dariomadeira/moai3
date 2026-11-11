@@ -1,13 +1,13 @@
-import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:moai3/config/constants.dart';
+import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/supabase_presence_service.dart';
 import 'package:moai3/state/theme_provider.dart';
-import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/theme/moai_theme.dart';
 import 'package:moai3/widgets/feedback/notification_helper.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
@@ -33,9 +33,6 @@ class MoaiApp extends StatefulWidget {
 class _MoaiAppState extends State<MoaiApp> {
   AppLifecycleListener? _lifecycleListener;
   bool _isInForeground = true;
-  Color? _lastSeed;
-  ThemeData? _cachedLightTheme;
-  ThemeData? _cachedDarkTheme;
 
   @override
   void initState() {
@@ -43,18 +40,14 @@ class _MoaiAppState extends State<MoaiApp> {
     NotificationHelper.initialize(MoaiApp.scaffoldMessengerKey);
     final deviceId = widget.identityService.getOrCreateDeviceId();
 
+    // Sólo apaga (también antes de llegar al Inicio); volver a primer plano
+    // lo decide [PresenceCoordinator], que conoce la sección.
     _lifecycleListener = AppLifecycleListener(
-      onResume: () => _handleForeground(deviceId),
+      onResume: () => _isInForeground = true,
       onPause: () => _handleBackground(deviceId),
       onDetach: () => _handleBackground(deviceId),
       onHide: () => _handleBackground(deviceId),
     );
-  }
-
-  void _handleForeground(String deviceId) {
-    if (_isInForeground) return;
-    _isInForeground = true;
-    widget.presenceService.updateOnlineStatus(deviceId: deviceId, online: true);
   }
 
   void _handleBackground(String deviceId) {
@@ -72,47 +65,17 @@ class _MoaiAppState extends State<MoaiApp> {
     super.dispose();
   }
 
-  ThemeData _themeFor(ColorScheme scheme) {
-    return ThemeData(
-      brightness: scheme.brightness,
-      colorScheme: scheme,
-      scaffoldBackgroundColor: scheme.surfaceContainer,
-      useMaterial3: true,
-      pageTransitionsTheme: const PageTransitionsTheme(
-        builders: {
-          TargetPlatform.android: MoaiFadePageTransitionsBuilder(),
-          TargetPlatform.iOS: MoaiFadePageTransitionsBuilder(),
-          TargetPlatform.windows: MoaiFadePageTransitionsBuilder(),
-          TargetPlatform.linux: MoaiFadePageTransitionsBuilder(),
-          TargetPlatform.macOS: MoaiFadePageTransitionsBuilder(),
-        },
-      ),
-      fontFamily: MoaiText.bodyFamily,
-      textTheme: MoaiText.textTheme(scheme),
-      iconTheme: const IconThemeData(
-        weight: 1.2,
-      ),
-      snackBarTheme: const SnackBarThemeData(
-        behavior: SnackBarBehavior.floating,
-        elevation: 0,
-      ),
-    );
-  }
+  Color? _themeSeed;
+  ThemeData? _lightTheme;
+  ThemeData? _darkTheme;
 
-  void _updateThemesIfNeeded(Color seed) {
-    if (_lastSeed == seed &&
-        _cachedLightTheme != null &&
-        _cachedDarkTheme != null) {
-      return;
-    }
-    _lastSeed = seed;
-    final lightScheme = ColorScheme.fromSeed(seedColor: seed).harmonized();
-    final darkScheme = ColorScheme.fromSeed(
-      seedColor: seed,
-      brightness: Brightness.dark,
-    ).harmonized();
-    _cachedLightTheme = _themeFor(lightScheme);
-    _cachedDarkTheme = _themeFor(darkScheme);
+  /// Los dos temas ([MoaiTheme.light] y [MoaiTheme.dark]); se arman sólo
+  /// al cambiar el color.
+  void _buildThemesFor(Color seed) {
+    if (_themeSeed == seed && _lightTheme != null) return;
+    _themeSeed = seed;
+    _lightTheme = MoaiTheme.light(seed);
+    _darkTheme = MoaiTheme.dark(seed);
   }
 
   @override
@@ -121,7 +84,9 @@ class _MoaiAppState extends State<MoaiApp> {
       (theme) => (theme.themeMode, theme.accentSeed),
     );
 
-    _updateThemesIfNeeded(seed);
+    _buildThemesFor(seed);
+    // Los títulos con degradado terminan en el acento (de noche, aclarado).
+    HomeClock.setAccent(seed, dark: themeMode == ThemeMode.dark);
 
     return MaterialApp.router(
       scaffoldMessengerKey: MoaiApp.scaffoldMessengerKey,
@@ -130,41 +95,18 @@ class _MoaiAppState extends State<MoaiApp> {
       supportedLocales: context.supportedLocales,
       locale: context.locale,
       title: kAppName,
+      // REDISEÑO: la paleta de Cleanly, de día y de noche (2026-11-10); el
+      // modo lo elige cada uno en Ajustes (arranca en claro) y el acento
+      // sigue al color de resalte.
       themeMode: themeMode,
-      theme: _cachedLightTheme!,
-      darkTheme: _cachedDarkTheme!,
+      theme: _lightTheme,
+      darkTheme: _darkTheme,
       debugShowCheckedModeBanner: false,
       // Toda la app va sobre el fondo ambiente: los componentes compartidos
       // (paneles, fichas, switches) se dibujan de cristal en todas las rutas
       // y diálogos.
       builder: (context, child) =>
           MoaiGlassScope(child: child ?? const SizedBox.shrink()),
-    );
-  }
-}
-
-/// Transición de pantalla por fundido directo:
-/// - Sin desplazamiento lateral (sin movimiento 'de costado').
-/// - La pantalla saliente permanece debajo hasta ser cubierta por completo,
-///   eliminando destellos del fondo de la ventana.
-class MoaiFadePageTransitionsBuilder extends PageTransitionsBuilder {
-  const MoaiFadePageTransitionsBuilder();
-
-  @override
-  Widget buildTransitions<T>(
-    PageRoute<T> route,
-    BuildContext context,
-    Animation<double> animation,
-    Animation<double> secondaryAnimation,
-    Widget child,
-  ) {
-    return FadeTransition(
-      opacity: CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeOutCubic,
-        reverseCurve: Curves.easeInCubic,
-      ),
-      child: child,
     );
   }
 }

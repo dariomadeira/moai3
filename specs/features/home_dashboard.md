@@ -14,7 +14,7 @@
 > - `lib/features/home/widgets/home_trailers_card.dart`  
 > - `lib/features/home/widgets/home_arcade_card.dart`  
 > - `lib/features/home/widgets/home_clock.dart`  
-> - `lib/features/home/widgets/home_sky.dart` (EN PAUSA)  
+> - `lib/features/home/widgets/weather_kind.dart` (tipo de tiempo para el ícono del clima)  
 > - `lib/features/home/widgets/tv_vertical_nav_rail.dart`  
 
 ---
@@ -70,9 +70,9 @@ Fila de adelantos del catálogo (ya no aparecen en la grilla de Películas). Se 
 ### 3.6 Arcade
 Juego listo con acciones **Jugar**, **Cambiar** e **Invitar**. "Invitar" sólo aparece si hay amigos en línea (`WatchPartyProvider.hasOnlineFriends`) y abre la partida a distancia (`ArcadeLauncher.playTogether`, SPEC-38). Si los amigos se desconectan, la selección vuelve a "Jugar".
 
-## 4. Fondo de cielo (EN PAUSA)
+## 4. Fondo de cielo (descartado)
 
-`home_sky.dart` tiene un fondo fotográfico según hora y clima (8 imágenes WebP en `assets/images/home_sky/`, créditos en `CREDITOS.md`). Al usuario no le convenció: el código quedó **comentado** con la marca `EN PAUSA` en `home_dashboard_area.dart` y la carpeta comentada en `pubspec.yaml`. No borrar: se va a revisar.
+Hubo un fondo fotográfico según hora y clima detrás del saludo (`home_sky.dart`, fotos en `assets/images/home_sky/`). Se descartó (decisión del usuario, 2026-10-30): se borraron el widget, las fotos, el código comentado del Inicio y su test. Del archivo sólo quedó `WeatherKind`/`weatherKindOf` (`weather_kind.dart`), que usa la tarjeta del clima para el color del ícono.
 
 ## 5. Criterios de aceptación
 
@@ -80,4 +80,4 @@ Juego listo con acciones **Jugar**, **Cambiar** e **Invitar**. "Invitar" sólo a
 - Sin eventos hoy, la tarjeta de Eventos no se renderiza.
 - Con el ajuste de adelantos apagado, la tarjeta de Adelantos no aparece.
 - En el Inicio el rail muestra el logo; en otra sección, la pill de hora y clima.
-- Tests: `home_dashboard_area_test`, `home_clock_test`, `home_arcade_card_test`, `home_friends_card_test`, `tv_vertical_nav_rail_test`, `home_sky_test`, `weather_location_test`.
+- Tests: `home_dashboard_area_test`, `home_clock_test`, `home_arcade_card_test`, `home_friends_card_test`, `tv_vertical_nav_rail_test`, `weather_kind_test`, `weather_location_test`.

@@ -24,6 +24,14 @@ extension _TvAreaExplore on HomeTvAreaState {
         : base;
   }
 
+  /// El canal sintonizado (el del visor): de él salen los checks.
+  Channel? get _tunedChannel => context.read<ChannelProvider>().selectedChannel;
+
+  /// Grupo o categoría como los nombra la lista (vacío → "General").
+  String _browserName(String value) => value.trim().isEmpty
+      ? LocaleKeys.browser_group_general.tr()
+      : value.trim();
+
   Widget _buildExploreExpanded(
     TvExplorePanel panel,
     String title,
@@ -74,6 +82,9 @@ extension _TvAreaExplore on HomeTvAreaState {
           onLongPress: () => _activateAlphabet(TvExplorePanel.country),
           onFocusUp: _focusCurrentTab,
           emptyMessage: _channelLoadErrorMessage(),
+          tunedCountry: _tunedChannel == null
+              ? null
+              : _browserName(_tunedChannel!.country),
         ),
       );
     }
@@ -107,6 +118,13 @@ extension _TvAreaExplore on HomeTvAreaState {
           onSelect: _selectCategory,
           onLongPress: () => _activateAlphabet(TvExplorePanel.category),
           onFocusUp: _focusCurrentTab,
+          // Sólo en el grupo del sintonizado: "Noticias" de otro país no.
+          tunedCategory:
+              _tunedChannel != null &&
+                  _browserName(_tunedChannel!.country) ==
+                      _browser.selectedCountry
+              ? _browserName(_tunedChannel!.category)
+              : null,
         ),
       );
     }
@@ -138,6 +156,7 @@ extension _TvAreaExplore on HomeTvAreaState {
         onSelect: _selectChannel,
         onLongPress: () => _activateAlphabet(TvExplorePanel.channel),
         onFocusUp: _focusCurrentTab,
+        tunedChannelId: _tunedChannel?.id,
       ),
     );
   }

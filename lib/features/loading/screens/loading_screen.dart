@@ -3,6 +3,7 @@ import 'package:moai3/config/constants.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/theme/moai_palette.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:moai3/config/app_info.dart';
@@ -22,7 +23,36 @@ import 'package:moai3/utils/moai_formats.dart';
 import 'package:moai3/widgets/tv_common/moai_ambient_background.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
-/// Pantalla inicial de verificación de presencia y carga con estética Material 3 Expressive (SPEC-22 §4.1).
+/// Etapa del arranque que muestra el recuadro de estado.
+enum _BootStep {
+  device(MoaiIcons.bootDevice),
+  secure(MoaiIcons.bootSecure),
+  session(MoaiIcons.bootSession),
+  catalog(MoaiIcons.bootCatalog),
+  ready(MoaiIcons.bootReady);
+
+  const _BootStep(this.icon);
+
+  final IconData icon;
+}
+
+/// Ícono de cada mensaje; los que no están usan el de su etapa.
+const Map<String, IconData> _statusIcons = {
+  LocaleKeys.loading_permission_required: MoaiIcons.bootPermission,
+  LocaleKeys.loading_init_services: MoaiIcons.bootServices,
+  LocaleKeys.loading_connecting_server: MoaiIcons.bootServer,
+  LocaleKeys.loading_secure_retry: MoaiIcons.bootRetry,
+  LocaleKeys.loading_secure_verified: MoaiIcons.bootSecureReady,
+  LocaleKeys.loading_session_failed: MoaiIcons.bootSessionFailed,
+  LocaleKeys.loading_catalog_updated: MoaiIcons.bootCatalogUpdated,
+  LocaleKeys.loading_catalog_cached: MoaiIcons.bootCatalogCached,
+  LocaleKeys.loading_catalog_not_updated: MoaiIcons.bootCatalogStale,
+  LocaleKeys.loading_secure_disconnecting: MoaiIcons.bootDisconnect,
+};
+
+/// Pantalla de arranque: verificación del dispositivo, VPN + login y, si
+/// toca, descarga del catálogo (SPEC-22 §4.1, SPEC-39 §4). Fondo: el de la
+/// app desenfocado; el estado va en un recuadro de vidrio.
 class LoadingScreen extends StatefulWidget {
   final DeviceIdentityService identityService;
   final SupabasePresenceService presenceService;
@@ -45,6 +75,7 @@ class _LoadingScreenState extends State<LoadingScreen>
 
   /// Opacidad máxima del aura del logo (late entre 0,12 y esto).
   static const double _glowMax = 0.28;
+
   final FocusNode _retryFocusNode = FocusNode(debugLabel: 'loading_retry');
   final FocusNode _cancelCatalogFocus = FocusNode(
     debugLabel: 'loading_cancel_catalog',
@@ -52,13 +83,20 @@ class _LoadingScreenState extends State<LoadingScreen>
 
   bool _isLoading = true;
   String? _errorMessage;
+  _BootStep _step = _BootStep.device;
   String _statusText = LocaleKeys.loading_connecting.tr();
+
+  /// Ícono del mensaje que se está mostrando.
+  IconData _icon = _BootStep.device.icon;
+
+  /// Segunda línea del recuadro (intento, secciones bajadas); null = nada.
+  String? _detailText;
   bool _catalogUpdateInProgress = false;
   bool _catalogCancelRequested = false;
   DateTime? _storedCatalogAt;
 
-  /// Intentos de VPN + login + descarga, cada uno con otro nodo.
-  static const int _maxAttempts = 3;
+  /// Intentos de VPN + login + descarga, cada uno con otro endpoint.
+  static const int _maxAttempts = 4;
 
   static const List<String> _catalogSections = [
     FeaturedMoviesProvider.sectionMovies,
@@ -78,10 +116,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutCubic),
     );
 
-    _glowAnimation = Tween<double>(
-      begin: 0.12 / _glowMax,
-      end: 1.0,
-    ).animate(
+    _glowAnimation = Tween<double>(begin: 0.12 / _glowMax, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutCubic),
     );
 
@@ -107,8 +142,29 @@ class _LoadingScreenState extends State<LoadingScreen>
   }
 
   void _setStatus(String key) {
-    if (mounted) setState(() => _statusText = key.tr());
+    if (!mounted) return;
+    setState(() {
+      _statusText = key.tr();
+      _icon = _statusIcons[key] ?? _step.icon;
+    });
   }
+
+  void _setStep(_BootStep step, String key, {String? detail}) {
+    if (!mounted) return;
+    setState(() {
+      _step = step;
+      _statusText = key.tr();
+      _icon = _statusIcons[key] ?? step.icon;
+      _detailText = detail;
+    });
+  }
+
+  void _setDetail(String? detail) {
+    if (mounted) setState(() => _detailText = detail);
+  }
+
+  String _attemptDetail(int attempt, int total) => LocaleKeys.loading_attempt
+      .tr(namedArgs: {'current': '$attempt', 'total': '$total'});
 
   /// Corta solo la descarga del catálogo; el login ya terminó.
   void _cancelCatalogUpdate() {
@@ -128,7 +184,10 @@ class _LoadingScreenState extends State<LoadingScreen>
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _step = _BootStep.device;
       _statusText = LocaleKeys.loading_connecting.tr();
+      _icon = _BootStep.device.icon;
+      _detailText = null;
     });
 
     MoiamovApiService.logLine('▶ Inicio de verificación de arranque Moai');
@@ -173,7 +232,7 @@ class _LoadingScreenState extends State<LoadingScreen>
         await _syncSessionAndCatalog(context.read<TvSettingsProvider>());
         if (!mounted) return;
 
-        // Garantizar un tiempo mínimo total cinematográfico
+        // Un mínimo para que el arranque no sea un parpadeo.
         final elapsed = DateTime.now().difference(startTime);
         if (elapsed < const Duration(milliseconds: 1200)) {
           await Future.delayed(const Duration(milliseconds: 1200) - elapsed);
@@ -181,10 +240,8 @@ class _LoadingScreenState extends State<LoadingScreen>
 
         if (!mounted) return;
 
-        setState(() {
-          _statusText = LocaleKeys.loading_ready.tr();
-        });
-        await Future.delayed(const Duration(milliseconds: 1200));
+        _setStep(_BootStep.ready, LocaleKeys.loading_ready);
+        await Future.delayed(const Duration(milliseconds: 700));
       } else {
         // Desarrollo: sin login, con el catálogo guardado.
         MoiamovApiService.logLine(
@@ -212,21 +269,12 @@ class _LoadingScreenState extends State<LoadingScreen>
       } else {
         context.go('/home');
       }
-    } on TimeoutException catch (e) {
-      MoiamovApiService.logLine('❌ Verificación del dispositivo: $e');
-      try {
-        await VpnService.instance.disconnect();
-      } catch (_) {}
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _errorMessage = LocaleKeys.loading_error_connection.tr();
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _retryFocusNode.requestFocus();
-      });
     } catch (e, st) {
-      MoiamovApiService.logLine('❌ Verificación del dispositivo: $e\n$st');
+      MoiamovApiService.logLine(
+        e is TimeoutException
+            ? '❌ Verificación del dispositivo: $e'
+            : '❌ Verificación del dispositivo: $e\n$st',
+      );
       try {
         await VpnService.instance.disconnect();
       } catch (_) {}
@@ -270,137 +318,159 @@ class _LoadingScreenState extends State<LoadingScreen>
       _catalogCancelRequested = false;
       final downloaded = <String>{};
 
-      // Los nodos van en el orden del ranking (SPEC-39 §4.1); los
-      // resultados se anotan al final.
+      // Endpoints (nodo + puerto) en el orden del ranking (SPEC-39 §4.1).
+      // Tras cada falla se reacomoda la cola: los del mismo servidor pasan
+      // al final. Los resultados se anotan al final.
       final ranking = VpnNodeRanking();
-      final nodes = (await ranking.orderedNodes()).take(_maxAttempts).toList();
-      final results =
-          <({VpnNode node, VpnAttempt attempt, Duration? elapsed})>[];
+      var queue = await ranking.orderedEndpoints();
+      final total = queue.length < _maxAttempts ? queue.length : _maxAttempts;
+      final results = <VpnAttemptResult>[];
       var anyTunnel = false;
+
+      Future<void> rotate(VpnEndpoint failed, {bool dropNode = false}) async {
+        queue = VpnNodeRanking.afterFailure(queue, failed, dropNode: dropNode);
+        _setStep(_BootStep.secure, LocaleKeys.loading_secure_retry);
+        await vpn.disconnect();
+        await _pause(const Duration(milliseconds: 500));
+      }
 
       // El permiso VPN se pide dentro de connect (el plugin guarda la
       // config, muestra el aviso del SO y al OK arranca el túnel). No usar
       // requestPermissionAndroid aparte: devuelve false al mostrar el diálogo.
-      for (var attempt = 0; attempt < nodes.length && mounted; attempt++) {
-        final node = nodes[attempt];
+      for (
+        var attempt = 1;
+        attempt <= total && queue.isNotEmpty && mounted;
+        attempt++
+      ) {
+        final endpoint = queue.removeAt(0);
         final attemptStart = DateTime.now();
-        _setStatus(LocaleKeys.loading_secure_connecting);
-        MoiamovApiService.logLine(
-          'Intento ${attempt + 1}/${nodes.length}: ${node.id}',
+        final detail = attempt > 1 ? _attemptDetail(attempt, total) : null;
+        _setStep(
+          _BootStep.secure,
+          LocaleKeys.loading_secure_connecting,
+          detail: detail,
         );
+        MoiamovApiService.logLine('Intento $attempt/$total: $endpoint');
 
-        final connection = await vpn.connect(node, onStatusUpdate: _setStatus);
+        final connection = await vpn.connect(
+          endpoint,
+          onStatusUpdate: _setStatus,
+        );
         if (connection == VpnConnectResult.permissionDenied) {
           MoiamovApiService.logLine('Permiso VPN rechazado por el usuario.');
           break;
         }
         if (connection == VpnConnectResult.cancelled) break;
         if (connection != VpnConnectResult.connected) {
-          // Con túnel arriba (otro país o sin respuesta) hay internet.
-          if (connection == VpnConnectResult.wrongCountry ||
-              connection == VpnConnectResult.unverified) {
-            anyTunnel = true;
-          }
           results.add((
-            node: node,
-            // Sin respuesta de la red no es culpa del nodo.
-            attempt: connection == VpnConnectResult.unverified
-                ? VpnAttempt.transient
-                : VpnAttempt.failure,
+            endpoint: endpoint,
+            attempt: VpnAttempt.failure,
             elapsed: null,
           ));
-          MoiamovApiService.logLine(
-            '${node.id}: conexión no verificada ($connection).',
-          );
-          await vpn.disconnect();
-          await _pause(const Duration(milliseconds: 1500));
+          MoiamovApiService.logLine('$endpoint: el túnel no conectó.');
+          await rotate(endpoint);
           continue;
         }
         anyTunnel = true;
 
-        _setStatus(LocaleKeys.loading_secure_verified);
-        MoiamovApiService.logLine(
-          'Conexión lista. Salida: ${vpn.lastExitIp} (${vpn.lastExitCountry})',
+        // Por dónde sale, sólo para el log: no frena el arranque (si la
+        // región no sirve, lo dice el portal al pedir la sesión).
+        final country = endpoint.node.country;
+        unawaited(
+          vpn
+              .checkExit(country: country)
+              .then(
+                (exit) => MoiamovApiService.logLine(
+                  'Salida $endpoint: ${vpn.lastExitIp} '
+                  '(${vpn.lastExitCountry}, esperado $country: ${exit.name})',
+                ),
+              ),
         );
-        // Esperar 2 segundos para estabilizar rutas y DNS de la interfaz tun0
-        await _pause(const Duration(milliseconds: 2000));
 
-        _setStatus(LocaleKeys.loading_session_init);
+        // Un respiro para que la interfaz tun0 tenga rutas y DNS.
+        _setStep(
+          _BootStep.secure,
+          LocaleKeys.loading_secure_verified,
+          detail: detail,
+        );
+        await _pause(const Duration(milliseconds: 1000));
+        _setStep(
+          _BootStep.session,
+          LocaleKeys.loading_session_init,
+          detail: detail,
+        );
         MoiamovApiService.logLine(
           'Solicitando sesión de dispositivo (sin credenciales)...',
         );
         var session = await api.ensureSession();
         // Un corte de red apenas sube el túnel suele pasar solo: se
-        // reintenta una vez con el mismo nodo antes de cambiarlo.
+        // reintenta una vez con el mismo endpoint antes de cambiarlo.
         if (!session && api.lastSessionNetworkFailure && mounted) {
           MoiamovApiService.logLine(
-            '${node.id}: la red no contestó; reintento con el mismo nodo...',
+            '$endpoint: la red no contestó; reintento con el mismo...',
           );
           await _pause(const Duration(milliseconds: 1500));
           if (!_catalogCancelRequested) session = await api.ensureSession();
         }
         if (!session) {
+          final region = api.lastSessionRegionRejected;
           results.add((
-            node: node,
+            endpoint: endpoint,
+            // Sin respuesta de la red no es culpa del endpoint.
             attempt: api.lastSessionNetworkFailure
                 ? VpnAttempt.transient
                 : VpnAttempt.failure,
             elapsed: null,
           ));
           MoiamovApiService.logLine(
-            api.lastSessionNetworkFailure
-                ? '${node.id}: la red sigue sin contestar; rotando nodo...'
-                : '${node.id}: sesión rechazada; rotando nodo...',
+            region
+                ? '$endpoint: el portal rechazó la salida; otro servidor...'
+                : api.lastSessionNetworkFailure
+                ? '$endpoint: la red sigue sin contestar; rotando...'
+                : '$endpoint: sesión rechazada; rotando...',
           );
-          await vpn.disconnect();
-          await _pause(const Duration(milliseconds: 1500));
+          // Con la región rechazada, los otros puertos del mismo servidor
+          // salen por la misma IP: se descartan.
+          await rotate(endpoint, dropNode: region);
           continue;
         }
         sessionOk = true;
         final sessionTime = DateTime.now().difference(attemptStart);
-        MoiamovApiService.logLine('✅ Sesión de dispositivo obtenida.');
-
-        if (!needsUpdate) {
-          results.add((
-            node: node,
-            attempt: VpnAttempt.success,
-            elapsed: sessionTime,
-          ));
-          break;
-        }
-        await _downloadMissingSections(downloaded, showCancel: hasCatalog);
-        // Si el usuario cortó la descarga, este nodo no se anota.
-        if (_catalogCancelRequested) break;
-        final complete = downloaded.length == _catalogSections.length;
+        MoiamovApiService.logLine(
+          '✅ Sesión de dispositivo obtenida (${sessionTime.inMilliseconds}ms).',
+        );
+        // El endpoint sirvió aunque después falle el catálogo: eso depende
+        // del servidor del portal, no de la VPN.
         results.add((
-          node: node,
-          attempt: complete ? VpnAttempt.success : VpnAttempt.failure,
+          endpoint: endpoint,
+          attempt: VpnAttempt.success,
           elapsed: sessionTime,
         ));
-        if (complete) break;
+
+        if (!needsUpdate) break;
+        await _downloadMissingSections(downloaded, showCancel: hasCatalog);
+        if (_catalogCancelRequested) break;
+        if (downloaded.length == _catalogSections.length) break;
         MoiamovApiService.logLine(
           'Faltan secciones (${downloaded.length}/${_catalogSections.length}); '
-          'rotando nodo...',
+          'rotando...',
         );
-        await vpn.disconnect();
-        await _pause(const Duration(milliseconds: 1500));
+        await rotate(endpoint);
       }
 
       // Si ningún túnel conectó, lo más probable es que no haya internet:
-      // no es culpa de los nodos y no se anota.
+      // no es culpa de los endpoints y no se anota.
       if (anyTunnel) {
-        for (final r in results) {
-          await ranking.record(r.node, attempt: r.attempt, elapsed: r.elapsed);
-        }
+        await ranking.recordAll(results);
       } else if (results.isNotEmpty) {
         MoiamovApiService.logLine(
           'Ningún túnel conectó: el ranking no se modifica.',
         );
       }
 
-      _setStatus(LocaleKeys.loading_secure_disconnecting);
+      _setStep(_BootStep.ready, LocaleKeys.loading_secure_disconnecting);
       await vpn.disconnect();
-      await _pause(const Duration(milliseconds: 1000));
+      await _pause(const Duration(milliseconds: 300));
 
       // La fecha cambia solo con las 3 secciones: si falta alguna, el
       // próximo arranque vuelve a intentar.
@@ -417,7 +487,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       } else {
         status = LocaleKeys.loading_catalog_cached;
       }
-      _setStatus(status);
+      _setStep(_BootStep.ready, status);
       await _pause(const Duration(milliseconds: 1200));
     } catch (e) {
       MoiamovApiService.logLine('⚠️ Error en VPN, login o catálogo: $e');
@@ -439,10 +509,18 @@ class _LoadingScreenState extends State<LoadingScreen>
     required bool showCancel,
   }) async {
     if (!mounted) return;
-    setState(() {
-      _catalogUpdateInProgress = showCancel;
-      _statusText = LocaleKeys.loading_catalog_downloading.tr();
-    });
+    String progress() => LocaleKeys.loading_catalog_progress.tr(
+      namedArgs: {
+        'done': '${downloaded.length}',
+        'total': '${_catalogSections.length}',
+      },
+    );
+    _setStep(
+      _BootStep.catalog,
+      LocaleKeys.loading_catalog_downloading,
+      detail: progress(),
+    );
+    setState(() => _catalogUpdateInProgress = showCancel);
     if (showCancel) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _catalogUpdateInProgress) {
@@ -457,7 +535,10 @@ class _LoadingScreenState extends State<LoadingScreen>
         section: section,
         timeout: const Duration(seconds: 12),
       );
-      if (result.isFreshLive) downloaded.add(section);
+      if (result.isFreshLive) {
+        downloaded.add(section);
+        _setDetail(progress());
+      }
     }
 
     await download(FeaturedMoviesProvider.sectionMovies);
@@ -475,34 +556,88 @@ class _LoadingScreenState extends State<LoadingScreen>
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      // El fondo es el ambiente (estático); sólo el logo late con la
-      // animación (SPEC-50 §6.1). El viejo degradado pulsante quedaba tapado
-      // por el ambiente y repintaba la pantalla entera en cada frame.
+      // El fondo de la app desenfocado (background_color_blur.webp, el del
+      // vidrio esmerilado); sólo el logo late con la animación (SPEC-50 §6.1).
       body: SizedBox.expand(
         child: Stack(
           children: [
-            const Positioned.fill(
-              child: IgnorePointer(child: MoaiAmbientBackground()),
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Image.asset(
+                  MoaiAmbientBackground.blurredAssetFor(scheme.brightness),
+                  fit: BoxFit.cover,
+                ),
+              ),
             ),
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                child: _isLoading
-                    ? _buildLoadingState(context, scheme)
-                    : _buildErrorState(context, scheme),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // El latido sólo escala y cambia la opacidad de capas ya
+                    // pintadas: la sombra difuminada se pinta una vez.
+                    ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          FadeTransition(
+                            opacity: _glowAnimation,
+                            child: RepaintBoundary(
+                              child: Container(
+                                width: 140,
+                                height: 140,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    // Blanca: con el acento se veía celeste.
+                                    BoxShadow(
+                                      color: Colors.white.withValues(
+                                        alpha: _glowMax,
+                                      ),
+                                      blurRadius: 48,
+                                      spreadRadius: 8,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          RepaintBoundary(child: _buildLogo(context)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 36),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      child: _isLoading
+                          ? _buildStatusCard(context, scheme)
+                          : _buildErrorCard(context, scheme),
+                    ),
+                  ],
+                ),
               ),
             ),
             Positioned(
               bottom: 24,
               left: 0,
               right: 0,
+              // La versión en una pastilla con el cristal de los botones.
               child: Center(
-                child: Text(
-                  'v${AppInfo.version}',
-                  style: MoaiText.body(
-                    context,
-                    fontSize: 12,
-                    color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
+                  decoration: moaiGlassButtonDecoration(scheme, focused: false),
+                  child: Text(
+                    'v${AppInfo.version}',
+                    style: MoaiText.body(
+                      context,
+                      fontSize: 12,
+                      color: scheme.onSurface,
+                    ),
                   ),
                 ),
               ),
@@ -513,96 +648,8 @@ class _LoadingScreenState extends State<LoadingScreen>
     );
   }
 
-  Widget _buildLoadingState(BuildContext context, ColorScheme scheme) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // El latido sólo escala y cambia la opacidad de capas ya pintadas: la
-        // sombra difuminada (radio 48) se pinta una vez, no en cada cuadro
-        // de todo el arranque.
-        ScaleTransition(
-          scale: _scaleAnimation,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Aura de luz ambiental circular difuminada
-              FadeTransition(
-                opacity: _glowAnimation,
-                child: RepaintBoundary(
-                  child: Container(
-                    width: 140,
-                    height: 140,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: scheme.primary.withValues(alpha: _glowMax),
-                          blurRadius: 48,
-                          spreadRadius: 8,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              RepaintBoundary(child: _buildLogo(context, scheme)),
-            ],
-          ),
-        ),
-        const SizedBox(height: 38),
-        // Indicador de píldora expresiva (Material 3 Expressive Pill)
-        Container(
-          width: 160,
-          height: 4.5,
-          // Riel de cristal: una línea tenue, sin relleno opaco.
-          decoration: BoxDecoration(
-            color:
-                (scheme.brightness == Brightness.dark
-                        ? Colors.white
-                        : scheme.onSurface)
-                    .withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(100),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(100),
-            child: LinearProgressIndicator(
-              color: scheme.primary,
-              backgroundColor: Colors.transparent,
-              borderRadius: BorderRadius.circular(100),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        // Píldora de estado: chip de cristal teñido del acento.
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
-          decoration: moaiGlassChipDecoration(scheme, highlighted: true),
-          child: Text(
-            _statusText,
-            textAlign: TextAlign.center,
-            style: MoaiText.body(
-              context,
-              fontSize: 13,
-              color: scheme.onSurface,
-            ),
-          ),
-        ),
-        if (_catalogUpdateInProgress && !_catalogCancelRequested) ...[
-          const SizedBox(height: 22),
-          TvDialogButton(
-            focusNode: _cancelCatalogFocus,
-            label: _cancelCatalogLabel(),
-            autofocus: true,
-            onPressed: _cancelCatalogUpdate,
-          ),
-        ],
-      ],
-    );
-  }
-
   /// Mascota e isotipo de Moai.
-  Widget _buildLogo(BuildContext context, ColorScheme scheme) {
+  Widget _buildLogo(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -616,61 +663,147 @@ class _LoadingScreenState extends State<LoadingScreen>
         SvgPicture.asset(
           'assets/svgs/appLogo.svg',
           height: 24,
-          colorFilter: ColorFilter.mode(scheme.onSurface, BlendMode.srcIn),
+          // Del mismo gris oscuro que el logo del Inicio.
+          colorFilter: ColorFilter.mode(
+            MoaiPalette.of(context).inkMuted,
+            BlendMode.srcIn,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildErrorState(BuildContext context, ColorScheme scheme) {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 420),
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
-      // Misma superficie que los diálogos sobre el fondo ambiente.
-      decoration: moaiDialogDecoration(scheme, radius: 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: scheme.errorContainer.withValues(alpha: 0.25),
-              shape: BoxShape.circle,
+  /// Recuadro de vidrio con la
+  /// etapa, qué está haciendo y la barra de progreso en el acento.
+  Widget _buildStatusCard(BuildContext context, ColorScheme scheme) {
+    final showCancel = _catalogUpdateInProgress && !_catalogCancelRequested;
+    return SizedBox(
+      key: const ValueKey('loading_status'),
+      width: 400,
+      child: MoaiGlass(
+        borderRadius: MoaiGlass.panelRadius,
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    _icon,
+                    key: ValueKey(_icon),
+                    size: MoaiIconSizes.lg,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _statusText,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: MoaiText.body(
+                          context,
+                          fontWeight: FontWeight.w700,
+                          color: scheme.onSurface,
+                        ),
+                      ),
+                      if (_detailText != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          _detailText!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: MoaiText.body(
+                            context,
+                            fontSize: 12.5,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ),
-            child: Icon(
+            const SizedBox(height: 16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(100),
+              child: LinearProgressIndicator(
+                minHeight: 4,
+                color: scheme.primary,
+                backgroundColor: scheme.onSurface.withValues(alpha: 0.10),
+              ),
+            ),
+            if (showCancel) ...[
+              const SizedBox(height: 18),
+              Center(
+                child: TvDialogButton(
+                  focusNode: _cancelCatalogFocus,
+                  label: _cancelCatalogLabel(),
+                  icon: MoaiIcons.check,
+                  autofocus: true,
+                  onPressed: _cancelCatalogUpdate,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// El mismo vidrio, con el aviso de error y el botón de reintento.
+  Widget _buildErrorCard(BuildContext context, ColorScheme scheme) {
+    return SizedBox(
+      key: const ValueKey('loading_error'),
+      width: 420,
+      child: MoaiGlass(
+        borderRadius: MoaiGlass.panelRadius,
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
               MoaiIcons.offline,
               size: MoaiIconSizes.xxl,
               color: scheme.error,
             ),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            LocaleKeys.loading_error_title.tr(),
-            style: MoaiText.display(
-              context,
-              fontSize: 18,
-              color: scheme.onSurface,
+            const SizedBox(height: 14),
+            Text(
+              LocaleKeys.loading_error_title.tr(),
+              style: MoaiText.display(
+                context,
+                fontSize: 18,
+                color: scheme.onSurface,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _errorMessage ?? LocaleKeys.loading_error_connection.tr(),
-            textAlign: TextAlign.center,
-            style: MoaiText.body(
-              context,
-              fontSize: 13,
-              color: scheme.onSurfaceVariant,
+            const SizedBox(height: 6),
+            Text(
+              _errorMessage ?? LocaleKeys.loading_error_connection.tr(),
+              textAlign: TextAlign.center,
+              style: MoaiText.body(
+                context,
+                fontSize: 13,
+                color: scheme.onSurfaceVariant,
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-          TvDialogButton(
-            focusNode: _retryFocusNode,
-            label: LocaleKeys.update_action_retry.tr(),
-            variant: TvDialogButtonVariant.primary,
-            icon: MoaiIcons.refresh,
-            onPressed: _startVerification,
-          ),
-        ],
+            const SizedBox(height: 20),
+            TvDialogButton(
+              focusNode: _retryFocusNode,
+              label: LocaleKeys.update_action_retry.tr(),
+              variant: TvDialogButtonVariant.primary,
+              icon: MoaiIcons.refresh,
+              onPressed: _startVerification,
+            ),
+          ],
+        ),
       ),
     );
   }

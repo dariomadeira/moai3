@@ -4,7 +4,8 @@ import 'package:flutter/services.dart';
 /// Kotlin los registra en `MainActivity`, `PluginLoader`, `ArcadeEmulatorManager`,
 /// `RemoteVoiceManager` y `TitanRangerManager`.
 abstract final class PlatformChannels {
-  /// RAM, identidad de hardware, emulador, salir, sonidos D-pad, instalar APK.
+  /// RAM, identidad de hardware, emulador, salir, sonidos D-pad, instalar APK,
+  /// abrir YouTube.
   static const device = MethodChannel('com.infomak.moai.tv/device');
 
   /// Motor de video ExoPlayer (create/setMedia/play/pauseAll/resumeAll…).

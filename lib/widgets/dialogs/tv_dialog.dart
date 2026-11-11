@@ -2,6 +2,7 @@ import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
@@ -37,7 +38,6 @@ class TvDialog extends StatelessWidget {
   final Widget? trailingHeader;
   final Widget? content;
   final List<Widget>? actions;
-  final MainAxisAlignment actionsAlignment;
 
   final EdgeInsetsGeometry padding;
 
@@ -56,7 +56,6 @@ class TvDialog extends StatelessWidget {
     this.trailingHeader,
     this.content,
     this.actions,
-    this.actionsAlignment = MainAxisAlignment.end,
   });
 
   @override
@@ -66,6 +65,7 @@ class TvDialog extends StatelessWidget {
     // para lograr el fondo oscuro característico y contraste perfecto con los TvTile
     final baseColor = scheme.surface;
     final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
+    final glass = MoaiGlassScope.enabledOf(context);
 
     return Center(
       child: Material(
@@ -73,116 +73,151 @@ class TvDialog extends StatelessWidget {
         child: Container(
           width: width,
           margin: const EdgeInsets.symmetric(horizontal: 24),
-          decoration: MoaiGlassScope.enabledOf(context)
-              ? moaiDialogDecoration(scheme)
+          decoration: glass
+              ? null
               : BoxDecoration(
-            color: baseColor,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: borderColor,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              Padding(
-                padding: padding,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Encabezado estandarizado
-                    if (icon != null ||
-                        iconWidget != null ||
-                        title != null ||
-                        titleWidget != null) ...[
-                Row(
-                  children: [
-                    if (iconWidget != null)
-                      iconWidget!
-                    else if (icon != null)
-                      Icon(
-                        icon,
-                        color: iconColor ?? scheme.primary,
-                        size: MoaiIconSizes.xl,
-                      ),
-                    if (icon != null || iconWidget != null)
-                      const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (titleWidget != null)
-                            titleWidget!
-                          else if (title != null)
-                            Text(
-                              title!,
-                              style: MoaiText.display(
-                                context,
-                                fontSize: 18,
-                                color: scheme.onSurface,
-                              ),
-                            ),
-                          if (subtitleWidget != null) ...[
-                            const SizedBox(height: 2),
-                            subtitleWidget!,
-                          ] else if (subtitle != null) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              subtitle!,
-                              style: MoaiText.body(
-                                context,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                color: scheme.onSurface.withValues(alpha: 0.72),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                  color: baseColor,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: borderColor),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
                     ),
-                    if (trailingHeader != null) ...[
-                      const SizedBox(width: 12),
-                      trailingHeader!,
-                    ],
                   ],
                 ),
-                if (content != null || actions != null)
-                  const SizedBox(height: 16),
-              ],
+          child: _surface(
+            glass: glass,
+            child: Stack(
+              children: [
+                Padding(
+                  padding: padding,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Encabezado estandarizado
+                      if (icon != null ||
+                          iconWidget != null ||
+                          title != null ||
+                          titleWidget != null) ...[
+                        Row(
+                          children: [
+                            if (iconWidget != null)
+                              iconWidget!
+                            else if (icon != null)
+                              Icon(
+                                icon,
+                                // El acento (2026-11-10; en cristal era un
+                                // índigo fijo); un color propio, si se da.
+                                color: iconColor ?? scheme.primary,
+                                size: MoaiIconSizes.xl,
+                              ),
+                            if (icon != null || iconWidget != null)
+                              const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (titleWidget != null || title != null)
+                                    _titleGradient(
+                                      glass: glass,
+                                      child:
+                                          titleWidget ??
+                                          Text(
+                                            title!,
+                                            style: MoaiText.display(
+                                              context,
+                                              fontSize: 18,
+                                              color: scheme.onSurface,
+                                            ),
+                                          ),
+                                    ),
+                                  if (subtitleWidget != null) ...[
+                                    const SizedBox(height: 2),
+                                    subtitleWidget!,
+                                  ] else if (subtitle != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      subtitle!,
+                                      style: MoaiText.body(
+                                        context,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                        color: scheme.onSurface.withValues(
+                                          alpha: 0.72,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            if (trailingHeader != null) ...[
+                              const SizedBox(width: 12),
+                              trailingHeader!,
+                            ],
+                          ],
+                        ),
+                        if (content != null || actions != null)
+                          const SizedBox(height: 16),
+                      ],
 
-              // Contenido
-              ?content,
+                      // Contenido
+                      ?content,
 
-              // Botones de acción
-              if (actions != null && actions!.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: actionsAlignment,
-                  children: [
-                    for (int i = 0; i < actions!.length; i++) ...[
-                      if (i > 0 && actions![i] is! SizedBox && actions![i - 1] is! SizedBox)
-                        const SizedBox(width: 12),
-                      actions![i],
+                      // Botones de acción
+                      if (actions != null && actions!.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Row(
+                          // Siempre a la derecha, en todos los modales.
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            for (int i = 0; i < actions!.length; i++) ...[
+                              if (i > 0 &&
+                                  actions![i] is! SizedBox &&
+                                  actions![i - 1] is! SizedBox)
+                                const SizedBox(width: 12),
+                              actions![i],
+                            ],
+                          ],
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ],
-            ],
+            ),
           ),
         ),
-      ],
-    ),
-  ),
-),
-);
+      ),
+    );
   }
+}
+
+/// Superficie del diálogo en cristal: el vidrio esmerilado de los paneles
+/// grandes (el fondo desenfocado a través, velo blanco suave, filo de luz y
+/// sombra). Antes era un relleno sólido casi blanco que no se leía como
+/// cristal y apagaba todo lo de adentro.
+Widget _surface({required bool glass, required Widget child}) {
+  if (!glass) return child;
+  return MoaiGlass(frosted: true, child: child);
+}
+
+/// En cristal, el título va con el degradado de dos colores de los
+/// encabezados de los paneles (en todos los diálogos). El Align ajusta el
+/// degradado al ancho del texto.
+Widget _titleGradient({required bool glass, required Widget child}) {
+  if (!glass) return child;
+  return Align(
+    alignment: Alignment.centerLeft,
+    child: ShaderMask(
+      blendMode: BlendMode.srcIn,
+      shaderCallback: HomeClock.timeShader,
+      child: child,
+    ),
+  );
 }
 
 /// Botón estandarizado para modales de Android TV.
@@ -288,30 +323,22 @@ class _TvDialogButtonState extends State<TvDialogButton> {
         borderRadius: BorderRadius.circular(12),
       );
       fg = fgColor;
-    } else if (_isFocused) {
-      decoration = BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.transparent),
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color.lerp(bgColor, Colors.white, 0.18)!, bgColor],
-        ),
-        boxShadow: [
-          BoxShadow(color: bgColor.withValues(alpha: 0.4), blurRadius: 16),
-        ],
-      );
-      fg = fgColor;
     } else {
+      // Los botones de cristal del Inicio: blancos con filo de luz; con
+      // foco, el acento (o el rojo de error) con brillo y halo. La principal
+      // sin foco va blanca con el texto en el acento (sin vidrio teñido).
       final primary = widget.variant == TvDialogButtonVariant.primary;
-      decoration = moaiGlassChipDecoration(
+      decoration = moaiGlassButtonDecoration(
         scheme,
-        radius: 12,
-        highlighted: primary,
+        focused: _isFocused,
+
+        accent: destructive ? scheme.error : null,
       );
-      fg = destructive
-          ? scheme.error
-          : (primary ? scheme.primary : scheme.onSurface);
+      fg = _isFocused
+          ? fgColor
+          : (destructive
+                ? scheme.error
+                : (primary ? scheme.primary : scheme.onSurface));
     }
 
     return Focus(
@@ -347,20 +374,28 @@ class _TvDialogButtonState extends State<TvDialogButton> {
         onTap: widget.onPressed,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          // Más delicado: píldora baja, como los botones del Inicio.
+          padding: EdgeInsets.symmetric(
+            horizontal: glass ? 16 : 20,
+            vertical: glass ? 7 : 10,
+          ),
           decoration: decoration,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (widget.icon != null) ...[
-                Icon(widget.icon, size: MoaiIconSizes.md, color: fg),
+                Icon(
+                  widget.icon,
+                  size: glass ? MoaiIconSizes.sm : MoaiIconSizes.md,
+                  color: fg,
+                ),
                 const SizedBox(width: 8),
               ],
               Text(
                 widget.label,
                 style: MoaiText.body(
                   context,
-                  fontSize: 13,
+                  fontSize: glass ? 12 : 13,
                   fontWeight: FontWeight.w700,
                   color: fg,
                 ),
@@ -388,8 +423,7 @@ Future<T?> showTvGeneralDialog<T>({
     barrierColor: barrierColor ?? Colors.black.withValues(alpha: 0.7),
     pageBuilder: (ctx, anim, secAnim) => builder(ctx),
     transitionBuilder: (ctx, anim, secAnim, child) {
-      final curved =
-          CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
+      final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
       return FadeTransition(
         opacity: curved,
         child: ScaleTransition(

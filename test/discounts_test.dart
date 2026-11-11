@@ -420,6 +420,15 @@ void main() {
       // Como la Agenda: día de la semana y número.
       expect(find.text('LUN'), findsOneWidget);
       expect(find.text('Coto'), findsOneWidget);
+      // Con qué banco es la promo, y el rango con el degradado de Eventos.
+      expect(find.text('BNA'), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.textContaining('Oct'),
+          matching: find.byType(ShaderMask),
+        ),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
 
       // → al martes y OK: el detalle con sus condiciones.

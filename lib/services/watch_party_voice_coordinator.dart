@@ -64,7 +64,8 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
   void _onProviderChanged() {
     if (watchPartyProvider.enabled && _cancelVoiceSubscription == null) {
       _subscribeToRealtime();
-    } else if (!watchPartyProvider.enabled && _cancelVoiceSubscription != null) {
+    } else if (!watchPartyProvider.enabled &&
+        _cancelVoiceSubscription != null) {
       _unsubscribeFromRealtime();
       _incomingQueue.clear();
       _stopPlayback();
@@ -77,7 +78,9 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
         onMessageReceived: handleIncomingVoiceMessage,
       );
     } catch (e) {
-      debugPrint('[WatchPartyVoiceCoordinator] Error al suscribir a Realtime: $e');
+      debugPrint(
+        '[WatchPartyVoiceCoordinator] Error al suscribir a Realtime: $e',
+      );
     }
   }
 
@@ -85,7 +88,9 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
     try {
       _cancelVoiceSubscription?.call();
     } catch (e) {
-      debugPrint('[WatchPartyVoiceCoordinator] Error al desuscribir de Realtime: $e');
+      debugPrint(
+        '[WatchPartyVoiceCoordinator] Error al desuscribir de Realtime: $e',
+      );
     }
     _cancelVoiceSubscription = null;
   }
@@ -109,7 +114,8 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
       return; // No hay canal sintonizado
     }
 
-    final isSameChannel = message.channelId == currentChId ||
+    final isSameChannel =
+        message.channelId == currentChId ||
         (watchPartyProvider.currentChannelName != null &&
             message.channelName != null &&
             _isSameNormalizedChannel(
@@ -122,11 +128,11 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
     }
 
     // 2. Filtro estricto de privacidad / confianza (Solo amigos agregados)
-    final friends = watchPartyProvider.friends;
+    final friends = watchPartyProvider.mutualFriends;
     final friend = friends.cast<dynamic>().firstWhere(
-          (f) => f.deviceId == message.senderDeviceId,
-          orElse: () => null,
-        );
+      (f) => f.deviceId == message.senderDeviceId,
+      orElse: () => null,
+    );
 
     if (friend == null) {
       // Regla de privacidad: El emisor no está en mi lista de amigos -> NUNCA reproducir
@@ -136,10 +142,9 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
     final senderName = friend.nickname ?? friend.userCode;
 
     // 3. Encolar en cola FIFO
-    _incomingQueue.add(_QueuedVoiceMessage(
-      record: message,
-      senderName: senderName,
-    ));
+    _incomingQueue.add(
+      _QueuedVoiceMessage(record: message, senderName: senderName),
+    );
 
     _playNextIfPossible();
   }
@@ -148,7 +153,10 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
     String clean(String s) => s
         .trim()
         .toLowerCase()
-        .replaceAll(RegExp(r'\b(hd|fhd|sd|4k|argentina|arg)\b', caseSensitive: false), '')
+        .replaceAll(
+          RegExp(r'\b(hd|fhd|sd|4k|argentina|arg)\b', caseSensitive: false),
+          '',
+        )
         .replaceAll(RegExp(r'[^a-z0-9]'), '');
     return clean(a).isNotEmpty && clean(a) == clean(b);
   }
@@ -242,7 +250,9 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
         }
       }
     } catch (e) {
-      debugPrint('[WatchPartyVoiceCoordinator] Error al finalizar y enviar grabación: $e');
+      debugPrint(
+        '[WatchPartyVoiceCoordinator] Error al finalizar y enviar grabación: $e',
+      );
     } finally {
       // Reanudar cola de reproducción
       _isQueuePaused = false;
@@ -262,7 +272,9 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
     try {
       await VoiceAudioService.stopRecording();
     } catch (e) {
-      debugPrint('[WatchPartyVoiceCoordinator] Error al cancelar grabación: $e');
+      debugPrint(
+        '[WatchPartyVoiceCoordinator] Error al cancelar grabación: $e',
+      );
     }
 
     _isQueuePaused = false;
@@ -270,7 +282,10 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
   }
 
   void _playNextIfPossible() {
-    if (_incomingQueue.isEmpty || _isPlaying || _isRecording || _isQueuePaused) {
+    if (_incomingQueue.isEmpty ||
+        _isPlaying ||
+        _isRecording ||
+        _isQueuePaused) {
       return;
     }
 
@@ -285,7 +300,10 @@ class WatchPartyVoiceCoordinator extends ChangeNotifier {
     // Timeout de seguridad en caso de que el callback no se dispare
     _playbackTimeoutTimer?.cancel();
     final safetySeconds = (item.record.durationMs / 1000).ceil() + 3;
-    _playbackTimeoutTimer = Timer(Duration(seconds: safetySeconds.clamp(4, 25)), _onPlaybackComplete);
+    _playbackTimeoutTimer = Timer(
+      Duration(seconds: safetySeconds.clamp(4, 25)),
+      _onPlaybackComplete,
+    );
   }
 
   void _onPlaybackComplete() {

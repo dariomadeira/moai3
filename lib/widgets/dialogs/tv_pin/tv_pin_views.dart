@@ -8,8 +8,9 @@ extension _TvPinDialogViews on _TvPinDialogState {
     final glass = MoaiGlassScope.enabledOf(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      // En cristal, sin "pozo" detrás: sólo las casillas.
       decoration: glass
-          ? moaiGlassWellDecoration(scheme)
+          ? null
           : BoxDecoration(
               color: scheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(16),
@@ -41,11 +42,18 @@ extension _TvPinDialogViews on _TvPinDialogState {
             width: 44,
             height: 48,
             margin: const EdgeInsets.symmetric(horizontal: 5),
-            decoration: glass && !isCurrent
-                ? moaiGlassChipDecoration(
+            // Cristal: piezas de vidrio blanco como los botones (las llenas,
+            // con el tinte del acento); la actual, además, borde del acento.
+            decoration: glass
+                ? moaiGlassButtonDecoration(
                     scheme,
-                    radius: 12,
+                    focused: false,
                     highlighted: isFilled,
+                    radius: 12,
+                  ).copyWith(
+                    border: isCurrent
+                        ? Border.all(color: scheme.primary, width: 1.5)
+                        : null,
                   )
                 : BoxDecoration(
                     color: glass ? Colors.transparent : boxBg,
@@ -189,6 +197,8 @@ extension _TvPinDialogViews on _TvPinDialogState {
               0,
               icon: MoaiIcons.pinBackspace,
               isAction: true,
+              // Naranja: borra el último dígito.
+              iconColor: const Color(0xFFEA580C),
               scheme: scheme,
               onTap: _onBackspace,
             ),
@@ -204,6 +214,8 @@ extension _TvPinDialogViews on _TvPinDialogState {
               2,
               icon: MoaiIcons.pinClose,
               isAction: true,
+              // Rojo: cierra sin cambiar el PIN.
+              iconColor: const Color(0xFFDC2626),
               scheme: scheme,
               onTap: () => Navigator.of(context).pop(),
             ),
@@ -219,6 +231,7 @@ extension _TvPinDialogViews on _TvPinDialogState {
     String? label,
     IconData? icon,
     bool isAction = false,
+    Color? iconColor,
     required ColorScheme scheme,
     required VoidCallback onTap,
   }) {
@@ -277,7 +290,9 @@ extension _TvPinDialogViews on _TvPinDialogState {
               fg = scheme.onPrimary;
             } else if (glass) {
               bg = Colors.transparent;
-              fg = isAction ? scheme.primary : scheme.onSurface;
+              // Borrar y ✕: blancas como los números, con el ícono en su
+              // color (naranja y rojo).
+              fg = iconColor ?? scheme.onSurface;
             } else if (isAction) {
               bg = scheme.primaryContainer;
               fg = scheme.onPrimaryContainer;
@@ -303,7 +318,6 @@ extension _TvPinDialogViews on _TvPinDialogState {
                       ? moaiGlassButtonDecoration(
                           scheme,
                           focused: isFocused,
-                          highlighted: isAction,
                           radius: 12,
                         )
                       : BoxDecoration(

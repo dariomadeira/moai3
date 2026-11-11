@@ -151,9 +151,8 @@ Además de `initializeEmulator`, `loadRom`, `sendInputState`, `pause`/`resume`/`
 | Método | Argumentos | Respuesta |
 | :--- | :--- | :--- |
 | `netplayEnable` | `enabled`, `delayFrames`, `isHost` | `true` |
-| `netplaySubmitLocalInput` | `frame`, `mask` | `true` |
+| `netplayDrainLocalInputs` | — | `[frame, mask, …]` |
 | `netplaySubmitRemoteInput` | `frame`, `mask` | `true` |
-| `netplayGetFrame` | — | `int`/`long` |
 
 Detalle de comportamiento: [SPEC-38](../features/arcade_netplay.md).
 

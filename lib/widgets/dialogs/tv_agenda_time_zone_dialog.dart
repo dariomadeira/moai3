@@ -11,6 +11,7 @@ import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_input/tv_text_field.dart';
+
 /// Diálogo modal interactivo para Android TV que permite buscar y seleccionar
 /// la zona horaria (país / desfase UTC) de la agenda.
 class TvAgendaTimeZoneDialog extends StatefulWidget {
@@ -29,10 +30,12 @@ class TvAgendaTimeZoneDialog extends StatefulWidget {
 }
 
 class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
-  final FocusNode _searchFocusNode =
-      FocusNode(debugLabel: 'agenda_tz_search_focus');
-  final FocusNode _closeBtnFocus =
-      FocusNode(debugLabel: 'agenda_tz_close_btn_focus');
+  final FocusNode _searchFocusNode = FocusNode(
+    debugLabel: 'agenda_tz_search_focus',
+  );
+  final FocusNode _closeBtnFocus = FocusNode(
+    debugLabel: 'agenda_tz_close_btn_focus',
+  );
   final TextEditingController _searchController = TextEditingController();
   final GlobalKey<TvWindowedListState<AgendaTimeZone>> _listKey =
       GlobalKey<TvWindowedListState<AgendaTimeZone>>();
@@ -46,8 +49,9 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
     _filteredZones = List.of(AgendaClockProvider.zones);
 
     final currentId = context.read<AgendaClockProvider>().zone.id;
-    final initialIdx =
-        _filteredZones.indexWhere((zone) => zone.id == currentId);
+    final initialIdx = _filteredZones.indexWhere(
+      (zone) => zone.id == currentId,
+    );
     _selectedResultIndex = initialIdx < 0 ? 0 : initialIdx;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -73,8 +77,9 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
       } else {
         _filteredZones = AgendaClockProvider.zones.where((zone) {
           final countryName = zone.nameKey.tr().toLowerCase();
-          final offsetStr =
-              ArgentinaTime.formatOffset(zone.offsetHours).toLowerCase();
+          final offsetStr = ArgentinaTime.formatOffset(
+            zone.offsetHours,
+          ).toLowerCase();
           final rawOffset = '${zone.offsetHours}';
           return countryName.contains(trimmed) ||
               offsetStr.contains(trimmed) ||
@@ -140,8 +145,7 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
           onKeyUp: () {
             if (_filteredZones.isNotEmpty) {
-              _listKey.currentState
-                  ?.ensureVisible(_filteredZones.length - 1);
+              _listKey.currentState?.ensureVisible(_filteredZones.length - 1);
             } else {
               _searchFocusNode.requestFocus();
             }
@@ -174,10 +178,7 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
             Text(
               LocaleKeys.settings_agenda_utc_no_results.tr(),
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: scheme.onSurfaceVariant,
-              ),
+              style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -200,45 +201,48 @@ class _TvAgendaTimeZoneDialogState extends State<TvAgendaTimeZoneDialog> {
         onFocusUpFromFirst: _searchFocusNode.requestFocus,
         onFocusDownFromLast: _closeBtnFocus.requestFocus,
         onFocusedGlobalIndex: (idx) => _selectedResultIndex = idx,
-        itemBuilder: (
-          context,
-          zone,
-          focusNode,
-          localIndex,
-          globalIndex,
-          onKeyUp,
-          onKeyDown,
-        ) {
-          final isSelected = zone.id == selectedId;
+        itemBuilder:
+            (
+              context,
+              zone,
+              focusNode,
+              localIndex,
+              globalIndex,
+              onKeyUp,
+              onKeyDown,
+            ) {
+              final isSelected = zone.id == selectedId;
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            child: TvTile(
-              focusNode: focusNode,
-              minHeight: 0,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 8,
-              ),
-              label: zone.nameKey.tr(),
-              description: ArgentinaTime.formatOffset(zone.offsetHours),
-              icon: MoaiIcons.timeZone,
-              onPressed: () => _selectZone(zone),
-              onKeyUp: onKeyUp,
-              onKeyDown: onKeyDown,
-              trailingBuilder: (context, isFocused) {
-                if (!isSelected) {
-                  return const SizedBox(width: 22);
-                }
-                return Icon(
-                  MoaiIcons.check,
-                  size: MoaiIconSizes.md,
-                  color: isFocused ? scheme.onPrimary : scheme.primary,
-                );
-              },
-            ),
-          );
-        },
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: TvTile(
+                  focusNode: focusNode,
+                  minHeight: 0,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  label: zone.nameKey.tr(),
+                  description: ArgentinaTime.formatOffset(zone.offsetHours),
+                  icon: MoaiIcons.timeZone,
+                  onPressed: () => _selectZone(zone),
+                  onKeyUp: onKeyUp,
+                  onKeyDown: onKeyDown,
+                  trailingBuilder: (context, isFocused) {
+                    if (!isSelected) {
+                      return const SizedBox(width: 22);
+                    }
+                    // Verde fuerte, con foco o sin él: se distingue del azul
+                    // del foco.
+                    return const Icon(
+                      MoaiIcons.selectedCheck,
+                      size: MoaiIconSizes.md,
+                      color: Color(0xFF16A34A),
+                    );
+                  },
+                ),
+              );
+            },
       ),
     );
   }

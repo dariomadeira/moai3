@@ -6,6 +6,8 @@ import 'package:moai3/features/games/arcade_launcher.dart';
 import 'package:moai3/features/games/screens/arcade_games_screen.dart';
 import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
 import 'package:moai3/features/home/areas/home_area.dart';
+import 'package:moai3/features/home/widgets/home_arcade_card.dart';
+import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/focus/focus_requester.dart';
@@ -13,6 +15,7 @@ import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/widgets/dialogs/tv_gamepad_config_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
+import 'package:moai3/widgets/tv_common/tv_panel_slots.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
@@ -117,8 +120,10 @@ class _HomeArcadeAreaState extends HomeAreaState<HomeArcadeArea> {
 
     final scheme = Theme.of(context).colorScheme;
     final panelColors = [scheme.surface.withValues(alpha: 0.8)];
-    final titles = [LocaleKeys.arcade_panel_title.tr()];
-    const icons = [MoaiIcons.gamepad];
+    // La pestaña dice sólo «Arcade», como el rail; el encabezado, el título
+    // largo.
+    final titles = [LocaleKeys.home_rail_arcade_title.tr()];
+    const icons = [MoaiIcons.railArcade];
 
     return TvAccordionRowPreview(
       panelCount: 1,
@@ -128,77 +133,92 @@ class _HomeArcadeAreaState extends HomeAreaState<HomeArcadeArea> {
       icons: icons,
       onPanelTap: (_) {},
       buildExpandedContent: (index, title) {
-        return Container(
-          padding: const EdgeInsets.only(
-            left: 16,
-            right: 24,
-            top: 12,
-            bottom: 12,
+        final hasRoms = widget.romManager.installedRoms.isNotEmpty;
+        // Íconos en el color sólido de la tarjeta de Arcade del Inicio.
+        const iconColor = HomeArcadeCard.color;
+        final rows = <Widget>[
+          // 1. Seleccionar juego
+          TvSettingsActionRow(
+            focusNode: _selectGameFocus,
+            label: LocaleKeys.arcade_action_select_game.tr(),
+            description: _resolveCurrentGameName(),
+            icon: MoaiIcons.arcadeActionSelectGame,
+            iconColor: iconColor,
+            onPressed: _onSelectGame,
+            onKeyLeft: widget.onExitLeft,
+            onKeyDown: _gamepadFocus.requestFocus,
           ),
+
+          // 2. Configurar Gamepad
+          TvSettingsActionRow(
+            focusNode: _gamepadFocus,
+            label: LocaleKeys.arcade_gamepad_config_title.tr(),
+            description: LocaleKeys.arcade_gamepad_config_desc.tr(),
+            icon: MoaiIcons.arcadeActionConfigGamepad,
+            iconColor: iconColor,
+            onPressed: _onConfigGamepad,
+            onKeyLeft: widget.onExitLeft,
+            onKeyUp: _selectGameFocus.requestFocus,
+            onKeyDown: hasRoms ? _startFocus.requestFocus : null,
+          ),
+
+          // 3. Iniciar juego (solo si hay ROMs descargadas/instaladas)
+          if (hasRoms)
+            TvSettingsActionRow(
+              focusNode: _startFocus,
+              label: LocaleKeys.arcade_action_start_game.tr(),
+              description: LocaleKeys.arcade_action_start_game_desc.tr(),
+              icon: MoaiIcons.arcadeActionStartGame,
+              iconColor: iconColor,
+              onPressed: _onStartGame,
+              onKeyLeft: widget.onExitLeft,
+              onKeyUp: _gamepadFocus.requestFocus,
+              onKeyDown: canPlayTogether
+                  ? _playTogetherFocus.requestFocus
+                  : null,
+            ),
+          if (hasRoms && canPlayTogether)
+            TvSettingsActionRow(
+              focusNode: _playTogetherFocus,
+              label: LocaleKeys.arcade_action_play_together.tr(),
+              description: LocaleKeys.arcade_action_play_together_desc.tr(),
+              icon: MoaiIcons.friends,
+              iconColor: iconColor,
+              onPressed: _onPlayTogether,
+              onKeyLeft: widget.onExitLeft,
+              onKeyUp: _startFocus.requestFocus,
+            ),
+        ];
+
+        // Misma medida que Suscripciones: encabezado con el degradado y las
+        // fichas en los 6 lugares que reparten el alto.
+        return Container(
+          padding: TvPanelSlots.panelPadding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TvPanelHeader(
                 title: LocaleKeys.arcade_panel_title.tr(),
                 subtitle: LocaleKeys.arcade_panel_subtitle.tr(),
+                titleShader: HomeClock.timeShader,
               ),
-              const SizedBox(height: 16),
-
-              // 1. Seleccionar juego
-              TvSettingsActionRow(
-                focusNode: _selectGameFocus,
-                label: LocaleKeys.arcade_action_select_game.tr(),
-                description: _resolveCurrentGameName(),
-                icon: MoaiIcons.arcadeActionSelectGame,
-                onPressed: _onSelectGame,
-                onKeyLeft: widget.onExitLeft,
-                onKeyDown: _gamepadFocus.requestFocus,
-              ),
-              const SizedBox(height: 10),
-
-              // 2. Configurar Gamepad
-              TvSettingsActionRow(
-                focusNode: _gamepadFocus,
-                label: LocaleKeys.arcade_gamepad_config_title.tr(),
-                description: LocaleKeys.arcade_gamepad_config_desc.tr(),
-                icon: MoaiIcons.arcadeActionConfigGamepad,
-                onPressed: _onConfigGamepad,
-                onKeyLeft: widget.onExitLeft,
-                onKeyUp: _selectGameFocus.requestFocus,
-                onKeyDown: widget.romManager.installedRoms.isNotEmpty
-                    ? _startFocus.requestFocus
-                    : null,
-              ),
-
-              // 3. Iniciar juego (solo si hay ROMs descargadas/instaladas)
-              if (widget.romManager.installedRoms.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                TvSettingsActionRow(
-                  focusNode: _startFocus,
-                  label: LocaleKeys.arcade_action_start_game.tr(),
-                  description: LocaleKeys.arcade_action_start_game_desc.tr(),
-                  icon: MoaiIcons.arcadeActionStartGame,
-                  onPressed: _onStartGame,
-                  onKeyLeft: widget.onExitLeft,
-                  onKeyUp: _gamepadFocus.requestFocus,
-                  onKeyDown: canPlayTogether
-                      ? _playTogetherFocus.requestFocus
-                      : null,
+              TvPanelSlots.belowHeader,
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final extent = TvPanelSlots.extentFor(
+                      constraints.maxHeight,
+                    );
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (final row in rows)
+                          TvPanelSlots.slot(extent: extent, child: row),
+                      ],
+                    );
+                  },
                 ),
-                if (canPlayTogether) ...[
-                  const SizedBox(height: 10),
-                  TvSettingsActionRow(
-                    focusNode: _playTogetherFocus,
-                    label: LocaleKeys.arcade_action_play_together.tr(),
-                    description: LocaleKeys.arcade_action_play_together_desc
-                        .tr(),
-                    icon: MoaiIcons.friends,
-                    onPressed: _onPlayTogether,
-                    onKeyLeft: widget.onExitLeft,
-                    onKeyUp: _startFocus.requestFocus,
-                  ),
-                ],
-              ],
+              ),
             ],
           ),
         );

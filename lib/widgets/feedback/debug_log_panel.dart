@@ -2,6 +2,7 @@ import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/widgets/feedback/debug_log_formatters.dart';
 import 'package:moai3/widgets/feedback/debug_log_widgets.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
@@ -117,15 +118,20 @@ class _DebugLogPanelState extends State<DebugLogPanel> {
               if (constraints.maxWidth < 40) {
                 return const SizedBox.shrink();
               }
-              return Text(
-                LocaleKeys.home_panel_tv_log.tr(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: MoaiText.display(
-                  context,
-                  color: scheme.onSurface,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
+              // Con el degradado de los títulos de los paneles.
+              return ShaderMask(
+                blendMode: BlendMode.srcIn,
+                shaderCallback: HomeClock.timeShader,
+                child: Text(
+                  LocaleKeys.home_panel_tv_log.tr(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: MoaiText.display(
+                    context,
+                    color: scheme.onSurface,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               );
             },

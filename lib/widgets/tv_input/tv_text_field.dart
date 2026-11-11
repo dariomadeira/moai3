@@ -8,6 +8,7 @@ export 'package:moai3/widgets/tv_input/tv_keyboard_type.dart';
 import 'package:moai3/widgets/tv_input/tv_text_input_sheet.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
+import 'package:moai3/widgets/tv_common/tv_focus_ring.dart';
 
 /// Campo de texto para Smart TV: Select abre teclado on-screen Material.
 class TvTextField extends StatefulWidget {
@@ -31,6 +32,11 @@ class TvTextField extends StatefulWidget {
   final VoidCallback? onFocusDown;
   final String? initialValue;
 
+  /// Color del foco en cristal: con él, el foco es [TvFocusRing] (borde y
+  /// sombrita de ese color) y el ícono va en ese color. Sin él, el borde del
+  /// acento de siempre.
+  final Color? accent;
+
   const TvTextField({
     super.key,
     this.controller,
@@ -52,6 +58,7 @@ class TvTextField extends StatefulWidget {
     this.dense = false,
     this.leadingIcon,
     this.helperText,
+    this.accent,
   });
 
   static Future<String?> open(
@@ -112,8 +119,9 @@ class _TvTextFieldState extends State<TvTextField> {
         _ownedFocusNode?.dispose();
         _ownedFocusNode = null;
       } else if (oldWidget.focusNode != null && widget.focusNode == null) {
-        _ownedFocusNode ??=
-            FocusNode(debugLabel: 'TvTextField(${widget.label})');
+        _ownedFocusNode ??= FocusNode(
+          debugLabel: 'TvTextField(${widget.label})',
+        );
       }
       _focusNode.addListener(_onFocusChange);
       _focused = _focusNode.hasFocus;
@@ -124,8 +132,9 @@ class _TvTextFieldState extends State<TvTextField> {
         _ownedController?.dispose();
         _ownedController = null;
       } else if (oldWidget.controller != null && widget.controller == null) {
-        _ownedController ??=
-            TextEditingController(text: widget.initialValue ?? '');
+        _ownedController ??= TextEditingController(
+          text: widget.initialValue ?? '',
+        );
       }
       _controller.addListener(_onTextChange);
     }
@@ -237,7 +246,8 @@ class _TvTextFieldState extends State<TvTextField> {
         ? scheme.onPrimary.withValues(alpha: 0.18)
         : scheme.primaryContainer;
     final iconColor = glass
-        ? scheme.primary.withValues(alpha: _focused ? 1 : 0.75)
+        // Como el de las fichas (TvTile): el acento.
+        ? (widget.accent ?? scheme.primary)
         : (_focused ? scheme.onPrimary : scheme.onPrimaryContainer);
 
     final leading = widget.leadingIcon ?? MoaiIcons.keyboard;
@@ -256,72 +266,83 @@ class _TvTextFieldState extends State<TvTextField> {
     );
 
     final content = Material(
-        color: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: interactive ? _openKeyboard : null,
-          splashColor: (solidFocus ? scheme.onPrimary : scheme.onSurface)
-              .withValues(alpha: 0.1),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: widget.dense ? 12 : 14,
-              vertical: widget.dense ? 10 : 12,
-            ),
-            child: Row(
-              children: [
-                if (glass)
-                  iconGlyph
-                else
-                  Material(
-                    color: iconBg,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: iconGlyph,
+      color: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: interactive ? _openKeyboard : null,
+        splashColor: (solidFocus ? scheme.onPrimary : scheme.onSurface)
+            .withValues(alpha: 0.1),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: widget.dense ? 12 : 14,
+            vertical: widget.dense ? 10 : 12,
+          ),
+          child: Row(
+            children: [
+              if (glass)
+                iconGlyph
+              else
+                Material(
+                  color: iconBg,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                SizedBox(width: widget.dense ? 12 : 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        widget.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: MoaiText.body(
-                          context,
-                          color: titleColor,
-                          fontSize: widget.dense ? 14 : 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        hasValue ? _controller.text : (widget.hint ?? ''),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: MoaiText.body(
-                          context,
-                          color: valueColor,
-                          fontSize: widget.dense ? 12 : 13,
-                          height: 1.3,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: iconGlyph,
                 ),
-              ],
-            ),
+              SizedBox(width: widget.dense ? 12 : 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      widget.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: MoaiText.body(
+                        context,
+                        color: titleColor,
+                        fontSize: widget.dense ? 14 : 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      hasValue ? _controller.text : (widget.hint ?? ''),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: MoaiText.body(
+                        context,
+                        color: valueColor,
+                        fontSize: widget.dense ? 12 : 13,
+                        height: 1.3,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
+      ),
     );
 
-    final field = glass
+    final accent = widget.accent;
+    final field = glass && accent != null
+        ? TvFocusRing(
+            focused: _focused,
+            color: accent,
+            radius: 16,
+            child: MoaiGlass(
+              borderRadius: 16,
+              elevated: false,
+              solid: true,
+              child: content,
+            ),
+          )
+        : glass
         ? MoaiGlass(
             borderRadius: 16,
             elevated: false,
@@ -334,9 +355,7 @@ class _TvTextFieldState extends State<TvTextField> {
             decoration: BoxDecoration(
               color: bg,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: borderColor,
-              ),
+              border: Border.all(color: borderColor),
             ),
             child: content,
           );
@@ -376,4 +395,3 @@ class _TvTextFieldState extends State<TvTextField> {
     );
   }
 }
-

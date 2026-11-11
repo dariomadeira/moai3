@@ -1,11 +1,11 @@
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:moai3/features/home/widgets/viewer_favorite_tile.dart';
 import 'package:moai3/focus/tv_intents.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/cards/channel_grid_tile.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 class ViewerFavoritesBar extends StatelessWidget {
@@ -38,11 +38,14 @@ class ViewerFavoritesBar extends StatelessWidget {
     this.headerAction,
   });
 
+  /// La ficha ([ChannelGridTile]) ya trae media separación arriba y abajo
+  /// (la de la grilla): se descuenta para que abajo quede el mismo margen que
+  /// a los costados.
   static const _contentPadding = EdgeInsets.fromLTRB(
     TvLayoutConstants.viewerFavoritesBarPaddingStart,
-    8,
+    TvLayoutConstants.viewerFavoritesBarPaddingStart - ChannelGridTile.gap / 2,
     TvLayoutConstants.viewerFavoritesBarPaddingEnd,
-    8,
+    TvLayoutConstants.viewerFavoritesBarPaddingStart - ChannelGridTile.gap / 2,
   );
 
   @override
@@ -143,12 +146,16 @@ class ViewerFavoritesBar extends StatelessWidget {
                           },
                         ),
                       },
-                      child: ViewerFavoriteTile(
-                        key: ValueKey(channel.id),
-                        channel: channel,
-                        isSelected: selectedChannel?.id == channel.id,
-                        focusNode: focusNodes[index],
-                        onTap: () => onSelect(channel),
+                      // La misma ficha que la grilla de canales.
+                      child: SizedBox(
+                        width: TvLayoutConstants.viewerFavoriteTileWidth,
+                        child: ChannelGridTile(
+                          key: ValueKey(channel.id),
+                          channel: channel,
+                          isSelected: selectedChannel?.id == channel.id,
+                          focusNode: focusNodes[index],
+                          onTap: () => onSelect(channel),
+                        ),
                       ),
                     );
                   },

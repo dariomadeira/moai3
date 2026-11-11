@@ -52,7 +52,8 @@ class _InstalledPluginTileState extends State<_InstalledPluginTile> {
 
   @override
   Widget build(BuildContext context) {
-    final isFocused = widget.updateFocus.hasFocus || widget.removeFocus.hasFocus;
+    final isFocused =
+        widget.updateFocus.hasFocus || widget.removeFocus.hasFocus;
 
     return TvInfoTile(
       isFocused: isFocused,
@@ -60,7 +61,7 @@ class _InstalledPluginTileState extends State<_InstalledPluginTile> {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       label: widget.title,
       description: widget.subtitle,
-      icon: MoaiIcons.tvViewerPillPlugin,
+      icon: MoaiIcons.plugin,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -79,6 +80,7 @@ class _InstalledPluginTileState extends State<_InstalledPluginTile> {
             focusNode: widget.removeFocus,
             tooltip: LocaleKeys.plugins_uninstall_tooltip.tr(),
             icon: MoaiIcons.delete,
+            destructive: true,
             onPressed: widget.onRemove,
             parentFocused: isFocused,
             onKeyLeft: () => widget.updateFocus.requestFocus(),

@@ -88,16 +88,18 @@ Verificación del dispositivo en Supabase
     │
     ├─ actualizar = sin catálogo || frecuencia vencida
     │
-    ├─ Hasta 3 intentos: los 3 primeros nodos del ranking (§4.1)
-    │     1. VpnService.connect(node) (permiso del SO sin límite de tiempo)
+    ├─ Hasta 4 intentos, cada uno con un endpoint (nodo + puerto) del ranking (§4.1)
+    │     1. VpnService.connect(endpoint) (permiso del SO sin límite de tiempo)
     │        · permiso rechazado → cortar intentos
-    │        · salida por otro país o túnel caído → siguiente nodo
+    │        · túnel caído → siguiente endpoint (los del mismo servidor, al final)
     │     2. ensureSession (v3/snToken → v8/active); guarda datos de sesión
-    │        · rechazado → siguiente nodo
+    │        · la red no contesta → un reintento con el mismo endpoint
+    │        · región rechazada (portal100024) → se descarta el servidor
+    │        · otro rechazo → siguiente endpoint
     │     3. si no hay que actualizar → listo
     │     4. bajar secciones faltantes: Películas, luego Destacados + Series
     │        · botón "OK: usar el catálogo del <fecha>" (solo si ya hay catálogo)
-    │        · faltan secciones → siguiente nodo (nuevo login)
+    │        · faltan secciones → siguiente endpoint (nuevo login)
     │
     ├─ disconnect VPN
     ├─ 3 secciones bajadas → guardar fecha del catálogo
@@ -113,20 +115,23 @@ Verificación del dispositivo en Supabase
 - **Falla de descarga con login OK**: se sigue con el catálogo viejo; estado «No se actualizó el catálogo».  
 - **Sin login**: estado «Películas y series no disponibles».
 
-### 4.1 Ranking de nodos
+### 4.1 Ranking de endpoints
 
-`kVpnNodes` (`vpn_nodes.dart`) lista los perfiles con su proveedor y país de salida esperado: `mx_01..04` (Proton, MX) y `jp_01..02` (VPN Gate, JP). El servicio de catálogo acepta ambas salidas.
+`kVpnNodes` (`vpn_nodes.dart`) lista los perfiles con su proveedor, país de salida, servidor (`host`) y puertos (`ports`, protocolo + puerto en orden de preferencia): `mx_01..04` (Proton, MX: UDP 1194/80/51820/4569/5060 y TCP 443/8443) y `jp_01..02` (VPN Gate, JP: TCP 443). El servicio de catálogo acepta ambas salidas.
 
-`VpnNodeRanking` guarda por nodo, en preferencias (`vpn_node_ranking_v2`), una nota 0–1, el tiempo promedio hasta la sesión lista y el último uso. (v2: el historial anterior contaba los cortes de red como fallas del nodo y castigaba siempre al primero de cada arranque; se empezó de cero.)
+Cada intento es un **endpoint** (`VpnEndpoint`: nodo + protocolo + puerto). `VpnService.configFor` arma la config con un solo `remote` y su `proto`, sin `remote-random` (en TCP saca `explicit-exit-notify`). Antes, con 5 `remote` UDP y `remote-random`, OpenVPN tomaba un puerto al azar y, si no contestaba, tardaba más que el límite del intento en pasar al siguiente: el mismo nodo andaba o no según el puerto.
 
-- **Nota:** `0,7 × anterior + 0,3 × resultado` según `VpnAttempt`: `success` 1, `failure` 0, `transient` 0,5 (empate). Nodo nuevo: 0,5.
-- **Corte pasajero (`transient`):** la red no contestó apenas subió el túnel (pasa con cualquier nodo); no dice si el nodo es bueno o malo.
-  - Salida: `checkExit` hace hasta 3 rondas de 4 s (1 s entre rondas) preguntando a Cloudflare e ip-api en paralelo. Sin respuesta → `VpnConnectResult.unverified` → `transient`.
-  - Sesión: si `ensureSession` falla por red (`lastSessionNetworkFailure`), se reintenta una vez con el mismo nodo (1,5 s después); si sigue fallando → `transient`. Un rechazo del portal es `failure`.
-- **Sirvió:** conectó, salida del país esperado, login OK y, si tocaba, bajaron las secciones que faltaban.
-- **Orden:** por nota; con diferencia < 0,05 gana el más rápido.
-- **Exploración:** ~10 % de los arranques, el nodo usado hace más tiempo (o nunca) va primero.
-- **No se anota:** si ningún túnel conectó (probablemente sin internet), si el usuario rechazó el permiso, o el nodo cuya descarga cortó el botón "OK".
+`VpnNodeRanking` guarda por endpoint, en preferencias (`vpn_endpoint_ranking_v3`; el `v2` por nodo se borra), éxitos e intentos con olvido (vida media 14 días), el tiempo promedio hasta la sesión, el último uso, el último éxito y las fallas seguidas.
+
+- **Tasa:** `(éxitos + 1) / (intentos + 2)`; sin historial, 0,5.
+- **Orden:** primero el **último que anduvo**, salvo que lleve 2 fallas seguidas; después por tasa (diferencia < 0,05 → el más rápido). Sin historial, el orden de fábrica: una vuelta por servidor, cada servidor de un proveedor arrancando por otro puerto, y los japoneses intercalados.
+- **Dentro del arranque:** tras una falla, los endpoints del mismo servidor pasan al final; si el portal rechazó la región, se descartan.
+- **Sirvió (`success`):** túnel arriba y sesión obtenida. Si después falla el catálogo, no se le cuenta (es del servidor del portal).
+- **Falló (`failure`):** el túnel no subió, o el portal rechazó la sesión.
+- **Sin conclusión (`transient`):** la red no contestó al pedir la sesión (ni con el reintento). Solo actualiza la fecha.
+- **No se anota:** si ningún túnel conectó (probablemente sin internet), si el usuario rechazó el permiso, o el endpoint cuya descarga cortó el botón "OK".
+- **Salida:** `checkExit` (Cloudflare / ip-api) corre en paralelo con la sesión, solo para el log; ya no frena el arranque.
+- **Portal:** cada pedido de sesión tiene un timeout total de 8 s (antes, por etapa); se dejan de probar servidores del portal a los 20 s. El servidor que dio la sesión se recuerda (`moiamov_session_host`) y se prueba primero; la descarga del catálogo también lo usa. La descarga corta si dejan de llegar datos durante 12 s (tope de 90 s por sección).
 
 ### Cancelación
 - El botón aparece solo durante la descarga y solo si ya hay catálogo guardado (nunca en el primer arranque).  
@@ -136,7 +141,7 @@ Verificación del dispositivo en Supabase
 ### VPN (OpenVPN México)
 - Dependencia: `openvpn_flutter` rama git `android_16kb` (ELF 16 KB).  
 - Empaquetado: `android.packaging.jniLibs.useLegacyPackaging = true` (AGP; no poner `extractNativeLibs` en el manifest).  
-- Perfiles: `assets/vpn/mexico_01..04.ovpn` (Proton, UDP) y `japan_01..02.ovpn` (VPN Gate, TCP 443, autentican con el certificado del archivo: `certIsRequired: true`, sin usuario).  
+- Perfiles: `assets/vpn/mexico_01..04.ovpn` (Proton) y `japan_01..02.ovpn` (VPN Gate, TCP 443, autentican con el certificado del archivo: `certIsRequired: true`, sin usuario). Los `remote` del archivo se reemplazan por el del endpoint; el `host` de cada nodo debe coincidir con el del `.ovpn` (lo verifica `test/vpn_node_ranking_test.dart`).  
 - Usuario OpenVPN (solo Proton): se fuerza sufijo **`+b:0`** (`VpnService._ensureMexicoExitUsername`) para salida México; sin eso `verifyConnection` falla.  
 - Credenciales: `TUNNEL_USER` / `TUNNEL_PASS` (dotenv), con fallback al bloque inline del `.ovpn`.  
 - `data-ciphers` se inyecta si falta (compat android_16kb).  
@@ -166,7 +171,7 @@ Verificación del dispositivo en Supabase
 - `SettingsMoviesSeriesPanel`: fila de frecuencia con la fecha del catálogo.  
 - `TvOptionSelector<T>`: chips D-pad (frecuencia; reutilizado en agenda).  
 - Textos: `settings_general_catalog_freq*`, `loading_catalog_*`, `loading_session_failed` en `es.json`.  
-- Loading: botón con `loading_catalog_cancel` / `loading_catalog_cancel_no_date`.
+- Loading: mismo fondo que el home (`MoaiAmbientBackground`) y un recuadro de vidrio esmerilado (`MoaiGlass(frosted: true)`) con el ícono de la etapa (`MoaiIcons.boot*`), el estado, una línea de detalle (`loading_attempt`, `loading_catalog_progress`) y la barra de progreso en el acento. El botón `loading_catalog_cancel` / `loading_catalog_cancel_no_date` es un `TvDialogButton` (acento con foco). El error usa el mismo vidrio con "Reintentar".
 
 ---
 

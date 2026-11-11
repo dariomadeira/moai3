@@ -184,3 +184,75 @@ class NewReleaseRanker {
   static double _catalogScore(MovieItem movie) =>
       double.tryParse(movie.score ?? '') ?? 0;
 }
+
+/// "Lo mejor del año" de Películas: las estrenadas en el último año que están
+/// en el catálogo, por el promedio del público de TMDb ajustado por cantidad
+/// de votos (con pocos votos pesa la media: 3 votos de 10 no le ganan a 5.000
+/// de 8,2). Si no llegan a [count], las de mejor puntaje del catálogo entre
+/// las agregadas hace poco (el catálogo no trae el estreno).
+class AcclaimedRanker {
+  const AcclaimedRanker({
+    this.maxAge = const Duration(days: 365),
+    this.recentlyAdded = const Duration(days: 60),
+    this.count = 10,
+  });
+
+  final Duration maxAge;
+  final Duration recentlyAdded;
+  final int count;
+
+  /// Votos a partir de los cuales el promedio pesa más que la media.
+  static const double _minVotes = 300;
+  static const double _meanVote = 6.5;
+
+  static double weightedVote(TmdbMovie movie) {
+    final votes = movie.voteCount.toDouble();
+    return (votes * movie.voteAverage + _minVotes * _meanVote) /
+        (votes + _minVotes);
+  }
+
+  List<MovieItem> rank({
+    required List<TmdbMovie> candidates,
+    required List<MovieItem> catalog,
+    required DateTime now,
+  }) {
+    final fresh = [
+      for (final (candidate, movie) in const NewReleaseRanker().match(
+        candidates: candidates,
+        catalog: catalog,
+      ))
+        if (candidate.releaseDate case final release?
+            when now.difference(release) <= maxAge &&
+                now.difference(release) >= const Duration(days: -7))
+          (weightedVote(candidate), candidate, movie),
+    ]..sort((a, b) => b.$1.compareTo(a.$1));
+
+    final result = [
+      for (final (_, candidate, movie) in fresh.take(count))
+        movie.withYear('${candidate.releaseDate!.year}'),
+    ];
+    if (result.length >= count) return result;
+
+    final inRow = {for (final m in result) normalizeText(m.name)};
+    final since = now.subtract(recentlyAdded);
+    final fill =
+        catalog
+            .where(
+              (m) =>
+                  m.isMovie &&
+                  NewReleaseRanker._catalogScore(m) > 0 &&
+                  (m.addedAt?.isAfter(since) ?? false),
+            )
+            .toList()
+          ..sort(
+            (a, b) => NewReleaseRanker._catalogScore(
+              b,
+            ).compareTo(NewReleaseRanker._catalogScore(a)),
+          );
+    for (final movie in fill) {
+      if (result.length >= count) break;
+      if (inRow.add(normalizeText(movie.name))) result.add(movie);
+    }
+    return result;
+  }
+}

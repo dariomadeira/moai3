@@ -42,8 +42,6 @@ Future<void> playMovie(
           movie: movie,
           stream: stream,
           initialPositionSeconds: startAt,
-          // Los adelantos se ven de una vez: sin progreso.
-          saveProgress: !movie.isTrailer,
         ),
       ),
     );

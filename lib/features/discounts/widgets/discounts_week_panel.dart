@@ -1,8 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/theme/moai_palette.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/features/discounts/discount_format.dart';
 import 'package:moai3/features/discounts/widgets/discount_dialogs.dart';
+import 'package:moai3/features/home/widgets/home_card_parts.dart';
+import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/models/discount_models.dart';
@@ -229,7 +232,6 @@ class _DiscountsWeekPanelState extends State<DiscountsWeekPanel> {
     return ListenableBuilder(
       listenable: _service,
       builder: (context, _) {
-        final scheme = context.scheme;
         final focused = widget.focusNode.hasFocus;
         if (_rubro != null && !_service.rubros.contains(_rubro)) _rubro = null;
         final week = _week;
@@ -256,82 +258,106 @@ class _DiscountsWeekPanelState extends State<DiscountsWeekPanel> {
 
                     return Row(
                       children: [
+                        // Como en Eventos: el rango sin ícono adelante, con
+                        // el degradado de la hora del Inicio. El Align
+                        // ajusta el degradado al ancho del texto.
                         Expanded(
-                          child: Row(
-                            children: [
-                              Icon(
-                                MoaiIcons.discounts,
-                                size: MoaiIconSizes.md,
-                                color: scheme.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  MoaiFormats.weekRange(
-                                    week.first.day,
-                                    week.last.day,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: MoaiText.display(
-                                    context,
-                                    fontSize: 15,
-                                    color: scheme.onSurface,
-                                  ),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: ShaderMask(
+                              blendMode: BlendMode.srcIn,
+                              shaderCallback: HomeClock.timeShader,
+                              child: Text(
+                                MoaiFormats.weekRange(
+                                  week.first.day,
+                                  week.last.day,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: MoaiText.display(
+                                  context,
+                                  fontSize: 15,
+                                  color: Colors.white,
                                 ),
                               ),
-                            ],
+                            ),
                           ),
                         ),
+                        // Los mismos botones de cristal que Eventos.
                         for (final (i, action) in _HeaderAction.values.indexed)
                           Padding(
                             padding: EdgeInsets.only(left: i == 0 ? 0 : 6),
-                            child: TvWeekHeaderButton(
-                              icon: switch (action) {
-                                _HeaderAction.mine => MoaiIcons.discountMerchants,
+                            child: Tooltip(
+                              message: switch (action) {
+                                _HeaderAction.mine =>
+                                  _service.onlyMine
+                                      ? LocaleKeys.discounts_filter_mine.tr()
+                                      : LocaleKeys.discounts_filter_all.tr(),
                                 _HeaderAction.rubro =>
                                   _rubro == null
-                                      ? MoaiIcons.discountFilter
-                                      : DiscountFormat.rubroIcon(_rubro!),
-                                _HeaderAction.refresh => MoaiIcons.refresh,
+                                      ? LocaleKeys.discounts_filter_all_rubros
+                                            .tr()
+                                      : DiscountFormat.rubro(_rubro!),
+                                _HeaderAction.refresh =>
+                                  LocaleKeys.calendar_refresh.tr(),
                               },
-                              label: switch (action) {
-                                _HeaderAction.mine => isUltraCompact
-                                    ? null
-                                    : _service.onlyMine
-                                    ? LocaleKeys.discounts_filter_mine.tr()
-                                    : (isCompact ? 'Todos' : LocaleKeys.discounts_filter_all.tr()),
-                                _HeaderAction.rubro => isUltraCompact
-                                    ? null
-                                    : _rubro == null
-                                    ? (isCompact ? 'Rubros' : LocaleKeys.discounts_filter_all_rubros.tr())
-                                    : DiscountFormat.rubro(_rubro!),
-                                _HeaderAction.refresh => null,
-                              },
-                              tooltip: switch (action) {
-                                _HeaderAction.mine => _service.onlyMine
-                                    ? LocaleKeys.discounts_filter_mine.tr()
-                                    : LocaleKeys.discounts_filter_all.tr(),
-                                _HeaderAction.rubro => _rubro == null
-                                    ? LocaleKeys.discounts_filter_all_rubros.tr()
-                                    : DiscountFormat.rubro(_rubro!),
-                                _HeaderAction.refresh => LocaleKeys.calendar_refresh.tr(),
-                              },
-                              isLoading:
-                                  action == _HeaderAction.refresh &&
-                                  _service.isLoading,
-                              isFocused:
-                                  focused &&
-                                  _section == _Section.header &&
-                                  _headerIndex == i,
-                              onTap: () {
-                                setState(() {
-                                  _section = _Section.header;
-                                  _headerIndex = i;
-                                });
-                                _runHeader(action);
-                                widget.focusNode.requestFocus();
-                              },
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _section = _Section.header;
+                                    _headerIndex = i;
+                                  });
+                                  _runHeader(action);
+                                  widget.focusNode.requestFocus();
+                                },
+                                child: HomeGlassButton(
+                                  icon: switch (action) {
+                                    _HeaderAction.mine =>
+                                      MoaiIcons.discountMerchants,
+                                    _HeaderAction.rubro =>
+                                      _rubro == null
+                                          ? MoaiIcons.discountFilter
+                                          : DiscountFormat.rubroIcon(_rubro!),
+                                    _HeaderAction.refresh =>
+                                      MoaiIcons.discountRefresh,
+                                  },
+                                  label: switch (action) {
+                                    _HeaderAction.mine =>
+                                      isUltraCompact
+                                          ? null
+                                          : _service.onlyMine
+                                          ? LocaleKeys.discounts_filter_mine
+                                                .tr()
+                                          : (isCompact
+                                                ? LocaleKeys
+                                                      .discounts_filter_all_short
+                                                      .tr()
+                                                : LocaleKeys
+                                                      .discounts_filter_all
+                                                      .tr()),
+                                    _HeaderAction.rubro =>
+                                      isUltraCompact
+                                          ? null
+                                          : _rubro == null
+                                          ? (isCompact
+                                                ? LocaleKeys
+                                                      .discounts_filter_all_rubros_short
+                                                      .tr()
+                                                : LocaleKeys
+                                                      .discounts_filter_all_rubros
+                                                      .tr())
+                                          : DiscountFormat.rubro(_rubro!),
+                                    _HeaderAction.refresh => null,
+                                  },
+                                  isLoading:
+                                      action == _HeaderAction.refresh &&
+                                      _service.isLoading,
+                                  focused:
+                                      focused &&
+                                      _section == _Section.header &&
+                                      _headerIndex == i,
+                                ),
+                              ),
                             ),
                           ),
                       ],
@@ -432,6 +458,11 @@ class _DiscountGridCard extends StatelessWidget {
     final scheme = context.scheme;
     final d = discount;
     final mine = d.mentions(province);
+    final bank = d.bankLabel.trim();
+    // Como la tarjeta de un evento: el ícono en el color del rubro; el
+    // porcentaje y el comercio en el gris oscuro de los subtítulos (el del
+    // modo).
+    final fgColor = MoaiPalette.of(context).inkSoft;
     return SizedBox(
       height: height,
       child: GestureDetector(
@@ -457,18 +488,17 @@ class _DiscountGridCard extends StatelessWidget {
                     children: [
                       Icon(
                         DiscountFormat.rubroIcon(d.rubro),
-                        size: MoaiIconSizes.xs,
-                        color: scheme.primary.withValues(
-                          alpha: isFocused ? 1 : 0.75,
-                        ),
+                        size: MoaiIconSizes.md,
+                        color: DiscountFormat.rubroColor(d.rubro),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 6),
                       Text(
                         DiscountFormat.headline(d),
                         style: MoaiText.display(
                           context,
-                          fontSize: 10.5,
-                          color: scheme.primary,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                          color: fgColor,
                         ),
                       ),
                       if (mine) ...[
@@ -486,17 +516,31 @@ class _DiscountGridCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   d.merchant.trim(),
-                  maxLines: 3,
+                  maxLines: bank.isEmpty ? 3 : 2,
                   overflow: TextOverflow.ellipsis,
                   style: MoaiText.body(
                     context,
                     fontSize: 9.5,
                     fontWeight: FontWeight.w700,
-                    color: scheme.onSurface,
+                    color: fgColor,
                     height: 1.25,
                   ),
                 ),
               ),
+              // Con qué banco o billetera: sin esto, siete "20% Combustible"
+              // no dicen de quién son.
+              if (bank.isNotEmpty)
+                Text(
+                  bank,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: MoaiText.body(
+                    context,
+                    fontSize: 8.5,
+                    color: scheme.onSurfaceVariant,
+                    height: 1.2,
+                  ),
+                ),
             ],
           ),
         ),

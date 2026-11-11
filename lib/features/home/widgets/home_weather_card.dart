@@ -1,12 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:moai3/features/home/widgets/home_card.dart';
-import 'package:moai3/features/home/widgets/home_sky.dart';
+import 'package:moai3/features/home/widgets/home_card_parts.dart';
 import 'package:moai3/features/home/widgets/tv_weather_animated_icon.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/services/weather_icon_mapper.dart';
 import 'package:moai3/services/weather_service.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Widget de clima del Inicio, en formato franja para la lista de widgets
 /// (doble alto que un ítem de Ajustes, todo el ancho del panel):
@@ -17,7 +17,6 @@ class HomeWeatherCard extends StatelessWidget {
     super.key,
     required this.weather,
     required this.now,
-    this.isFocused = false,
     this.place,
   });
 
@@ -29,15 +28,11 @@ class HomeWeatherCard extends StatelessWidget {
 
   /// Hora de referencia para elegir las próximas horas (la refresca el Inicio).
   final DateTime now;
-  final bool isFocused;
 
   static const double radius = 16;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    final glow = _conditionGlow(weather.conditionCode, weather.isDay);
-
     final upcoming = weather.upcomingHours(now);
     // "Ahora" muestra el valor actual, no el pronosticado para esta hora, así
     // coincide con la temperatura grande.
@@ -52,20 +47,23 @@ class HomeWeatherCard extends StatelessWidget {
       ...upcoming.skip(1),
     ];
 
-    return HomeCard(
-      glow: glow,
-      focused: isFocused,
+    // REDISEÑO: el cristal de las tarjetas del Inicio, sin halo de color y
+    // sin borde de foco: no tiene función.
+    return MoaiGlass(
+      borderRadius: radius,
+      solid: true,
+      elevated: false,
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
       child: Row(
         children: [
-          // El ícono va primero y más chico: está, pero no manda.
+          // El ícono va primero.
           TvWeatherAnimatedIcon(
-            lottieUrl: WeatherIconMapper.getLottieUrl(
+            lottieAsset: WeatherIconMapper.getLottieAsset(
               code: weather.conditionCode,
               isDay: weather.isDay,
             ),
             updateToken: weather.lastUpdated.millisecondsSinceEpoch,
-            size: 56,
+            size: 68,
           ),
           const SizedBox(width: 12),
           SizedBox(
@@ -73,29 +71,13 @@ class HomeWeatherCard extends StatelessWidget {
             child: _Current(weather: weather, place: place ?? weather.city),
           ),
           if (hours.length > 1) ...[
-            Container(
-              width: 1,
-              height: 72,
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              color: scheme.onSurface.withValues(alpha: 0.08),
-            ),
+            const HomeCardDivider(margin: EdgeInsets.symmetric(horizontal: 16)),
             Expanded(child: _HourlyStrip(hours: hours)),
           ] else
             const Spacer(),
         ],
       ),
     );
-  }
-
-  /// Color del halo según el clima: cálido con sol, frío de noche o con
-  /// lluvia/nieve, gris con nubes o niebla.
-  static Color _conditionGlow(int? code, bool isDay) {
-    final kind = weatherKindOf(code);
-    if (kind == WeatherKind.rain) return const Color(0xFF5FA8F5);
-    if (kind == WeatherKind.snow) return const Color(0xFFB8E4FF);
-    if (!isDay) return const Color(0xFF8A94FF);
-    if (kind == WeatherKind.clear) return const Color(0xFFFFB547);
-    return const Color(0xFF9FB1BE);
   }
 }
 
@@ -247,17 +229,19 @@ class _HourlyStrip extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 2),
+        // Los íconos ya traen aire alrededor: van pegados a la curva y a la
+        // hora, así el alto de la columna no cambia.
         row(
           (i, h) => TvWeatherAnimatedIcon(
-            lottieUrl: WeatherIconMapper.getLottieUrl(
+            lottieAsset: WeatherIconMapper.getLottieAsset(
               code: h.conditionCode,
               isDay: h.isDay,
             ),
-            size: 22,
+            size: 26,
+            // Sólo se anima el del clima actual; los de las horas, quietos.
+            animate: false,
           ),
         ),
-        const SizedBox(height: 2),
         row(
           (i, h) => Text(
             i == 0
@@ -276,8 +260,8 @@ class _HourlyStrip extends StatelessWidget {
   }
 }
 
-/// Curva suave (Catmull-Rom) que une las temperaturas, con un relleno que se
-/// desvanece hacia abajo y un punto por hora; el primero resaltado.
+/// Curva suave (Catmull-Rom) que une las temperaturas, con un punto por
+/// hora; el primero resaltado.
 class _TempCurvePainter extends CustomPainter {
   _TempCurvePainter({
     required this.temps,
@@ -328,19 +312,7 @@ class _TempCurvePainter extends CustomPainter {
       );
     }
 
-    final fill = Path.from(path)
-      ..lineTo(points.last.dx, size.height)
-      ..lineTo(points.first.dx, size.height)
-      ..close();
-    canvas.drawPath(
-      fill,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [line.withValues(alpha: 0.16), line.withValues(alpha: 0)],
-        ).createShader(Offset.zero & size),
-    );
+    // REDISEÑO: sólo la línea, sin el relleno azul que hacía de sombra.
     canvas.drawPath(
       path,
       Paint()

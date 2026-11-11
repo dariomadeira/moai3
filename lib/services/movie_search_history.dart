@@ -2,10 +2,17 @@ import 'package:flutter/foundation.dart';
 import 'package:moai3/utils/text_normalize.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Últimas búsquedas de películas, la más nueva primero (SPEC-45 §3.2).
+/// Últimas búsquedas de películas (o de series, con [seriesKey]), la más
+/// nueva primero (SPEC-45 §3.2).
 class MovieSearchHistory {
-  static const String _key = 'movie_search_history';
+  MovieSearchHistory({this.storageKey = moviesKey});
+
+  static const String moviesKey = 'movie_search_history';
+  static const String seriesKey = 'series_search_history';
   static const int maxEntries = 10;
+
+  final String storageKey;
+  String get _key => storageKey;
 
   List<String> _entries = const [];
 
@@ -21,7 +28,7 @@ class MovieSearchHistory {
     return _entries;
   }
 
-  /// Borra todas ("Borrar búsquedas" en las recientes).
+  /// Borra todas ("Borrar" en las recientes).
   Future<List<String>> clear() async {
     _entries = const [];
     try {

@@ -25,6 +25,13 @@
 
 ---
 
+### 1.1. Tipografía (2026-10-30)
+- **Dos fuentes**, como archivos `.ttf` locales en `assets/fonts` (no Google Fonts): **Onest** para toda la interfaz (cuerpo y títulos chicos) y **Unbounded** para los títulos grandes. Reemplazan a Nunito y Quicksand, que se borraron.
+- Regla (`MoaiText.display`): un título de **20 px o más** va con Unbounded (saludo y reloj del Inicio, títulos de tarjetas del Inicio, de pantallas, de "Ver todas" y del detalle); más chico, Onest en negrita (paneles, diálogos, pastillas). `headline: true` lo fuerza en títulos más chicos (los de categoría de la grilla de Películas, 18 px). `MoaiText.body` y el tema usan Onest.
+- Los tests de pantallas cargan las fuentes reales (`test/helpers/real_fonts.dart`) para que los desbordes se midan como en el TV; `real_fonts_test` confirma que cargaron.
+
+---
+
 ## 2. Barra Lateral de Navegación (`TvVerticalNavRail`)
 
 El rail actual es `TvVerticalNavRail` (`lib/features/home/widgets/tv_vertical_nav_rail.dart`).
@@ -136,7 +143,7 @@ Aplica a todos los usos de `TvAccordionRowPreview` (TV Explorar, TV Marcadores, 
 
 ---
 
-## 7. Estilizado de Foco en Tarjetas de Canales y Favoritos (`ChannelGridTile` y `ViewerFavoriteTile`)
+## 7. Estilizado de Foco en Tarjetas de Canales y Favoritos (`ChannelGridTile`)
 
 ### 7.1. Principio de Foco con Borde Primario (Anti-Washout)
 - En versiones anteriores, al enfocar una tarjeta de canal en Android TV, el fondo conmutaba a un color sólido `scheme.primary`. Esto provocaba un efecto agresivo de bloque opaco (*washout*) que ocultaba el contraste de los logotipos transparentes y los textos secundarios.
@@ -159,16 +166,10 @@ Aplica a todos los usos de `TvAccordionRowPreview` (TV Explorar, TV Marcadores, 
       : baseStyle;
   ```
 
-### 7.2. Paridad Visual entre Grilla y Barra de Favoritos
-- **Canales en Grilla 2 Columnas (`ChannelGridTile`)**:
-  - Borde `scheme.primary` de 2 dp al enfocar.
-  - Radio de curvatura `BorderRadius.circular(12)`.
-  - Contenedor de logo con fondo transparente (`TvListCardLeadingLogo`) evitando recuadros anidados artificiales.
-  - Duración de animación de 120 ms para respuesta ultra-rápida ante el D-pad.
-- **Canales en Barra de Favoritos (`ViewerFavoriteTile`)**:
-  - Aplica exactamente la misma lógica de `baseStyle` y `itemStyle` con borde `scheme.primary` al enfocar.
-  - Radio de curvatura `BorderRadius.circular(10)`.
-  - Animación acoplada a 120 ms garantizando respuesta visual sincrónica con el resto de la interfaz.
+### 7.2. Una sola ficha para Grilla, Buscar y Barra de Favoritos
+- La grilla de 2 columnas, los resultados de Buscar y la barra de Favoritos usan la misma `ChannelGridTile` (la barra la pone en un ancho fijo, `TvLayoutConstants.viewerFavoriteTileWidth`). No hay una ficha propia de Favoritos (`ViewerFavoriteTile` se eliminó el 2026-11-09): etiqueta de fuente (`ChannelSourceTag`), check del sintonizado y foco son idénticos.
+- Foco: anillo verde de TV (`TvFocusRing` con `TvVerticalNavRail.tvColor`).
+- Contenedor de logo con fondo transparente (`TvListCardLeadingLogo`) evitando recuadros anidados artificiales.
 
 ---
 

@@ -14,6 +14,7 @@ class SettingsSubtitleLanguageRow extends StatelessWidget {
   final VoidCallback? onKeyRight;
   final VoidCallback? onKeyUp;
   final VoidCallback? onKeyDown;
+  final Color? iconColor;
 
   const SettingsSubtitleLanguageRow({
     super.key,
@@ -24,6 +25,7 @@ class SettingsSubtitleLanguageRow extends StatelessWidget {
     this.onKeyRight,
     this.onKeyUp,
     this.onKeyDown,
+    this.iconColor,
   });
 
   static const _labelKeys = {
@@ -39,6 +41,7 @@ class SettingsSubtitleLanguageRow extends StatelessWidget {
       label: LocaleKeys.settings_movies_subtitles.tr(),
       description: LocaleKeys.settings_movies_subtitles_desc.tr(),
       icon: MoaiIcons.vodSubtitles,
+      iconColor: iconColor,
       options: MovieSubtitleLanguage.values,
       selected: selected,
       onChanged: onChanged,

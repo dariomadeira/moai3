@@ -14,11 +14,7 @@ extension _NetplayWebRtc on ArcadeNetplayService {
       unawaited(_broadcastWebrtcSignal(signal));
     });
 
-    _webrtcInputSub = transport.onInput.listen((packet) {
-      if (!_remoteInputController.isClosed) {
-        _remoteInputController.add(packet);
-      }
-    });
+    _webrtcInputSub = transport.onInput.listen(_deliverRemoteInput);
 
     _webrtcStateSub = transport.onState.listen((state) {
       if (state == 'connected') {
@@ -34,8 +30,11 @@ extension _NetplayWebRtc on ArcadeNetplayService {
       } else if (state == 'ice_failed') {
         _failIce(LocaleKeys.arcade_netplay_ice_failed.tr());
       } else if (state.startsWith('error:')) {
-        _failIce(LocaleKeys.arcade_netplay_webrtc_error
-            .tr(namedArgs: {'error': state.substring(6)}));
+        _failIce(
+          LocaleKeys.arcade_netplay_webrtc_error.tr(
+            namedArgs: {'error': state.substring(6)},
+          ),
+        );
       }
     });
 
@@ -72,17 +71,22 @@ extension _NetplayWebRtc on ArcadeNetplayService {
 
   void _startHeartbeat() {
     _heartbeatTimer?.cancel();
+    _disconnectedBeats = 0;
     _heartbeatTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       final session = _currentSession;
       final transport = _webrtc;
       if (session == null || transport == null || !transport.isConnected) {
-        if (session != null &&
-            session.status == ArcadeNetplayStatus.inGame) {
+        if (session != null && session.status == ArcadeNetplayStatus.inGame) {
           session.status = ArcadeNetplayStatus.reconnecting;
           _notifyChanged();
         }
+        _disconnectedBeats++;
+        if (_disconnectedBeats >= ArcadeNetplayService._maxDisconnectedBeats) {
+          _failIce(LocaleKeys.arcade_peer_canceled.tr());
+        }
         return;
       }
+      _disconnectedBeats = 0;
       if (session.status == ArcadeNetplayStatus.reconnecting) {
         session.status = ArcadeNetplayStatus.inGame;
         _notifyChanged();

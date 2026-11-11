@@ -9,9 +9,11 @@ import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
+import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'helpers/real_fonts.dart';
 import 'helpers/spanish_translations.dart';
 
 List<MovieItem> movies(int from, int to) => [
@@ -20,6 +22,7 @@ List<MovieItem> movies(int from, int to) => [
 ];
 
 void main() {
+  setUpAll(loadRealFonts);
   late AppPreferences prefs;
 
   setUp(() async {
@@ -76,7 +79,7 @@ void main() {
       fetchTotal: () async => 5942,
     );
     await tester.pump();
-    expect(find.text('5.942 películas'), findsOneWidget);
+    expect(find.text('5.942'), findsOneWidget);
   });
 
   testWidgets('sin total, el título queda sin número', (tester) async {
@@ -87,7 +90,7 @@ void main() {
       fetchTotal: () async => null,
     );
     await tester.pump();
-    expect(find.textContaining('películas'), findsNothing);
+    expect(find.byType(TvMetaPill), findsNothing);
   });
 
   testWidgets('arranca con lo que ya bajó la grilla, sin pedir de nuevo', (

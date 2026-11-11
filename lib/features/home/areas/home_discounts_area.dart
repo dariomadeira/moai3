@@ -27,7 +27,7 @@ class HomeDiscountsArea extends StatefulWidget {
   final int initialDayIndex;
   final ValueChanged<int>? onPanelIndexChanged;
 
-  static const icons = [MoaiIcons.discounts, MoaiIcons.discountFilter];
+  static const icons = [MoaiIcons.railDiscounts, MoaiIcons.discountFilter];
 
   @override
   State<HomeDiscountsArea> createState() => HomeDiscountsAreaState();

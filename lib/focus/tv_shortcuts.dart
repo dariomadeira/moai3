@@ -1,24 +1,25 @@
-﻿import 'package:flutter/services.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:moai3/focus/tv_intents.dart';
 
 abstract final class TvShortcuts {
   /// Instancia única: `Shortcuts` reconstruye su mapa si cambia la identidad.
   static final Map<ShortcutActivator, Intent> dpad = {
-        // Sin repeats: hold de ←/→ no thrash paneles (Actions).
-        const SingleActivator(
-          LogicalKeyboardKey.arrowLeft,
-          includeRepeats: false,
-        ): const DpadLeftIntent(),
-        const SingleActivator(
-          LogicalKeyboardKey.arrowRight,
-          includeRepeats: false,
-        ): const DpadRightIntent(),
-        const SingleActivator(LogicalKeyboardKey.arrowUp): const DpadUpIntent(),
-        const SingleActivator(LogicalKeyboardKey.arrowDown):
-            const DpadDownIntent(),
-        const SingleActivator(LogicalKeyboardKey.goBack): const DpadBackIntent(),
-        const SingleActivator(LogicalKeyboardKey.escape): const DpadBackIntent(),
-      };
-}
+    // Sin repeats: hold de ←/→ no thrash paneles (Actions).
+    const SingleActivator(LogicalKeyboardKey.arrowLeft, includeRepeats: false):
+        const DpadLeftIntent(),
+    const SingleActivator(LogicalKeyboardKey.arrowRight, includeRepeats: false):
+        const DpadRightIntent(),
+    const SingleActivator(LogicalKeyboardKey.arrowUp): const DpadUpIntent(),
+    const SingleActivator(LogicalKeyboardKey.arrowDown): const DpadDownIntent(),
+    const SingleActivator(LogicalKeyboardKey.goBack): const DpadBackIntent(),
+    const SingleActivator(LogicalKeyboardKey.escape): const DpadBackIntent(),
+  };
 
+  /// Una flecha sin destino (o ←/→ mantenida) no la toma [dpad] y caía en el
+  /// recorrido geométrico de Flutter, que manda el foco a lo que quede más
+  /// cerca. En una pantalla con navegación explícita, no se mueve.
+  static final Map<Type, Action<Intent>> noGeometricFocus = {
+    DirectionalFocusIntent: DoNothingAction(),
+  };
+}

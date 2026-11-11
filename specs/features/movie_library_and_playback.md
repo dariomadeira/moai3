@@ -56,7 +56,7 @@ Una película está en **un solo lugar**. `MovieLibrary` es la única puerta: el
 ### 2.2 Audio y subtítulos
 - Ajustes globales "Idioma del audio" y "Subtítulos" (apagados o idioma), en vez de elegir en cada película.
 - `TsAudioSwapDataSource` (Android): en los TS de Titan hay varios audios del mismo tipo y ExoPlayer toma el de PID más bajo; se intercambia paquete por paquete el PID del idioma pedido con el primero (y las etiquetas de la PMT, recalculando el CRC).
-- Pendiente: distinguir las dos pistas "spa" (latino / España).
+- Las dos pistas "spa" (latino / España) no se pueden distinguir: la PMT sólo trae el código de idioma. El menú Audio las muestra como "Español 1" y "Español 2", el filtro elige la pedida por su orden de PID y `MovieAudioChoices` recuerda la elección de cada película.
 
 ## 3. Catálogo y memoria
 

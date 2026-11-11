@@ -1,21 +1,25 @@
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/features/settings/widgets/settings_audio_language_row.dart';
 import 'package:moai3/features/settings/widgets/settings_catalog_frequency_row.dart';
 import 'package:moai3/features/settings/widgets/settings_subtitle_language_row.dart';
+import 'package:moai3/features/settings/widgets/settings_subtitle_size_row.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
+import 'package:moai3/widgets/tv_common/tv_panel_slots.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/utils/moai_formats.dart';
 
 enum _SettingsMoviesSeriesItemType {
   audioLanguage,
   subtitleLanguage,
+  subtitleSize,
   homeTrailers,
   catalogFrequency,
 }
@@ -42,9 +46,6 @@ class SettingsMoviesSeriesPanel extends StatefulWidget {
 }
 
 class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
-  static const int _windowSize = 6;
-  static const double _itemExtent = 70.0;
-
   final _listKey =
       GlobalKey<TvWindowedListState<_SettingsMoviesSeriesItemType>>();
   late int _selectedIndex = widget.initialIndex;
@@ -62,11 +63,14 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
     setState(() => _catalogSavedAt = savedAt);
   }
 
-  String _catalogFrequencyLabel() {
-    final title = LocaleKeys.settings_general_catalog_frequency.tr();
+  /// La fecha de la última actualización va en la descripción: pegada al
+  /// título no entraba al lado del selector y se cortaba siempre.
+  String? _catalogFrequencyDescription() {
     final savedAt = _catalogSavedAt;
-    if (savedAt == null) return title;
-    return '$title · ${MoaiFormats.date(savedAt.toLocal())}';
+    if (savedAt == null) return null;
+    return LocaleKeys.settings_general_catalog_frequency_last.tr(
+      namedArgs: {'date': MoaiFormats.date(savedAt.toLocal())},
+    );
   }
 
   void focusSelected() {
@@ -89,25 +93,31 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
         }
       },
       child: Container(
-        padding: const EdgeInsets.only(left: 4, right: 12, top: 8, bottom: 8),
+        padding: TvPanelSlots.panelPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TvPanelHeader(
               title: LocaleKeys.settings_movies_series_title.tr(),
               subtitle: LocaleKeys.settings_movies_series_subtitle.tr(),
+              titleShader: HomeClock.timeShader,
             ),
+            // Igual que Agenda › Suscripciones: los 6 lugares reparten el
+            // alto bajo el encabezado.
+            TvPanelSlots.belowHeader,
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final targetHeight = (_windowSize * _itemExtent).clamp(
-                    0.0,
+                  final itemExtent = TvPanelSlots.extentFor(
                     constraints.maxHeight,
                   );
                   return Align(
-                    alignment: Alignment.bottomCenter,
+                    alignment: Alignment.topCenter,
                     child: SizedBox(
-                      height: targetHeight,
+                      height: (TvPanelSlots.count * itemExtent).clamp(
+                        0.0,
+                        constraints.maxHeight,
+                      ),
                       child: Align(
                         alignment: Alignment.topCenter,
                         child: TvWindowedList<_SettingsMoviesSeriesItemType>(
@@ -115,33 +125,36 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
                           // La entrada de foco la decide el área (rail →, cambio de panel).
                           focusOnMount: false,
                           items: items,
-                          itemExtent: _itemExtent,
+                          itemExtent: itemExtent,
                           showScrollDots: true,
                           initialGlobalIndex: _selectedIndex,
                           onFocusedGlobalIndex: (idx) {
                             _selectedIndex = idx;
                             widget.onSelectedIndexChanged?.call(idx);
                           },
-                          itemBuilder: (
-                            context,
-                            item,
-                            focusNode,
-                            local,
-                            global,
-                            onKeyUp,
-                            onKeyDown,
-                          ) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: _buildItem(
-                                context: context,
-                                item: item,
-                                focusNode: focusNode,
-                                onKeyUp: onKeyUp,
-                                onKeyDown: onKeyDown,
-                              ),
-                            );
-                          },
+                          itemBuilder:
+                              (
+                                context,
+                                item,
+                                focusNode,
+                                local,
+                                global,
+                                onKeyUp,
+                                onKeyDown,
+                              ) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: TvPanelSlots.gap / 2,
+                                  ),
+                                  child: _buildItem(
+                                    context: context,
+                                    item: item,
+                                    focusNode: focusNode,
+                                    onKeyUp: onKeyUp,
+                                    onKeyDown: onKeyDown,
+                                  ),
+                                );
+                              },
                         ),
                       ),
                     ),
@@ -164,8 +177,7 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
   }) {
     switch (item) {
       case _SettingsMoviesSeriesItemType.audioLanguage:
-        final language =
-            context.watch<TvSettingsProvider>().movieAudioLanguage;
+        final language = context.watch<TvSettingsProvider>().movieAudioLanguage;
         return SettingsAudioLanguageRow(
           focusNode: focusNode,
           selected: language,
@@ -178,8 +190,9 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
           onKeyDown: onKeyDown,
         );
       case _SettingsMoviesSeriesItemType.subtitleLanguage:
-        final subtitles =
-            context.watch<TvSettingsProvider>().movieSubtitleLanguage;
+        final subtitles = context
+            .watch<TvSettingsProvider>()
+            .movieSubtitleLanguage;
         return SettingsSubtitleLanguageRow(
           focusNode: focusNode,
           selected: subtitles,
@@ -187,6 +200,19 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
           onKeyRight: widget.onKeyRight,
           onChanged: (value) {
             context.read<TvSettingsProvider>().setMovieSubtitleLanguage(value);
+          },
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+        );
+      case _SettingsMoviesSeriesItemType.subtitleSize:
+        final size = context.watch<TvSettingsProvider>().movieSubtitleSize;
+        return SettingsSubtitleSizeRow(
+          focusNode: focusNode,
+          selected: size,
+          onKeyLeft: widget.onKeyLeft,
+          onKeyRight: widget.onKeyRight,
+          onChanged: (value) {
+            context.read<TvSettingsProvider>().setMovieSubtitleSize(value);
           },
           onKeyUp: onKeyUp,
           onKeyDown: onKeyDown,
@@ -208,11 +234,12 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
           onKeyDown: onKeyDown,
         );
       case _SettingsMoviesSeriesItemType.catalogFrequency:
-        final frequency =
-            context.watch<TvSettingsProvider>().catalogUpdateFrequency;
+        final frequency = context
+            .watch<TvSettingsProvider>()
+            .catalogUpdateFrequency;
         return SettingsCatalogFrequencyRow(
           focusNode: focusNode,
-          label: _catalogFrequencyLabel(),
+          description: _catalogFrequencyDescription(),
           selected: frequency,
           onKeyLeft: widget.onKeyLeft,
           onKeyRight: widget.onKeyRight,

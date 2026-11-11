@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'helpers/real_fonts.dart';
 import 'package:moai3/features/home/areas/home_movies_area.dart';
 import 'package:moai3/features/home/widgets/tv_movie_card.dart';
 import 'package:moai3/features/movies/screens/movie_category_screen.dart';
+import 'package:moai3/features/movies/widgets/movie_hero_card.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/state/featured_movies_provider.dart';
@@ -14,11 +17,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeFeaturedMoviesProvider extends FeaturedMoviesProvider {
   final List<CategoryColumn> mockCategories;
+  final List<MovieItem> mockBest;
   final bool mockLoadedOnce;
   final bool mockIsLoading;
 
-  _FakeFeaturedMoviesProvider(this.mockCategories, {this.mockLoadedOnce = true})
-    : mockIsLoading = false;
+  _FakeFeaturedMoviesProvider(
+    this.mockCategories, {
+    this.mockLoadedOnce = true,
+    this.mockBest = const [],
+  }) : mockIsLoading = false;
+
+  @override
+  List<MovieItem> bestOfYearFor(String section) => mockBest;
 
   @override
   List<CategoryColumn> get categories => mockCategories;
@@ -59,6 +69,7 @@ class _FakeFeaturedMoviesProvider extends FeaturedMoviesProvider {
 }
 
 void main() {
+  setUpAll(loadRealFonts);
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('HomeMoviesArea Tests (Opción B)', () {
@@ -116,9 +127,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      // Verificar que los títulos de categoría aparecen en pantalla
+      // Una categoría por vez: la segunda aparece con ↓.
       expect(find.text("A Hero's Final Hour"), findsOneWidget);
-      expect(find.text('Child of the Wild'), findsOneWidget);
+      expect(find.text('Child of the Wild'), findsNothing);
 
       // Verificar que las películas están presentes
       expect(find.text('Película Hero 0'), findsOneWidget);
@@ -339,6 +350,192 @@ void main() {
               .columnId,
           76275,
         );
+      },
+    );
+
+    testWidgets('banner: se entra por él, ↓ baja a la grilla y ↑ vuelve', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() => tester.view.reset());
+      final key = GlobalKey<HomeMoviesAreaState>();
+      final provider = _FakeFeaturedMoviesProvider([
+        CategoryColumn(
+          columnId: 1,
+          columnName: 'Nuevas',
+          movies: List.generate(
+            10,
+            (i) => MovieItem(
+              contentId: 'n$i',
+              name: 'Nueva $i',
+              backdrop: 'https://example.com/n$i.jpg',
+              year: '${DateTime.now().year}',
+              score: '8.$i',
+            ),
+          ),
+        ),
+      ]);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ChangeNotifierProvider<FeaturedMoviesProvider>.value(
+              value: provider,
+              child: HomeMoviesArea(
+                key: key,
+                promoBanner: true,
+                searchEnabled: true,
+                onExitLeft: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      key.currentState!.focusGrid();
+      await tester.pumpAndSettle();
+      expect(FocusManager.instance.primaryFocus?.debugLabel, 'movies_banner');
+      expect(key.currentState!.debugOnBanner, isTrue);
+      // La mejor puntuada primero.
+      expect(
+        find.descendant(
+          of: find.byType(MovieHeroCard),
+          matching: find.text('Nueva 9'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(FocusManager.instance.primaryFocus?.debugLabel, 'movies_grid');
+      expect(key.currentState!.debugSelection, (0, 0, 0));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pumpAndSettle();
+      expect(FocusManager.instance.primaryFocus?.debugLabel, 'movies_banner');
+      // ↑ en el banner no hace nada.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pumpAndSettle();
+      expect(key.currentState!.debugOnBanner, isTrue);
+
+      // → desde la última flecha del banner va a Buscar.
+      for (var i = 0; i < 4; i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+        await tester.pumpAndSettle();
+      }
+      expect(FocusManager.instance.primaryFocus?.debugLabel, 'movies_banner');
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+      expect(FocusManager.instance.primaryFocus?.debugLabel, 'movie_search');
+    });
+
+    testWidgets(
+      'página de arriba: banner, "Lo mejor del año" y ↓ a las categorías',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        tester.view.physicalSize = const Size(1920, 1080);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(() => tester.view.reset());
+        final key = GlobalKey<HomeMoviesAreaState>();
+        MovieItem movie(String name) => MovieItem(
+          contentId: name,
+          name: name,
+          backdrop: 'https://example.com/$name.jpg',
+          year: '${DateTime.now().year}',
+          score: '8.0',
+        );
+        // 10 películas + "Ver todas" = 3 filas: dos vistas de Acción.
+        final provider = _FakeFeaturedMoviesProvider(
+          [
+            CategoryColumn(
+              columnId: 1,
+              columnName: 'Acción',
+              hasMore: true,
+              movies: [for (var i = 0; i < 10; i++) movie('Acción $i')],
+            ),
+            CategoryColumn(
+              columnId: 2,
+              columnName: 'Drama',
+              movies: [for (var i = 0; i < 5; i++) movie('Drama $i')],
+            ),
+          ],
+          // La primera ya está en el banner: no se repite.
+          mockBest: [
+            movie('Acción 0'),
+            for (var i = 0; i < 6; i++) movie('Mejor $i'),
+          ],
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ChangeNotifierProvider<FeaturedMoviesProvider>.value(
+                value: provider,
+                child: HomeMoviesArea(
+                  key: key,
+                  promoBanner: true,
+                  onExitLeft: () {},
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final state = key.currentState!;
+
+        state.focusGrid();
+        await tester.pumpAndSettle();
+        expect(state.debugOnBanner, isTrue);
+        // Sin traducciones cargadas, el título es la clave.
+        expect(find.textContaining('best_of_year'), findsOneWidget);
+        expect(find.text('Mejor 0'), findsOneWidget);
+        expect(find.text('Mejor 4'), findsOneWidget);
+        expect(find.text('Mejor 5'), findsNothing);
+        // Las categorías todavía no.
+        expect(find.text('Acción'), findsNothing);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+        expect(FocusManager.instance.primaryFocus?.debugLabel, 'movies_grid');
+        expect(state.debugOnTop, isTrue);
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+        await tester.pumpAndSettle();
+        expect(state.debugBestIndex, 2);
+
+        // ↓ a la primera categoría, en la misma columna.
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+        expect(state.debugOnTop, isFalse);
+        expect(state.debugSelection, (0, 0, 2));
+        expect(find.text('Acción'), findsOneWidget);
+        expect(find.text('Mejor 0'), findsNothing);
+
+        // Tercera fila de Acción: la vista corre una fila; después, Drama.
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+        expect(state.debugSelection, (0, 2, 0));
+        expect(find.text('Acción 0'), findsNothing);
+        expect(find.text('Acción 9'), findsOneWidget);
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+        expect(state.debugSelection, (1, 0, 0));
+        expect(find.text('Drama'), findsOneWidget);
+        expect(find.text('Acción'), findsNothing);
+
+        // ↑ vuelve por Acción (desde su final) hasta la fila de arriba.
+        for (var i = 0; i < 4; i++) {
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+          await tester.pumpAndSettle();
+        }
+        expect(state.debugOnTop, isTrue);
+        expect(state.debugOnBanner, isFalse);
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+        await tester.pumpAndSettle();
+        expect(state.debugOnBanner, isTrue);
+        expect(FocusManager.instance.primaryFocus?.debugLabel, 'movies_banner');
       },
     );
 

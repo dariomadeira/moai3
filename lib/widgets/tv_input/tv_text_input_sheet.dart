@@ -187,14 +187,18 @@ class _TvTextInputSheetState extends State<_TvTextInputSheet> {
     final text = _controller.text;
     final isHint = text.isEmpty;
     final sel = _controller.selection;
-    final cursor =
-        sel.baseOffset >= 0 ? sel.baseOffset.clamp(0, text.length) : text.length;
-    final beforeCursor = isHint ? (widget.hint ?? ' ') : text.substring(0, cursor);
+    final cursor = sel.baseOffset >= 0
+        ? sel.baseOffset.clamp(0, text.length)
+        : text.length;
+    final beforeCursor = isHint
+        ? (widget.hint ?? ' ')
+        : text.substring(0, cursor);
     final afterCursor = isHint ? '' : text.substring(cursor);
     final width = _isCompact ? 268.0 : 520.0;
 
     final baseColor = scheme.surface;
     final borderColor = scheme.outlineVariant.withValues(alpha: 0.48);
+    final glass = MoaiGlassScope.enabledOf(context);
 
     // IMPORTANTE (Android TV + GoRouter):
     // Back llega como pop de sistema. Solo PopScope debe cerrar el dialog.
@@ -212,134 +216,148 @@ class _TvTextInputSheetState extends State<_TvTextInputSheet> {
             child: Container(
               width: width,
               margin: const EdgeInsets.symmetric(horizontal: 24),
-              decoration: MoaiGlassScope.enabledOf(context)
-                  ? moaiDialogDecoration(scheme)
+              decoration: glass
+                  ? null
                   : BoxDecoration(
-                color: baseColor,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: borderColor,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Container(
-                          decoration: MoaiGlassScope.enabledOf(context)
-                              ? moaiGlassWellDecoration(scheme, radius: 14)
-                              : BoxDecoration(
-                            color: scheme.surfaceContainerLow,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: scheme.outlineVariant.withValues(alpha: 0.25),
-                            ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                            Text(
-                              widget.title,
-                              textAlign: TextAlign.center,
-                              style: MoaiText.body(
-                                context,
-                                color: scheme.onSurfaceVariant,
-                                fontSize: 11,
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            SizedBox(
-                              height: 28,
-                              child: LayoutBuilder(
-                                builder: (context, constraints) {
-                                  return SingleChildScrollView(
-                                    controller: _textScrollController,
-                                    scrollDirection: Axis.horizontal,
-                                    physics: const BouncingScrollPhysics(),
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        minWidth: constraints.maxWidth,
-                                      ),
-                                      child: Center(
-                                        child: Text.rich(
-                                          TextSpan(
-                                            children: [
-                                              TextSpan(
-                                                text: beforeCursor,
-                                                style: MoaiText.body(
-                                                  context,
-                                                  color: isHint
-                                                      ? scheme.onSurfaceVariant
-                                                      : scheme.onSurface,
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                              ),
-                                              if (!isHint) ...[
-                                                WidgetSpan(
-                                                  alignment:
-                                                      PlaceholderAlignment.middle,
-                                                  child: _BlinkingCursor(
-                                                    color: scheme.primary,
-                                                    height: 20,
-                                                  ),
-                                                ),
-                                                TextSpan(
-                                                  text: afterCursor,
-                                                  style: MoaiText.body(
-                                                    context,
-                                                    color: scheme.onSurface,
-                                                    fontSize: 18,
-                                                    fontWeight: FontWeight.w700,
-                                                  ),
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
+                      color: baseColor,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: borderColor),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+              child: _frostedIfGlass(
+                glass: glass,
+                child: Stack(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Container(
+                            decoration: MoaiGlassScope.enabledOf(context)
+                                // Pieza de vidrio blanco (como los botones), no un pozo gris.
+                                ? moaiGlassButtonDecoration(
+                                    scheme,
+                                    focused: false,
+                                    radius: 14,
+                                  )
+                                : BoxDecoration(
+                                    color: scheme.surfaceContainerLow,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: scheme.outlineVariant.withValues(
+                                        alpha: 0.25,
                                       ),
                                     ),
-                                  );
-                                },
+                                  ),
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Text(
+                                    widget.title,
+                                    textAlign: TextAlign.center,
+                                    style: MoaiText.body(
+                                      context,
+                                      color: scheme.onSurfaceVariant,
+                                      fontSize: 11,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  SizedBox(
+                                    height: 28,
+                                    child: LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        return SingleChildScrollView(
+                                          controller: _textScrollController,
+                                          scrollDirection: Axis.horizontal,
+                                          physics:
+                                              const BouncingScrollPhysics(),
+                                          child: ConstrainedBox(
+                                            constraints: BoxConstraints(
+                                              minWidth: constraints.maxWidth,
+                                            ),
+                                            child: Center(
+                                              child: Text.rich(
+                                                TextSpan(
+                                                  children: [
+                                                    TextSpan(
+                                                      text: beforeCursor,
+                                                      style: MoaiText.body(
+                                                        context,
+                                                        color: isHint
+                                                            ? scheme
+                                                                  .onSurfaceVariant
+                                                            : scheme.onSurface,
+                                                        fontSize: 18,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                      ),
+                                                    ),
+                                                    if (!isHint) ...[
+                                                      WidgetSpan(
+                                                        alignment:
+                                                            PlaceholderAlignment
+                                                                .middle,
+                                                        child: _BlinkingCursor(
+                                                          color: scheme.primary,
+                                                          height: 20,
+                                                        ),
+                                                      ),
+                                                      TextSpan(
+                                                        text: afterCursor,
+                                                        style: MoaiText.body(
+                                                          context,
+                                                          color:
+                                                              scheme.onSurface,
+                                                          fontSize: 18,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ],
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 12),
+                          TvOnScreenKeyboard(
+                            type: widget.keyboardType,
+                            doneLabel: widget.doneLabel,
+                            onKey: _applyKey,
+                            onCancel: _cancel,
+                            onDone: _submit,
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    TvOnScreenKeyboard(
-                      type: widget.keyboardType,
-                      doneLabel: widget.doneLabel,
-                      onKey: _applyKey,
-                      onCancel: _cancel,
-                      onDone: _submit,
                     ),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
-    ),
-  ),
-);
+    );
   }
 }
 
@@ -347,10 +365,7 @@ class _BlinkingCursor extends StatefulWidget {
   final Color color;
   final double height;
 
-  const _BlinkingCursor({
-    required this.color,
-    required this.height,
-  });
+  const _BlinkingCursor({required this.color, required this.height});
 
   @override
   State<_BlinkingCursor> createState() => _BlinkingCursorState();
@@ -392,3 +407,9 @@ class _BlinkingCursorState extends State<_BlinkingCursor>
   }
 }
 
+/// En cristal, el vidrio esmerilado de los paneles grandes (como los
+/// diálogos): antes era un relleno sólido casi blanco.
+Widget _frostedIfGlass({required bool glass, required Widget child}) {
+  if (!glass) return child;
+  return MoaiGlass(frosted: true, child: child);
+}

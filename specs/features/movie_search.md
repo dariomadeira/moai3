@@ -23,7 +23,6 @@ Buscar cualquier película de la biblioteca de Moiamov desde la sección **Pelí
 ### Non-Goals
 - Buscar series (Series está oculta en el rail).
 - Ver cada categoría completa (más de 10): pendiente aparte, ver §8.
-- Búsqueda por voz propia: alcanza con el micrófono del teclado del sistema.
 
 ---
 
@@ -38,14 +37,17 @@ Películas usa el acordeón `TvAccordionRowPreview` con **2 paneles**, igual que
 
 El panel abierto ocupa el ancho; el otro queda como columna angosta con su ícono.
 
+El micrófono, entre el campo y la "X", abre la pantalla de voz del sistema (`RecognizerIntent`, sin permiso de grabar) y lo dictado se busca como una búsqueda confirmada.
+
 ### 2.1 Navegación
 | Desde | Tecla | Va a |
 | :--- | :--- | :--- |
 | Última película de **cualquier** fila (panel 0) | → | Panel 1, foco en el campo |
 | Campo de búsqueda | ← | Panel 0, a la última tarjeta enfocada |
 | Primera columna de resultados | ← | Panel 0 |
-| Campo | → | "X" (si hay texto) |
-| Campo o "X" | ↓ | Primer resultado (o primera búsqueda reciente) |
+| Campo | → | Micrófono |
+| Micrófono | → | "X" (si hay texto) |
+| Campo, micrófono o "X" | ↓ | Primer resultado (o primera búsqueda reciente) |
 | Primera fila de resultados | ↑ | Campo |
 | Primera película de una fila (panel 0) | ← | Rail (como hoy) |
 

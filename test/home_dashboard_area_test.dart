@@ -1,13 +1,16 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
 import 'package:moai3/features/home/areas/home_dashboard_area.dart';
 import 'package:moai3/features/home/widgets/home_continue_card.dart';
+import 'package:moai3/features/home/widgets/home_event_tile.dart';
 import 'package:moai3/features/home/widgets/home_movie_strip.dart';
 import 'package:moai3/features/home/widgets/home_trailers_card.dart';
-import 'package:moai3/features/home/widgets/home_watchlist_card.dart';
+import 'package:moai3/features/home/widgets/home_watchlist_big_card.dart';
 import 'package:moai3/features/movies/screens/movie_detail_screen.dart';
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/services/calendar/argentina_time.dart';
@@ -19,6 +22,7 @@ import 'package:moai3/services/movie_progress_service.dart';
 import 'package:moai3/services/movie_watchlist_service.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/featured_movies_provider.dart';
+import 'package:moai3/state/home_trailers_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
@@ -27,9 +31,12 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'featured_movies_trailers_test.dart' show writeMoviesCatalog;
+import 'helpers/fake_tmdb_trailers.dart';
+import 'helpers/real_fonts.dart';
 import 'helpers/spanish_translations.dart';
 
 void main() {
+  setUpAll(loadRealFonts);
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppPreferences prefs;
@@ -49,6 +56,7 @@ void main() {
     FeaturedMoviesProvider? catalog,
     bool onTv = false,
     CalendarProvider? calendar,
+    HomeTrailersProvider? trailers,
   }) async {
     tester.view.physicalSize = const Size(1920, 1080);
     tester.view.devicePixelRatio = onTv ? 2.0 : 1.0;
@@ -72,6 +80,7 @@ void main() {
                   CalendarProvider(preferences: prefs, startTicker: false),
             ),
           ChangeNotifierProvider.value(value: movies),
+          if (trailers != null) ChangeNotifierProvider.value(value: trailers),
           // Para el detalle de la película.
           ChangeNotifierProvider(create: (_) => TvSettingsProvider(prefs)),
         ],
@@ -107,7 +116,7 @@ void main() {
     final watchlistNode = tester
         .widget<TvPressDetector>(
           find.ancestor(
-            of: find.byType(HomeWatchlistCard),
+            of: find.byType(HomeWatchlistBigCard),
             matching: find.byType(TvPressDetector),
           ),
         )
@@ -141,26 +150,64 @@ void main() {
       expect(find.byIcon(MoaiIcons.tvAccordionHome), findsOneWidget);
       expect(find.text('home_panel_home_title'), findsWidgets);
     });
+
+    testWidgets('rediseño: va por páginas llenas y la última, arriba', (
+      tester,
+    ) async {
+      useSpanishTranslations();
+      await addToWatchlist(['Coco', 'Up']);
+      await tester.runAsync(
+        () => MovieProgressService.saveProgress(
+          contentId: 'w1',
+          currentPosition: const Duration(minutes: 30),
+          totalDuration: const Duration(minutes: 120),
+          movie: MovieItem(contentId: 'w1', name: 'Wall-E'),
+        ),
+      );
+      await pumpHome(tester, onTv: true);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+      await tester.pumpAndSettle();
+
+      // Página 1: clima (1), Seguir viendo (2) y Descuentos (1), llena.
+      expect(find.byType(HomeContinueCard), findsOneWidget);
+      expect(find.byType(HomeWatchlistBigCard), findsNothing);
+      final firstTop = tester.getRect(find.byType(HomeContinueCard)).top;
+
+      // ↓ desde Descuentos (la última de la página) pasa a la página 2
+      // entera: Interesantes sola, arriba (el hueco queda abajo).
+      String? focused() => FocusManager.instance.primaryFocus?.debugLabel;
+      await press(tester, LogicalKeyboardKey.arrowDown); // Seguir viendo
+      await press(tester, LogicalKeyboardKey.arrowDown); // Descuentos
+      await press(tester, LogicalKeyboardKey.arrowDown); // página 2
+      expect(find.byType(HomeContinueCard), findsNothing);
+      expect(find.byType(HomeWatchlistBigCard), findsOneWidget);
+      expect(
+        tester.getRect(find.byType(HomeWatchlistBigCard)).top,
+        lessThan(firstTop),
+      );
+      final page2 = focused();
+
+      // ↑ vuelve a la página 1 entera, en Descuentos.
+      await press(tester, LogicalKeyboardKey.arrowUp);
+      expect(find.byType(HomeContinueCard), findsOneWidget);
+      expect(focused(), isNot(page2));
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('Interesantes', () {
     testWidgets('no aparece si Películas no está en el rail', (tester) async {
       await addToWatchlist(['Coco']);
       await pumpHome(tester, moviesVisible: false);
-      expect(find.byType(HomeWatchlistCard), findsNothing);
+      expect(find.byType(HomeWatchlistBigCard), findsNothing);
     });
 
-    testWidgets('vacía explica cómo agregarlas', (tester) async {
+    testWidgets('vacía no se muestra', (tester) async {
       useSpanishTranslations();
       await pumpHome(tester);
-
-      expect(find.text('Interesantes'), findsOneWidget);
-      expect(
-        find.text(
-          'Tocá «Marcar como interesante» en el detalle de una película para tenerla acá.',
-        ),
-        findsOneWidget,
-      );
+      expect(find.byType(HomeWatchlistBigCard), findsNothing);
     });
 
     testWidgets('muestra la lista y se actualiza al agregar una', (
@@ -174,24 +221,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Coco'), findsOneWidget);
       expect(find.text('Up'), findsOneWidget);
-      expect(find.text('2 películas'), findsOneWidget);
-    });
-
-    testWidgets('con foco en una película avisa que mantener OK la quita', (
-      tester,
-    ) async {
-      useSpanishTranslations();
-      await addToWatchlist(['Coco', 'Up']);
-      await pumpHome(tester);
-      expect(find.text('2 películas'), findsOneWidget);
-      expect(find.text('Quitar todas'), findsOneWidget);
-
-      await focusWatchlist(tester);
-      expect(find.text('Mantené OK para quitar'), findsOneWidget);
-
-      // En el botón "Quitar todas" el aviso no corresponde.
-      await press(tester, LogicalKeyboardKey.arrowLeft);
-      expect(find.text('Mantené OK para quitar'), findsNothing);
+      expect(find.text('2 para ver'), findsOneWidget);
     });
 
     testWidgets('una empezada sale de Interesantes y va a Seguir viendo', (
@@ -247,8 +277,11 @@ void main() {
       await focusWatchlist(tester);
 
       await longPressOk(tester);
-      expect(find.text('¿Quitar de Interesantes?'), findsOneWidget);
-      expect(find.text('«Coco» sale de tu lista.'), findsOneWidget);
+      expect(find.text('¿Desmarcar la película?'), findsOneWidget);
+      expect(
+        find.text('«Coco» sale de tus películas marcadas.'),
+        findsOneWidget,
+      );
       expect(find.byType(MovieDetailScreen), findsNothing);
 
       // Cancelar arranca con el foco: OK no quita nada.
@@ -256,7 +289,7 @@ void main() {
       expect(MovieWatchlistService.instance.movies, hasLength(2));
 
       await longPressOk(tester);
-      await tester.tap(find.text('Quitar'));
+      await tester.tap(find.text('Desmarcar'));
       await tester.pumpAndSettle();
 
       expect(MovieWatchlistService.instance.movies.map((m) => m.name), ['Up']);
@@ -274,46 +307,51 @@ void main() {
 
       await press(tester, LogicalKeyboardKey.arrowLeft);
       await press(tester, LogicalKeyboardKey.enter);
-      expect(find.text('¿Quitar todas de Interesantes?'), findsOneWidget);
+      expect(find.text('¿Desmarcar todas?'), findsOneWidget);
 
       // Cancelar arranca con el foco: OK no borra nada.
       await press(tester, LogicalKeyboardKey.enter);
       expect(MovieWatchlistService.instance.movies, hasLength(3));
 
       await press(tester, LogicalKeyboardKey.enter);
-      await tester.tap(find.text('Quitar todas').last);
+      await tester.tap(find.text('Desmarcar todas').last);
       await tester.pumpAndSettle();
 
       expect(MovieWatchlistService.instance.movies, isEmpty);
-      expect(
-        find.text(
-          'Tocá «Marcar como interesante» en el detalle de una película para tenerla acá.',
-        ),
-        findsOneWidget,
-      );
-      expect(find.text('Quitar todas'), findsNothing);
+      // Vacía, la tarjeta sale del Inicio.
+      expect(find.byType(HomeWatchlistBigCard), findsNothing);
     });
   });
 
   group('Adelantos', () {
-    /// Provider con el catálogo de prueba ya cargado (lectura real de disco).
-    Future<FeaturedMoviesProvider> loadedCatalog(WidgetTester tester) async {
-      final provider = FeaturedMoviesProvider()
-        ..setAvailableSections({FeaturedMoviesProvider.sectionMovies});
-      await tester.runAsync(() async {
-        final dir = await writeMoviesCatalog();
-        addTearDown(() => dir.deleteSync(recursive: true));
-        MoiamovApiService.instance.debugSetCatalogDirectory(dir);
-        addTearDown(
-          () => MoiamovApiService.instance.debugSetCatalogDirectory(null),
-        );
-        await provider.loadSection(FeaturedMoviesProvider.sectionMovies);
-      });
-      return provider;
+    /// Adelantos de TMDb (falso) ya cargados: Superman (el más nuevo) y
+    /// Weapons. [calls] junta los pedidos a TMDb.
+    Future<HomeTrailersProvider> loadedTrailers({List<String>? calls}) async {
+      final trailers = HomeTrailersProvider(
+        prefs,
+        service: fakeTmdbTrailers(
+          nowPlaying: [1, 2],
+          movies: {
+            1: tmdbMovie(
+              1,
+              'Weapons',
+              videos: [tmdbVideo('w', published: '2026-10-01T00:00:00.000Z')],
+            ),
+            2: tmdbMovie(
+              2,
+              'Superman',
+              videos: [tmdbVideo('s', published: '2026-10-20T00:00:00.000Z')],
+            ),
+          },
+          calls: calls,
+        ),
+      );
+      await trailers.load();
+      return trailers;
     }
 
-    /// Baja con ↓ hasta "Adelantos": es la cuarta tarjeta y el Inicio
-    /// muestra tres a la vez, así que recién se dibuja al llegar.
+    /// Baja con ↓ hasta "Adelantos": el Inicio muestra tres tarjetas a la
+    /// vez, así que recién se dibuja al llegar.
     Future<void> focusTrailers(WidgetTester tester) async {
       bool focused() {
         final card = find.ancestor(
@@ -335,39 +373,83 @@ void main() {
       expect(find.byType(HomeTrailersCard), findsNothing);
     });
 
-    testWidgets('muestra los adelantos sin la marca "(Tráiler)"', (
+    testWidgets('los tráileres del catálogo no llegan al Inicio', (
+      tester,
+    ) async {
+      final catalog = FeaturedMoviesProvider()
+        ..setAvailableSections({FeaturedMoviesProvider.sectionMovies});
+      await tester.runAsync(() async {
+        final dir = await writeMoviesCatalog();
+        addTearDown(() => dir.deleteSync(recursive: true));
+        MoiamovApiService.instance.debugSetCatalogDirectory(dir);
+        addTearDown(
+          () => MoiamovApiService.instance.debugSetCatalogDirectory(null),
+        );
+        await catalog.loadSection(FeaturedMoviesProvider.sectionMovies);
+      });
+      await pumpHome(tester, catalog: catalog);
+      expect(find.byType(HomeTrailersCard), findsNothing);
+    });
+
+    testWidgets('muestra los adelantos de TMDb, el más nuevo primero', (
       tester,
     ) async {
       useSpanishTranslations();
-      await pumpHome(tester, catalog: await loadedCatalog(tester));
+      await pumpHome(tester, trailers: await loadedTrailers());
       await focusTrailers(tester);
 
       expect(find.text('Adelantos'), findsOneWidget);
       // Con foco, en lugar de cuántos hay va el aviso.
       expect(find.text('Presioná OK para verlo'), findsOneWidget);
-      expect(find.text('Weapons'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Superman')).dx,
+        lessThan(tester.getTopLeft(find.text('Weapons')).dx),
+      );
+    });
+
+    testWidgets('aparece aunque Películas no esté en el rail', (tester) async {
+      useSpanishTranslations();
+      await pumpHome(
+        tester,
+        moviesVisible: false,
+        trailers: await loadedTrailers(),
+      );
+      await focusTrailers(tester);
       expect(find.text('Superman'), findsOneWidget);
     });
 
-    testWidgets('con el ajuste apagado la tarjeta no aparece', (tester) async {
+    testWidgets('con el ajuste apagado no aparece ni sale a la red', (
+      tester,
+    ) async {
       useSpanishTranslations();
-      final catalog = await loadedCatalog(tester);
-      expect(
-        catalog.trailersFor(FeaturedMoviesProvider.sectionMovies),
-        isNotEmpty,
-      );
       await prefs.saveBool('home_show_trailers', false);
-      await pumpHome(tester, catalog: catalog);
+      final calls = <String>[];
+      final trailers = HomeTrailersProvider(
+        prefs,
+        service: fakeTmdbTrailers(calls: calls),
+      );
+      await pumpHome(tester, trailers: trailers);
       expect(find.byType(HomeTrailersCard), findsNothing);
+      expect(calls, isEmpty);
+    });
+
+    testWidgets('con el ajuste prendido el Inicio los renueva', (tester) async {
+      useSpanishTranslations();
+      final calls = <String>[];
+      final trailers = HomeTrailersProvider(
+        prefs,
+        service: fakeTmdbTrailers(calls: calls),
+      );
+      await pumpHome(tester, trailers: trailers);
+      expect(calls, contains('/movie/now_playing'));
     });
 
     testWidgets('→ elige el siguiente y OK abre el detalle del adelanto', (
       tester,
     ) async {
       useSpanishTranslations();
-      await pumpHome(tester, catalog: await loadedCatalog(tester));
+      await pumpHome(tester, trailers: await loadedTrailers());
       await focusTrailers(tester);
-      expect(find.text('Presioná OK para verlo'), findsOneWidget);
 
       await press(tester, LogicalKeyboardKey.arrowRight);
       await press(tester, LogicalKeyboardKey.enter);
@@ -375,8 +457,9 @@ void main() {
       final detail = tester.widget<MovieDetailScreen>(
         find.byType(MovieDetailScreen),
       );
-      expect(detail.movie.contentId, 't2');
-      expect(find.text('Adelanto - Superman'), findsOneWidget);
+      expect(detail.movie.contentId, 'tmdb_1');
+      expect(detail.movie.youtubeTrailerKey, 'w');
+      expect(find.text('Adelanto - Weapons'), findsOneWidget);
     });
   });
 
@@ -574,10 +657,10 @@ void main() {
         find.byType(CachedNetworkImage),
       );
       expect(images, isNotEmpty);
-      // Lo justo para cubrir 192×108 a densidad 2 con fotos de hasta 2,4:1,
-      // no los 1920–4096 px de la foto.
+      // Como en Interesantes ([TvMovieCard] horizontal): chicas, no los
+      // 1920–4096 px de la foto.
       for (final image in images) {
-        expect(image.memCacheWidth, 519);
+        expect(image.memCacheWidth, 640);
       }
     });
 
@@ -607,10 +690,26 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Clima, Eventos, Seguir viendo e Interesantes a la vez.
+      // Clima, Seguir viendo y Descuentos llenan la primera página;
+      // Interesantes (dos lugares) queda en la siguiente.
       expect(find.byType(HomeContinueCard), findsOneWidget);
-      expect(find.byType(HomeWatchlistCard), findsOneWidget);
-      expect(find.text('Revisá tu actividad para hoy'), findsOneWidget);
+      expect(find.byType(HomeWatchlistBigCard), findsNothing);
+      expect(
+        find.text(LocaleKeys.home_panel_home_subtitle.tr()),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+
+      // Bajando aparece la grande de Interesantes, también sin desbordar.
+      for (
+        var i = 0;
+        i < 6 && find.byType(HomeWatchlistBigCard).evaluate().isEmpty;
+        i++
+      ) {
+        await press(tester, LogicalKeyboardKey.arrowDown);
+      }
+      expect(find.byType(HomeWatchlistBigCard), findsOneWidget);
+      expect(find.text('2 para ver'), findsOneWidget);
       // Un desborde haría fallar el test (lo reporta Flutter).
       expect(tester.takeException(), isNull);
     });
@@ -643,6 +742,31 @@ void main() {
       calendar.debugSetEvents([event('a', start)]);
       await pumpHome(tester, calendar: calendar);
       expect(find.byType(HomeEventsCard), findsOneWidget);
+    });
+
+    testWidgets('la tarjeta de evento con foto (guardada) se arma', (
+      tester,
+    ) async {
+      useSpanishTranslations();
+      final now = ArgentinaTime.now();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Center(
+            child: SizedBox(
+              width: 122,
+              height: 140,
+              child: HomeEventTile(
+                event: event('a', now.add(const Duration(hours: 1))),
+                artwork: EventArtwork.pathFor('nfl'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Partido a'), findsOneWidget);
+      expect(HomeEventTile.shortTag(event('b', now)), 'nfl');
+      expect(tester.takeException(), isNull);
     });
   });
 

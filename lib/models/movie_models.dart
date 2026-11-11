@@ -6,17 +6,12 @@ import 'package:moai3/utils/text_normalize.dart';
 /// principal ([CatalogStrings.current]) y viajan como texto común: así el
 /// catálogo se puede armar en otro hilo, donde no hay traducciones.
 class CatalogStrings {
-  const CatalogStrings({
-    required this.untitled,
-    required this.defaultCategory,
-    required this.trailersCategory,
-  });
+  const CatalogStrings({required this.untitled, required this.defaultCategory});
 
   /// Los del idioma actual.
   factory CatalogStrings.current() => CatalogStrings(
     untitled: LocaleKeys.movies_untitled.tr(),
     defaultCategory: LocaleKeys.movies_category_default.tr(),
-    trailersCategory: LocaleKeys.movies_category_trailers.tr(),
   );
 
   /// Película sin nombre.
@@ -24,9 +19,6 @@ class CatalogStrings {
 
   /// Categoría sin nombre.
   final String defaultCategory;
-
-  /// Cómo se llama la categoría de tráileres en Moai ("Adelantos").
-  final String trailersCategory;
 }
 
 class CategoryColumn {
@@ -66,9 +58,6 @@ class CategoryColumn {
         texts.defaultCategory;
     final normalizedName = rawName.trim().toLowerCase() == 'all'
         ? 'Todos'
-        // Los tráileres en Moai se llaman "adelantos".
-        : normalizeText(rawName) == 'trailer'
-        ? texts.trailersCategory
         : rawName.replaceAll(RegExp(r'\bAll\b', caseSensitive: false), 'Todos');
 
     return CategoryColumn(
@@ -105,6 +94,13 @@ class MovieItem {
   final String? tags;
   final String? programType;
 
+  /// Video de YouTube del adelanto: sólo en los adelantos
+  /// del Inicio, que vienen de TMDb. Reproducir abre la app de YouTube.
+  final String? youtubeTrailerKey;
+
+  /// Cuándo se agregó al catálogo (`shelveTime`); no es el estreno.
+  final DateTime? addedAt;
+
   MovieItem({
     required this.contentId,
     required this.name,
@@ -120,12 +116,21 @@ class MovieItem {
     this.duration,
     this.tags,
     this.programType,
+    this.youtubeTrailerKey,
+    this.addedAt,
   });
 
-  bool get isTrailer {
+  /// Adelanto del Inicio (de TMDb, se ve en YouTube).
+  bool get isTrailer => youtubeTrailerKey?.isNotEmpty ?? false;
+
+  /// Tráiler del catálogo del portal: no se muestra en ningún lado. Por
+  /// tipo o por la palabra "tráiler" (con o sin tilde) en el nombre.
+  bool get isCatalogTrailer {
     final pt = (programType ?? '').toLowerCase().trim();
-    return pt == 'trailer' || name.toLowerCase().contains('trailer');
+    return pt == 'trailer' || _trailerWord.hasMatch(normalizeText(name));
   }
+
+  static final RegExp _trailerWord = RegExp(r'\btrailer\b');
 
   bool get isSeries {
     final pt = (programType ?? '').toLowerCase().trim();
@@ -142,25 +147,11 @@ class MovieItem {
         ).hasMatch(alias ?? '');
   }
 
-  bool get isMovie => !isSeries && !isTrailer;
+  bool get isMovie => !isSeries && !isCatalogTrailer && !isTrailer;
 
-  /// "(Tráiler)", "Trailer:" y parecidos al principio del nombre.
-  static final RegExp _trailerTag = RegExp(
-    r'^\s*\(?\s*tr[aá]iler\s*\)?\s*[:\-–]?\s*',
-    caseSensitive: false,
-  );
-
-  /// [title] sin la marca de tráiler del catálogo ("(Tráiler)Weapons" →
-  /// "Weapons").
-  static String withoutTrailerTag(String title) =>
-      title.replaceFirst(_trailerTag, '').trim();
-
-  /// Nombre para mostrar: en un tráiler (en Moai, "adelanto"), "Adelanto -
-  /// Weapons".
+  /// Nombre para mostrar: en un adelanto, "Adelanto - Weapons".
   String get displayName => isTrailer
-      ? LocaleKeys.movies_trailer_title.tr(
-          namedArgs: {'name': withoutTrailerTag(name)},
-        )
+      ? LocaleKeys.movies_trailer_title.tr(namedArgs: {'name': name})
       : name;
 
   /// La misma película con otro año. El catálogo no trae el de estreno;
@@ -180,6 +171,8 @@ class MovieItem {
     duration: duration,
     tags: tags,
     programType: programType,
+    youtubeTrailerKey: youtubeTrailerKey,
+    addedAt: addedAt,
   );
 
   /// Imagen de fondo / horizontal preferida (fallback al poster)
@@ -229,6 +222,24 @@ class MovieItem {
       return [fallback.trim()];
     }
     return const [];
+  }
+
+  /// El elenco para mostrar: el catálogo los separa con coma sin espacio
+  /// ("Sam Worthington,Zoe Saldana"); acá van con ", ". `null` si no hay.
+  String? get formattedCast => _joinNames(actorDisplay);
+
+  /// El director (o los directores), igual que [formattedCast]: "Tom
+  /// Verica,Sheree Folkson" pasa a "Tom Verica, Sheree Folkson".
+  String? get formattedDirector => _joinNames(director);
+
+  /// Nombres separados con coma (con o sin espacio), con ", ". `null` si no
+  /// hay ninguno.
+  static String? _joinNames(String? raw) {
+    final names = [
+      for (final name in (raw ?? '').split(','))
+        if (name.trim().isNotEmpty) name.trim(),
+    ];
+    return names.isEmpty ? null : names.join(', ');
   }
 
   /// Formatea la duración (ej. "02:22:00" -> "2h 22m", "01:45:00" -> "1h 45m")
@@ -417,6 +428,10 @@ class MovieItem {
       duration: json['duration']?.toString(),
       tags: json['tags']?.toString(),
       programType: json['programType']?.toString() ?? json['type']?.toString(),
+      youtubeTrailerKey: json['youtubeTrailerKey']?.toString(),
+      addedAt: DateTime.tryParse(
+        (json['shelveTime'] ?? json['addedAt'])?.toString() ?? '',
+      ),
     );
   }
 
@@ -446,6 +461,8 @@ class MovieItem {
     'duration': duration,
     'tags': tags,
     'programType': programType,
+    if (youtubeTrailerKey != null) 'youtubeTrailerKey': youtubeTrailerKey,
+    if (addedAt != null) 'addedAt': addedAt!.toIso8601String(),
   };
 }
 

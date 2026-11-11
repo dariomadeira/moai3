@@ -24,35 +24,19 @@ void main() {
       expect(roster.friends.map((f) => f.nickname), ['Beto', 'Ana', 'zoe']);
     });
 
-    test('applyPresences marca en línea, toma el canal y desconecta al resto', () {
-      final roster = FriendsRoster()
-        ..replace([_friend('1'), _friend('2', online: true, channelId: 'c9')]);
+    test('jugando en Arcade no cuenta como mirar el mismo canal', () {
+      final friend = _friend(
+        '1',
+        online: true,
+        channelId: FriendInfo.arcadeActivityId,
+      );
 
-      final changed = roster.applyPresences([
-        {'device_id': '1', 'channel_id': 'c1', 'nickname': 'Uno'},
-      ]);
-
-      expect(changed, isTrue);
-      final byId = {for (final f in roster.friends) f.deviceId: f};
-      expect(byId['1']!.isOnline, isTrue);
-      expect(byId['1']!.currentChannelId, 'c1');
-      expect(byId['1']!.nickname, 'Uno');
-      expect(byId['2']!.isOnline, isFalse);
-      // Sin cambios visibles la segunda vez.
+      expect(friend.isPlayingArcade, isTrue);
+      expect(friend.displayChannelName, isNull);
       expect(
-        roster.applyPresences([
-          {'device_id': '1', 'channel_id': 'c1', 'nickname': 'Uno'},
-        ]),
+        friend.isWatchingSameChannel(FriendInfo.arcadeActivityId),
         isFalse,
       );
-    });
-
-    test('un canal null en la presencia borra el canal anterior', () {
-      final roster = FriendsRoster()
-        ..replace([_friend('1', online: true, channelId: 'c1')]);
-      expect(roster.applyPresences([{'device_id': '1'}]), isTrue);
-      expect(roster.friends.single.currentChannelId, isNull);
-      expect(roster.watching('c1', null), isEmpty);
     });
 
     test('takeNewWatchers avisa una sola vez por canal', () {
@@ -78,7 +62,10 @@ void main() {
       expect(roster.takeNewWatchers('c1', null), isEmpty);
       // Cambio que no es de canal: solo actualiza la lista.
       expect(
-        roster.applyDeviceRecord({...record, 'nickname': 'Uno2'}, channelId: 'c1'),
+        roster.applyDeviceRecord({
+          ...record,
+          'nickname': 'Uno2',
+        }, channelId: 'c1'),
         '',
       );
       expect(roster.friends.single.nickname, 'Uno2');

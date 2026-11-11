@@ -45,11 +45,12 @@ class _OfflinePresence extends SupabasePresenceService {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  bool isSelected(WidgetTester tester, String label) => tester
-      .getSemantics(find.bySemanticsLabel(label))
-      .getSemanticsData()
-      .flagsCollection
-      .isSelected ==
+  bool isSelected(WidgetTester tester, String label) =>
+      tester
+          .getSemantics(find.bySemanticsLabel(label))
+          .getSemanticsData()
+          .flagsCollection
+          .isSelected ==
       Tristate.isTrue;
 
   /// `true` si el foco está en el nodo [label] o en uno de sus hijos.
@@ -88,15 +89,16 @@ void main() {
           ChangeNotifierProvider.value(value: channels),
           ChangeNotifierProvider(create: (_) => FavoritesProvider(prefs)),
           ChangeNotifierProvider(
-            create: (_) => CalendarProvider(preferences: prefs, startTicker: false),
+            create: (_) =>
+                CalendarProvider(preferences: prefs, startTicker: false),
           ),
           ChangeNotifierProvider(
-            create: (_) => FeaturedMoviesProvider()
-              ..setAvailableSections(const {
-                FeaturedMoviesProvider.sectionFeatured,
-                FeaturedMoviesProvider.sectionMovies,
-                FeaturedMoviesProvider.sectionSeries,
-              }),
+            create: (_) =>
+                FeaturedMoviesProvider()..setAvailableSections(const {
+                  FeaturedMoviesProvider.sectionFeatured,
+                  FeaturedMoviesProvider.sectionMovies,
+                  FeaturedMoviesProvider.sectionSeries,
+                }),
           ),
           ChangeNotifierProvider(create: (_) => PlaybackStatsController()),
           ChangeNotifierProvider(create: (_) => DebugLogController()),
@@ -146,13 +148,15 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
   });
 
-  testWidgets('el rail se recorre con flechas y OK entra a la sección', (tester) async {
+  testWidgets('el rail se recorre con flechas y OK entra a la sección', (
+    tester,
+  ) async {
     await pumpHome(tester);
     await tester.tap(find.bySemanticsLabel('home_rail_tv_title'));
     await tester.pump(const Duration(milliseconds: 300));
 
-    // TV → Películas → Agenda (Destacados y Series están ocultas).
-    for (var i = 0; i < 2; i++) {
+    // TV → Películas → Series → Agenda (TV en vivo y Destacados ocultas).
+    for (var i = 0; i < 3; i++) {
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pump();
     }
@@ -165,7 +169,9 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
   });
 
-  testWidgets('back desde el contenido devuelve el foco al rail', (tester) async {
+  testWidgets('back desde el contenido devuelve el foco al rail', (
+    tester,
+  ) async {
     await pumpHome(tester);
     await tester.tap(find.bySemanticsLabel('home_rail_calendar_title'));
     await tester.pump(const Duration(milliseconds: 300));
@@ -197,7 +203,7 @@ void main() {
     expect(focusWithin('settings_tv'), isTrue);
 
     // Abrir "Acerca de" y salir a TV.
-    await tester.tap(find.text('settings_about_title').first);
+    await tester.tap(find.text('settings_tab_about').first);
     // Varios frames: el acordeón anima y el pedido de foco reintenta por frame.
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 50));
@@ -217,12 +223,21 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
   });
 
-  testWidgets('TV conserva la pestaña al ir a la Agenda y volver', (tester) async {
+  testWidgets('TV conserva la pestaña al ir a la Agenda y volver', (
+    tester,
+  ) async {
     await pumpHome(tester);
     await tester.tap(find.bySemanticsLabel('home_rail_tv_title'));
     await tester.pump(const Duration(milliseconds: 500));
     // El ícono de Buscar también aparece en el panel de búsqueda vacío: se
-    // toca el de la barra de pestañas, y la elegida se reconoce por su título.
+    // toca el de la barra de pestañas, y la elegida se reconoce por su
+    // semántica.
+    final searchSelected = find.byWidgetPredicate(
+      (w) =>
+          w is Semantics &&
+          w.properties.label == 'home_tab_search' &&
+          w.properties.selected == true,
+    );
     await tester.tap(
       find.descendant(
         of: find.byType(TvTabBar),
@@ -230,56 +245,57 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('home_tab_search'), findsOneWidget);
+    expect(searchSelected, findsOneWidget);
 
     await tester.tap(find.bySemanticsLabel('home_rail_calendar_title'));
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('home_tab_search'), findsNothing);
+    expect(find.byType(TvTabBar), findsNothing);
 
     await tester.tap(find.bySemanticsLabel('home_rail_tv_title'));
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('home_tab_search'), findsOneWidget);
+    expect(searchSelected, findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 5));
   });
 
-  testWidgets('volver a Ajustes entra al panel recordado sin saltar al siguiente', (
-    tester,
-  ) async {
-    await pumpHome(tester);
-    Future<void> frames() async {
-      for (var i = 0; i < 10; i++) {
-        await tester.pump(const Duration(milliseconds: 50));
+  testWidgets(
+    'volver a Ajustes entra al panel recordado sin saltar al siguiente',
+    (tester) async {
+      await pumpHome(tester);
+      Future<void> frames() async {
+        for (var i = 0; i < 10; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
       }
-    }
 
-    // Antes, los paneles con lista tomaban el foco al montarse y el → del
-    // rail avanzaba un panel de más.
-    const panels = {
-      'settings_movies_series_title': 'settings_movies_series',
-      'settings_agenda_title': 'settings_agenda',
-      'settings_watch_party_title': 'settings_watch_party',
-      'settings_general_title': 'settings_general',
-    };
-    for (final MapEntry(key: title, value: node) in panels.entries) {
-      await tester.tap(find.bySemanticsLabel('home_rail_settings_title'));
-      await frames();
-      await tester.tap(find.text(title).first);
-      await frames();
-      expect(focusWithin(node), isTrue, reason: 'al abrir $title');
-      await tester.tap(find.bySemanticsLabel('home_rail_tv_title'));
-      await frames();
+      // Antes, los paneles con lista tomaban el foco al montarse y el → del
+      // rail avanzaba un panel de más.
+      const panels = {
+        'settings_tab_movies_series': 'settings_movies_series',
+        'settings_tab_agenda': 'settings_agenda',
+        'settings_tab_watch_party': 'settings_watch_party',
+        'settings_tab_general': 'settings_general',
+      };
+      for (final MapEntry(key: title, value: node) in panels.entries) {
+        await tester.tap(find.bySemanticsLabel('home_rail_settings_title'));
+        await frames();
+        await tester.tap(find.text(title).first);
+        await frames();
+        expect(focusWithin(node), isTrue, reason: 'al abrir $title');
+        await tester.tap(find.bySemanticsLabel('home_rail_tv_title'));
+        await frames();
 
-      await tester.tap(find.bySemanticsLabel('home_rail_settings_title'));
-      await frames();
-      expect(FocusManager.instance.primaryFocus?.debugLabel, 'home_rail');
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
-      await frames();
-      expect(focusWithin(node), isTrue, reason: 'al volver a $title');
-    }
+        await tester.tap(find.bySemanticsLabel('home_rail_settings_title'));
+        await frames();
+        expect(FocusManager.instance.primaryFocus?.debugLabel, 'home_rail');
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+        await frames();
+        expect(focusWithin(node), isTrue, reason: 'al volver a $title');
+      }
 
-    await tester.pumpWidget(const SizedBox());
-    await tester.pump(const Duration(seconds: 5));
-  });
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 5));
+    },
+  );
 }

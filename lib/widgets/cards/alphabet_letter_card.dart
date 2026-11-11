@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
+import 'package:moai3/theme/moai_focus_style.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
@@ -13,6 +14,9 @@ class AlphabetLetterCard extends StatefulWidget {
   final VoidCallback? onKeyUp;
   final VoidCallback? onKeyDown;
 
+  /// Color del foco, como el de la sección en el rail (sin él, el acento).
+  final Color? focusColor;
+
   const AlphabetLetterCard({
     super.key,
     required this.letter,
@@ -22,6 +26,7 @@ class AlphabetLetterCard extends StatefulWidget {
     this.onKeyRight,
     this.onKeyUp,
     this.onKeyDown,
+    this.focusColor,
   });
 
   @override
@@ -29,12 +34,23 @@ class AlphabetLetterCard extends StatefulWidget {
 }
 
 class _AlphabetLetterCardState extends State<AlphabetLetterCard> {
-  bool _isFocused = false;
+  // Al correrse la ventana de letras la ficha se vuelve a crear con el foco
+  // ya puesto (sin aviso de cambio): se lee del nodo.
+  late bool _isFocused = widget.focusNode?.hasFocus ?? false;
   bool _isKeyDown = false;
+
+  @override
+  void didUpdateWidget(covariant AlphabetLetterCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.focusNode != oldWidget.focusNode) {
+      _isFocused = widget.focusNode?.hasFocus ?? false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
+    final focused = _isFocused || (widget.focusNode?.hasFocus ?? false);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -76,26 +92,36 @@ class _AlphabetLetterCardState extends State<AlphabetLetterCard> {
         child: Center(
           child: GestureDetector(
             onTap: widget.onTap,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+            // Sin animación, como el rail: al fundir el fondo la letra
+            // blanca se perdía sobre el vidrio y el botón titilaba.
+            child: Container(
               width: 26,
               height: 26,
-              // En cristal el foco es el de los botones (acento con brillo y
+              // En cristal el foco es el del rail (color sólido con brillo y
               // halo); en reposo la letra va suelta.
-              decoration: MoaiGlassScope.enabledOf(context) && _isFocused
-                  ? moaiGlassButtonDecoration(scheme, focused: true, radius: 13)
+              decoration: MoaiGlassScope.enabledOf(context) && focused
+                  ? MoaiFocusStyle.decoration(scheme, color: widget.focusColor)
                   : BoxDecoration(
-                      color: _isFocused ? scheme.primary : Colors.transparent,
+                      color: focused ? scheme.primary : Colors.transparent,
                       shape: BoxShape.circle,
                     ),
               alignment: Alignment.center,
-              child: Text(
-                widget.letter,
-                style: MoaiText.body(
-                  context,
-                  fontSize: 13,
-                  color: _isFocused ? scheme.onPrimary : scheme.onSurface,
-                  fontWeight: _isFocused ? FontWeight.w700 : FontWeight.w600,
+              // Las mayúsculas no tienen parte de abajo: centradas en la
+              // caja del texto quedan 1 punto altas.
+              child: Transform.translate(
+                offset: const Offset(0, 1),
+                child: Text(
+                  widget.letter,
+                  style: MoaiText.body(
+                    context,
+                    fontSize: 13,
+                    color: focused
+                        ? (widget.focusColor != null
+                              ? Colors.white
+                              : scheme.onPrimary)
+                        : scheme.onSurface,
+                    fontWeight: focused ? FontWeight.w700 : FontWeight.w600,
+                  ),
                 ),
               ),
             ),

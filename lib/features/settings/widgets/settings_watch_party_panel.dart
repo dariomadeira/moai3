@@ -1,8 +1,10 @@
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/widgets/tv_common/tv_tile.dart';
+import 'package:moai3/models/channel.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/widgets/dialogs/tv_friends_dialog.dart';
@@ -11,6 +13,7 @@ import 'package:moai3/widgets/dialogs/tv_voice_test_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
+import 'package:moai3/widgets/tv_common/tv_panel_slots.dart';
 import 'package:moai3/widgets/tv_common/tv_value_chip.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
@@ -30,6 +33,9 @@ class SettingsWatchPartyPanel extends StatefulWidget {
   final int initialIndex;
   final ValueChanged<int>? onSelectedIndexChanged;
 
+  /// Sintoniza el canal de un amigo desde el modal de amigos.
+  final ValueChanged<Channel>? onTuneChannel;
+
   const SettingsWatchPartyPanel({
     super.key,
     required this.focusNode,
@@ -37,16 +43,15 @@ class SettingsWatchPartyPanel extends StatefulWidget {
     required this.onKeyRight,
     this.initialIndex = 0,
     this.onSelectedIndexChanged,
+    this.onTuneChannel,
   });
 
   @override
-  State<SettingsWatchPartyPanel> createState() => SettingsWatchPartyPanelState();
+  State<SettingsWatchPartyPanel> createState() =>
+      SettingsWatchPartyPanelState();
 }
 
 class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
-  static const int _windowSize = 6;
-  static const double _itemExtent = 70.0;
-
   final _listKey =
       GlobalKey<TvWindowedListState<_SettingsWatchPartyItemType>>();
   late int _selectedIndex = widget.initialIndex;
@@ -96,28 +101,31 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
         }
       },
       child: Container(
-        padding: const EdgeInsets.only(
-          left: 4,
-          right: 12,
-          top: 8,
-          bottom: 8,
-        ),
+        padding: TvPanelSlots.panelPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TvPanelHeader(
               title: LocaleKeys.settings_watch_party_title.tr(),
               subtitle: LocaleKeys.settings_watch_party_subtitle.tr(),
+              titleShader: HomeClock.timeShader,
             ),
+            // Igual que Agenda › Suscripciones: los 6 lugares reparten el
+            // alto bajo el encabezado.
+            TvPanelSlots.belowHeader,
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final targetHeight = (_windowSize * _itemExtent)
-                      .clamp(0.0, constraints.maxHeight);
+                  final itemExtent = TvPanelSlots.extentFor(
+                    constraints.maxHeight,
+                  );
                   return Align(
-                    alignment: Alignment.bottomCenter,
+                    alignment: Alignment.topCenter,
                     child: SizedBox(
-                      height: targetHeight,
+                      height: (TvPanelSlots.count * itemExtent).clamp(
+                        0.0,
+                        constraints.maxHeight,
+                      ),
                       child: Align(
                         alignment: Alignment.topCenter,
                         child: TvWindowedList<_SettingsWatchPartyItemType>(
@@ -125,34 +133,37 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
                           // La entrada de foco la decide el área (rail →, cambio de panel).
                           focusOnMount: false,
                           items: items,
-                          itemExtent: _itemExtent,
+                          itemExtent: itemExtent,
                           showScrollDots: true,
                           initialGlobalIndex: _selectedIndex,
                           onFocusedGlobalIndex: (idx) {
                             _selectedIndex = idx;
                             widget.onSelectedIndexChanged?.call(idx);
                           },
-                          itemBuilder: (
-                            context,
-                            item,
-                            focusNode,
-                            local,
-                            global,
-                            onKeyUp,
-                            onKeyDown,
-                          ) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: _buildItem(
-                                context: context,
-                                item: item,
-                                watchParty: watchParty,
-                                focusNode: focusNode,
-                                onKeyUp: onKeyUp,
-                                onKeyDown: onKeyDown,
-                              ),
-                            );
-                          },
+                          itemBuilder:
+                              (
+                                context,
+                                item,
+                                focusNode,
+                                local,
+                                global,
+                                onKeyUp,
+                                onKeyDown,
+                              ) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: TvPanelSlots.gap / 2,
+                                  ),
+                                  child: _buildItem(
+                                    context: context,
+                                    item: item,
+                                    watchParty: watchParty,
+                                    focusNode: focusNode,
+                                    onKeyUp: onKeyUp,
+                                    onKeyDown: onKeyDown,
+                                  ),
+                                );
+                              },
                         ),
                       ),
                     ),
@@ -178,7 +189,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
       case _SettingsWatchPartyItemType.watchPartySwitch:
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: MoaiIcons.voice,
+          icon: MoaiIcons.watchPartyToggle,
           label: LocaleKeys.settings_tv_watch_party.tr(),
           description: LocaleKeys.settings_tv_watch_party_desc.tr(),
           value: watchParty?.enabled ?? false,
@@ -229,7 +240,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
           },
         );
       case _SettingsWatchPartyItemType.watchPartyManageFriends:
-        final friendsCount = watchParty?.friends.length ?? 0;
+        final friendsCount = watchParty?.mutualFriends.length ?? 0;
         final onlineCount = watchParty?.onlineFriendsCount ?? 0;
         final String statusDesc;
         if (friendsCount == 0) {
@@ -249,7 +260,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
           label: LocaleKeys.settings_tv_manage_friends.tr(),
           description: statusDesc,
           onPressed: () {
-            TvFriendsDialog.show(context);
+            TvFriendsDialog.show(context, onTuneChannel: widget.onTuneChannel);
           },
           onKeyLeft: widget.onKeyLeft,
           onKeyRight: widget.onKeyRight,
@@ -294,10 +305,7 @@ class SettingsWatchPartyPanelState extends State<SettingsWatchPartyPanel> {
 
     if (currentNick == null || currentNick.trim().isEmpty) {
       if (!context.mounted) return;
-      final newNick = await TvNicknameDialog.show(
-        context,
-        isMandatory: true,
-      );
+      final newNick = await TvNicknameDialog.show(context, isMandatory: true);
 
       if (newNick != null && newNick.trim().isNotEmpty) {
         try {

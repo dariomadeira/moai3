@@ -13,15 +13,22 @@ class TvListCardLeadingLogo extends StatefulWidget {
   final double width;
   final double height;
   final bool isFocused;
+
   /// Padding interno del logo. Por defecto el de listas TV.
   final EdgeInsetsGeometry contentPadding;
+
   /// `true` si hay imagen real; `false` si URL vacía o falló la carga.
   final ValueChanged<bool>? onLogoResolved;
+
+  /// Color del ícono de "sin logo" (p. ej. el acento en la grilla de
+  /// canales). Sin él, el de siempre.
+  final Color? fallbackColor;
 
   /// Consulta si la URL del logo falló previamente o está vacía.
   static bool isUrlFailed(String url) {
     final clean = url.trim();
-    return clean.isEmpty || _TvListCardLeadingLogoState._failedUrls.contains(clean);
+    return clean.isEmpty ||
+        _TvListCardLeadingLogoState._failedUrls.contains(clean);
   }
 
   const TvListCardLeadingLogo({
@@ -30,9 +37,12 @@ class TvListCardLeadingLogo extends StatefulWidget {
     required this.width,
     required this.height,
     this.isFocused = false,
-    this.contentPadding =
-        const EdgeInsets.symmetric(horizontal: 7, vertical: 5.5),
+    this.contentPadding = const EdgeInsets.symmetric(
+      horizontal: 7,
+      vertical: 5.5,
+    ),
     this.onLogoResolved,
+    this.fallbackColor,
   });
 
   @override
@@ -111,14 +121,15 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
     final scheme = Theme.of(context).colorScheme;
     final focusedIconColor =
         Color.lerp(scheme.onPrimary, scheme.onPrimaryContainer, 0.38) ??
-            scheme.onPrimary;
-    final iconColor =
-        widget.isFocused ? focusedIconColor : scheme.onPrimaryContainer;
+        scheme.onPrimary;
+    final iconColor = widget.isFocused
+        ? focusedIconColor
+        : scheme.onPrimaryContainer;
 
     final errorPlaceholder = Center(
       child: Icon(
         MoaiIcons.tvChannelLogoFallback,
-        color: iconColor,
+        color: widget.fallbackColor ?? iconColor,
         size: (widget.height * 0.55).clamp(0.0, 48.0),
       ),
     );
@@ -127,10 +138,17 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
     final cleanUrl = widget.logoUrl.trim();
     final Widget logoContent;
 
-    if (cleanUrl.isEmpty || _lastReported == false || _failedUrls.contains(cleanUrl)) {
+    if (cleanUrl.isEmpty ||
+        _lastReported == false ||
+        _failedUrls.contains(cleanUrl)) {
       logoContent = errorPlaceholder;
     } else if (cleanUrl.startsWith('http')) {
-      final cleanPath = cleanUrl.toLowerCase().split('?').first.split('#').first;
+      final cleanPath = cleanUrl
+          .toLowerCase()
+          .split('?')
+          .first
+          .split('#')
+          .first;
       final isSvg = cleanPath.endsWith('.svg');
       if (isSvg) {
         logoContent = SafeNetworkSvg(
@@ -165,10 +183,7 @@ class _TvListCardLeadingLogoState extends State<TvListCardLeadingLogo> {
           },
           imageBuilder: (context, imageProvider) {
             _report(true);
-            return Image(
-              image: imageProvider,
-              fit: BoxFit.contain,
-            );
+            return Image(image: imageProvider, fit: BoxFit.contain);
           },
         );
       }

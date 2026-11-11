@@ -1,6 +1,7 @@
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/features/settings/widgets/settings_tv_startup_tab_row.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/features/sources/screens/sources_screen.dart';
@@ -9,6 +10,7 @@ import 'package:moai3/widgets/dialogs/tv_pin_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
+import 'package:moai3/widgets/tv_common/tv_panel_slots.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
@@ -42,9 +44,6 @@ class SettingsTvPanel extends StatefulWidget {
 }
 
 class SettingsTvPanelState extends State<SettingsTvPanel> {
-  static const int _windowSize = 6;
-  static const double _itemExtent = 70.0;
-
   final _listKey = GlobalKey<TvWindowedListState<_SettingsTvItemType>>();
   late int _selectedIndex = widget.initialIndex;
 
@@ -78,62 +77,68 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
         }
       },
       child: Container(
-        padding: const EdgeInsets.only(
-          left: 4,
-          right: 12,
-          top: 8,
-          bottom: 8,
-        ),
+        padding: TvPanelSlots.panelPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TvPanelHeader(
               title: LocaleKeys.settings_tv_title.tr(),
               subtitle: LocaleKeys.settings_tv_subtitle.tr(),
+              titleShader: HomeClock.timeShader,
             ),
+            // Igual que Agenda › Suscripciones: los 6 lugares reparten el
+            // alto bajo el encabezado.
+            TvPanelSlots.belowHeader,
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final targetHeight = (_windowSize * _itemExtent)
-                      .clamp(0.0, constraints.maxHeight);
+                  final itemExtent = TvPanelSlots.extentFor(
+                    constraints.maxHeight,
+                  );
                   return Align(
-                    alignment: Alignment.bottomCenter,
+                    alignment: Alignment.topCenter,
                     child: SizedBox(
-                      height: targetHeight,
+                      height: (TvPanelSlots.count * itemExtent).clamp(
+                        0.0,
+                        constraints.maxHeight,
+                      ),
                       child: Align(
                         alignment: Alignment.topCenter,
                         child: TvWindowedList<_SettingsTvItemType>(
                           key: _listKey,
                           focusOnMount: false,
                           items: items,
-                          itemExtent: _itemExtent,
+                          itemExtent: itemExtent,
                           showScrollDots: true,
                           initialGlobalIndex: _selectedIndex,
                           onFocusedGlobalIndex: (idx) {
                             _selectedIndex = idx;
                             widget.onSelectedIndexChanged?.call(idx);
                           },
-                          itemBuilder: (
-                            context,
-                            item,
-                            focusNode,
-                            local,
-                            global,
-                            onKeyUp,
-                            onKeyDown,
-                          ) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: _buildItem(
-                                context: context,
-                                item: item,
-                                tvSettings: tvSettings,
-                                focusNode: focusNode,
-                                onKeyUp: onKeyUp,
-                                onKeyDown: onKeyDown,
-                              ),
-                            );
-                          },
+                          itemBuilder:
+                              (
+                                context,
+                                item,
+                                focusNode,
+                                local,
+                                global,
+                                onKeyUp,
+                                onKeyDown,
+                              ) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: TvPanelSlots.gap / 2,
+                                  ),
+                                  child: _buildItem(
+                                    context: context,
+                                    item: item,
+                                    tvSettings: tvSettings,
+                                    focusNode: focusNode,
+                                    onKeyUp: onKeyUp,
+                                    onKeyDown: onKeyDown,
+                                  ),
+                                );
+                              },
                         ),
                       ),
                     ),
@@ -195,7 +200,9 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
       case _SettingsTvItemType.adultContent:
         return TvSettingsSwitchRow(
           focusNode: focusNode,
-          icon: tvSettings.isAdultUnlocked ? MoaiIcons.lockOpen : MoaiIcons.lock,
+          icon: tvSettings.isAdultUnlocked
+              ? MoaiIcons.lockOpen
+              : MoaiIcons.lock,
           label: LocaleKeys.settings_tv_adult_content.tr(),
           description: LocaleKeys.settings_tv_adult_content_desc.tr(),
           value: tvSettings.isAdultUnlocked,
@@ -240,9 +247,7 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
           description: LocaleKeys.settings_general_sources_desc.tr(),
           onPressed: () {
             Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const SourcesScreen(),
-              ),
+              MaterialPageRoute(builder: (context) => const SourcesScreen()),
             );
           },
           onKeyLeft: widget.onKeyLeft,
@@ -253,4 +258,3 @@ class SettingsTvPanelState extends State<SettingsTvPanel> {
     }
   }
 }
-

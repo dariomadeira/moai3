@@ -19,6 +19,10 @@ class ArcadeRomManagerService extends ChangeNotifier {
 
   static const MethodChannel _channel = PlatformChannels.arcade;
   static const String _activeRomKey = 'arcade_active_rom_filename';
+  static const Duration _connectTimeout = Duration(seconds: 15);
+
+  /// Sin recibir nada durante este tiempo, la descarga se da por caída.
+  static const Duration _stallTimeout = Duration(seconds: 30);
 
   static const String defaultManifestUrl =
       'https://raw.githubusercontent.com/dariomadeira/moai_roms/main/manifest.json';
@@ -123,10 +127,10 @@ class ArcadeRomManagerService extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
+    final client = HttpClient()..connectionTimeout = _connectTimeout;
     try {
-      final client = HttpClient();
       final request = await client.getUrl(Uri.parse(url));
-      final response = await request.close();
+      final response = await request.close().timeout(_stallTimeout);
 
       if (response.statusCode != 200) {
         _errorMessage = LocaleKeys.arcade_err_catalog_http.tr(
@@ -137,7 +141,10 @@ class ArcadeRomManagerService extends ChangeNotifier {
         return false;
       }
 
-      final body = await response.transform(utf8.decoder).join();
+      final body = await response
+          .timeout(_stallTimeout)
+          .transform(utf8.decoder)
+          .join();
       final Map<String, dynamic> data =
           jsonDecode(body) as Map<String, dynamic>;
       final List<dynamic> gamesJson =
@@ -165,6 +172,8 @@ class ArcadeRomManagerService extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return false;
+    } finally {
+      client.close(force: true);
     }
   }
 
@@ -179,6 +188,9 @@ class ArcadeRomManagerService extends ChangeNotifier {
     _downloadProgress[filename] = 0.0;
     notifyListeners();
 
+    final client = HttpClient()..connectionTimeout = _connectTimeout;
+    File? partialFile;
+    IOSink? openSink;
     try {
       final String romDir =
           await _channel.invokeMethod('getRomDirectory') as String? ?? '';
@@ -188,10 +200,10 @@ class ArcadeRomManagerService extends ChangeNotifier {
 
       final targetFile = File('$romDir/$filename');
       final tempFile = File('$romDir/$filename.part');
+      partialFile = tempFile;
 
-      final client = HttpClient();
       final request = await client.getUrl(Uri.parse(item.url));
-      final response = await request.close();
+      final response = await request.close().timeout(_stallTimeout);
 
       if (response.statusCode != 200) {
         _downloadProgress.remove(filename);
@@ -209,7 +221,8 @@ class ArcadeRomManagerService extends ChangeNotifier {
       var lastNotifyAt = DateTime.fromMillisecondsSinceEpoch(0);
 
       final sink = tempFile.openWrite();
-      await response.forEach((chunk) {
+      openSink = sink;
+      await response.timeout(_stallTimeout).forEach((chunk) {
         sink.add(chunk);
         receivedBytes += chunk.length;
         if (contentLength > 0) {
@@ -229,6 +242,7 @@ class ArcadeRomManagerService extends ChangeNotifier {
       });
       await sink.flush();
       await sink.close();
+      openSink = null;
       if (contentLength > 0) {
         _downloadProgress[filename] = 1.0;
         notifyListeners();
@@ -265,12 +279,25 @@ class ArcadeRomManagerService extends ChangeNotifier {
       if (kDebugMode) {
         debugPrint('[ArcadeRomManagerService] Error descargando $filename: $e');
       }
+      await _discardPartialDownload(openSink, partialFile);
       _downloadProgress.remove(filename);
       _errorMessage = LocaleKeys.arcade_download_error.tr(
         namedArgs: {'filename': filename, 'error': '$e'},
       );
       notifyListeners();
       return false;
+    } finally {
+      client.close(force: true);
+    }
+  }
+
+  /// Cierra el archivo a medio bajar y lo borra: en el TV el espacio es poco.
+  Future<void> _discardPartialDownload(IOSink? sink, File? file) async {
+    try {
+      await sink?.close();
+      if (file != null && await file.exists()) await file.delete();
+    } catch (e) {
+      debugPrint('[ArcadeRomManagerService] Error limpiando descarga: $e');
     }
   }
 

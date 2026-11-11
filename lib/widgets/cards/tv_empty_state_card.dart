@@ -129,7 +129,8 @@ class TvEmptyStateCard extends StatelessWidget {
         Icon(
           icon,
           size: MoaiIconSizes.hero,
-          color: isFocused ? scheme.primary : scheme.onSurfaceVariant,
+          // Siempre gris oscuro: el foco lo marcan el aro y el texto.
+          color: scheme.onSurfaceVariant,
         ),
         const SizedBox(height: 8),
         Center(

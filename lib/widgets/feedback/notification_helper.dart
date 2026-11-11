@@ -15,7 +15,6 @@ class NotificationHelper {
   static ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? show({
     required String message,
     IconData? icon,
-    Color? iconColor,
     String? hint,
     VoidCallback? onAction,
     Duration duration = MoaiSnackBar.defaultDuration,
@@ -34,7 +33,6 @@ class NotificationHelper {
           context: _scaffoldMessengerKey?.currentContext,
           message: message,
           icon: icon,
-          iconColor: iconColor,
           hint: hint,
           onAction: onAction,
           bottomMargin: bottomMargin,
@@ -63,18 +61,12 @@ class NotificationHelper {
 
   /// Muestra un snackbar de éxito
   static void showSuccess(String message) {
-    show(
-      message: message,
-      icon: MoaiIcons.checkCircle,
-    );
+    show(message: message, icon: MoaiIcons.checkCircle);
   }
 
   /// Muestra un snackbar informativo
   static void showInfo(String message) {
-    show(
-      message: message,
-      icon: MoaiIcons.info,
-    );
+    show(message: message, icon: MoaiIcons.info);
   }
 
   /// Muestra un snackbar de advertencia
@@ -86,4 +78,3 @@ class NotificationHelper {
     );
   }
 }
-

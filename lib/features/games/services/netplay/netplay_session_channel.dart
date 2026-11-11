@@ -8,16 +8,13 @@ extension _NetplaySessionChannel on ArcadeNetplayService {
     required bool accepted,
     bool busy = false,
   }) async {
-    await _globalChannel?.sendBroadcastMessage(
-      event: 'invite_response',
-      payload: {
-        'sessionId': invite.sessionId,
-        'hostDeviceId': invite.hostDeviceId,
-        'guestDeviceId': myDeviceId,
-        'accepted': accepted,
-        if (busy) 'busy': true,
-      },
-    );
+    await _sendToDevice(invite.hostDeviceId, 'invite_response', {
+      'sessionId': invite.sessionId,
+      'hostDeviceId': invite.hostDeviceId,
+      'guestDeviceId': myDeviceId,
+      'accepted': accepted,
+      if (busy) 'busy': true,
+    });
   }
 
   Future<void> _connectSessionChannel() async {
@@ -61,11 +58,13 @@ extension _NetplaySessionChannel on ArcadeNetplayService {
         event: 'webrtc_offer',
         callback: (payload) {
           if (payload['senderDeviceId'] == session.peerDeviceId) {
-            unawaited(_webrtc?.handleRemoteSignal({
-              'type': 'webrtc_offer',
-              'sdp': payload['sdp'],
-              'sdpType': payload['sdpType'],
-            }));
+            unawaited(
+              _webrtc?.handleRemoteSignal({
+                'type': 'webrtc_offer',
+                'sdp': payload['sdp'],
+                'sdpType': payload['sdpType'],
+              }),
+            );
           }
         },
       );
@@ -74,11 +73,13 @@ extension _NetplaySessionChannel on ArcadeNetplayService {
         event: 'webrtc_answer',
         callback: (payload) {
           if (payload['senderDeviceId'] == session.peerDeviceId) {
-            unawaited(_webrtc?.handleRemoteSignal({
-              'type': 'webrtc_answer',
-              'sdp': payload['sdp'],
-              'sdpType': payload['sdpType'],
-            }));
+            unawaited(
+              _webrtc?.handleRemoteSignal({
+                'type': 'webrtc_answer',
+                'sdp': payload['sdp'],
+                'sdpType': payload['sdpType'],
+              }),
+            );
           }
         },
       );
@@ -87,12 +88,14 @@ extension _NetplaySessionChannel on ArcadeNetplayService {
         event: 'webrtc_ice',
         callback: (payload) {
           if (payload['senderDeviceId'] == session.peerDeviceId) {
-            unawaited(_webrtc?.handleRemoteSignal({
-              'type': 'webrtc_ice',
-              'candidate': payload['candidate'],
-              'sdpMid': payload['sdpMid'],
-              'sdpMLineIndex': payload['sdpMLineIndex'],
-            }));
+            unawaited(
+              _webrtc?.handleRemoteSignal({
+                'type': 'webrtc_ice',
+                'candidate': payload['candidate'],
+                'sdpMid': payload['sdpMid'],
+                'sdpMLineIndex': payload['sdpMLineIndex'],
+              }),
+            );
           }
         },
       );
@@ -103,7 +106,8 @@ extension _NetplaySessionChannel on ArcadeNetplayService {
           final sender = payload['senderDeviceId'] as String?;
           if (sender == session.peerDeviceId) {
             final reason =
-                payload['reason'] as String? ?? LocaleKeys.arcade_peer_canceled.tr();
+                payload['reason'] as String? ??
+                LocaleKeys.arcade_peer_canceled.tr();
             session.status = ArcadeNetplayStatus.terminated;
             session.exitReason = reason;
             _notifyChanged();

@@ -1,7 +1,9 @@
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:moai3/features/bootstrap/screens/overlap_config_screen.dart';
+import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/features/plugins/screens/general_plugins_screen.dart';
 import 'package:moai3/features/settings/widgets/settings_accent_color_row.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
@@ -11,6 +13,7 @@ import 'package:moai3/state/weather_provider.dart';
 import 'package:moai3/widgets/dialogs/tv_weather_location_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
+import 'package:moai3/widgets/tv_common/tv_panel_slots.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
@@ -44,9 +47,6 @@ class SettingsGeneralPanel extends StatefulWidget {
 }
 
 class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
-  static const int _windowSize = 6;
-  static const double _itemExtent = 70.0;
-
   final _listKey = GlobalKey<TvWindowedListState<_SettingsGeneralItemType>>();
   late int _selectedIndex = widget.initialIndex;
 
@@ -58,11 +58,13 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
 
-    const items = <_SettingsGeneralItemType>[
+    final items = <_SettingsGeneralItemType>[
       _SettingsGeneralItemType.plugins,
       _SettingsGeneralItemType.overscan,
       _SettingsGeneralItemType.weatherLocation,
-      _SettingsGeneralItemType.darkMode,
+      // Modo oscuro (2026-11-10): por ahora sólo en debug, mientras se arma;
+      // al terminarlo se muestra en release también.
+      if (kDebugMode) _SettingsGeneralItemType.darkMode,
       _SettingsGeneralItemType.accentColor,
       _SettingsGeneralItemType.muteUiSounds,
     ];
@@ -79,25 +81,31 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
         }
       },
       child: Container(
-        padding: const EdgeInsets.only(left: 4, right: 12, top: 8, bottom: 8),
+        padding: TvPanelSlots.panelPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TvPanelHeader(
               title: LocaleKeys.settings_general_title.tr(),
               subtitle: LocaleKeys.settings_general_subtitle.tr(),
+              titleShader: HomeClock.timeShader,
             ),
+            // Igual que Agenda › Suscripciones: los 6 lugares reparten el
+            // alto bajo el encabezado.
+            TvPanelSlots.belowHeader,
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final targetHeight = (_windowSize * _itemExtent).clamp(
-                    0.0,
+                  final itemExtent = TvPanelSlots.extentFor(
                     constraints.maxHeight,
                   );
                   return Align(
-                    alignment: Alignment.bottomCenter,
+                    alignment: Alignment.topCenter,
                     child: SizedBox(
-                      height: targetHeight,
+                      height: (TvPanelSlots.count * itemExtent).clamp(
+                        0.0,
+                        constraints.maxHeight,
+                      ),
                       child: Align(
                         alignment: Alignment.topCenter,
                         child: TvWindowedList<_SettingsGeneralItemType>(
@@ -105,7 +113,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
                           // La entrada de foco la decide el área (rail →, cambio de panel).
                           focusOnMount: false,
                           items: items,
-                          itemExtent: _itemExtent,
+                          itemExtent: itemExtent,
                           showScrollDots: true,
                           initialGlobalIndex: _selectedIndex,
                           onFocusedGlobalIndex: (idx) {
@@ -124,7 +132,7 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
                               ) {
                                 return Padding(
                                   padding: const EdgeInsets.symmetric(
-                                    vertical: 4,
+                                    vertical: TvPanelSlots.gap / 2,
                                   ),
                                   child: _buildItem(
                                     context: context,

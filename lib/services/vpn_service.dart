@@ -11,18 +11,12 @@ import 'vpn_nodes.dart';
 
 /// Resultado de [VpnService.connect].
 enum VpnConnectResult {
-  /// Túnel arriba y salida por el país esperado.
+  /// Túnel arriba. Si la salida sirve lo dice el portal al pedir la sesión
+  /// (rechaza las regiones que no acepta).
   connected,
 
   /// El túnel no llegó a conectar.
   tunnelFailed,
-
-  /// Conectó, pero la salida no es del país del nodo.
-  wrongCountry,
-
-  /// Conectó, pero no se pudo comprobar la salida: la red no contestó a
-  /// tiempo (pasa apenas sube el túnel). No dice nada malo del nodo.
-  unverified,
 
   /// El usuario rechazó el permiso VPN del sistema.
   permissionDenied,
@@ -127,10 +121,9 @@ class VpnService {
     final base = username.split('+').first.trim();
     if (base.isEmpty) return username;
     // Conserva extras (+f1, +nr, etc.) si ya venían; fuerza +b:0 delante.
-    final extras = RegExp(r'\+(?!b:\d+)([^+]+)')
-        .allMatches(username)
-        .map((m) => '+${m.group(1)}')
-        .join();
+    final extras = RegExp(
+      r'\+(?!b:\d+)([^+]+)',
+    ).allMatches(username).map((m) => '+${m.group(1)}').join();
     return '$base+b:0$extras';
   }
 
@@ -141,24 +134,24 @@ class VpnService {
       return cfg.replaceFirst(
         'cipher AES-256-GCM',
         "cipher AES-256-GCM\n"
-        "data-ciphers AES-256-GCM:AES-128-GCM:AES-256-CBC:AES-128-CBC\n"
-        "data-ciphers-fallback AES-256-GCM",
+            "data-ciphers AES-256-GCM:AES-128-GCM:AES-256-CBC:AES-128-CBC\n"
+            "data-ciphers-fallback AES-256-GCM",
       );
     }
     if (cfg.contains('cipher AES-128-CBC')) {
       return cfg.replaceFirst(
         'cipher AES-128-CBC',
         "cipher AES-128-CBC\n"
-        "data-ciphers AES-128-CBC\n"
-        "data-ciphers-fallback AES-128-CBC",
+            "data-ciphers AES-128-CBC\n"
+            "data-ciphers-fallback AES-128-CBC",
       );
     }
     if (cfg.contains('cipher AES-256-CBC')) {
       return cfg.replaceFirst(
         'cipher AES-256-CBC',
         "cipher AES-256-CBC\n"
-        "data-ciphers AES-256-CBC\n"
-        "data-ciphers-fallback AES-256-CBC",
+            "data-ciphers AES-256-CBC\n"
+            "data-ciphers-fallback AES-256-CBC",
       );
     }
     return cfg;
@@ -202,16 +195,39 @@ class VpnService {
     void Function(String message)? onStatusUpdate,
   }) async {
     await initialize();
-    if (_androidVpnPermissionGranted == null && await _isPermissionGrantedNative()) {
+    if (_androidVpnPermissionGranted == null &&
+        await _isPermissionGrantedNative()) {
       _androidVpnPermissionGranted = true;
     }
     if (_androidVpnPermissionGranted == true) return;
     onStatusUpdate?.call(LocaleKeys.loading_permission_required);
   }
 
-  /// Conecta [node] y verifica que salga por su país.
+  /// Arma la config de un intento: la del `.ovpn` de su nodo con un solo
+  /// `remote` (el de [endpoint]) y su protocolo. Sin `remote-random` ni los
+  /// otros puertos: cada intento prueba exactamente lo que el ranking eligió.
+  @visibleForTesting
+  static String configFor(String ovpn, VpnEndpoint endpoint) {
+    final tcp = endpoint.proto == VpnProto.tcp;
+    final kept = ovpn.split('\n').where((line) {
+      final word = line.trim().split(RegExp(r'\s+')).first;
+      if (word == 'remote' || word == 'remote-random' || word == 'proto') {
+        return false;
+      }
+      // Sólo vale en UDP: en TCP OpenVPN no arranca con esta opción.
+      if (tcp && word == 'explicit-exit-notify') return false;
+      return true;
+    });
+    return [
+      'proto ${tcp ? 'tcp' : 'udp'}',
+      'remote ${endpoint.node.host} ${endpoint.port}',
+      ...kept,
+    ].join('\n');
+  }
+
+  /// Conecta [endpoint] y espera a que el túnel quede arriba.
   Future<VpnConnectResult> connect(
-    VpnNode node, {
+    VpnEndpoint endpoint, {
     Duration timeout = const Duration(seconds: 14),
     void Function(String message)? onStatusUpdate,
   }) async {
@@ -226,8 +242,9 @@ class VpnService {
     await prepareAndroidVpnPermissionUi(onStatusUpdate: onStatusUpdate);
     if (_connectCancelled) return VpnConnectResult.cancelled;
 
+    final node = endpoint.node;
     onStatusUpdate?.call(LocaleKeys.loading_init_services);
-    debugPrint('🔒 [VPN] Nodo ${node.id} (${node.asset})');
+    debugPrint('🔒 [VPN] Endpoint $endpoint (${node.asset})');
 
     String ovpnConfig;
     try {
@@ -270,7 +287,7 @@ class VpnService {
         'auth-user-pass',
       );
     }
-    ovpnConfig = _ensureDataCiphers(ovpnConfig);
+    ovpnConfig = _ensureDataCiphers(configFor(ovpnConfig, endpoint));
 
     onStatusUpdate?.call(LocaleKeys.loading_connecting_server);
 
@@ -350,17 +367,19 @@ class VpnService {
       // Proton: setenv CLIENT_CERT 0 — sin certificado de cliente. VPN Gate
       // autentica con el certificado del .ovpn (certIsRequired).
       // Si hace falta permiso, el plugin guarda config y abre el diálogo del SO.
-      unawaited(_engine!
-          .connect(
-            ovpnConfig,
-            'Moai',
-            username: username ?? '',
-            password: password ?? '',
-            certIsRequired: node.provider == VpnProvider.vpnGate,
-          )
-          .catchError((e) {
-            debugPrint('❌ [VPN] Excepción en invocación connect: $e');
-          }));
+      unawaited(
+        _engine!
+            .connect(
+              ovpnConfig,
+              'Moai',
+              username: username ?? '',
+              password: password ?? '',
+              certIsRequired: node.provider == VpnProvider.vpnGate,
+            )
+            .catchError((e) {
+              debugPrint('❌ [VPN] Excepción en invocación connect: $e');
+            }),
+      );
     } catch (e) {
       debugPrint('❌ [VPN] Excepción sincrónica al invocar connect: $e');
       permissionDeadline?.cancel();
@@ -382,21 +401,11 @@ class VpnService {
     }
     if (_connectCancelled) return VpnConnectResult.cancelled;
     if (!connected) return VpnConnectResult.tunnelFailed;
-
-    onStatusUpdate?.call(LocaleKeys.loading_verifying_connection);
-    final exit = await checkExit(country: node.country);
     debugPrint(
-      '🔒 [VPN] Verificación ${node.country}: ${exit.name} '
-      '(ip=$_lastExitIp cc=$_lastExitCountry)',
+      '🔒 [VPN] Túnel arriba en '
+      '${DateTime.now().difference(connectCallAt).inMilliseconds}ms.',
     );
-    if (exit == VpnExitCheck.matches) return VpnConnectResult.connected;
-    if (_connectCancelled) return VpnConnectResult.cancelled;
-    // Túnel arriba pero salida incorrecta o sin respuesta: soltar antes de
-    // rotar nodo.
-    await disconnect();
-    return exit == VpnExitCheck.otherCountry
-        ? VpnConnectResult.wrongCountry
-        : VpnConnectResult.unverified;
+    return VpnConnectResult.connected;
   }
 
   /// Rondas para comprobar la salida y cuánto se espera cada una. Apenas
@@ -406,8 +415,9 @@ class VpnService {
   static const Duration _exitCheckTimeout = Duration(seconds: 4);
   static const Duration _exitCheckGap = Duration(seconds: 1);
 
-  /// Comprueba que la salida pública sea de [country] (el servicio de
-  /// catálogo sólo acepta ciertos países).
+  /// Comprueba que la salida pública sea de [country]. Ya no frena el
+  /// arranque (el portal avisa si rechaza la región): se usa en paralelo con
+  /// la sesión, para dejar en el log por dónde salió.
   Future<VpnExitCheck> checkExit({required String country}) async {
     final started = DateTime.now();
     for (var round = 1; round <= _exitCheckRounds; round++) {
@@ -419,7 +429,9 @@ class VpnService {
             ? VpnExitCheck.matches
             : VpnExitCheck.otherCountry;
       }
-      debugPrint('⚠️ [VPN] Sin respuesta de la salida (ronda $round, +${ms}ms)');
+      debugPrint(
+        '⚠️ [VPN] Sin respuesta de la salida (ronda $round, +${ms}ms)',
+      );
       if (_connectCancelled || round == _exitCheckRounds) break;
       await Future<void>.delayed(_exitCheckGap);
     }
@@ -522,7 +534,6 @@ class VpnService {
       debugPrint('⚠️ [VPN] Error al desconectar: $e');
     }
   }
-
 
   void dispose() {
     _stageController.close();

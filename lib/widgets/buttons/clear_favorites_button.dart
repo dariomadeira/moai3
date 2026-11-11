@@ -114,11 +114,7 @@ class _ClearFavoritesButtonState extends State<ClearFavoritesButton> {
               width: 44,
               height: 24,
               decoration: glass
-                  ? moaiGlassButtonDecoration(
-                      scheme,
-                      focused: isFocused,
-                      accent: scheme.error,
-                    )
+                  ? moaiGlassButtonDecoration(scheme, focused: isFocused)
                   : BoxDecoration(
                       color: bgColor,
                       borderRadius: BorderRadius.circular(999),

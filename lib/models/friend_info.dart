@@ -35,7 +35,6 @@ class FriendInfo {
   final String deviceId;
   final String userCode;
   final String? nickname;
-  final bool _rawIsOnline;
   final DateTime? lastSeen;
   final String? currentChannelId;
   final String? currentChannelName;
@@ -44,23 +43,20 @@ class FriendInfo {
     required this.deviceId,
     required this.userCode,
     this.nickname,
-    required bool isOnline,
+    required this.isOnline,
     this.lastSeen,
     this.currentChannelId,
     this.currentChannelName,
-  }) : _rawIsOnline = isOnline;
+  });
 
-  /// Retorna true si el estado en BD es online Y su `lastSeen` es reciente (no stale).
-  bool get isOnline {
-    if (!_rawIsOnline) return false;
-    if (lastSeen == null) return true;
-    final diffSeconds = DateTime.now().difference(lastSeen!).inSeconds.abs();
-    // Si han pasado más de 60 segundos desde el último latido y está dentro del rango reciente (< 24h) -> offline por inactividad
-    if (diffSeconds > 60 && diffSeconds < 86400) {
-      return false;
-    }
-    return true;
-  }
+  /// Lo que dice el servidor: el reloj de cada aparato no decide nada. Si la
+  /// app se corta sin avisar, lo apaga la limpieza de `devices` (migración 002).
+  final bool isOnline;
+
+  /// Valor reservado de `current_channel_id`: está jugando en Arcade.
+  static const String arcadeActivityId = '__arcade__';
+
+  bool get isPlayingArcade => isOnline && currentChannelId == arcadeActivityId;
 
   /// Nombre a mostrar (apodo configurado o userCode como fallback).
   String get displayName =>
@@ -104,7 +100,7 @@ class FriendInfo {
   /// Primero intenta coincidencia exacta de ID (ej. 'plugin:ar:tyc_sports').
   /// Si no coincide el ID pero ambos tienen nombre, compara nombres normalizados (ej. 'ESPN').
   bool isWatchingSameChannel(String? myChannelId, [String? myChannelName]) {
-    if (!isOnline) return false;
+    if (!isOnline || isPlayingArcade) return false;
     if (currentChannelId == null || currentChannelId!.trim().isEmpty) {
       return false;
     }

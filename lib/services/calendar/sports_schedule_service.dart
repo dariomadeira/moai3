@@ -1,148 +1,233 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:flutter/foundation.dart';
 import 'package:moai3/models/calendar_event.dart';
-import 'package:moai3/services/calendar/argentina_time.dart';
 
-/// Servicio para consultar eventos y partidos deportivos de las principales ligas.
+/// Partidos de las ligas de la Agenda (todas menos la F1, que tiene su
+/// servicio) desde la API pública de ESPN.
+///
+/// Se pide el mes entero de cada liga en una sola consulta (pedir un rango
+/// de días no devuelve nada). Al arrancar, los meses que cubren la semana
+/// pasada, la actual y la próxima ([monthsToFetch]); al ir a una semana más
+/// lejana, los de esa semana ([monthsForWeek]). Un mes de NBA son ~3 MB de
+/// JSON, así que se procesa en otro isolate.
 class SportsScheduleService {
-  static const String eventsApiEndpoint = 'https://daddylive.li/api/events';
+  static const String apiBase = 'https://site.api.espn.com/apis/site/v2/sports';
 
-  static Future<List<CalendarEvent>> fetchSportsEvents() async {
-    final List<CalendarEvent> events = [];
+  /// Id de suscripción → liga en ESPN.
+  static const Map<String, String> leagues = {
+    'lpf_ar': 'soccer/arg.1',
+    'premier': 'soccer/eng.1',
+    'champions': 'soccer/uefa.champions',
+    'nfl': 'football/nfl',
+    'nba': 'basketball/nba',
+  };
 
+  /// Descargas a la vez: el TV procesa cada una en un hilo aparte.
+  static const int _maxConcurrent = 3;
+
+  /// Las descargas (liga y mes) de [subscriptionIds] en [months]. Lo que no
+  /// es una liga de ESPN (la F1) se ignora.
+  static List<String> loadKeys(
+    Iterable<String> subscriptionIds,
+    Iterable<String> months,
+  ) => [
+    for (final id in subscriptionIds)
+      if (leagues.containsKey(id))
+        for (final month in months) '$id|$month',
+  ];
+
+  /// Los partidos de [keys] ([loadKeys]). [loaded] son las que bajaron bien:
+  /// una que falló no se da por cargada y se vuelve a pedir sólo ella.
+  static Future<({List<CalendarEvent> events, Set<String> loaded})> fetchKeys(
+    Iterable<String> keys,
+  ) async {
+    final wanted = keys.toSet().toList();
+    if (wanted.isEmpty) return (events: <CalendarEvent>[], loaded: <String>{});
+    final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
     try {
-      final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
-      final request = await client.getUrl(Uri.parse(eventsApiEndpoint));
-      request.headers.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+      final loaded = <String>{};
+      final seenIds = <String>{};
+      final events = <CalendarEvent>[];
+      for (var i = 0; i < wanted.length; i += _maxConcurrent) {
+        final batch = wanted.skip(i).take(_maxConcurrent).toList();
+        final results = await Future.wait(
+          batch.map((key) {
+            final [id, month] = key.split('|');
+            return _fetchMonth(client, id, leagues[id]!, month);
+          }),
+        );
+        for (var j = 0; j < batch.length; j++) {
+          final result = results[j];
+          if (result == null) continue;
+          loaded.add(batch[j]);
+          events.addAll(result.where((ev) => seenIds.add(ev.id)));
+        }
+      }
+      return (events: events, loaded: loaded);
+    } finally {
+      client.close();
+    }
+  }
+
+  /// Meses (`yyyyMM`) que cubren desde el lunes de la semana pasada hasta el
+  /// domingo de la próxima, contados desde [today] (fecha de Argentina).
+  static List<String> monthsToFetch(DateTime today) {
+    final monday = _mondayOf(today);
+    return _monthsBetween(
+      monday.subtract(const Duration(days: 7)),
+      monday.add(const Duration(days: 13)),
+    );
+  }
+
+  /// Meses (`yyyyMM`) de la semana que empieza el lunes [monday], con un día
+  /// de margen a cada lado: ESPN agrupa por la fecha de EE. UU. y un partido
+  /// de la noche del último día puede caer en el mes siguiente.
+  static List<String> monthsForWeek(DateTime monday) {
+    final start = _mondayOf(monday);
+    return _monthsBetween(
+      start.subtract(const Duration(days: 1)),
+      start.add(const Duration(days: 7)),
+    );
+  }
+
+  static DateTime _mondayOf(DateTime day) => DateTime(
+    day.year,
+    day.month,
+    day.day,
+  ).subtract(Duration(days: day.weekday - 1));
+
+  static List<String> _monthsBetween(DateTime from, DateTime to) {
+    final months = <String>[];
+    var cursor = DateTime(from.year, from.month);
+    while (!cursor.isAfter(DateTime(to.year, to.month))) {
+      months.add('${cursor.year}${cursor.month.toString().padLeft(2, '0')}');
+      cursor = DateTime(cursor.year, cursor.month + 1);
+    }
+    return months;
+  }
+
+  /// null si no se pudo bajar (red, HTTP o JSON roto).
+  static Future<List<CalendarEvent>?> _fetchMonth(
+    HttpClient client,
+    String subscriptionId,
+    String league,
+    String month,
+  ) async {
+    final uri = Uri.parse(
+      '$apiBase/$league/scoreboard?dates=$month&limit=1000',
+    );
+    try {
+      final request = await client.getUrl(uri);
       request.headers.set('Accept', 'application/json');
-
-      final response = await request.close();
-      if (response.statusCode == 200) {
-        final body = await response.transform(utf8.decoder).join();
-        final data = json.decode(body) as Map<String, dynamic>;
-        final categories = data['categories'] as Map<String, dynamic>? ?? {};
-        events.addAll(parseCategories(categories));
+      final response = await request.close().timeout(
+        const Duration(seconds: 20),
+      );
+      if (response.statusCode != 200) {
+        await response.drain<void>();
+        debugPrint(
+          '[SportsScheduleService] $league $month: HTTP ${response.statusCode}',
+        );
+        return null;
       }
+      final body = await response
+          .transform(utf8.decoder)
+          .join()
+          .timeout(const Duration(seconds: 20));
+      return await compute(_parseInIsolate, (subscriptionId, body));
     } catch (e) {
-      debugPrint('[SportsScheduleService] Error al consultar eventos en vivo: $e');
+      debugPrint('[SportsScheduleService] $league $month: $e');
+      return null;
     }
-
-    return events;
   }
 
-  /// Parsea y deduplica los eventos deportivos agrupados por categoría.
-  static List<CalendarEvent> parseCategories(Map<String, dynamic> categories, [DateTime? baseUtc]) {
-    final List<CalendarEvent> events = [];
-    final seenMatchKeys = <String>{};
+  static List<CalendarEvent> _parseInIsolate((String, String) args) {
+    final data = json.decode(args.$2) as Map<String, dynamic>;
+    return parseScoreboard(args.$1, data);
+  }
 
-    for (final entry in categories.entries) {
-      final catName = entry.key;
-      final catEvents = entry.value as List<dynamic>? ?? [];
+  /// Arma los eventos de una respuesta `scoreboard` de ESPN. Los partidos
+  /// sin hora confirmada (`timeValid: false`: ESPN pone una hora de relleno)
+  /// quedan en su día con la hora "a confirmar"; los postergados o
+  /// suspendidos, afuera.
+  static List<CalendarEvent> parseScoreboard(
+    String subscriptionId,
+    Map<String, dynamic> data,
+  ) {
+    final events = <CalendarEvent>[];
+    for (final raw in data['events'] as List<dynamic>? ?? const []) {
+      if (raw is! Map<String, dynamic>) continue;
+      final competitions = raw['competitions'] as List<dynamic>? ?? const [];
+      final competition = competitions.isNotEmpty
+          ? competitions.first as Map<String, dynamic>?
+          : null;
+      final start = DateTime.tryParse(
+        (competition?['date'] ?? raw['date'])?.toString() ?? '',
+      );
+      if (start == null) continue;
 
-      final subId = _mapCategoryToSubscriptionId(catName);
-      if (subId == null) continue;
+      final statusType =
+          (raw['status'] as Map<String, dynamic>?)?['type']
+              as Map<String, dynamic>?;
+      final statusName = statusType?['name']?.toString() ?? '';
+      if (_skippedStatuses.any(statusName.contains)) continue;
 
-      for (var i = 0; i < catEvents.length; i++) {
-        final ev = catEvents[i] as Map<String, dynamic>?;
-        if (ev == null) continue;
+      final title = _title(competition) ?? raw['name']?.toString() ?? '';
+      if (title.isEmpty) continue;
 
-        final rawTitle = ev['event'] as String? ?? '';
-        final rawTime = ev['time'] as String? ?? '';
-        if (rawTitle.isEmpty) continue;
-
-        final dt = _parseEventDateTime(rawTime, baseUtc);
-        final cleanTitle = _cleanTitle(rawTitle);
-        final teamKey = _normalizeTeamKey(cleanTitle);
-
-        // Deduplicación por deporte, equipos normalizados y ventana horaria
-        final dedupKey = '${subId}_${teamKey}_${dt.year}_${dt.month}_${dt.day}_${(dt.hour / 2).floor()}';
-        if (!seenMatchKeys.add(dedupKey)) {
-          continue;
-        }
-
-        final isExplicitLive = rawTime.toLowerCase() == 'live';
-        final rawChannels = ev['channels'] as List<dynamic>? ?? const [];
-        final channelHints = _extractChannelHints(rawChannels);
-
-        events.add(CalendarEvent(
-          id: 'ev_${subId}_${teamKey.hashCode}_${dt.millisecondsSinceEpoch}',
-          subscriptionId: subId,
-          title: cleanTitle,
-          competition: _cleanCompetitionName(catName, subId),
-          startDateTime: dt,
-          status: isExplicitLive ? CalendarEventStatus.live : null,
+      events.add(
+        CalendarEvent(
+          id: 'espn_${subscriptionId}_${raw['id']}',
+          subscriptionId: subscriptionId,
+          title: title,
+          competition: _competitionName(subscriptionId),
+          startDateTime: start.toUtc(),
+          status: switch (statusType?['state']) {
+            'in' => CalendarEventStatus.live,
+            'post' => CalendarEventStatus.finished,
+            _ => null,
+          },
           sessionType: LocaleKeys.calendar_session_match,
-          broadcaster: _suggestBroadcaster(subId, rawTitle),
-          channelHints: channelHints,
-        ));
-      }
+          broadcaster: _broadcaster(subscriptionId),
+          timeConfirmed: competition?['timeValid'] != false,
+        ),
+      );
     }
-
     return events;
   }
 
-  static List<String> _extractChannelHints(List<dynamic> rawChannels) {
-    if (rawChannels.isEmpty) return const [];
-    final hints = <String>{};
+  static const _skippedStatuses = [
+    'POSTPONED',
+    'CANCELED',
+    'CANCELLED',
+    'SUSPENDED',
+    'ABANDONED',
+  ];
 
-    for (final ch in rawChannels) {
-      if (ch is! Map) continue;
-      final url = ch['url']?.toString() ?? '';
-      if (url.isNotEmpty) {
-        final uri = Uri.tryParse(url);
-        final idParam = uri?.queryParameters['id'];
-        if (idParam != null && idParam.trim().isNotEmpty) {
-          hints.add(idParam.trim());
+  /// "Local vs Visitante".
+  static String? _title(Map<String, dynamic>? competition) {
+    final competitors =
+        competition?['competitors'] as List<dynamic>? ?? const [];
+    String? team(String side) {
+      for (final c in competitors) {
+        if (c is Map && c['homeAway'] == side) {
+          final t = c['team'] as Map?;
+          return (t?['displayName'] ?? t?['shortDisplayName'])?.toString();
         }
       }
-      final directId = ch['id']?.toString() ?? ch['channel_id']?.toString();
-      if (directId != null && directId.trim().isNotEmpty) {
-        hints.add(directId.trim());
-      }
+      return null;
     }
 
-    return hints.toList();
+    final home = team('home');
+    final away = team('away');
+    if (home == null || away == null) return null;
+    return '$home vs $away';
   }
 
-  static String? _mapCategoryToSubscriptionId(String catName) {
-    final lower = catName.toLowerCase();
-    if (lower.contains('lpf') || lower.contains('argentin') || lower.contains('primera division')) {
-      return 'lpf_ar';
-    }
-    if (lower.contains('premier league')) {
-      return 'premier';
-    }
-    if (lower.contains('champions') || lower.contains('uefa')) {
-      return 'champions';
-    }
-    if (lower.contains('nfl') || lower.contains('am. football')) {
-      return 'nfl';
-    }
-    if (lower.contains('motogp') || lower.contains('moto gp')) {
-      return 'motogp';
-    }
-    if (lower.contains('nba') || lower.contains('basketball')) {
-      return 'nba';
-    }
-    return null;
-  }
-
-  static final RegExp _emojiRegex = RegExp(
-    r'[\u{1F000}-\u{1FAFF}'
-    r'\u{2600}-\u{27BF}'
-    r'\u{FE00}-\u{FE0F}'
-    r'\u{200D}]',
-    unicode: true,
-  );
-
-  static String _stripEmojis(String text) {
-    return text.replaceAll(_emojiRegex, '').replaceAll(RegExp(r'\s+'), ' ').trim();
-  }
-
-  static String _cleanCompetitionName(String catName, String subId) {
-    switch (subId) {
+  static String _competitionName(String subscriptionId) {
+    switch (subscriptionId) {
       case 'lpf_ar':
         return 'Liga Profesional Argentina';
       case 'premier':
@@ -151,27 +236,17 @@ class SportsScheduleService {
         return 'Champions League';
       case 'nfl':
         return 'NFL';
-      case 'motogp':
-        return 'MotoGP';
       case 'nba':
         return 'NBA';
       default:
-        return _stripEmojis(catName.replaceAll(RegExp(r'[^\w\s]'), '')).trim();
+        return subscriptionId;
     }
   }
 
-  static String _cleanTitle(String raw) {
-    // Quitar prefijos como '⚽ England - Premier League : ' y sanitizar emojis por completo
-    var s = raw;
-    final colonIndex = s.indexOf(':');
-    if (colonIndex != -1 && colonIndex < s.length - 1) {
-      s = s.substring(colonIndex + 1).trim();
-    }
-    return _stripEmojis(s);
-  }
-
-  static String _suggestBroadcaster(String subId, String title) {
-    switch (subId) {
+  /// Quién lo pasa en Argentina (ESPN informa los canales de EE. UU.). Con
+  /// esto [CalendarChannelMatcher] busca el canal entre los instalados.
+  static String _broadcaster(String subscriptionId) {
+    switch (subscriptionId) {
       case 'lpf_ar':
         return 'TNT Sports / ESPN Premium';
       case 'premier':
@@ -181,73 +256,8 @@ class SportsScheduleService {
         return 'ESPN';
       case 'nba':
         return 'ESPN / NBA TV';
-      case 'motogp':
-        return 'ESPN';
       default:
         return 'TV';
     }
-  }
-
-  static String _normalizeTeamKey(String title) {
-    final clean = title
-        .replaceAll(RegExp(r'[\(\)🇺🇸🇨🇦]'), '')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim()
-        .toLowerCase();
-    List<String> teams = [];
-    if (clean.contains(' vs. ')) {
-      teams = clean.split(' vs. ');
-    } else if (clean.contains(' vs ')) {
-      teams = clean.split(' vs ');
-    } else if (clean.contains(' - ')) {
-      teams = clean.split(' - ');
-    } else if (clean.contains(' x ')) {
-      teams = clean.split(' x ');
-    }
-
-    if (teams.length == 2) {
-      final t1 = teams[0]
-          .replaceAll(RegExp(r'\bw\b'), '')
-          .replaceAll(RegExp(r'\bwnba\b'), '')
-          .replaceAll(RegExp(r'\bnfl\b'), '')
-          .replaceAll(RegExp(r'\bnba\b'), '')
-          .trim();
-      final t2 = teams[1]
-          .replaceAll(RegExp(r'\bw\b'), '')
-          .replaceAll(RegExp(r'\bwnba\b'), '')
-          .replaceAll(RegExp(r'\bnfl\b'), '')
-          .replaceAll(RegExp(r'\bnba\b'), '')
-          .trim();
-      final sorted = [t1, t2]..sort();
-      return sorted.join('_vs_');
-    }
-    return clean;
-  }
-
-  static DateTime _parseEventDateTime(String timeStr, [DateTime? baseUtc]) {
-    final nowUtc = baseUtc ?? ArgentinaTime.utcNow();
-    if (timeStr.toLowerCase() == 'live') {
-      return nowUtc;
-    }
-    // El feed trae solo HH:mm en UTC. Se ancla al día UTC actual.
-    // Solo se ajusta de día en la transición de medianoche (late night <-> early morning).
-    final parts = timeStr.split(':');
-    if (parts.length >= 2) {
-      final h = int.tryParse(parts[0]) ?? 0;
-      final m = int.tryParse(parts[1]) ?? 0;
-
-      var eventDateUtc = DateTime.utc(nowUtc.year, nowUtc.month, nowUtc.day, h, m);
-
-      // Si hoy es cerca del final del día (>= 20h UTC) y el evento es de madrugada (<= 3h UTC), es para mañana
-      if (nowUtc.hour >= 20 && h <= 3) {
-        eventDateUtc = eventDateUtc.add(const Duration(days: 1));
-      }
-      // Si hoy es de madrugada (<= 3h UTC) y el evento era de noche tardía (>= 20h UTC), es de ayer
-      else if (nowUtc.hour <= 3 && h >= 20) {
-        eventDateUtc = eventDateUtc.subtract(const Duration(days: 1));
-      }
-      return eventDateUtc;
-    }
-    return nowUtc;
   }
 }

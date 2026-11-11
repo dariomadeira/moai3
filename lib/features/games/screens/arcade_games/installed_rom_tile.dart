@@ -50,12 +50,14 @@ class _InstalledRomTileState extends State<_InstalledRomTile> {
       minHeight: 0,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       label: widget.item.name,
-      description: '${widget.item.sizeLabel} · ${LocaleKeys.arcade_ready_to_play.tr()}',
+      description:
+          '${widget.item.sizeLabel} · ${LocaleKeys.arcade_ready_to_play.tr()}',
       icon: MoaiIcons.arcadeRomCard,
       trailing: TvIconActionButton(
         focusNode: widget.deleteFocus,
         tooltip: LocaleKeys.common_delete.tr(),
         icon: MoaiIcons.arcadeRomDelete,
+        destructive: true,
         onPressed: widget.onDelete,
         parentFocused: isFocused,
         onKeyLeft: widget.onDeleteKeyLeft,

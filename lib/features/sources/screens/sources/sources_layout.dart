@@ -103,8 +103,13 @@ extension _SourcesLayout on _SourcesScreenState {
               Expanded(
                 child: controller.loading
                     ? Center(
+                        // Gris (el de los logos, el del modo): el acento
+                        // claro se perdía sobre el cristal.
                         child: CircularProgressIndicator(
-                          color: scheme.primary,
+                          color: MoaiPalette.of(context).inkMuted,
+                          backgroundColor: MoaiPalette.of(
+                            context,
+                          ).inkMuted.withValues(alpha: 0.12),
                           strokeWidth: 3,
                         ),
                       )
@@ -121,7 +126,8 @@ extension _SourcesLayout on _SourcesScreenState {
                         builder: (context, constraints) {
                           const windowSize = 4;
                           final availableH = constraints.maxHeight;
-                          final itemExtent = (availableH / windowSize).floorToDouble();
+                          final itemExtent = (availableH / windowSize)
+                              .floorToDouble();
 
                           return SizedBox(
                             height: availableH,
@@ -137,45 +143,77 @@ extension _SourcesLayout on _SourcesScreenState {
                                 _selectedInstalledIndex = idx;
                               },
                               onFocusUpFromFirst: _urlFocus.requestFocus,
-                              itemBuilder: (
-                                context,
-                                source,
-                                focusNode,
-                                local,
-                                global,
-                                onKeyUp,
-                                onKeyDown,
-                              ) {
-                                final isFirst = global == 0;
-                                final updateNode = _tileFocuses[global * 2];
-                                final removeNode = _tileFocuses[global * 2 + 1];
+                              itemBuilder:
+                                  (
+                                    context,
+                                    source,
+                                    focusNode,
+                                    local,
+                                    global,
+                                    onKeyUp,
+                                    onKeyDown,
+                                  ) {
+                                    final isFirst = global == 0;
+                                    final updateNode = _tileFocuses[global * 2];
+                                    final removeNode =
+                                        _tileFocuses[global * 2 + 1];
 
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 3),
-                                  child: _SourceTile(
-                                    key: ValueKey(source.id),
-                                    source: source,
-                                    updateFocus: updateNode,
-                                    removeFocus: removeNode,
-                                    onUpdateKeyLeft: _backFocusNode.requestFocus,
-                                    onUpdateKeyUp: onKeyUp,
-                                    onUpdateKeyDown: onKeyDown,
-                                    onRemoveKeyUp: () {
-                                      if (isFirst) {
-                                        _installFocus.requestFocus();
-                                      } else {
-                                        onKeyUp();
-                                      }
-                                    },
-                                    onRemoveKeyDown: onKeyDown,
-                                    onRemoveKeyRight: _focusPresetList,
-                                    onUpdate: () =>
-                                        controller.updateSource(source.sourceUrl),
-                                    onRemove: () =>
-                                        controller.removePlugin(source.id),
-                                  ),
-                                );
-                              },
+                                    // El nodo de la lista envuelve la ficha:
+                                    // así la lista sabe en qué ítem está el
+                                    // foco (lo tenga actualizar o borrar) y
+                                    // ↑/↓ se mueven. Cuando la lista enfoca
+                                    // este ítem, el foco pasa al botón de la
+                                    // columna en la que se venía.
+                                    return Focus(
+                                      focusNode: focusNode,
+                                      skipTraversal: true,
+                                      onFocusChange: (_) {
+                                        if (!focusNode.hasPrimaryFocus) return;
+                                        (_installedOnRemove
+                                                ? removeNode
+                                                : updateNode)
+                                            .requestFocus();
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 3,
+                                        ),
+                                        child: _SourceTile(
+                                          key: ValueKey(source.id),
+                                          source: source,
+                                          updateFocus: updateNode,
+                                          removeFocus: removeNode,
+                                          onUpdateKeyLeft:
+                                              _backFocusNode.requestFocus,
+                                          onUpdateKeyUp: () {
+                                            _installedOnRemove = false;
+                                            onKeyUp();
+                                          },
+                                          onUpdateKeyDown: () {
+                                            _installedOnRemove = false;
+                                            onKeyDown();
+                                          },
+                                          onRemoveKeyUp: () {
+                                            _installedOnRemove = true;
+                                            if (isFirst) {
+                                              _installFocus.requestFocus();
+                                            } else {
+                                              onKeyUp();
+                                            }
+                                          },
+                                          onRemoveKeyDown: () {
+                                            _installedOnRemove = true;
+                                            onKeyDown();
+                                          },
+                                          onRemoveKeyRight: _focusPresetList,
+                                          onUpdate: () => controller
+                                              .updateSource(source.sourceUrl),
+                                          onRemove: () => controller
+                                              .removePlugin(source.id),
+                                        ),
+                                      ),
+                                    );
+                                  },
                             ),
                           );
                         },
@@ -206,7 +244,8 @@ extension _SourcesLayout on _SourcesScreenState {
                   builder: (context, constraints) {
                     const windowSize = 4;
                     final availableH = constraints.maxHeight;
-                    final itemExtent = (availableH / windowSize).floorToDouble();
+                    final itemExtent = (availableH / windowSize)
+                        .floorToDouble();
 
                     return SizedBox(
                       height: availableH,
@@ -222,50 +261,57 @@ extension _SourcesLayout on _SourcesScreenState {
                           _selectedPresetIndex = idx;
                         },
                         onFocusUpFromFirst: _installFocus.requestFocus,
-                        itemBuilder: (
-                          context,
-                          preset,
-                          focusNode,
-                          local,
-                          global,
-                          onKeyUp,
-                          onKeyDown,
-                        ) {
-                          final isInstalled = sources.any(
-                            (s) => s.sourceUrl == preset.url,
-                          );
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 3),
-                            child: TvTile(
-                              focusNode: focusNode,
-                              minHeight: 0,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                              label: preset.name,
-                              description: preset.description,
-                              icon: MoaiIcons.plugin,
-                              onPressed: () => _install(preset.url),
-                              onKeyLeft: () {
-                                if (totalSources > 0) {
-                                  final targetIndex = (_selectedInstalledIndex * 2 + 1)
-                                      .clamp(0, _tileFocuses.length - 1);
-                                  _tileFocuses[targetIndex].requestFocus();
-                                } else {
-                                  _emptyFocusNode.requestFocus();
-                                }
-                              },
-                              onKeyUp: onKeyUp,
-                              onKeyDown: onKeyDown,
-                              trailingBuilder: (context, isFocused) =>
-                                  TvInstallPill(
-                                isInstalled: isInstalled,
-                                isFocused: isFocused,
-                              ),
-                            ),
-                          );
-                        },
+                        itemBuilder:
+                            (
+                              context,
+                              preset,
+                              focusNode,
+                              local,
+                              global,
+                              onKeyUp,
+                              onKeyDown,
+                            ) {
+                              final isInstalled = sources.any(
+                                (s) => s.sourceUrl == preset.url,
+                              );
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 3,
+                                ),
+                                child: TvTile(
+                                  focusNode: focusNode,
+                                  minHeight: 0,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 10,
+                                  ),
+                                  label: preset.name,
+                                  description: preset.description,
+                                  icon: MoaiIcons.plugin,
+                                  onPressed: () => _install(preset.url),
+                                  onKeyLeft: () {
+                                    if (totalSources > 0) {
+                                      final targetIndex =
+                                          (_selectedInstalledIndex * 2 + 1)
+                                              .clamp(
+                                                0,
+                                                _tileFocuses.length - 1,
+                                              );
+                                      _tileFocuses[targetIndex].requestFocus();
+                                    } else {
+                                      _emptyFocusNode.requestFocus();
+                                    }
+                                  },
+                                  onKeyUp: onKeyUp,
+                                  onKeyDown: onKeyDown,
+                                  trailingBuilder: (context, isFocused) =>
+                                      TvInstallPill(
+                                        isInstalled: isInstalled,
+                                        isFocused: isFocused,
+                                      ),
+                                ),
+                              );
+                            },
                       ),
                     );
                   },

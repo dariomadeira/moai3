@@ -135,6 +135,8 @@ class _TvFocusButtonState extends State<TvFocusButton> {
     final glass = MoaiGlassScope.enabledOf(context);
     final (bg, fg) = glass ? _glassColors(scheme) : _colors(scheme);
     final enabled = widget.onPressed != null && !widget.loading;
+    // [label] vacío con ícono: botón redondo de sólo ícono (p. ej. la X).
+    final iconOnly = widget.label.isEmpty && widget.icon != null;
 
     return Focus(
       focusNode: widget.focusNode,
@@ -231,7 +233,11 @@ class _TvFocusButtonState extends State<TvFocusButton> {
             splashColor: fg.withValues(alpha: 0.12),
             child: Container(
               height: widget.height,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              // Sin texto (sólo ícono): redondo, tan ancho como alto.
+              width: iconOnly ? widget.height : null,
+              padding: iconOnly
+                  ? EdgeInsets.zero
+                  : const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -247,17 +253,19 @@ class _TvFocusButtonState extends State<TvFocusButton> {
                     )
                   else if (widget.icon != null)
                     Icon(widget.icon, size: MoaiIconSizes.md, color: fg),
-                  if (widget.loading || widget.icon != null)
-                    const SizedBox(width: 10),
-                  Text(
-                    widget.label,
-                    style: MoaiText.body(
-                      context,
-                      color: fg,
-                      fontSize: widget.fontSize,
-                      fontWeight: FontWeight.w700,
+                  if (!iconOnly) ...[
+                    if (widget.loading || widget.icon != null)
+                      const SizedBox(width: 10),
+                    Text(
+                      widget.label,
+                      style: MoaiText.body(
+                        context,
+                        color: fg,
+                        fontSize: widget.fontSize,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),

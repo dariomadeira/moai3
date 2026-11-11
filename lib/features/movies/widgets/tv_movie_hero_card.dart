@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
+import 'package:moai3/services/movie_image_cache.dart';
+import 'package:moai3/widgets/buttons/moai_pill_button.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/utils/image_decode.dart';
 
@@ -22,6 +24,9 @@ class TvMovieHeroCard extends StatefulWidget {
   final VoidCallback? onArrowUp;
   final VoidCallback? onArrowDown;
   final VoidCallback? onArrowRight;
+
+  /// Alto del botón Reproducir.
+  static const double playButtonSize = 32;
 
   const TvMovieHeroCard({
     super.key,
@@ -189,90 +194,21 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
                     ),
                   ),
 
-                  // Botón delicado de Play abajo a la izquierda
+                  // Reproducir abajo a la izquierda: el mismo botón que la
+                  // tarjeta grande del Inicio (vidrio sin foco; con foco, el
+                  // de toda la app).
                   Positioned(
                     left: 14,
                     bottom: 12,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 160),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 7,
-                      ),
-                      decoration: glass && _isFocused
-                          ? moaiGlassButtonDecoration(
-                              scheme,
-                              focused: true,
-                              radius: 20,
-                            )
-                          : BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              color: _isFocused
-                                  ? scheme.primary
-                                  : Colors.black.withValues(alpha: 0.55),
-                              border: Border.all(
-                                color: _isFocused
-                                    ? Colors.white
-                                    : Colors.white.withValues(alpha: 0.32),
-                                width: _isFocused ? 1.5 : 1.0,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.35),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (widget.isLoading) ...[
-                            SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  _isFocused ? scheme.onPrimary : Colors.white,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              LocaleKeys.movies_loading.tr(),
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: _isFocused
-                                    ? scheme.onPrimary
-                                    : Colors.white,
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                          ] else ...[
-                            Icon(
-                              MoaiIcons.vodPlay,
-                              size: MoaiIconSizes.sm,
-                              color: _isFocused
-                                  ? scheme.onPrimary
-                                  : Colors.white,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              widget.playLabel ?? LocaleKeys.movies_play.tr(),
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: _isFocused
-                                    ? scheme.onPrimary
-                                    : Colors.white,
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                    child: MoaiPillButton(
+                      kind: MoaiPillButtonKind.glass,
+                      size: TvMovieHeroCard.playButtonSize,
+                      icon: MoaiIcons.vodPlay,
+                      label: widget.isLoading
+                          ? LocaleKeys.movies_loading.tr()
+                          : widget.playLabel ?? LocaleKeys.movies_play.tr(),
+                      loading: widget.isLoading,
+                      selected: _isFocused,
                     ),
                   ),
                 ],
@@ -331,6 +267,7 @@ class _TvMovieHeroCardState extends State<TvMovieHeroCard> {
     return CachedNetworkImage(
       key: ValueKey<String>(currentUrl),
       imageUrl: currentUrl,
+      cacheManager: MovieImageCache.photos,
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,

@@ -1,6 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
+import 'package:moai3/features/home/widgets/home_clock.dart';
+import 'package:moai3/features/home/widgets/home_watchlist_big_card.dart';
 import 'package:moai3/features/movies/screens/movie_detail_screen.dart';
+import 'package:moai3/features/movies/screens/series_detail_screen.dart';
 import 'package:moai3/features/movies/widgets/movie_poster_grid.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/models/movie_models.dart';
@@ -14,7 +18,8 @@ import 'package:moai3/utils/moai_formats.dart';
 import 'package:moai3/widgets/buttons/tv_back_pill.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
 import 'package:moai3/widgets/tv_common/moai_ambient_background.dart';
-import 'package:moai3/widgets/tv_common/moai_glass.dart';
+import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
+import 'package:moai3/features/home/widgets/tv_movie_card.dart';
 import 'package:provider/provider.dart';
 
 /// Una página de la categoría (`getShelveData`); `null` si falla.
@@ -31,9 +36,18 @@ class MovieCategoryScreen extends StatefulWidget {
     this.initial,
     this.fetchPage,
     this.fetchTotal,
+    this.series = false,
+    this.sectionColor = HomeWatchlistBigCard.color,
   });
 
   final CategoryColumn category;
+
+  /// Categoría de Series: de la lista del servidor se queda con las series
+  /// (y la pestaña lleva el ícono de Series).
+  final bool series;
+
+  /// Color de la sección en el rail: el del contador.
+  final Color sectionColor;
 
   /// Lo que ya bajó la grilla de esta categoría
   /// ([FeaturedMoviesProvider.shelfSnapshot]): se muestra al instante y se
@@ -126,8 +140,10 @@ class MovieCategoryScreenState extends State<MovieCategoryScreen> {
     (_movies.isEmpty ? _stateFocus : _gridFocus).requestFocus();
   }
 
+  /// Suma lo de su tipo (películas o series) sin repetidos.
   void _add(List<MovieItem> movies) {
     for (final movie in movies) {
+      if (widget.series ? !movie.isSeries : !movie.isMovie) continue;
       if (_keys.add(MovieGridCatalog.keyOf(movie))) _movies.add(movie);
     }
   }
@@ -165,10 +181,13 @@ class MovieCategoryScreenState extends State<MovieCategoryScreen> {
   }
 
   void _open(MovieItem movie) {
-    if (movie.isSeries) return;
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => MovieDetailScreen(movie: movie)));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => movie.isSeries
+            ? SeriesDetailScreen(series: movie)
+            : MovieDetailScreen(movie: movie),
+      ),
+    );
   }
 
   @override
@@ -200,8 +219,10 @@ class MovieCategoryScreenState extends State<MovieCategoryScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Del ancho del rail del Inicio (8 + 48 + 4), con el botón
+                  // centrado donde van sus íconos.
                   SizedBox(
-                    width: 54,
+                    width: 60,
                     child: Column(
                       children: [
                         const SizedBox(height: 9),
@@ -230,88 +251,114 @@ class MovieCategoryScreenState extends State<MovieCategoryScreen> {
     );
   }
 
-  /// El panel de cristal con el título y la grilla (como la de Películas).
+  /// El mismo panel que Películas ([HomeMoviesArea]): la pestaña con el
+  /// ícono y "Ver más - categoría", y adentro el título y la grilla con sus
+  /// mismos márgenes.
   Widget _panel(ColorScheme scheme) {
-    final glass = MoaiGlassScope.enabledOf(context);
-    final content = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _header(scheme),
-        Expanded(child: _body(scheme)),
-      ],
+    final tabTitle = LocaleKeys.movies_category_panel_title.tr(
+      namedArgs: {'category': widget.category.columnName},
     );
-    if (glass) {
-      return MoaiGlass(
-        borderRadius: 16,
-        solid: true,
-        elevated: false,
-        child: content,
-      );
-    }
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: scheme.surface.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.48),
-        ),
+    return TvAccordionRowPreview(
+      panelCount: 1,
+      activeIndex: 0,
+      colors: [scheme.surface.withValues(alpha: 0.8)],
+      titles: [tabTitle],
+      icons: const [MoaiIcons.tvAccordionMovies],
+      svgIcons: [if (widget.series) MoaiIcons.seriesSvg else null],
+      onPanelTap: (_) {},
+      buildExpandedContent: (index, title) => LayoutBuilder(
+        builder: (context, constraints) {
+          // Como en Películas: lo que sobra de alto con dos filas va al
+          // encabezado, así el hueco de abajo es el de la derecha.
+          final colWidth =
+              ((constraints.maxWidth -
+                          _leftPadding -
+                          _rightPadding -
+                          4 * _columnGap) /
+                      MoviePosterGridState.columns)
+                  .clamp(100.0, 400.0);
+          final cardHeight = TvMovieCard.heightForWidth(colWidth);
+          final headerHeight =
+              (constraints.maxHeight -
+                      _listPadding -
+                      2 * cardHeight -
+                      _gap -
+                      _rightPadding)
+                  .clamp(44.0, 72.0);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // La grilla ya deja su relleno de arriba debajo del título.
+              SizedBox(height: headerHeight, child: _header(scheme)),
+              Expanded(child: _body(scheme)),
+            ],
+          );
+        },
       ),
-      child: content,
     );
   }
 
+  static const double _leftPadding = 4.0;
+  static const double _rightPadding = 14.0;
+  static const double _gap = 12.0;
+  static const double _listPadding = 8.0;
+
+  /// Sin la pestaña de Buscar el panel es más ancho que el de Películas: ese
+  /// ancho se reparte entre las columnas, así los pósters miden lo mismo que
+  /// allá (entre filas sigue [_gap]).
+  static const double _columnGap =
+      _gap +
+      (TvAccordionRowPreview.collapsedWidth + TvAccordionRowPreview.gap) /
+          (MoviePosterGridState.columns - 1);
+
+  /// Como el encabezado de cada categoría de Películas.
   Widget _header(ColorScheme scheme) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 4),
-      child: Row(
-        children: [
-          Container(
-            width: 3.5,
-            height: 22,
-            decoration: BoxDecoration(
-              color: scheme.primary,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Flexible(
-            child: Text(
-              widget.category.columnName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: MoaiText.display(
-                context,
-                fontSize: 22,
-                color: scheme.onSurface,
-              ),
-            ),
-          ),
-          if (_total case final total?) ...[
-            const SizedBox(width: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: MoaiGlassScope.enabledOf(context)
-                  ? moaiGlassChipDecoration(scheme, radius: 10)
-                  : BoxDecoration(
-                      color: scheme.tertiaryContainer,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-              child: Text(
-                LocaleKeys.movies_count.tr(
-                  namedArgs: {'count': MoaiFormats.thousands(total)},
-                ),
-                style: MoaiText.body(
-                  context,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: MoaiGlassScope.enabledOf(context)
-                      ? scheme.onSurface
-                      : scheme.onTertiaryContainer,
+      // En Películas el título va dentro de la lista, después de su relleno
+      // de arriba; acá la grilla pone ese relleno debajo del título.
+      padding: const EdgeInsets.only(
+        left: _leftPadding + 4,
+        right: _rightPadding,
+        bottom: 12 - _listPadding,
+      ),
+      child: Align(
+        alignment: Alignment.bottomLeft,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Como los títulos de los paneles: sin la barrita del acento y
+            // con el degradado.
+            Flexible(
+              child: ShaderMask(
+                blendMode: BlendMode.srcIn,
+                shaderCallback: HomeClock.timeShader,
+                child: Text(
+                  widget.category.columnName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: MoaiText.display(
+                    context,
+                    fontSize: 18,
+                    headline: true,
+                    color: scheme.onSurface,
+                  ),
                 ),
               ),
             ),
+            if (_total case final total?) ...[
+              const SizedBox(width: 10),
+              // Sólido, del color de la sección en el rail.
+              TvMetaPill(
+                label: MoaiFormats.thousands(total),
+                tint: widget.sectionColor,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 3,
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -334,15 +381,26 @@ class MovieCategoryScreenState extends State<MovieCategoryScreen> {
         ),
       );
     }
-    return MoviePosterGrid(
-      key: _gridKey,
-      movies: _movies,
-      focusNode: _gridFocus,
-      onOpen: _open,
-      loadingMore: _loading,
-      loadFailed: _failed && !_ended,
-      onNearEnd: _loadMore,
-      onExitLeft: _backFocus.requestFocus,
+    // Como en Buscar: sin scroll, dos filas enteras y los puntos al costado.
+    // Los puntos se llevan su ancho de entre las columnas: los pósters miden
+    // lo mismo que en Películas. Arriba y abajo, los rellenos de la lista.
+    return Padding(
+      padding: const EdgeInsets.only(top: _listPadding, bottom: _rightPadding),
+      child: MoviePosterGrid(
+        key: _gridKey,
+        movies: _movies,
+        focusNode: _gridFocus,
+        leftPadding: _leftPadding,
+        columnGap:
+            _columnGap -
+            MoviePosterGridState.dotsWidth / (MoviePosterGridState.columns - 1),
+        windowRows: 2,
+        onOpen: _open,
+        loadingMore: _loading,
+        loadFailed: _failed && !_ended,
+        onNearEnd: _loadMore,
+        onExitLeft: _backFocus.requestFocus,
+      ),
     );
   }
 }

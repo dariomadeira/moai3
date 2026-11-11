@@ -1,3 +1,4 @@
+import 'package:moai3/theme/moai_palette.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:moai3/widgets/buttons/tv_back_pill.dart';
 import 'package:moai3/widgets/buttons/tv_install_pill.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_tile.dart';
+import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/services/plugin_host_service.dart';
 import 'package:moai3/services/plugin_update_service.dart';
@@ -64,6 +66,11 @@ class _SourcesScreenState extends State<SourcesScreen> {
       GlobalKey<TvWindowedListState<_PresetPlugin>>();
 
   int _selectedInstalledIndex = 0;
+
+  /// En la lista de instaladas, si ↑/↓ salió del botón de borrar (y no del
+  /// de actualizar): al llegar a la otra ficha, el foco queda en la misma
+  /// columna.
+  bool _installedOnRemove = false;
   int _selectedPresetIndex = 0;
 
   final List<FocusNode> _tileFocuses = [];
@@ -218,41 +225,6 @@ class _SourcesScreenState extends State<SourcesScreen> {
                         titles: [LocaleKeys.settings_general_sources.tr()],
                         icons: const [MoaiIcons.extension],
                         onPanelTap: (_) {},
-                        tabBuilder: (index, isExpanded) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 14, top: 14),
-                            child: Column(
-                              children: [
-                                const Spacer(),
-                                RotatedBox(
-                                  quarterTurns: 3,
-                                  child: Text(
-                                    LocaleKeys.settings_general_sources.tr(),
-                                    maxLines: 1,
-                                    softWrap: false,
-                                    overflow: TextOverflow.fade,
-                                    style: MoaiText.display(
-                                      context,
-                                      color: scheme.onSurface.withValues(
-                                        alpha: 0.7,
-                                      ),
-                                      fontSize: 12,
-                                      letterSpacing: 1.0,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Icon(
-                                  MoaiIcons.extension,
-                                  size: MoaiIconSizes.md,
-                                  color: scheme.onSurfaceVariant.withValues(
-                                    alpha: 0.85,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
                         buildExpandedContent: (index, title) {
                           return Container(
                             padding: const EdgeInsets.all(10),
@@ -267,6 +239,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                                         subtitle: LocaleKeys.sources_subtitle
                                             .tr(),
                                         padding: EdgeInsets.zero,
+                                        titleShader: HomeClock.timeShader,
                                       ),
                                     ),
                                     if (totalChannels > 0) ...[
@@ -276,6 +249,8 @@ class _SourcesScreenState extends State<SourcesScreen> {
                                         label: _formatChannelsCount(
                                           totalChannels,
                                         ),
+                                        // Gris: el total de canales.
+                                        tint: TvMetaPill.countTint,
                                       ),
                                     ],
                                   ],

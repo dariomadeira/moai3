@@ -79,12 +79,27 @@ void main() {
     expect(find.text('Eliminar amigo'), findsNothing);
   });
 
-  testWidgets('un OK nuevo sobre el amigo sí pide confirmar el borrado', (
+  testWidgets('OK sobre un amigo desconectado avisa y no borra', (
     tester,
   ) async {
     await openWithFriendFocused(tester);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+
+    expect(find.text('Ana no está conectado ahora.'), findsOneWidget);
+    expect(find.text('Eliminar amigo'), findsNothing);
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+  });
+
+  testWidgets('OK mantenido sobre el amigo pide confirmar el borrado', (
+    tester,
+  ) async {
+    await openWithFriendFocused(tester);
+
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.enter);
+    await tester.pump(const Duration(milliseconds: 900));
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
 
     expect(find.text('Eliminar amigo'), findsOneWidget);

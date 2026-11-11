@@ -27,6 +27,7 @@ class TvViewer extends StatefulWidget {
   final ValueChanged<bool>? onFullScreenChanged;
   final VoidCallback? onRequestListFocus;
   final VoidCallback? onRequestUpFocus;
+  final VoidCallback? onRequestDownFocus;
   final ValueChanged<bool>? onErrorStateChanged;
   final FocusNode? focusNode;
   final int reloadKey;
@@ -40,6 +41,7 @@ class TvViewer extends StatefulWidget {
     this.onFullScreenChanged,
     this.onRequestListFocus,
     this.onRequestUpFocus,
+    this.onRequestDownFocus,
     this.onErrorStateChanged,
     this.focusNode,
     this.reloadKey = 0,
@@ -67,7 +69,10 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
     setState(fn);
   }
 
-  void _log(String message, {ReconnectLogLevel level = ReconnectLogLevel.info}) {
+  void _log(
+    String message, {
+    ReconnectLogLevel level = ReconnectLogLevel.info,
+  }) {
     debugPrint('[TvViewer][${level.name}] $message');
     if (!mounted) return;
     final log = context.read<DebugLogController>();
@@ -81,8 +86,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
     }
   }
 
-  ReconnectLogCallback get _reconnectLogger =>
-      _log;
+  ReconnectLogCallback get _reconnectLogger => _log;
 
   String get _currentUrl => widget.channel == null
       ? ''
@@ -114,12 +118,14 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
         _session.begin();
         _reconnect.reset();
         _watchParty?.reportCurrentChannel();
-        unawaited(_disposeEngine().then((_) {
-          _safeSetState(() {
-            _hasFirstFrame = false;
-            _isBuffering = false;
-          });
-        }));
+        unawaited(
+          _disposeEngine().then((_) {
+            _safeSetState(() {
+              _hasFirstFrame = false;
+              _isBuffering = false;
+            });
+          }),
+        );
       }
     } else if (state == AppLifecycleState.inactive) {
       if (!_wasBackgrounded) {
@@ -173,11 +179,13 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
       if (widget.channel != null) {
         unawaited(_playChannel(widget.channel!));
       } else {
-        unawaited(_disposeEngine().then((_) {
-          _safeSetState(() {
-            _hasFirstFrame = false;
-          });
-        }));
+        unawaited(
+          _disposeEngine().then((_) {
+            _safeSetState(() {
+              _hasFirstFrame = false;
+            });
+          }),
+        );
       }
     }
   }
@@ -301,15 +309,17 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
       newController.addListener(_onEngineEvent);
       _engine = newController;
 
-      await newController.setMedia(MoaiMediaSpec(
-        url: resolved.url,
-        title: channel.name,
-        headers: resolved.headers,
-        userAgent: ChannelPlaybackHelpers.defaultUserAgent,
-        mimeType: resolved.mimeType,
-        drmScheme: resolved.drmScheme,
-        drmLicenseUri: resolved.drmLicenseUri,
-      ));
+      await newController.setMedia(
+        MoaiMediaSpec(
+          url: resolved.url,
+          title: channel.name,
+          headers: resolved.headers,
+          userAgent: ChannelPlaybackHelpers.defaultUserAgent,
+          mimeType: resolved.mimeType,
+          drmScheme: resolved.drmScheme,
+          drmLicenseUri: resolved.drmLicenseUri,
+        ),
+      );
       if (!alive() || _engine != newController) {
         newController.removeListener(_onEngineEvent);
         if (_engine == newController) _engine = null;
@@ -348,9 +358,8 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  bool get _effectiveFullScreen => widget.onFullScreenChanged != null
-      ? widget.isFullScreen
-      : _isFullScreen;
+  bool get _effectiveFullScreen =>
+      widget.onFullScreenChanged != null ? widget.isFullScreen : _isFullScreen;
 
   @override
   Widget build(BuildContext context) {
@@ -361,40 +370,38 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
     final Widget content = _errorMessage != null
         ? ViewerErrorDisplay(errorMessage: _errorMessage!)
         : (engine != null && engine.hasTexture && _hasFirstFrame)
-            ? EnginePlayerView(
-                controller: engine,
-                showBuffering: _isBuffering,
-              )
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: scheme.primary),
-                  if (_reconnect.isReconnecting)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: Text(
-                        LocaleKeys.player_reconnecting.tr(
-                          namedArgs: {
-                            'retry': '${_reconnect.retryCount}',
-                            'max': '${_reconnect.maxRetries}',
-                            'current': '${_reconnect.fallbackIndex + 1}',
-                            'total':
-                                '${widget.channel != null ? _reconnect.playableCount(widget.channel!) : 0}',
-                          },
-                        ),
-                        style: MoaiText.body(
-                          context,
-                          color: scheme.onSurface.withValues(alpha: 0.7),
-                          fontSize: 14,
-                        ),
-                      ),
+        ? EnginePlayerView(controller: engine, showBuffering: _isBuffering)
+        : Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              if (_reconnect.isReconnecting)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Text(
+                    LocaleKeys.player_reconnecting.tr(
+                      namedArgs: {
+                        'retry': '${_reconnect.retryCount}',
+                        'max': '${_reconnect.maxRetries}',
+                        'current': '${_reconnect.fallbackIndex + 1}',
+                        'total':
+                            '${widget.channel != null ? _reconnect.playableCount(widget.channel!) : 0}',
+                      },
                     ),
-                ],
-              );
+                    style: MoaiText.body(
+                      context,
+                      color: scheme.onSurface.withValues(alpha: 0.7),
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+            ],
+          );
 
     final watchParty = context.watch<WatchPartyProvider?>() ?? _watchParty;
 
-    final isWatchPartyActive = effectiveFullScreen &&
+    final isWatchPartyActive =
+        effectiveFullScreen &&
         (watchParty?.enabled ?? false) &&
         (watchParty?.hasFriendsInSameChannel ?? false);
 
@@ -415,8 +422,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
               fit: StackFit.expand,
               children: [
                 ColoredBox(color: scheme.surface, child: content),
-                if (isWatchPartyActive)
-                  const WatchPartyOverlay(),
+                if (isWatchPartyActive) const WatchPartyOverlay(),
               ],
             )
           : AnimatedContainer(
@@ -453,6 +459,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
       },
       onRequestListFocus: widget.onRequestListFocus,
       onRequestUpFocus: widget.onRequestUpFocus,
+      onRequestDownFocus: widget.onRequestDownFocus,
       onFocusChange: (focused) => setState(() => _isFocused = focused),
       child: playerWidget,
     );

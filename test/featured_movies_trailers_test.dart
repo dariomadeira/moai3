@@ -25,6 +25,8 @@ Future<Directory> writeMoviesCatalog() async {
           'assetList': [
             asset('m1', 'Coco', 'movie'),
             asset('t1', '(Tráiler)Weapons', 'trailer'),
+            // Sin tipo: lo delata el nombre, con tilde o sin.
+            asset('t3', 'Tráiler oficial: Coco 2', 'movie'),
           ],
         },
         {
@@ -54,7 +56,7 @@ void main() {
     await dir.delete(recursive: true);
   });
 
-  test('los adelantos salen de la grilla y quedan aparte', () async {
+  test('los tráileres del catálogo no se muestran en ningún lado', () async {
     useSpanishTranslations();
     final provider = FeaturedMoviesProvider()
       ..setAvailableSections({FeaturedMoviesProvider.sectionMovies});
@@ -62,16 +64,9 @@ void main() {
 
     const section = FeaturedMoviesProvider.sectionMovies;
     final categories = provider.categoriesFor(section);
-    // "Tráiler" (ya "Adelantos") queda vacía y desaparece; en Comedia sólo
-    // la película.
+    // "Tráiler" queda vacía y desaparece; en Comedia sólo la película.
     expect(categories.map((c) => c.columnName), ['Comedia']);
     expect(categories.single.movies.map((m) => m.name), ['Coco']);
     expect(provider.itemsFor(section).map((m) => m.name), ['Coco']);
-
-    // Cada adelanto una sola vez, en el orden del catálogo.
-    expect(provider.trailersFor(section).map((m) => m.contentId), [
-      't1',
-      't2',
-    ]);
   });
 }

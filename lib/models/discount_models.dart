@@ -157,7 +157,7 @@ class Discount {
     };
   }
 
-  /// Dónde vale ("Coto", "Supermercados TODO").
+  /// Dónde vale ("Coto", "Carrefour").
   final String merchant;
 
   /// Cómo lo dice MODO ("20% de reintegro", "10% y 3 cuotas").

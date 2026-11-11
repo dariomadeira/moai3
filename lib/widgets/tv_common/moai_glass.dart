@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/theme/moai_palette.dart';
+import 'package:moai3/widgets/tv_common/moai_frosted_glass.dart';
 
 /// Superficie de "cristal pulido": relleno translúcido con degradado, brillo
 /// en la mitad superior, borde especular (claro arriba a la izquierda, tenue
@@ -25,7 +27,28 @@ class MoaiGlass extends StatelessWidget {
     this.alignment,
     this.solid = false,
     this.focused = false,
+    this.frosted = false,
   });
+
+  /// Radio de las esquinas de los paneles grandes (el del acordeón); lo
+  /// que quiera verse "del mismo juego" que el panel usa este.
+  static const double panelRadius = 16;
+
+  /// Sombra de los paneles grandes: los despega del fondo. La usan también
+  /// las tarjetas que van "del mismo juego" (la destacada de películas).
+  /// El color, el del modo ([MoaiPalette.panelShadow]).
+  static List<BoxShadow> panelShadowOf(BuildContext context) => [
+    BoxShadow(
+      color: MoaiPalette.of(context).panelShadow,
+      blurRadius: 40,
+      offset: const Offset(0, 16),
+    ),
+  ];
+
+  /// REDISEÑO: panel general de vidrio esmerilado (el fondo desenfocado se
+  /// ve a través). Sólo los paneles grandes de cada pantalla; las tarjetas y
+  /// piezas de adentro van sin esto (vidrio claro encima del panel).
+  final bool frosted;
 
   final Widget child;
   final double borderRadius;
@@ -46,8 +69,123 @@ class MoaiGlass extends StatelessWidget {
   /// Con sombra; una pieza anidada dentro de otro cristal va sin ella.
   final bool elevated;
 
+  /// REDISEÑO (2026-10-30): piezas sobre el panel esmerilado (referencia
+  /// estilo visionOS): vidrio más claro que el panel, con filo de luz blanco.
+  /// Mismo material con y sin foco; el foco sólo cambia el borde. Los
+  /// colores, los del modo ([MoaiPalette]: `glassCard`, `glassChip`,
+  /// `glassRim`).
+
+  /// PRUEBA (2026-11-03, del artículo de glassmorphism): filo de luz con
+  /// degradado (fuerte arriba a la izquierda, casi nada abajo a la derecha)
+  /// en vez del parejo [_lightRim], como si la luz viniera de arriba. Es
+  /// sólo pintura (sin desenfoque): no cuesta. Con foco sigue el borde del
+  /// acento. Para volver al parejo: false.
+  static const bool specularRim = true;
+
+  /// El borde encima del vidrio claro: con foco, el del acento; si no, el
+  /// filo de luz (con degradado si [specularRim]).
+  Decoration _rimFor(
+    ColorScheme scheme,
+    MoaiPalette palette,
+    BorderRadius radius,
+  ) {
+    if (!focused && specularRim) {
+      return _GlassRim(
+        radius: borderRadius,
+        rim: palette.specularRim,
+        rimWidth: 1.2,
+        sheen: Colors.transparent, // sin brillo: sólo el borde
+      );
+    }
+    return BoxDecoration(
+      borderRadius: radius,
+      border: Border.all(
+        color: focused ? scheme.primary : palette.glassRim,
+        width: focused ? 2 : 1,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (tint == null) return _cleanly(context);
+    return _previousBuild(context);
+  }
+
+  /// Panel grande: vidrio esmerilado estilo visionOS (referencia del usuario
+  /// `4574037118559472.jpg`). El fondo desenfocado se ve a través
+  /// ([MoaiFrostedBackdrop]), un velo blanco suave un poco más claro arriba,
+  /// borde de luz y sombra que lo despega del fondo.
+  Widget _frosted(BuildContext context) {
+    final palette = MoaiPalette.of(context);
+    final radius = BorderRadius.circular(borderRadius);
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        boxShadow: panelShadowOf(context),
+      ),
+      foregroundDecoration: MoaiFrostedRim(
+        radius: borderRadius,
+        colors: palette.frostedRim,
+      ),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: Stack(
+          children: [
+            const Positioned.fill(child: MoaiFrostedBackdrop()),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    // 2026-11-03: un pelín más blanco (era 30 % → 15 %).
+                    colors: palette.frostedVeil,
+                  ),
+                ),
+              ),
+            ),
+            Container(padding: padding, alignment: alignment, child: child),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _cleanly(BuildContext context) {
+    if (frosted) return _frosted(context);
+    final scheme = Theme.of(context).colorScheme;
+    final palette = MoaiPalette.of(context);
+    final radius = BorderRadius.circular(borderRadius);
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        color: solid ? palette.glassCard : palette.glassChip,
+        boxShadow: elevated
+            ? [
+                BoxShadow(
+                  color: palette.glassShadow,
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ]
+            : null,
+      ),
+      // Borde por encima: con foco crece sin mover el contenido.
+      foregroundDecoration: _rimFor(scheme, palette, radius),
+      padding: padding,
+      alignment: alignment,
+      child: child,
+    );
+  }
+
+  /// ANTES (a limpiar): cristal con degradado, brillo y borde especular según
+  /// el tema. Ahora sólo lo usan las piezas con [tint].
+  Widget _previousBuild(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final dark = scheme.brightness == Brightness.dark;
     final radius = BorderRadius.circular(borderRadius);
@@ -226,6 +364,18 @@ class MoaiGlassScope extends InheritedWidget {
   bool updateShouldNotify(MoaiGlassScope oldWidget) => false;
 }
 
+/// Cristal oscuro para lo que va sobre video: el claro se lava. Sin desenfoque,
+/// para no cargar cada cuadro.
+BoxDecoration moaiVideoGlassDecoration({double radius = 14}) => BoxDecoration(
+  borderRadius: BorderRadius.circular(radius),
+  gradient: const LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0x99262A31), Color(0x8C12141A)],
+  ),
+  border: Border.all(color: const Color(0x2EFFFFFF)),
+);
+
 /// Superficie de un diálogo sobre el fondo ambiente: sólida (flota sobre la
 /// pantalla oscurecida), un tono más clara arriba, borde de luz tenue y sombra
 /// amplia. Sin manchas de luz: en un recuadro chico compiten con la pantalla.
@@ -274,9 +424,10 @@ BoxDecoration moaiGlassWellDecoration(
   );
 }
 
-/// Botón chico de cristal (acciones de un encabezado): en reposo es una
-/// [moaiGlassChipDecoration]; con foco, [accent] pleno con brillo y halo,
-/// como [TvIconActionButton]. [highlighted] marca un estado activo sin foco
+/// Botón chico de cristal (acciones de un encabezado): en reposo, el mismo
+/// vidrio blanco con filo de luz que las piezas de [MoaiGlass] (p. ej. los
+/// días de Descuentos); con foco, [accent] pleno con brillo y halo, como
+/// [TvIconActionButton]. [highlighted] marca un estado activo sin foco
 /// (p. ej. el canal ya es favorito).
 BoxDecoration moaiGlassButtonDecoration(
   ColorScheme scheme, {
@@ -285,23 +436,88 @@ BoxDecoration moaiGlassButtonDecoration(
   Color? accent,
   double radius = 999,
 }) {
-  if (!focused) {
-    return moaiGlassChipDecoration(
+  // Los tres estados tienen la misma forma (degradado, borde de 1 y un
+  // halo de 12): así, al animar el cambio de foco, el color pasa parejo de
+  // uno a otro. Antes sin foco era un relleno plano y con foco un degradado;
+  // a mitad de la animación se desvanecía uno antes de aparecer el otro y el
+  // botón titilaba.
+  final Color top;
+  final Color bottom;
+  final Color rim;
+  final Color glow;
+  if (focused) {
+    final color = accent ?? scheme.primary;
+    top = Color.lerp(color, Colors.white, 0.18)!;
+    bottom = color;
+    // Borde invisible del mismo ancho que el de sin foco: el borde suma al
+    // tamaño del botón y, si no, al enfocarlo se achica y mueve lo de al lado.
+    rim = color.withValues(alpha: 0);
+    glow = color.withValues(alpha: 0.4);
+  } else if (highlighted) {
+    final chip = moaiGlassChipDecoration(
       scheme,
       radius: radius,
-      highlighted: highlighted,
+      highlighted: true,
     );
+    top = bottom = chip.color!;
+    rim = (chip.border! as Border).top.color;
+    glow = scheme.primary.withValues(alpha: 0);
+  } else {
+    // REDISEÑO (2026-11-01): antes una [moaiGlassChipDecoration] gris.
+    final palette = MoaiPalette.ofScheme(scheme);
+    top = bottom = palette.glassCard;
+    rim = palette.glassRim;
+    glow = (accent ?? scheme.primary).withValues(alpha: 0);
   }
-  final color = accent ?? scheme.primary;
   return BoxDecoration(
     borderRadius: BorderRadius.circular(radius),
     gradient: LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: [Color.lerp(color, Colors.white, 0.18)!, color],
+      colors: [top, bottom],
     ),
-    boxShadow: [BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 12)],
+    border: Border.all(color: rim),
+    boxShadow: [BoxShadow(color: glow, blurRadius: 12)],
   );
+}
+
+/// Etiqueta de cristal (un estado o un dato, no una acción: "1400 canales",
+/// "Instalado"): más blanca que la ficha sobre la que va, con filo de luz.
+/// El texto va en gris ([ColorScheme.onSurfaceVariant]) o, con [tint], en
+/// [moaiGlassTagForeground].
+///
+/// [tint] da color a la etiqueta (p. ej. verde para "Instalado"): el blanco
+/// se tiñe apenas y el filo toma el color.
+BoxDecoration moaiGlassTagDecoration(
+  ColorScheme scheme, {
+  double radius = 20,
+  Color? tint,
+}) {
+  final palette = MoaiPalette.ofScheme(scheme);
+  final base = palette.tagFill;
+  if (tint != null) {
+    return BoxDecoration(
+      borderRadius: BorderRadius.circular(radius),
+      // Al 24 %: se acerca al filo (al 38 %) sin taparlo.
+      color: Color.alphaBlend(tint.withValues(alpha: 0.24), base),
+      border: Border.all(color: tint.withValues(alpha: 0.38)),
+    );
+  }
+  return BoxDecoration(
+    borderRadius: BorderRadius.circular(radius),
+    color: base,
+    border: Border.all(color: palette.tagRim),
+  );
+}
+
+/// Texto e ícono de una etiqueta de cristal: con [tint], ese color un poco
+/// más oscuro (se lee sobre el blanco); sin él, gris.
+Color moaiGlassTagForeground(ColorScheme scheme, {Color? tint}) {
+  if (tint == null) return scheme.onSurfaceVariant;
+  if (scheme.brightness == Brightness.dark) {
+    return Color.lerp(tint, Colors.white, 0.35)!;
+  }
+  return Color.lerp(tint, Colors.black, 0.22)!;
 }
 
 /// Píldora chica de cristal (contadores, etiquetas).

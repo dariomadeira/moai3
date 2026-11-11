@@ -7,10 +7,14 @@ import 'package:moai3/models/discount_models.dart';
 import 'package:moai3/services/discounts_service.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/utils/moai_formats.dart';
 import 'package:moai3/utils/text_normalize.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_input/tv_text_field.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
+import 'package:moai3/widgets/tv_common/moai_status_tag.dart';
+import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 
 /// "Mis bancos y billeteras": cuáles tiene el usuario, para mostrarle sólo
 /// los descuentos que puede usar. Cada fila se prende y apaga con OK.
@@ -313,79 +317,310 @@ class _TvDiscountDetailDialogState extends State<TvDiscountDetailDialog> {
     super.dispose();
   }
 
+  /// Un dato: ícono en el acento en una etiqueta de cristal, el nombre en gris y
+  /// el valor en negro (como el detalle de un evento de la Agenda).
+  Widget _detail(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    final scheme = context.scheme;
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: moaiGlassTagDecoration(scheme, radius: 12),
+          child: Icon(
+            icon,
+            size: MoaiIconSizes.md,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: MoaiText.body(
+                  context,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 1),
+              Text(
+                value,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: MoaiText.body(
+                  context,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: scheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Los 7 días de la semana: los que vale encendidos en el color del
+  /// rubro, los demás de cristal apagado.
+  Widget _weekdays(BuildContext context, Discount d, Color color) {
+    final scheme = context.scheme;
+    final all = d.weekdays.isEmpty || d.weekdays.length == 7;
+    return Row(
+      children: [
+        for (var day = 1; day <= 7; day++) ...[
+          if (day > 1) const SizedBox(width: 6),
+          Expanded(
+            child: Builder(
+              builder: (context) {
+                final on = all || d.weekdays.contains(day);
+                return Container(
+                  height: 34,
+                  alignment: Alignment.center,
+                  decoration: on
+                      ? BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Color.lerp(color, Colors.white, 0.18)!,
+                              color,
+                            ],
+                          ),
+                        )
+                      : moaiGlassTagDecoration(scheme, radius: 10),
+                  child: Text(
+                    MoaiFormats.weekdayShort(day),
+                    style: MoaiText.body(
+                      context,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: on
+                          ? Colors.white
+                          : scheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final d = widget.discount;
+    final scheme = context.scheme;
     final province = DiscountsService.instance.province;
-    final rows = <(IconData, String)>[
-      (DiscountFormat.rubroIcon(d.rubro), DiscountFormat.rubro(d.rubro)),
-      if (d.bankLabel.isNotEmpty) (MoaiIcons.discountBanks, d.bankLabel),
-      (MoaiIcons.discounts, DiscountFormat.cap(d)),
+    final color = DiscountFormat.rubroColor(d.rubro);
+    final hasPercent = d.percent != null;
+
+    // Etiquetas sólidas (como los géneros de película): el rubro en su
+    // color; dónde se paga en el acento; la provincia, si la promo la nombra.
+    final accent = Theme.of(context).colorScheme.primary;
+    final tags = <(String, Color)>[
+      (DiscountFormat.rubro(d.rubro), color),
+      if (d.instore) (LocaleKeys.discounts_instore.tr(), accent),
+      if (d.online) (LocaleKeys.discounts_online.tr(), accent),
+      if (d.mentions(province))
+        (
+          LocaleKeys.discounts_in_your_province.tr(
+            namedArgs: {'province': province!},
+          ),
+          MoaiStatusTag.soonColor,
+        ),
+    ];
+
+    final details = <(IconData, String, String)>[
+      if (d.bankLabel.isNotEmpty)
+        (
+          MoaiIcons.discountBanks,
+          LocaleKeys.discounts_detail_bank.tr(),
+          d.bankLabel,
+        ),
+      (
+        MoaiIcons.discounts,
+        LocaleKeys.discounts_detail_cap.tr(),
+        DiscountFormat.cap(d),
+      ),
       if (DiscountFormat.cards(d).isNotEmpty)
-        (MoaiIcons.discountBanks, DiscountFormat.cards(d)),
+        (
+          MoaiIcons.discountBanks,
+          LocaleKeys.discounts_detail_cards.tr(),
+          DiscountFormat.cards(d),
+        ),
       if (d.installments > 0)
         (
           MoaiIcons.discounts,
+          LocaleKeys.discounts_detail_installments.tr(),
           LocaleKeys.discounts_installments.tr(
             namedArgs: {'n': '${d.installments}'},
           ),
         ),
-      (MoaiIcons.calendarEvents, DiscountFormat.weekdays(d)),
       if (DiscountFormat.validity(d).isNotEmpty)
-        (MoaiIcons.calendarEvents, DiscountFormat.validity(d)),
-      if (DiscountFormat.where(d).isNotEmpty)
-        (MoaiIcons.discountMerchants, DiscountFormat.where(d)),
-      if (d.mentions(province))
         (
-          MoaiIcons.discountLocation,
-          LocaleKeys.discounts_in_your_province.tr(
-            namedArgs: {'province': province!},
-          ),
+          MoaiIcons.calendarEvents,
+          LocaleKeys.discounts_detail_validity.tr(),
+          DiscountFormat.validity(d),
         ),
     ];
 
+    final divider = Divider(
+      height: 1,
+      thickness: 1,
+      color: scheme.onSurface.withValues(alpha: 0.08),
+    );
+
     return TvDialog(
-      width: 520,
+      width: 720,
+      padding: const EdgeInsets.all(20),
       icon: DiscountFormat.rubroIcon(d.rubro),
-      title: '${DiscountFormat.headline(d)} · ${d.merchant.trim()}',
+      iconColor: color,
+      title: d.merchant.trim(),
       subtitle: d.benefit,
+      // El porcentaje, grande, en una pastilla del color del rubro.
+      trailingHeader: hasPercent
+          ? DecoratedBox(
+              decoration: ShapeDecoration(
+                shape: const StadiumBorder(),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color.lerp(color, Colors.white, 0.18)!, color],
+                ),
+                shadows: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.35),
+                    blurRadius: 12,
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 6,
+                ),
+                child: Text(
+                  DiscountFormat.headline(d),
+                  style: MoaiText.display(
+                    context,
+                    fontSize: 22,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            )
+          : null,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final (icon, text) in rows)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  Icon(
-                    icon,
-                    size: MoaiIconSizes.sm,
-                    color: context.scheme.primary,
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final (label, tint) in tags)
+                TvMetaPill(
+                  label: label,
+                  tint: tint,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 5,
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      text,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: MoaiText.body(
-                        context,
-                        color: context.scheme.onSurface,
-                        fontSize: 14,
-                      ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          MoaiGlass(
+            borderRadius: MoaiGlass.panelRadius,
+            solid: true,
+            elevated: false,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Los datos de a dos por fila.
+                for (var i = 0; i < details.length; i += 2) ...[
+                  if (i > 0)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: divider,
                     ),
+                  Row(
+                    children: [
+                      for (var j = i; j < i + 2; j++) ...[
+                        if (j > i) const SizedBox(width: 16),
+                        Expanded(
+                          child: j < details.length
+                              ? _detail(
+                                  context,
+                                  icon: details[j].$1,
+                                  label: details[j].$2,
+                                  value: details[j].$3,
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
-              ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: divider,
+                ),
+                Text(
+                  LocaleKeys.discounts_detail_days.tr(),
+                  style: MoaiText.body(
+                    context,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _weekdays(context, d, color),
+              ],
             ),
-          const SizedBox(height: 8),
-          Text(
-            LocaleKeys.discounts_day_desc.tr(),
-            style: MoaiText.body(
-              context,
-              color: context.scheme.onSurfaceVariant,
-              fontSize: 12,
+          ),
+          const SizedBox(height: 12),
+          // Pie discreto, como el consejo de la prueba de voz.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  MoaiIcons.infoCircle,
+                  size: MoaiIconSizes.sm,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    LocaleKeys.discounts_day_desc.tr(),
+                    style: MoaiText.body(
+                      context,
+                      color: scheme.onSurface,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

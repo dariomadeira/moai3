@@ -14,10 +14,7 @@ import 'package:moai3/theme/moai_icons.dart';
 class TvArcadePrepDialog extends StatefulWidget {
   final void Function(ArcadeNetplaySession session) onReadyToPlay;
 
-  const TvArcadePrepDialog({
-    super.key,
-    required this.onReadyToPlay,
-  });
+  const TvArcadePrepDialog({super.key, required this.onReadyToPlay});
 
   static Future<void> show(
     BuildContext context, {
@@ -27,9 +24,8 @@ class TvArcadePrepDialog extends StatefulWidget {
       context: context,
       barrierDismissible: false,
       barrierLabel: 'TvArcadePrepDialog',
-      builder: (dialogContext) => TvArcadePrepDialog(
-        onReadyToPlay: onReadyToPlay,
-      ),
+      builder: (dialogContext) =>
+          TvArcadePrepDialog(onReadyToPlay: onReadyToPlay),
     );
   }
 
@@ -38,7 +34,9 @@ class TvArcadePrepDialog extends StatefulWidget {
 }
 
 class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
-  final FocusNode _cancelFocus = FocusNode(debugLabel: 'netplay_prep_cancel_btn');
+  final FocusNode _cancelFocus = FocusNode(
+    debugLabel: 'netplay_prep_cancel_btn',
+  );
   final ArcadeNetplayService _netplay = ArcadeNetplayService.instance;
   bool _hasStartedGame = false;
 
@@ -65,7 +63,8 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
     // Si la sesión terminó o fue cancelada
     if (session == null || session.status == ArcadeNetplayStatus.terminated) {
       final reason =
-          session?.exitReason ?? LocaleKeys.arcade_session_canceled_default.tr();
+          session?.exitReason ??
+          LocaleKeys.arcade_session_canceled_default.tr();
       Navigator.of(context, rootNavigator: true).pop();
       MoaiSnackBar.show(context, message: reason);
       return;
@@ -82,7 +81,9 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
   }
 
   void _onCancel() {
-    _netplay.cancelSession(reason: LocaleKeys.arcade_session_canceled_by_user.tr());
+    _netplay.cancelSession(
+      reason: LocaleKeys.arcade_session_canceled_by_user.tr(),
+    );
   }
 
   @override
@@ -101,20 +102,24 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
     return TvDialog(
       width: 560,
       icon: MoaiIcons.gamepad,
-      iconColor: scheme.primary,
       iconBgColor: scheme.primary.withValues(alpha: 0.15),
       title: LocaleKeys.arcade_prep_title.tr(namedArgs: {'game': gameTitle}),
       subtitle: isHost
-          ? LocaleKeys.arcade_prep_subtitle_host.tr(namedArgs: {'friend': friendName})
-          : LocaleKeys.arcade_prep_subtitle_guest.tr(namedArgs: {'friend': friendName}),
+          ? LocaleKeys.arcade_prep_subtitle_host.tr(
+              namedArgs: {'friend': friendName},
+            )
+          : LocaleKeys.arcade_prep_subtitle_guest.tr(
+              namedArgs: {'friend': friendName},
+            ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. Estado local (Tu consola)
           _buildProgressBlock(
-            label: LocaleKeys.arcade_prep_status_local
-                .tr(namedArgs: {'name': session.myNickname}),
+            label: LocaleKeys.arcade_prep_status_local.tr(
+              namedArgs: {'name': session.myNickname},
+            ),
             statusText: session.myStatusText,
             progress: session.myProgress,
             activeColor: scheme.primary,
@@ -126,8 +131,9 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
 
           // 2. Estado del amigo (Consola remota)
           _buildProgressBlock(
-            label: LocaleKeys.arcade_prep_status_remote
-                .tr(namedArgs: {'friend': friendName}),
+            label: LocaleKeys.arcade_prep_status_remote.tr(
+              namedArgs: {'friend': friendName},
+            ),
             statusText: session.peerStatusText,
             progress: session.peerProgress,
             activeColor: scheme.tertiary,
@@ -214,14 +220,20 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
               Row(
                 children: [
                   if (isDone)
-                    Icon(MoaiIcons.checkCircleFilled, size: MoaiIconSizes.sm, color: activeColor)
+                    Icon(
+                      MoaiIcons.checkCircleFilled,
+                      size: MoaiIconSizes.sm,
+                      color: activeColor,
+                    )
                   else if (progress > 0.0 && progress < 1.0)
                     SizedBox(
                       width: 12,
                       height: 12,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(activeColor),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          scheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   const SizedBox(width: 6),
@@ -243,7 +255,11 @@ class _TvArcadePrepDialogState extends State<TvArcadePrepDialog> {
             child: LinearProgressIndicator(
               value: progress.clamp(0.0, 1.0),
               minHeight: 6,
-              backgroundColor: (scheme.brightness == Brightness.dark ? Colors.white : scheme.onSurface).withValues(alpha: 0.10),
+              backgroundColor:
+                  (scheme.brightness == Brightness.dark
+                          ? Colors.white
+                          : scheme.onSurface)
+                      .withValues(alpha: 0.10),
               valueColor: AlwaysStoppedAnimation<Color>(activeColor),
             ),
           ),

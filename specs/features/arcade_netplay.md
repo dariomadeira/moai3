@@ -69,7 +69,7 @@ Permitir que **dos dispositivos** (host e invitado) jueguen la **misma ROM arcad
 ## 4. Reglas de negocio
 
 ### 4.1. Lobby
-1. Host llama `inviteFriend` con `romManager`; si `_globalChannel == null` → `false`.  
+1. Host llama `inviteFriend` con `romManager`; la invitación va al canal propio del invitado (`arcade_inbox_<deviceId>`), que sólo la acepta de amigos mutuos.  
 2. Al accept, **host e invitado** ejecutan `startRomPreparation`.  
 3. Tras ROM lista: `setActiveRom(session.romFilename)` obligatorio.  
 4. Canal de sesión: esperar `subscribed` (o timeout corto) antes de `ready_to_play`.  
@@ -88,17 +88,20 @@ Permitir que **dos dispositivos** (host e invitado) jueguen la **misma ROM arcad
 
 ### 4.4. Lockstep nativo
 - `nativeNetplayEnable(enabled, delayFrames=3, isHost)`.  
-- Inputs etiquetados `{frame, mask, senderDeviceId}` por DataChannel.  
+- Inputs etiquetados `{frame, mask, senderDeviceId}` por DataChannel confiable y ordenado.  
+- El input local lo toma el motor nativo: en el frame `F` programa el mando para `F + delay` y Dart solo lo reenvía (`netplayDrainLocalInputs`). Los primeros `delay` frames van sin nada apretado en ambos TV.  
+- Los inputs que llegan antes de que el juego esté listo se guardan y se entregan al activar el netplay.  
 - El loop solo avanza un frame cuando existen inputs local y remoto para ese frame.  
 - Host = P1 local / P2 remoto; Guest = P2 local / P1 remoto.  
 - Timeout espera remoto: 500 ms (reintento sin avanzar frame).  
 - Partida local (sin netplay): comportamiento previo sin lockstep.
 
 ### 4.5. Inputs UI
-- Teclado/D-pad en `ArcadeScreen` y overlay táctil (si activo) deben:
-  1. `sendInputMask` local  
-  2. `netplaySubmitLocalInput(frame, mask)`  
-  3. `ArcadeNetplayService.sendLocalInput(mask, frame: …)`  
+- Mando, control, teclado y overlay táctil solo actualizan la máscara local (`sendInputMask` o `nativeSendPlayerInputMask`); nadie más le pone frame.  
+
+### 4.6. Fin de partida
+- Si la sesión termina (cancelación del otro, falla de ICE o 15 s sin canal), `ArcadeScreen` avisa y sale.  
+- Si la app deja de verse durante la partida, `ArcadeScreen` sale y avisa al otro TV.  
 
 ---
 
@@ -109,9 +112,8 @@ Canal: `com.infomak.moai/arcade_channel`
 | Método | Args | Notas |
 | :--- | :--- | :--- |
 | `netplayEnable` | `enabled`, `delayFrames`, `isHost` | Activa buffers lockstep |
-| `netplaySubmitLocalInput` | `frame`, `mask` | |
+| `netplayDrainLocalInputs` | — | `[frame, mask, …]` pendientes de enviar |
 | `netplaySubmitRemoteInput` | `frame`, `mask` | |
-| `netplayGetFrame` | — | `int`/`long` frame actual |
 
 ---
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:moai3/theme/moai_palette.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -12,8 +13,11 @@ import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
+import 'package:moai3/widgets/tv_common/moai_status_tag.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/features/calendar/widgets/calendar_event_details_dialog.dart';
+import 'package:moai3/features/home/widgets/home_card_parts.dart';
+import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/utils/moai_formats.dart';
 import 'package:moai3/widgets/week/tv_week_grid.dart';
 
@@ -177,13 +181,19 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
     final calendar = context.watch<CalendarProvider>();
     final isPanelFocused = widget.focusNode.hasFocus;
 
     final days = CalendarProvider.getDaysForWeekOffset(_weekOffset);
     final monday = days.first;
     final sunday = days.last;
+
+    // Semana lejana: sus partidos se bajan al llegar (la F1 ya está).
+    if (calendar.needsWeekLoad(monday)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(calendar.ensureWeekLoaded(monday));
+      });
+    }
 
     final headerActions = _getAvailableHeaderActions();
     if (_headerActionIndex >= headerActions.length) {
@@ -201,33 +211,31 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
             padding: const EdgeInsets.fromLTRB(0, 10, 14, 10),
             child: Row(
               children: [
-                // Título e intervalo de fechas
+                // Intervalo de fechas (sin ícono adelante), con el degradado
+                // de la hora del Inicio. El Align ajusta el degradado al
+                // ancho del texto, no al de toda la fila.
                 Expanded(
-                  child: Row(
-                    children: [
-                      Icon(
-                        MoaiIcons.calendarEvents,
-                        size: MoaiIconSizes.md,
-                        color: scheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          MoaiFormats.weekRange(monday, sunday),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: MoaiText.display(
-                            context,
-                            fontSize: 15,
-                            color: scheme.onSurface,
-                          ),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: ShaderMask(
+                      blendMode: BlendMode.srcIn,
+                      shaderCallback: HomeClock.timeShader,
+                      child: Text(
+                        MoaiFormats.weekRange(monday, sunday),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: MoaiText.display(
+                          context,
+                          fontSize: 15,
+                          color: Colors.white,
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
 
-                // Botones de navegación semanal
+                // Botones de navegación semanal: los mismos de las tarjetas
+                // del Inicio ("Marcar todo como visto").
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: List.generate(headerActions.length, (idx) {
@@ -236,63 +244,56 @@ class CalendarEventsPanelState extends State<CalendarEventsPanel> {
                         isPanelFocused &&
                         _focusSection == _FocusSection.header &&
                         _headerActionIndex == idx;
+                    final isLast = idx == headerActions.length - 1;
 
-                    switch (action) {
-                      case _HeaderAction.refresh:
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: TvWeekHeaderButton(
-                            icon: MoaiIcons.refresh,
-                            tooltip: LocaleKeys.calendar_refresh.tr(),
-                            isFocused: isFocused,
-                            isLoading: calendar.isLoading,
-                            onTap: () {
-                              _headerActionIndex = idx;
-                              _refreshCalendar(calendar);
-                              widget.focusNode.requestFocus();
-                            },
-                          ),
-                        );
-                      case _HeaderAction.prev:
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: TvWeekHeaderButton(
-                            icon: MoaiIcons.chevronLeft,
-                            tooltip: LocaleKeys.calendar_week_nav_prev.tr(),
-                            isFocused: isFocused,
-                            onTap: () {
-                              _headerActionIndex = idx;
-                              _executeHeaderAction(action);
-                              widget.focusNode.requestFocus();
-                            },
-                          ),
-                        );
-                      case _HeaderAction.current:
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: TvWeekHeaderButton(
-                            icon: MoaiIcons.calendarToday,
-                            label: LocaleKeys.calendar_week_current.tr(),
-                            isFocused: isFocused,
-                            onTap: () {
-                              _headerActionIndex = idx;
-                              _executeHeaderAction(action);
-                              widget.focusNode.requestFocus();
-                            },
-                          ),
-                        );
-                      case _HeaderAction.next:
-                        return TvWeekHeaderButton(
-                          icon: MoaiIcons.chevronRight,
-                          tooltip: LocaleKeys.calendar_week_nav_next.tr(),
-                          isFocused: isFocused,
+                    final Widget button = switch (action) {
+                      _HeaderAction.refresh => HomeGlassButton(
+                        icon: MoaiIcons.calendarRefresh,
+                        focused: isFocused,
+                        isLoading: calendar.isLoading || calendar.isLoadingWeek,
+                      ),
+                      _HeaderAction.prev => HomeGlassButton(
+                        icon: MoaiIcons.chevronLeft,
+                        focused: isFocused,
+                      ),
+                      _HeaderAction.current => HomeGlassButton(
+                        icon: MoaiIcons.calendarToday,
+                        label: LocaleKeys.calendar_week_current.tr(),
+                        focused: isFocused,
+                      ),
+                      _HeaderAction.next => HomeGlassButton(
+                        icon: MoaiIcons.chevronRight,
+                        focused: isFocused,
+                      ),
+                    };
+                    final tooltip = switch (action) {
+                      _HeaderAction.refresh => LocaleKeys.calendar_refresh.tr(),
+                      _HeaderAction.prev =>
+                        LocaleKeys.calendar_week_nav_prev.tr(),
+                      _HeaderAction.current =>
+                        LocaleKeys.calendar_week_current.tr(),
+                      _HeaderAction.next =>
+                        LocaleKeys.calendar_week_nav_next.tr(),
+                    };
+
+                    return Padding(
+                      padding: EdgeInsets.only(right: isLast ? 0 : 6),
+                      child: Tooltip(
+                        message: tooltip,
+                        child: GestureDetector(
                           onTap: () {
                             _headerActionIndex = idx;
-                            _executeHeaderAction(action);
+                            if (action == _HeaderAction.refresh) {
+                              _refreshCalendar(calendar);
+                            } else {
+                              _executeHeaderAction(action);
+                            }
                             widget.focusNode.requestFocus();
                           },
-                        );
-                    }
+                          child: button,
+                        ),
+                      ),
+                    );
                   }),
                 ),
               ],

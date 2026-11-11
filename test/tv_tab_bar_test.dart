@@ -6,8 +6,9 @@ import 'package:moai3/features/home/tv_tab.dart';
 import 'package:moai3/features/home/widgets/tv_tab_bar.dart';
 
 void main() {
-  testWidgets('TvTabBar muestra 3 pestañas y sólo la elegida lleva su título',
-      (tester) async {
+  testWidgets('TvTabBar muestra 3 pestañas y sólo la elegida lleva su título', (
+    tester,
+  ) async {
     var selectedTab = TvTab.explore;
     final exploreFocusNode = FocusNode();
     final searchFocusNode = FocusNode();
@@ -39,8 +40,8 @@ void main() {
     await tester.pumpWidget(buildTestWidget());
     await tester.pumpAndSettle();
 
-    // La familia de íconos actual usa el mismo glifo elegida o no: la
-    // pestaña elegida se reconoce por su título, que sólo ella muestra.
+    // La familia de íconos actual usa el mismo glifo elegida o no y
+    // sólo la elegida muestra su título (y lo marca su semántica).
     void expectSelected(String title) {
       for (final t in const [
         'home_tab_explore',
@@ -48,6 +49,15 @@ void main() {
         'home_tab_groups',
       ]) {
         expect(find.text(t), t == title ? findsOneWidget : findsNothing);
+        expect(
+          find.byWidgetPredicate(
+            (w) =>
+                w is Semantics &&
+                w.properties.label == t &&
+                w.properties.selected == true,
+          ),
+          t == title ? findsOneWidget : findsNothing,
+        );
       }
     }
 
@@ -70,8 +80,9 @@ void main() {
     expectSelected('home_tab_groups');
   });
 
-  testWidgets('TvTabBar navigates between tabs using D-Pad arrow keys',
-      (tester) async {
+  testWidgets('TvTabBar navigates between tabs using D-Pad arrow keys', (
+    tester,
+  ) async {
     var selectedTab = TvTab.explore;
     final exploreFocusNode = FocusNode();
     final searchFocusNode = FocusNode();

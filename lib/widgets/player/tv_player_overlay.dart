@@ -14,6 +14,7 @@ class TvPlayerOverlay extends StatelessWidget {
   final FocusNode focusNode;
   final VoidCallback? onRequestListFocus;
   final VoidCallback? onRequestUpFocus;
+  final VoidCallback? onRequestDownFocus;
   final VoidCallback? onExitFullScreen;
 
   const TvPlayerOverlay({
@@ -23,6 +24,7 @@ class TvPlayerOverlay extends StatelessWidget {
     required this.focusNode,
     this.onRequestListFocus,
     this.onRequestUpFocus,
+    this.onRequestDownFocus,
     this.onExitFullScreen,
   });
 
@@ -86,6 +88,7 @@ class TvPlayerOverlay extends StatelessWidget {
                   },
                   onRequestListFocus: onRequestListFocus,
                   onRequestUpFocus: onRequestUpFocus,
+                  onRequestDownFocus: onRequestDownFocus,
                   onErrorStateChanged: (hasError) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       context.read<ChannelProvider>().setChannelError(hasError);

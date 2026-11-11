@@ -16,6 +16,27 @@ class UpdateDialog extends StatefulWidget {
 
   const UpdateDialog({super.key, required this.updateInfo});
 
+  /// PRUEBA (2026-11-04): en debug, "Buscar actualizaciones" abre este modal
+  /// con [previewInfo] en vez de consultar el servidor, y la descarga se
+  /// simula (progreso → instalador → error) para ver todos los estados.
+  /// Poner en false para volver al comportamiento real.
+  static const bool previewInDebug = false;
+
+  static const String _previewApkUrl = 'preview://moai.apk';
+
+  /// Versión de mentira para [previewInDebug].
+  static const AppUpdateInfo previewInfo = AppUpdateInfo(
+    version: '3.1.0',
+    apkUrl: _previewApkUrl,
+    fileSize: 48 * 1024 * 1024,
+    changelog:
+        '- Nuevo diseño de cristal en toda la app\n'
+        '- Buscador de películas más rápido\n'
+        '- Calibración de pantalla rediseñada\n'
+        '- Correcciones en el clima de pueblos chicos\n'
+        '- Mejoras de rendimiento en el Chromecast',
+  );
+
   static Future<void> show(BuildContext context, AppUpdateInfo info) {
     return showTvGeneralDialog(
       context: context,
@@ -40,6 +61,9 @@ class _UpdateDialogState extends State<UpdateDialog> {
   final FocusNode _updateBtnFocus = FocusNode(debugLabel: 'update_btn');
   final FocusNode _cancelBtnFocus = FocusNode(debugLabel: 'cancel_btn');
   final FocusNode _retryBtnFocus = FocusNode(debugLabel: 'retry_btn');
+
+  bool get _isPreview =>
+      widget.updateInfo.apkUrl == UpdateDialog._previewApkUrl;
 
   @override
   void initState() {
@@ -68,6 +92,8 @@ class _UpdateDialogState extends State<UpdateDialog> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _cancelBtnFocus.requestFocus();
     });
+
+    if (_isPreview) return _simulateDownload();
 
     try {
       final path = await UpdateService.downloadApk(
@@ -110,6 +136,30 @@ class _UpdateDialogState extends State<UpdateDialog> {
     }
   }
 
+  /// PRUEBA: descarga de mentira de [UpdateDialog.previewInfo]; recorre los
+  /// estados de descarga, instalador y error.
+  Future<void> _simulateDownload() async {
+    final total = widget.updateInfo.fileSize ?? 0;
+    const steps = 60;
+    for (var i = 1; i <= steps; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      if (!mounted || _cancelled) return;
+      setState(() {
+        _progress = i / steps;
+        _receivedBytes = total * i ~/ steps;
+        _totalBytes = total;
+      });
+    }
+    setState(() => _state = UpdateDialogState.installing);
+    await Future<void>.delayed(const Duration(seconds: 3));
+    if (!mounted || _cancelled) return;
+    setState(() {
+      _state = UpdateDialogState.error;
+      _errorMessage = LocaleKeys.update_error_installer.tr();
+    });
+    _retryBtnFocus.requestFocus();
+  }
+
   void _cancelDownload() {
     _cancelled = true;
     setState(() {
@@ -117,6 +167,16 @@ class _UpdateDialogState extends State<UpdateDialog> {
       _progress = 0.0;
     });
     _updateBtnFocus.requestFocus();
+  }
+
+  /// Líneas del changelog sin la viñeta de texto ("-", "*", "•").
+  List<String> _changelogLines() {
+    final lines = [
+      for (final raw in widget.updateInfo.changelog.split('\n'))
+        if (raw.trim().isNotEmpty)
+          raw.trim().replaceFirst(RegExp(r'^[-*•]\s*'), ''),
+    ];
+    return lines.isEmpty ? [LocaleKeys.update_changelog_default.tr()] : lines;
   }
 
   @override
@@ -129,138 +189,148 @@ class _UpdateDialogState extends State<UpdateDialog> {
 
     if (_state == UpdateDialogState.idle) {
       content = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
           if (isMandatory) ...[
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: scheme.errorContainer.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: scheme.error.withValues(alpha: 0.5)),
-              ),
-              child: Row(
-                children: [
-                  Icon(MoaiIcons.warningFilled, color: scheme.error, size: MoaiIconSizes.md),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      LocaleKeys.update_mandatory_notice.tr(),
-                      style: MoaiText.body(
-                        context,
-                        fontSize: 12,
-                        color: scheme.onErrorContainer,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            _Notice(
+              icon: MoaiIcons.warningFilled,
+              text: LocaleKeys.update_mandatory_notice.tr(),
+              tint: scheme.error,
             ),
+            const SizedBox(height: 12),
           ],
           Text(
             LocaleKeys.update_changelog_title.tr(),
             style: MoaiText.body(
               context,
               fontSize: 13,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
               color: scheme.onSurface,
             ),
           ),
-          const SizedBox(height: 10),
-          Builder(
-            builder: (context) {
-              return Container(
-                constraints: const BoxConstraints(maxHeight: 120),
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: moaiGlassWellDecoration(scheme),
-                child: SingleChildScrollView(
-                  child: Text(
-                    widget.updateInfo.changelog,
-                    style: MoaiText.body(
-                      context,
-                      fontSize: 12,
-                      height: 1.3,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
+          const SizedBox(height: 8),
+          // Novedades en una ficha de cristal, con viñetas del acento.
+          MoaiGlass(
+            borderRadius: MoaiGlass.panelRadius,
+            elevated: false,
+            solid: true,
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 150),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (final (i, line) in _changelogLines().indexed) ...[
+                      if (i > 0) const SizedBox(height: 6),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            margin: const EdgeInsets.only(top: 6, right: 10),
+                            decoration: BoxDecoration(
+                              color: scheme.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              line,
+                              style: MoaiText.body(
+                                context,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                height: 1.3,
+                                color: scheme.onSurface,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
                 ),
-              );
-            },
+              ),
+            ),
           ),
         ],
       );
       actions = [
-        if (!isMandatory) ...[
+        if (!isMandatory)
           TvDialogButton(
             focusNode: _cancelBtnFocus,
             label: LocaleKeys.update_action_later.tr(),
             onKeyRight: _updateBtnFocus.requestFocus,
             onPressed: () => Navigator.of(context).pop(),
           ),
-          const SizedBox(width: 12),
-        ],
         TvDialogButton(
           focusNode: _updateBtnFocus,
           label: LocaleKeys.update_action_update_now.tr(),
+          icon: MoaiIcons.appUpdate,
           variant: TvDialogButtonVariant.primary,
           onKeyLeft: !isMandatory ? _cancelBtnFocus.requestFocus : null,
           onPressed: _startDownload,
         ),
       ];
     } else if (_state == UpdateDialogState.downloading) {
-      content = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            LocaleKeys.update_downloading.tr(),
-            style: MoaiText.body(
-              context,
-              fontSize: 13,
-              color: scheme.onSurface,
+      final known = _progress >= 0;
+      content = MoaiGlass(
+        borderRadius: MoaiGlass.panelRadius,
+        elevated: false,
+        solid: true,
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    LocaleKeys.update_downloading.tr(),
+                    style: MoaiText.body(
+                      context,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                ),
+                Text(
+                  known
+                      ? '${(_progress * 100).toInt()}%'
+                      : LocaleKeys.update_downloading_progress.tr(),
+                  style:
+                      MoaiText.display(
+                        context,
+                        fontSize: 18,
+                        color: scheme.primary,
+                      ).copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: _progress >= 0 ? _progress : null,
-              minHeight: 10,
-              backgroundColor: (scheme.brightness == Brightness.dark ? Colors.white : scheme.onSurface).withValues(alpha: 0.10),
-              valueColor: AlwaysStoppedAnimation<Color>(scheme.primary),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
+            const SizedBox(height: 10),
+            _ProgressBar(value: known ? _progress : null),
+            if (_totalBytes > 0) ...[
+              const SizedBox(height: 8),
               Text(
-                _progress >= 0
-                    ? '${(_progress * 100).toInt()}%'
-                    : LocaleKeys.update_downloading_progress.tr(),
+                '${(_receivedBytes / (1024 * 1024)).toStringAsFixed(1)} / '
+                '${(_totalBytes / (1024 * 1024)).toStringAsFixed(1)} MB',
                 style: MoaiText.body(
                   context,
                   fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: scheme.primary,
+                  fontWeight: FontWeight.w500,
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
-              if (_totalBytes > 0)
-                Text(
-                  '${(_receivedBytes / (1024 * 1024)).toStringAsFixed(1)} / ${(_totalBytes / (1024 * 1024)).toStringAsFixed(1)} MB',
-                  style: MoaiText.body(
-                    context,
-                    fontSize: 11,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
             ],
-          ),
-        ],
+          ],
+        ),
       );
       actions = isMandatory
           ? null
@@ -272,76 +342,70 @@ class _UpdateDialogState extends State<UpdateDialog> {
               ),
             ];
     } else if (_state == UpdateDialogState.installing) {
-      content = Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Column(
-            children: [
-              CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(scheme.primary),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                LocaleKeys.update_installing_title.tr(),
-                style: MoaiText.body(
-                  context,
-                  fontSize: 14,
-                  color: scheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                LocaleKeys.update_installing_desc.tr(),
-                textAlign: TextAlign.center,
-                style: MoaiText.body(
-                  context,
-                  fontSize: 12,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    } else if (_state == UpdateDialogState.error) {
-      content = Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: scheme.errorContainer.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
+      content = MoaiGlass(
+        borderRadius: MoaiGlass.panelRadius,
+        elevated: false,
+        solid: true,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(MoaiIcons.errorFilled, color: scheme.error, size: MoaiIconSizes.lg),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                _errorMessage.isNotEmpty
-                    ? _errorMessage
-                    : LocaleKeys.update_error_default.tr(),
-                style: MoaiText.body(
-                  context,
-                  fontSize: 12,
-                  color: scheme.onErrorContainer,
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                strokeCap: StrokeCap.round,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  scheme.onSurfaceVariant,
                 ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              LocaleKeys.update_installing_title.tr(),
+              textAlign: TextAlign.center,
+              style: MoaiText.body(
+                context,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: scheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              LocaleKeys.update_installing_desc.tr(),
+              textAlign: TextAlign.center,
+              style: MoaiText.body(
+                context,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: scheme.onSurfaceVariant,
               ),
             ),
           ],
         ),
       );
+    } else if (_state == UpdateDialogState.error) {
+      content = _Notice(
+        icon: MoaiIcons.errorFilled,
+        text: _errorMessage.isNotEmpty
+            ? _errorMessage
+            : LocaleKeys.update_error_default.tr(),
+        tint: scheme.error,
+      );
       actions = [
-        if (!isMandatory) ...[
+        if (!isMandatory)
           TvDialogButton(
             focusNode: _cancelBtnFocus,
             label: LocaleKeys.common_close.tr(),
             onKeyRight: _retryBtnFocus.requestFocus,
             onPressed: () => Navigator.of(context).pop(),
           ),
-          const SizedBox(width: 12),
-        ],
         TvDialogButton(
           focusNode: _retryBtnFocus,
           label: LocaleKeys.update_action_retry.tr(),
+          icon: MoaiIcons.pluginUpdate,
           variant: TvDialogButtonVariant.primary,
           onKeyLeft: !isMandatory ? _cancelBtnFocus.requestFocus : null,
           onPressed: _startDownload,
@@ -352,56 +416,165 @@ class _UpdateDialogState extends State<UpdateDialog> {
     return PopScope(
       canPop: !isMandatory,
       child: TvDialog(
-        width: 520,
-        icon: isMandatory ? MoaiIcons.warning : MoaiIcons.appUpdate,
+        width: 560,
+        padding: const EdgeInsets.all(20),
+        icon: MoaiIcons.appUpdate,
         title: isMandatory
             ? LocaleKeys.update_mandatory_title.tr()
             : LocaleKeys.update_available_title.tr(),
-        subtitleWidget: Row(
-          children: [
-            Text(
-              LocaleKeys.update_available_version.tr(
-                namedArgs: {'version': widget.updateInfo.version},
-              ),
-              style: MoaiText.body(
-                context,
-                fontSize: 13,
-                color: isMandatory ? scheme.error : scheme.primary,
-              ),
-            ),
-            if (widget.updateInfo.formattedSize.isNotEmpty) ...[
-              Text(
-                ' • ${widget.updateInfo.formattedSize}',
-                style: MoaiText.body(
-                  context,
-                  fontSize: 12,
-                  color: scheme.onSurfaceVariant,
+        // Versión, tamaño y "requerida" como los géneros de una película.
+        subtitleWidget: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _Tag(
+                text: LocaleKeys.update_available_version.tr(
+                  namedArgs: {'version': widget.updateInfo.version},
                 ),
               ),
-            ],
-            if (isMandatory) ...[
-              const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
+              if (widget.updateInfo.formattedSize.isNotEmpty)
+                _Tag(text: widget.updateInfo.formattedSize),
+              if (isMandatory)
+                _Tag(
+                  text: LocaleKeys.update_mandatory_badge.tr(),
                   color: scheme.error,
-                  borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text(
-                  LocaleKeys.update_mandatory_badge.tr(),
-                  style: MoaiText.body(
-                    context,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: scheme.onError,
-                  ),
-                ),
-              ),
             ],
-          ],
+          ),
         ),
         content: content,
         actions: actions,
+      ),
+    );
+  }
+}
+
+/// Etiqueta chica (versión, tamaño, "requerida"): la misma pastilla que los
+/// géneros del detalle de película (`TvMovieGenreChip`): redonda, en el acento
+/// sólido y texto blanco. [color] la cambia (rojo para "requerida").
+class _Tag extends StatelessWidget {
+  final String text;
+
+  /// Por defecto, el acento.
+  final Color? color;
+
+  const _Tag({required this.text, this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final own = color;
+    return DecoratedBox(
+      decoration: ShapeDecoration(
+        color: own ?? scheme.primary,
+        shape: const StadiumBorder(),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+        // Bajado lo justo para verse centrado (ver
+        // [MoaiText.opticalCenterShift]).
+        child: Transform.translate(
+          offset: Offset(0, MoaiText.opticalCenterShift(12)),
+          child: Text(
+            text,
+            style: MoaiText.body(
+              context,
+              fontSize: 12,
+              color: own == null ? scheme.onPrimary : Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Aviso teñido (obligatoria, error): etiqueta de cristal ancha con ícono.
+class _Notice extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final Color tint;
+
+  const _Notice({required this.icon, required this.text, required this.tint});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final fg = moaiGlassTagForeground(scheme, tint: tint);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: moaiGlassTagDecoration(
+        scheme,
+        tint: tint,
+        radius: MoaiGlass.panelRadius,
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: fg, size: MoaiIconSizes.md),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: MoaiText.body(
+                context,
+                fontSize: 13,
+                height: 1.3,
+                color: fg,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Barra de progreso fina con el degradado del acento; sin [value], la
+/// indeterminada.
+class _ProgressBar extends StatelessWidget {
+  final double? value;
+
+  const _ProgressBar({required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final track = scheme.onSurface.withValues(alpha: 0.08);
+    final value = this.value;
+    if (value == null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(999),
+        child: LinearProgressIndicator(
+          minHeight: 6,
+          backgroundColor: track,
+          valueColor: AlwaysStoppedAnimation<Color>(scheme.primary),
+        ),
+      );
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        height: 6,
+        color: track,
+        alignment: Alignment.centerLeft,
+        child: AnimatedFractionallySizedBox(
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOut,
+          widthFactor: value.clamp(0.0, 1.0),
+          heightFactor: 1,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color.lerp(scheme.primary, Colors.white, 0.35)!,
+                  scheme.primary,
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

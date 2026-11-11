@@ -35,6 +35,10 @@ class FocusRequester {
         if (attempt() || left <= 0) return;
         tick(left - 1);
       });
+      // Sin esto, si nada cambió en pantalla no hay cuadro siguiente y el
+      // pedido queda colgado hasta la próxima tecla (que entonces lo
+      // dispara tarde y el foco "salta").
+      WidgetsBinding.instance.ensureVisualUpdate();
     }
 
     tick(maxFrames);
@@ -42,17 +46,18 @@ class FocusRequester {
 
   /// Enfoca [node] cuando tenga contexto.
   void node(FocusNode node, {int maxFrames = 15, bool immediate = false}) =>
-      request(() {
-        if (node.context == null || !node.canRequestFocus) return false;
-        node.requestFocus();
-        return immediate || node.hasFocus;
-      }, maxFrames: maxFrames, immediate: immediate);
+      request(
+        () {
+          if (node.context == null || !node.canRequestFocus) return false;
+          node.requestFocus();
+          return immediate || node.hasFocus;
+        },
+        maxFrames: maxFrames,
+        immediate: immediate,
+      );
 
   /// Enfoca el ítem seleccionado del panel de [key] cuando esté montado.
-  void selected(
-    GlobalKey<State<StatefulWidget>> key, {
-    int maxFrames = 15,
-  }) =>
+  void selected(GlobalKey<State<StatefulWidget>> key, {int maxFrames = 15}) =>
       request(() {
         final state = key.currentState;
         if (state is! FocusSelectable) return false;

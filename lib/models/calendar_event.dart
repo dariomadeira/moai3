@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/services/calendar/argentina_time.dart';
 import 'package:moai3/utils/moai_formats.dart';
@@ -16,6 +17,10 @@ class CalendarEvent {
   final String? broadcaster;
   final List<String> channelHints;
 
+  /// La fuente confirmó la hora. Si no (fechas lejanas de fútbol), sólo vale
+  /// el día: [startDateTime] trae una hora de relleno que no se muestra.
+  final bool timeConfirmed;
+
   const CalendarEvent({
     required this.id,
     required this.subscriptionId,
@@ -26,6 +31,7 @@ class CalendarEvent {
     this.sessionType,
     this.broadcaster,
     this.channelHints = const [],
+    this.timeConfirmed = true,
   }) : _explicitStatus = status;
 
   static const _practiceSessions = {
@@ -47,8 +53,8 @@ class CalendarEvent {
     final sub = subscriptionId.toLowerCase();
     final tit = title.toLowerCase();
 
-    // 1. Motorsport: F1 y MotoGP
-    if (sub.contains('f1') || sub.contains('motogp')) {
+    // 1. Motorsport: F1
+    if (sub.contains('f1')) {
       if (_practiceSessions.contains(sessionType) ||
           tit.contains('práctica') ||
           tit.contains('practice')) {
@@ -62,7 +68,7 @@ class CalendarEvent {
       if (_sprintSessions.contains(sessionType) || tit.contains('sprint')) {
         return const Duration(minutes: 60); // Sprint dura ~30 min + margen
       }
-      // Carrera principal: F1/MotoGP duran ~90-110 min (máx FIA 120 min)
+      // Carrera principal: la F1 dura ~90-110 min (máx FIA 120 min)
       return const Duration(minutes: 130);
     }
 
@@ -100,6 +106,18 @@ class CalendarEvent {
       return CalendarEventStatus.finished;
     }
     final now = ArgentinaTime.utcNow();
+    if (!timeConfirmed) {
+      // Sin hora no se sabe cuándo arranca: por empezar hasta que termina
+      // su día (salvo que la fuente diga que está en vivo).
+      if (_explicitStatus == CalendarEventStatus.live) {
+        return CalendarEventStatus.live;
+      }
+      return ArgentinaTime.dateOnly(
+            startDateTime,
+          ).isBefore(ArgentinaTime.dateOnly(now))
+          ? CalendarEventStatus.finished
+          : CalendarEventStatus.upcoming;
+    }
     final start = startDateTime.toUtc();
     if (now.isBefore(start)) {
       return _explicitStatus ?? CalendarEventStatus.upcoming;
@@ -121,9 +139,11 @@ class CalendarEvent {
   String get formattedDate =>
       MoaiFormats.date(ArgentinaTime.toCivil(startDateTime));
 
-  /// Retorna la hora formateada HH:mm en hora de Argentina.
-  String get formattedTime =>
-      MoaiFormats.time(ArgentinaTime.toCivil(startDateTime));
+  /// Retorna la hora formateada HH:mm en hora de Argentina, o "A confirmar"
+  /// si la fuente todavía no la dio.
+  String get formattedTime => timeConfirmed
+      ? MoaiFormats.time(ArgentinaTime.toCivil(startDateTime))
+      : LocaleKeys.calendar_time_tbd.tr();
 
   /// Prioridad numérica de ordenamiento para interfaz de TV:
   /// 0 = live (máxima prioridad, arriba de todo)
@@ -141,10 +161,12 @@ class CalendarEvent {
   }
 
   /// Comparador determinista: primero por estado (LIVE -> UPCOMING -> FINISHED)
-  /// y como criterio secundario por fecha y hora de inicio ascendente.
+  /// y como criterio secundario por fecha y hora de inicio ascendente. Los
+  /// de hora a confirmar van después de los que la tienen.
   static int compareByStatusAndDate(CalendarEvent a, CalendarEvent b) {
     final statusComp = a.statusPriority.compareTo(b.statusPriority);
     if (statusComp != 0) return statusComp;
+    if (a.timeConfirmed != b.timeConfirmed) return a.timeConfirmed ? -1 : 1;
     return a.startDateTime.compareTo(b.startDateTime);
   }
 
@@ -158,6 +180,7 @@ class CalendarEvent {
     String? sessionType,
     String? broadcaster,
     List<String>? channelHints,
+    bool? timeConfirmed,
   }) {
     return CalendarEvent(
       id: id ?? this.id,
@@ -169,6 +192,7 @@ class CalendarEvent {
       sessionType: sessionType ?? this.sessionType,
       broadcaster: broadcaster ?? this.broadcaster,
       channelHints: channelHints ?? this.channelHints,
+      timeConfirmed: timeConfirmed ?? this.timeConfirmed,
     );
   }
 

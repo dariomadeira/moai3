@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 3.0.40+33
+version: 3.0.41+34
 
 environment:
   sdk: ^3.12.2
@@ -91,11 +91,14 @@ flutter:
     - assets/translations/
     - assets/svgs/
     - assets/images/
-    # EN PAUSA: fotos del cielo del Inicio (HomeSkyBackdrop), fuera de la
-    # app hasta volver a usarlas.
-    # - assets/images/home_sky/
+    # Fondo de cada tipo de evento: <id de la suscripción>.webp + default.webp.
+    - assets/images/events/
+    # Avatares de amigos (moai_1..9.webp, de assets_src/avatars/moais.jpg).
+    - assets/images/avatars/
     - assets/vpn/
     - assets/music/
+    # Íconos del clima (Meteocons), recoloreados: tool/build_weather_icons.dart.
+    - assets/lottie/weather/
     - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -106,25 +109,48 @@ flutter:
 
   # Tipografía local nativa (Nunito cuerpo / Quicksand títulos).
   fonts:
-    - family: Nunito
+    # REDISEÑO (elegida por el usuario): toda la interfaz. Un solo peso: las
+    # negritas las sintetiza Flutter.
+    - family: VarelaRound
       fonts:
-        - asset: assets/fonts/nunito-v32-latin-regular.ttf
-        - asset: assets/fonts/nunito-v32-latin-300.ttf
+        - asset: assets/fonts/varela-round-v21-latin-regular.ttf
+    # ANTES (en pausa): M PLUS Rounded 1c (no le gustó: poco redondeada).
+    - family: MPLUSRounded1c
+      fonts:
+        - asset: assets/fonts/m-plus-rounded-1c-v22-latin-regular.ttf
+        - asset: assets/fonts/m-plus-rounded-1c-v22-latin-300.ttf
           weight: 300
-        - asset: assets/fonts/nunito-v32-latin-500.ttf
+        - asset: assets/fonts/m-plus-rounded-1c-v22-latin-500.ttf
           weight: 500
-        - asset: assets/fonts/nunito-v32-latin-600.ttf
-          weight: 600
-        - asset: assets/fonts/nunito-v32-latin-700.ttf
+        - asset: assets/fonts/m-plus-rounded-1c-v22-latin-700.ttf
           weight: 700
-        - asset: assets/fonts/nunito-v32-latin-800.ttf
+        - asset: assets/fonts/m-plus-rounded-1c-v22-latin-800.ttf
           weight: 800
-    - family: Quicksand
+    # ANTES (en pausa hasta confirmar M PLUS Rounded 1c): cuerpo.
+    - family: Onest
       fonts:
-        - asset: assets/fonts/quicksand-v37-latin-regular.ttf
-        - asset: assets/fonts/quicksand-v37-latin-500.ttf
+        - asset: assets/fonts/onest-v11-latin-regular.ttf
+        - asset: assets/fonts/onest-v11-latin-300.ttf
+          weight: 300
+        - asset: assets/fonts/onest-v11-latin-500.ttf
           weight: 500
-        - asset: assets/fonts/quicksand-v37-latin-600.ttf
+        - asset: assets/fonts/onest-v11-latin-600.ttf
           weight: 600
-        - asset: assets/fonts/quicksand-v37-latin-700.ttf
+        - asset: assets/fonts/onest-v11-latin-700.ttf
           weight: 700
+        - asset: assets/fonts/onest-v11-latin-800.ttf
+          weight: 800
+    # ANTES (en pausa hasta confirmar M PLUS Rounded 1c): títulos grandes.
+    - family: Unbounded
+      fonts:
+        - asset: assets/fonts/unbounded-v12-latin-regular.ttf
+        - asset: assets/fonts/unbounded-v12-latin-300.ttf
+          weight: 300
+        - asset: assets/fonts/unbounded-v12-latin-500.ttf
+          weight: 500
+        - asset: assets/fonts/unbounded-v12-latin-600.ttf
+          weight: 600
+        - asset: assets/fonts/unbounded-v12-latin-700.ttf
+          weight: 700
+        - asset: assets/fonts/unbounded-v12-latin-800.ttf
+          weight: 800

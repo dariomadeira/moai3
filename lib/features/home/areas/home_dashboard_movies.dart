@@ -5,7 +5,7 @@ part of 'home_dashboard_area.dart';
 /// Las reglas (qué sale de dónde) son de [MovieLibrary].
 mixin _HomeMovieCards on HomeAreaState<HomeDashboardArea> {
   /// Elegido en "Interesantes" (←/→): una película, o
-  /// [HomeWatchlistCard.clearAllIndex] para el botón "Quitar todas".
+  /// [HomeWatchlistBigCard.clearAllIndex] para el botón "Quitar todas".
   int _watchlistIndex = 0;
 
   /// Adelanto elegido en "Adelantos" (←/→).
@@ -20,13 +20,24 @@ mixin _HomeMovieCards on HomeAreaState<HomeDashboardArea> {
   List<MovieItem> _continue = const [];
   Map<String, double> _continueWatched = const {};
 
-  /// Ya se pidió cargar Películas para tener los adelantos.
+  /// "Recomendadas" (SPEC-51): lo elegido y lo que recomendaron los amigos.
+  int _recommendationIndex = 0;
+  List<FriendRecommendation> _recommendations = const [];
+
+  /// Ya se pidió cargar Películas (la destacada y "Seguir viendo").
   bool _moviesLoadRequested = false;
+
+  /// Ya se pidió renovar los adelantos (si están al día no sale a la red).
+  bool _trailersLoadRequested = false;
 
   /// Arma "Seguir viendo" ([MovieLibrary.continueWatching]). Los progresos
   /// guardados antes de que llevaran la película se buscan en el catálogo
   /// cargado.
   Future<void> _loadContinue() async {
+    // Se llama también cuando termina de cargar el catálogo: si para
+    // entonces ya se salió del Inicio, el State no tiene context (leerlo
+    // tiraba una excepción sin atrapar y el depurador frenaba la app).
+    if (!mounted) return;
     final catalog = context.read<FeaturedMoviesProvider?>();
     MovieItem? fromCatalog(String id) {
       if (catalog == null) return null;
@@ -53,25 +64,89 @@ mixin _HomeMovieCards on HomeAreaState<HomeDashboardArea> {
 
   /// Después de ver algo: "Seguir viendo" cambia (e Interesantes, que
   /// avisa sola al quitarle una).
-  Future<void> _reloadProgress() => _loadContinue();
+  Future<void> _reloadProgress() {
+    _refreshRecommendations();
+    return _loadContinue();
+  }
 
-  /// Carga Películas en segundo plano para tener los adelantos sin entrar a
-  /// la sección (que si no se carga recién al abrirla).
+  /// El proveedor limita cuántas veces sale a la red.
+  void _refreshRecommendations() {
+    if (!mounted) return;
+    unawaited(context.read<MovieRecommendationsProvider?>()?.refresh());
+  }
+
+  /// Mantener OK sobre una recomendación: sale sólo de este TV.
+  Future<void> _confirmDismissRecommendation(MovieItem movie) async {
+    final recommendations = context.read<MovieRecommendationsProvider>();
+    final confirmed = await _confirm(
+      icon: MoaiIcons.delete,
+      title: LocaleKeys.home_recommendations_remove_title.tr(),
+      subtitle: LocaleKeys.home_recommendations_remove_desc.tr(
+        namedArgs: {'name': movie.name},
+      ),
+      confirmLabel: LocaleKeys.home_recommendations_remove.tr(),
+    );
+    if (confirmed) await recommendations.dismiss(movie.contentId);
+  }
+
+  Future<void> _confirmDismissAllRecommendations() async {
+    final recommendations = context.read<MovieRecommendationsProvider>();
+    final confirmed = await _confirm(
+      icon: MoaiIcons.delete,
+      title: LocaleKeys.home_recommendations_clear_title.tr(),
+      subtitle: LocaleKeys.home_recommendations_clear_desc.tr(),
+      confirmLabel: LocaleKeys.home_recommendations_clear.tr(),
+    );
+    if (!confirmed) return;
+    await recommendations.dismissAll();
+    _recommendationIndex = 0;
+  }
+
+  /// Carga Películas en segundo plano para tener la destacada sin entrar a
+  /// la sección (que si no se carga recién al abrirla) y, después, Series:
+  /// al entrar ya están armadas (sin la espera de completar las categorías)
+  /// y el Inicio puede usar las dos.
   void _ensureMoviesLoaded() {
     if (_moviesLoadRequested) return;
     _moviesLoadRequested = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final movies = context.read<FeaturedMoviesProvider?>();
+      if (movies == null) return;
       const section = FeaturedMoviesProvider.sectionMovies;
-      if (movies == null ||
-          movies.loadedOnceFor(section) ||
-          movies.isLoadingFor(section)) {
-        return;
+      final Future<void> moviesLoad;
+      if (movies.loadedOnceFor(section) || movies.isLoadingFor(section)) {
+        moviesLoad = Future.value();
+      } else {
+        // Con el catálogo, "Seguir viendo" encuentra progresos viejos que no
+        // guardaban la película.
+        moviesLoad = movies.loadSection(section).then((_) => _loadContinue());
       }
-      // Con el catálogo, "Seguir viendo" encuentra progresos viejos que no
-      // guardaban la película.
-      unawaited(movies.loadSection(section).then((_) => _loadContinue()));
+      // Una detrás de la otra: Series no le quita pedidos al arranque de
+      // Películas.
+      unawaited(moviesLoad.whenComplete(() => _preloadSeries(movies)));
+    });
+  }
+
+  void _preloadSeries(FeaturedMoviesProvider movies) {
+    const series = FeaturedMoviesProvider.sectionSeries;
+    if (!mounted ||
+        !movies.isSectionAvailable(series) ||
+        movies.loadedOnceFor(series) ||
+        movies.isLoadingFor(series)) {
+      return;
+    }
+    unawaited(movies.loadSection(series));
+  }
+
+  /// Adelantos (TMDb): lo guardado ya se ve; esto los renueva si toca. Sólo
+  /// con la tarjeta prendida en Ajustes.
+  void _ensureTrailersLoaded() {
+    if (_trailersLoadRequested) return;
+    _trailersLoadRequested = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(context.read<HomeTrailersProvider?>()?.load());
     });
   }
 
@@ -135,7 +210,7 @@ mixin _HomeMovieCards on HomeAreaState<HomeDashboardArea> {
     );
     if (!confirmed) return;
     await _markWatched(_continue);
-    if (mounted) setState(() => _continueIndex = 0);
+    _continueIndex = 0;
   }
 
   Future<void> _markWatched(List<MovieItem> movies) async {
@@ -191,7 +266,7 @@ mixin _HomeMovieCards on HomeAreaState<HomeDashboardArea> {
       context: context,
       barrierLabel: 'RemoveFromWatchlist',
       builder: (dialogContext) => TvDialog(
-        icon: MoaiIcons.vodWatchlist,
+        icon: MoaiIcons.vodWatchlistRemove,
         title: LocaleKeys.home_watchlist_remove_title.tr(),
         subtitle: LocaleKeys.home_watchlist_remove_desc.tr(
           namedArgs: {'name': movie.name},
@@ -230,7 +305,7 @@ mixin _HomeMovieCards on HomeAreaState<HomeDashboardArea> {
       context: context,
       barrierLabel: 'ClearWatchlist',
       builder: (dialogContext) => TvDialog(
-        icon: MoaiIcons.delete,
+        icon: MoaiIcons.vodWatchlistRemove,
         title: LocaleKeys.home_watchlist_clear_title.tr(),
         subtitle: LocaleKeys.home_watchlist_clear_desc.tr(),
         actions: [
@@ -255,7 +330,7 @@ mixin _HomeMovieCards on HomeAreaState<HomeDashboardArea> {
     clearFocus.dispose();
     if (confirmed == true) {
       await MovieWatchlistService.instance.clear();
-      if (mounted) setState(() => _watchlistIndex = 0);
+      _watchlistIndex = 0;
     }
   }
 }
@@ -268,8 +343,8 @@ class _MovieListItem extends StatefulWidget {
   const _MovieListItem({
     required this.focusNode,
     required this.movies,
-    required this.selectedIndex,
-    required this.onSelect,
+    required this.initialIndex,
+    required this.onIndexChanged,
     required this.onKeyLeft,
     required this.onKeyUp,
     required this.onKeyDown,
@@ -281,11 +356,14 @@ class _MovieListItem extends StatefulWidget {
 
   final FocusNode focusNode;
   final List<MovieItem> movies;
-  final int selectedIndex;
+
+  /// Lo elegido al armarse; cada cambio se avisa con [onIndexChanged] para
+  /// recordarlo (la selección vive acá: ←/→ no reconstruyen el Inicio).
+  final int initialIndex;
+  final ValueChanged<int> onIndexChanged;
 
   /// La tarjeta, con la selección ya ajustada y si tiene el foco.
   final Widget Function(int selectedIndex, bool isFocused) buildCard;
-  final ValueChanged<int> onSelect;
   final VoidCallback onKeyLeft;
   final VoidCallback onKeyUp;
   final VoidCallback onKeyDown;
@@ -298,14 +376,20 @@ class _MovieListItem extends StatefulWidget {
 }
 
 class _MovieListItemState extends State<_MovieListItem> {
-  static const _clearAll = HomeMovieListCard.actionIndex;
+  static const _clearAll = HomeMovieBigCard.actionIndex;
 
   late bool _isFocused = widget.focusNode.hasFocus;
+  late int _selected = widget.initialIndex;
 
   /// La lista pudo achicarse (se quitó la última): el índice queda dentro.
   int get _index => widget.movies.isEmpty
       ? 0
-      : widget.selectedIndex.clamp(_clearAll, widget.movies.length - 1);
+      : _selected.clamp(_clearAll, widget.movies.length - 1);
+
+  void _select(int index) {
+    setState(() => _selected = index);
+    widget.onIndexChanged(index);
+  }
 
   bool get _onMovie => widget.movies.isNotEmpty && _index != _clearAll;
 
@@ -330,14 +414,14 @@ class _MovieListItemState extends State<_MovieListItem> {
           : null,
       onLeft: () {
         if (widget.movies.isNotEmpty && _index > _clearAll) {
-          widget.onSelect(_index - 1);
+          _select(_index - 1);
         } else {
           widget.onKeyLeft();
         }
         return true;
       },
       onRight: () {
-        if (_index < widget.movies.length - 1) widget.onSelect(_index + 1);
+        if (_index < widget.movies.length - 1) _select(_index + 1);
         return true;
       },
       onUp: widget.onKeyUp,
@@ -356,8 +440,8 @@ class _TrailersItem extends StatefulWidget {
   const _TrailersItem({
     required this.focusNode,
     required this.trailers,
-    required this.selectedIndex,
-    required this.onSelect,
+    required this.initialIndex,
+    required this.onIndexChanged,
     required this.onKeyLeft,
     required this.onKeyUp,
     required this.onKeyDown,
@@ -366,8 +450,10 @@ class _TrailersItem extends StatefulWidget {
 
   final FocusNode focusNode;
   final List<MovieItem> trailers;
-  final int selectedIndex;
-  final ValueChanged<int> onSelect;
+
+  /// Como en [_MovieListItem]: la selección vive acá.
+  final int initialIndex;
+  final ValueChanged<int> onIndexChanged;
   final VoidCallback onKeyLeft;
   final VoidCallback onKeyUp;
   final VoidCallback onKeyDown;
@@ -379,11 +465,17 @@ class _TrailersItem extends StatefulWidget {
 
 class _TrailersItemState extends State<_TrailersItem> {
   late bool _isFocused = widget.focusNode.hasFocus;
+  late int _selected = widget.initialIndex;
 
   /// El catálogo pudo cambiar: el índice queda dentro.
   int get _index => widget.trailers.isEmpty
       ? 0
-      : widget.selectedIndex.clamp(0, widget.trailers.length - 1);
+      : _selected.clamp(0, widget.trailers.length - 1);
+
+  void _select(int index) {
+    setState(() => _selected = index);
+    widget.onIndexChanged(index);
+  }
 
   void _press() {
     if (widget.trailers.isEmpty) return;
@@ -398,14 +490,14 @@ class _TrailersItemState extends State<_TrailersItem> {
       onPress: _press,
       onLeft: () {
         if (_index > 0) {
-          widget.onSelect(_index - 1);
+          _select(_index - 1);
         } else {
           widget.onKeyLeft();
         }
         return true;
       },
       onRight: () {
-        if (_index < widget.trailers.length - 1) widget.onSelect(_index + 1);
+        if (_index < widget.trailers.length - 1) _select(_index + 1);
         return true;
       },
       onUp: widget.onKeyUp,

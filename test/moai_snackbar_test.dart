@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
 void main() {
-  testWidgets('MoaiSnackBar construye un snackbar estilo pill con sombra',
-      (tester) async {
+  testWidgets('MoaiSnackBar construye un snackbar estilo pill con sombra', (
+    tester,
+  ) async {
     final snackBar = MoaiSnackBar.buildSnackBar(
       context: null,
       message: 'Test message',
@@ -20,8 +22,9 @@ void main() {
     expect(snackBar.content, isNotNull);
   });
 
-  testWidgets('MoaiSnackBar.show muestra el mensaje y el icono en pantalla',
-      (tester) async {
+  testWidgets('MoaiSnackBar.show muestra el mensaje y el icono en pantalla', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -46,20 +49,54 @@ void main() {
   });
 
   testWidgets(
-      'MoaiSnackBar.showSuccess usa el color del theme (onPrimary) y no colores hardcodeados',
-      (tester) async {
-    const customOnPrimary = Color(0xFF123456);
+    'MoaiSnackBar.showSuccess es de cristal y el ícono va en el acento',
+    (tester) async {
+      const customPrimary = Color(0xFF123456);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(
+            colorScheme: const ColorScheme.light(primary: customPrimary),
+          ),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () {
+                  MoaiSnackBar.showSuccess(
+                    context,
+                    message: 'Operación exitosa',
+                  );
+                },
+                child: const Text('Mostrar'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Mostrar'));
+      await tester.pump();
+
+      final iconWidget = tester.widget<Icon>(
+        find.byIcon(MoaiIcons.checkCircle),
+      );
+      expect(iconWidget.color, equals(customPrimary));
+      expect(
+        find.ancestor(
+          of: find.text('Operación exitosa'),
+          matching: find.byType(MoaiGlass),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('sin ícono usa el de información', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: ThemeData(
-          colorScheme: const ColorScheme.light(onPrimary: customOnPrimary),
-        ),
         home: Scaffold(
           body: Builder(
             builder: (context) => ElevatedButton(
-              onPressed: () {
-                MoaiSnackBar.showSuccess(context, message: 'Operación exitosa');
-              },
+              onPressed: () => MoaiSnackBar.show(context, message: 'Aviso'),
               child: const Text('Mostrar'),
             ),
           ),
@@ -70,9 +107,7 @@ void main() {
     await tester.tap(find.text('Mostrar'));
     await tester.pump();
 
-    final iconWidget =
-        tester.widget<Icon>(find.byIcon(MoaiIcons.checkCircle));
-    expect(iconWidget.color, equals(customOnPrimary));
+    expect(find.byIcon(MoaiIcons.info), findsOneWidget);
   });
 
   group('onDismiss solo ante un descarte real (SPEC-50 §2.3)', () {
@@ -84,22 +119,24 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: Builder(builder: (context) {
-              ctx = context;
-              return const SizedBox.expand();
-            }),
+            body: Builder(
+              builder: (context) {
+                ctx = context;
+                return const SizedBox.expand();
+              },
+            ),
           ),
         ),
       );
     }
 
     void showInvite() => MoaiSnackBar.show(
-          ctx,
-          message: 'Invitación',
-          onAction: () {},
-          onDismiss: () => dismissed++,
-          duration: const Duration(seconds: 25),
-        );
+      ctx,
+      message: 'Invitación',
+      onAction: () {},
+      onDismiss: () => dismissed++,
+      duration: const Duration(seconds: 25),
+    );
 
     testWidgets('atrás con el snack enfocado lo descarta', (tester) async {
       await pumpHost(tester);

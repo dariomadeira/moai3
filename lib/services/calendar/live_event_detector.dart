@@ -13,6 +13,11 @@ class LiveEventDetector {
   /// `true` si el evento no terminó y ya entró en la ventana de aviso.
   bool isInNotifyWindow(CalendarEvent event, {DateTime? nowUtc}) {
     if (event.status == CalendarEventStatus.finished) return false;
+    // Sin hora confirmada no se avisa por la hora de relleno: sólo si la
+    // fuente dice que ya está en vivo.
+    if (!event.timeConfirmed) {
+      return event.status == CalendarEventStatus.live;
+    }
     final now = nowUtc ?? ArgentinaTime.utcNow();
     final notifyAt = event.startDateTime.toUtc().subtract(
       Duration(minutes: leadMinutes),
@@ -25,19 +30,27 @@ class LiveEventDetector {
   bool prime(Iterable<CalendarEvent> events) {
     if (_primed) return false;
     _primed = true;
+    markStarted(events);
+    return true;
+  }
+
+  /// Lo que ya está en curso o terminó no se avisa: para eventos que llegan
+  /// después de la primera carga (una liga recién activada).
+  void markStarted(Iterable<CalendarEvent> events) {
     for (final ev in events) {
       if (isInNotifyWindow(ev) || ev.status == CalendarEventStatus.finished) {
         _notified.add(ev.id);
       }
     }
-    return true;
   }
 
   /// Eventos que entraron en la ventana y todavía no se avisaron; quedan
   /// marcados como avisados.
   List<CalendarEvent> takeNew(Iterable<CalendarEvent> events) => [
     for (final e in events)
-      if (!_notified.contains(e.id) && isInNotifyWindow(e) && _notified.add(e.id))
+      if (!_notified.contains(e.id) &&
+          isInNotifyWindow(e) &&
+          _notified.add(e.id))
         e,
   ];
 }

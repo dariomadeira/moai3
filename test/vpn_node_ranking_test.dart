@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/services/vpn_nodes.dart';
+import 'package:moai3/services/vpn_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -10,148 +13,257 @@ void main() {
     asset: 'a.ovpn',
     provider: VpnProvider.proton,
     country: 'MX',
+    host: '10.0.0.1',
+    ports: [(VpnProto.udp, 1194), (VpnProto.udp, 80), (VpnProto.tcp, 443)],
   );
   const b = VpnNode(
     id: 'b',
     asset: 'b.ovpn',
     provider: VpnProvider.proton,
     country: 'MX',
+    host: '10.0.0.2',
+    ports: [(VpnProto.udp, 1194), (VpnProto.udp, 80), (VpnProto.tcp, 443)],
   );
   const c = VpnNode(
     id: 'c',
     asset: 'c.ovpn',
     provider: VpnProvider.vpnGate,
     country: 'JP',
+    host: 'vpn.example.net',
+    ports: [(VpnProto.tcp, 443)],
   );
 
+  const a1194 = VpnEndpoint(a, VpnProto.udp, 1194);
+  const a80 = VpnEndpoint(a, VpnProto.udp, 80);
+  const a443 = VpnEndpoint(a, VpnProto.tcp, 443);
+  const b1194 = VpnEndpoint(b, VpnProto.udp, 1194);
+  const b80 = VpnEndpoint(b, VpnProto.udp, 80);
+  const c443 = VpnEndpoint(c, VpnProto.tcp, 443);
+
+  final now = DateTime(2026, 11, 2, 12);
+
+  VpnEndpointStats run(List<VpnAttempt> attempts, {DateTime? at}) {
+    var s = const VpnEndpointStats();
+    for (final x in attempts) {
+      s = VpnNodeRanking.update(s, attempt: x, now: at ?? now);
+    }
+    return s;
+  }
+
   group('VpnNodeRanking', () {
-    test('la nota sube con cada éxito y baja con cada falla', () {
-      final now = DateTime(2026, 10, 24);
-      var s = const VpnNodeStats();
-      s = VpnNodeRanking.update(s, attempt: VpnAttempt.success, now: now);
-      expect(s.score, closeTo(0.65, 1e-9));
-      s = VpnNodeRanking.update(s, attempt: VpnAttempt.success, now: now);
-      expect(s.score, closeTo(0.755, 1e-9));
-      s = VpnNodeRanking.update(s, attempt: VpnAttempt.failure, now: now);
-      expect(s.score, closeTo(0.5285, 1e-9));
-      expect(s.lastUsed, now);
+    test('sin historial la tasa es neutra y un resultado no la extrema', () {
+      expect(const VpnEndpointStats().score, VpnNodeRanking.neutralScore);
+      expect(run([VpnAttempt.success]).score, closeTo(2 / 3, 1e-9));
+      expect(run([VpnAttempt.failure]).score, closeTo(1 / 3, 1e-9));
     });
 
-    test('un corte de red no hunde a un nodo bueno', () {
-      var s = const VpnNodeStats(score: 0.9);
-      s = VpnNodeRanking.update(s, attempt: VpnAttempt.transient);
-      // Se acerca a neutro (0,5) sin caer como una falla (0,63).
-      expect(s.score, closeTo(0.78, 1e-9));
-      expect(s.score, greaterThan(0.7));
+    test('un corte de red no cuenta como intento', () {
+      final s = run([VpnAttempt.success, VpnAttempt.transient]);
+      expect(s.tries, 1);
+      expect(s.wins, 1);
+      expect(s.failStreak, 0);
     });
 
-    test('el patrón del TV: cortarse al primer intento ya no lo hunde', () {
-      // Antes, el primero de cada arranque se anotaba como falla y el
-      // segundo como éxito: los dos nodos se iban turnando.
-      var first = const VpnNodeStats(score: 0.65);
-      var second = const VpnNodeStats(score: 0.6);
-      first = VpnNodeRanking.update(first, attempt: VpnAttempt.transient);
-      second = VpnNodeRanking.update(second, attempt: VpnAttempt.success);
+    test('lo viejo se olvida con la vida media', () {
+      final old = run([
+        VpnAttempt.failure,
+        VpnAttempt.failure,
+        VpnAttempt.failure,
+        VpnAttempt.failure,
+      ], at: now.subtract(VpnNodeRanking.halfLife));
+      final d = old.decayed(now);
+      expect(d.tries, closeTo(2, 1e-6));
+      // Vuelve hacia neutro: 1/(2+2) = 0,25 en vez de 1/6.
+      expect(d.score, closeTo(0.25, 1e-6));
+      expect(d.score, greaterThan(old.score));
+    });
+
+    test('el orden de fábrica alterna servidores y puertos', () {
+      final order = VpnNodeRanking.defaultOrder([a, b, c]);
+      // a arranca por su 1.er puerto, b (mismo proveedor) por el 2.º.
+      expect(order.take(3), [a1194, b80, c443]);
+      expect(order.toSet().length, 7);
+    });
+
+    test('los nodos de la app arrancan por servidores, puertos y '
+        'proveedores distintos', () {
+      final first = VpnNodeRanking.defaultOrder(kVpnNodes).take(4).toList();
+      expect(first.map((e) => e.node.id).toSet().length, 4);
+      expect(first.map((e) => e.port).toSet().length, greaterThan(1));
+      expect(first.map((e) => e.node.provider).toSet().length, 2);
+    });
+
+    test('el último que anduvo va primero aunque tenga menos tasa', () {
+      final stats = {
+        a1194.id: run([
+          VpnAttempt.success,
+          VpnAttempt.success,
+          VpnAttempt.success,
+        ], at: now.subtract(const Duration(days: 2))),
+        b80.id: run([VpnAttempt.failure, VpnAttempt.success]),
+      };
       final order = VpnNodeRanking.order(
-        [a, b],
-        {'a': first, 'b': second},
+        VpnNodeRanking.defaultOrder([a, b, c]),
+        stats,
+        now: now,
       );
-      // El que anduvo pasa adelante, pero el cortado sigue arriba de neutro.
-      expect(order.first, b);
-      expect(first.score, greaterThan(VpnNodeRanking.neutralScore));
+      expect(order.first, b80);
+      expect(order[1], a1194);
     });
 
-    test('un nodo que nunca contesta queda detrás de uno que anda', () {
-      var mute = const VpnNodeStats();
-      var good = const VpnNodeStats();
-      for (var i = 0; i < 5; i++) {
-        mute = VpnNodeRanking.update(mute, attempt: VpnAttempt.transient);
-        good = VpnNodeRanking.update(good, attempt: VpnAttempt.success);
-      }
-      expect(
-        VpnNodeRanking.order([a, b], {'a': mute, 'b': good}).first,
-        b,
-      );
-    });
-
-    test('el tiempo promedio solo cambia cuando sirvió', () {
-      var s = VpnNodeRanking.update(
-        const VpnNodeStats(),
-        attempt: VpnAttempt.success,
-        elapsed: const Duration(seconds: 10),
-      );
-      expect(s.avgMs, 10000);
-      s = VpnNodeRanking.update(
-        s,
-        attempt: VpnAttempt.success,
-        elapsed: const Duration(seconds: 20),
-      );
-      expect(s.avgMs, closeTo(13000, 1e-9));
-      s = VpnNodeRanking.update(
-        s,
-        attempt: VpnAttempt.failure,
-        elapsed: const Duration(seconds: 60),
-      );
-      expect(s.avgMs, closeTo(13000, 1e-9));
-    });
-
-    test('ordena por nota; los nunca usados quedan en 0,5', () {
-      final ordered = VpnNodeRanking.order([a, b, c], {
-        'a': const VpnNodeStats(score: 0.35),
-        'b': const VpnNodeStats(score: 0.76),
-      });
-      expect(ordered, [b, c, a]);
-    });
-
-    test('con notas casi iguales gana el más rápido', () {
-      final ordered = VpnNodeRanking.order([a, b], {
-        'a': const VpnNodeStats(score: 0.70, avgMs: 15000),
-        'b': const VpnNodeStats(score: 0.68, avgMs: 9000),
-      });
-      expect(ordered, [b, a]);
-    });
-
-    test('la exploración pone primero al nodo usado hace más tiempo', () {
+    test('con dos fallas seguidas el último bueno pierde el primer '
+        'puesto', () {
       final stats = {
-        'a': VpnNodeStats(score: 0.9, lastUsed: DateTime(2026, 10, 24)),
-        'b': VpnNodeStats(score: 0.6, lastUsed: DateTime(2026, 10, 20)),
-        'c': VpnNodeStats(score: 0.4, lastUsed: DateTime(2026, 10, 22)),
+        a1194.id: run([
+          VpnAttempt.success,
+          VpnAttempt.success,
+          VpnAttempt.success,
+        ], at: now.subtract(const Duration(days: 1))),
+        b80.id: run([
+          VpnAttempt.success,
+          VpnAttempt.failure,
+          VpnAttempt.failure,
+        ]),
       };
-      expect(VpnNodeRanking.order([a, b, c], stats), [a, b, c]);
-      expect(
-        VpnNodeRanking.order([a, b, c], stats, explore: true),
-        [b, a, c],
+      final order = VpnNodeRanking.order(
+        VpnNodeRanking.defaultOrder([a, b, c]),
+        stats,
+        now: now,
       );
+      expect(order.first, a1194);
+      expect(order.last, b80);
     });
 
-    test('la exploración prefiere un nodo nunca usado', () {
+    test('una falla suelta no lo saca del primer puesto', () {
       final stats = {
-        'a': VpnNodeStats(score: 0.9, lastUsed: DateTime(2026, 10, 24)),
-        'b': VpnNodeStats(score: 0.6, lastUsed: DateTime(2026, 10, 2)),
+        a80.id: run([
+          VpnAttempt.success,
+          VpnAttempt.success,
+          VpnAttempt.failure,
+        ]),
       };
-      expect(
-        VpnNodeRanking.order([a, b, c], stats, explore: true).first,
-        c,
+      final order = VpnNodeRanking.order(
+        VpnNodeRanking.defaultOrder([a, b, c]),
+        stats,
+        now: now,
       );
+      expect(order.first, a80);
     });
 
-    test('record guarda el historial entre arranques', () async {
-      SharedPreferences.setMockInitialValues({});
+    test('con tasas casi iguales gana el más rápido', () {
+      final order = VpnNodeRanking.order(
+        [a1194, b1194],
+        {
+          a1194.id: VpnEndpointStats(
+            wins: 5,
+            tries: 6,
+            avgMs: 15000,
+            lastUsed: now,
+          ),
+          b1194.id: VpnEndpointStats(
+            wins: 4.9,
+            tries: 6,
+            avgMs: 9000,
+            lastUsed: now,
+          ),
+        },
+        now: now,
+      );
+      expect(order, [b1194, a1194]);
+    });
+
+    test('tras una falla, los del mismo servidor pasan al final', () {
+      final next = VpnNodeRanking.afterFailure([a80, a443, b1194, c443], a1194);
+      expect(next, [b1194, c443, a80, a443]);
+    });
+
+    test('si el portal rechaza la salida se descarta el servidor', () {
+      final next = VpnNodeRanking.afterFailure(
+        [a80, b1194, a443, c443],
+        a1194,
+        dropNode: true,
+      );
+      expect(next, [b1194, c443]);
+    });
+
+    test('recordAll guarda el historial entre arranques', () async {
+      SharedPreferences.setMockInitialValues({'vpn_node_ranking_v2': '{}'});
       final ranking = VpnNodeRanking(nodes: [a, b]);
-      await ranking.record(a, attempt: VpnAttempt.failure);
-      await ranking.record(b, attempt: VpnAttempt.success);
+      await ranking.recordAll([
+        (endpoint: a1194, attempt: VpnAttempt.failure, elapsed: null),
+        (
+          endpoint: b80,
+          attempt: VpnAttempt.success,
+          elapsed: const Duration(seconds: 9),
+        ),
+      ]);
       final stats = await VpnNodeRanking(nodes: [a, b]).load();
-      expect(stats['a']!.score, closeTo(0.35, 1e-9));
-      expect(stats['b']!.score, closeTo(0.65, 1e-9));
-      expect(VpnNodeRanking.order([a, b], stats), [b, a]);
+      expect(stats[a1194.id]!.failStreak, 1);
+      expect(stats[b80.id]!.avgMs, 9000);
+      expect(stats[b80.id]!.lastWin, isNotNull);
+      expect((await ranking.orderedEndpoints()).first, b80);
+      // El historial por nodo de antes se borra.
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.containsKey('vpn_node_ranking_v2'), isFalse);
     });
 
-    test('todos los nodos de la app tienen id único y su archivo', () {
+    test('todos los nodos de la app tienen id único, archivo y puertos', () {
       final ids = kVpnNodes.map((n) => n.id).toSet();
       expect(ids.length, kVpnNodes.length);
       for (final node in kVpnNodes) {
         expect(node.asset, startsWith('assets/vpn/'));
+        expect(node.endpoints, isNotEmpty);
       }
     });
+  });
+
+  group('VpnService.configFor', () {
+    const ovpn =
+        'client\r\n'
+        'dev tun\r\n'
+        'proto udp\r\n'
+        'remote 10.0.0.1 5060\r\n'
+        'remote 10.0.0.1 1194\r\n'
+        'remote-random\r\n'
+        'explicit-exit-notify\r\n'
+        'remote-cert-tls server\r\n'
+        '<ca>\r\nAAAA\r\n</ca>\r\n';
+
+    test('deja un solo remote, el del endpoint', () {
+      final cfg = VpnService.configFor(ovpn, a1194);
+      final lines = cfg.split('\n').map((l) => l.trim()).toList();
+      expect(lines.where((l) => l.startsWith('remote ')), [
+        'remote 10.0.0.1 1194',
+      ]);
+      expect(lines, isNot(contains('remote-random')));
+      expect(lines.where((l) => l.startsWith('proto ')), ['proto udp']);
+      // No toca lo que sólo empieza parecido ni los bloques del certificado.
+      expect(lines, contains('remote-cert-tls server'));
+      expect(lines, contains('AAAA'));
+      expect(lines, contains('explicit-exit-notify'));
+    });
+
+    test('en TCP cambia el protocolo y saca lo que sólo vale en UDP', () {
+      final cfg = VpnService.configFor(ovpn, a443);
+      final lines = cfg.split('\n').map((l) => l.trim()).toList();
+      expect(lines.where((l) => l.startsWith('proto ')), ['proto tcp']);
+      expect(lines, contains('remote 10.0.0.1 443'));
+      expect(lines, isNot(contains('explicit-exit-notify')));
+    });
+  });
+
+  test('los .ovpn de la app apuntan al servidor declarado en su nodo', () {
+    // Si se reemplaza un .ovpn por otro servidor hay que actualizar el host.
+    for (final node in kVpnNodes) {
+      final text = File(node.asset).readAsStringSync();
+      expect(
+        RegExp(
+          '^remote ${RegExp.escape(node.host)} ',
+          multiLine: true,
+        ).hasMatch(text),
+        isTrue,
+        reason: node.id,
+      );
+    }
   });
 }

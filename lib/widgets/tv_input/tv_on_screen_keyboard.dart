@@ -147,9 +147,12 @@ class _TvOnScreenKeyboardState extends State<TvOnScreenKeyboard> {
       digitsMode: _digitsMode,
       shift: _shift,
     );
-    final sameShape = next.length == _rows.length &&
-        List.generate(next.length, (i) => next[i].length == _rows[i].length)
-            .every((v) => v);
+    final sameShape =
+        next.length == _rows.length &&
+        List.generate(
+          next.length,
+          (i) => next[i].length == _rows[i].length,
+        ).every((v) => v);
     if (sameShape) {
       _rows = next;
       return;
@@ -183,7 +186,8 @@ class _TvOnScreenKeyboardState extends State<TvOnScreenKeyboard> {
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = widget.type == TvKeyboardType.ip ||
+    final isCompact =
+        widget.type == TvKeyboardType.ip ||
         widget.type == TvKeyboardType.port ||
         widget.type == TvKeyboardType.number;
 
@@ -191,9 +195,7 @@ class _TvOnScreenKeyboardState extends State<TvOnScreenKeyboard> {
       mainAxisSize: MainAxisSize.min,
       children: [
         ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: isCompact ? 248 : 500,
-          ),
+          constraints: BoxConstraints(maxWidth: isCompact ? 248 : 500),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -213,8 +215,8 @@ class _TvOnScreenKeyboardState extends State<TvOnScreenKeyboard> {
                           focusNode: _nodes[r][c],
                           label: _rows[r][c].label ?? '',
                           action: _rows[r][c].action,
-                          emphasized: _rows[r][c].action !=
-                                  TvKeyAction.character &&
+                          emphasized:
+                              _rows[r][c].action != TvKeyAction.character &&
                               _rows[r][c].action != TvKeyAction.space,
                           onPressed: () => _handleKey(_rows[r][c]),
                           onArrow: (dRow, dCol) =>
@@ -326,16 +328,13 @@ class _TvKeyButtonState extends State<_TvKeyButton> {
     final glass = MoaiGlassScope.enabledOf(context);
 
     // Gboard M3 Expressive: letras blancas, funciones pastel azul, sin bordes.
-    // En cristal: letras de cristal tenue, funciones un poco más marcadas con
-    // el ícono en el acento; foco en acento con brillo, sin halo (las teclas
-    // están pegadas y las vecinas lo cortarían).
+    // En cristal: todas las teclas de vidrio blanco (como las del PIN); las
+    // de función, con el ícono o el texto en su color. Con foco, el acento.
     final Color bg;
     final Color fg;
     if (glass) {
       bg = focused ? scheme.primary : Colors.transparent;
-      fg = focused
-          ? scheme.onPrimary
-          : (widget.emphasized ? scheme.primary : scheme.onSurface);
+      fg = focused ? scheme.onPrimary : _glassKeyColor(widget.action, scheme);
     } else if (focused) {
       bg = scheme.primary;
       fg = scheme.onPrimary;
@@ -415,78 +414,50 @@ class _TvKeyButtonState extends State<_TvKeyButton> {
         }
         return KeyEventResult.ignored;
       },
+      // Cristal: sin Material/Ink (recortaban el halo y no animaban parejo).
       child: glass
-          ? Material(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(radius),
-              child: Ink(
-                decoration: _glassKeyDecoration(
+          ? GestureDetector(
+              onTap: widget.onPressed,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                height: 34,
+                decoration: moaiGlassButtonDecoration(
                   scheme,
                   focused: focused,
-                  emphasized: widget.emphasized,
                   radius: radius,
                 ),
-                child: InkWell(
-                  onTap: widget.onPressed,
-                  borderRadius: BorderRadius.circular(radius),
-                  splashColor: fg.withValues(alpha: 0.12),
-                  highlightColor: fg.withValues(alpha: 0.08),
-                  child: SizedBox(height: 34, child: Center(child: childContent)),
-                ),
+                child: Center(child: childContent),
               ),
             )
           : Material(
-        color: bg,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(radius),
-          side: BorderSide(
-            color: borderColor,
-          ),
-        ),
-        child: InkWell(
-          onTap: widget.onPressed,
-          splashColor: fg.withValues(alpha: 0.12),
-          highlightColor: fg.withValues(alpha: 0.08),
-          child: SizedBox(
-            height: 34,
-            child: Center(
-              child: childContent,
+              color: bg,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(radius),
+                side: BorderSide(color: borderColor),
+              ),
+              child: InkWell(
+                onTap: widget.onPressed,
+                splashColor: fg.withValues(alpha: 0.12),
+                highlightColor: fg.withValues(alpha: 0.08),
+                child: SizedBox(height: 34, child: Center(child: childContent)),
+              ),
             ),
-          ),
-        ),
-      ),
     );
   }
 }
 
-/// Tecla de cristal: tenue en reposo (algo más marcada si es de función) y,
-/// con foco, acento con brillo arriba. Sin sombra ni halo.
-BoxDecoration _glassKeyDecoration(
-  ColorScheme scheme, {
-  required bool focused,
-  required bool emphasized,
-  required double radius,
-}) {
-  final dark = scheme.brightness == Brightness.dark;
-  final line = dark ? Colors.white : scheme.onSurface;
-  if (focused) {
-    return BoxDecoration(
-      borderRadius: BorderRadius.circular(radius),
-      border: Border.all(color: Colors.transparent),
-      gradient: LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [Color.lerp(scheme.primary, Colors.white, 0.18)!, scheme.primary],
-      ),
-    );
-  }
-  final fill = emphasized ? (dark ? 0.09 : 0.10) : (dark ? 0.045 : 0.06);
-  return BoxDecoration(
-    borderRadius: BorderRadius.circular(radius),
-    color: line.withValues(alpha: fill),
-    border: Border.all(color: line.withValues(alpha: emphasized ? 0.14 : 0.10)),
-  );
-}
+/// Color del ícono o el texto de una tecla de cristal sin foco: las de
+/// función en su color (como borrar y ✕ en el teclado del PIN); las letras,
+/// el del texto.
+Color _glassKeyColor(TvKeyAction action, ColorScheme scheme) =>
+    switch (action) {
+      TvKeyAction.backspace => const Color(0xFFEA580C), // naranja
+      TvKeyAction.clear => const Color(0xFFDC2626), // rojo
+      TvKeyAction.shift ||
+      TvKeyAction.switchDigits ||
+      TvKeyAction.switchLetters => scheme.primary,
+      _ => scheme.onSurface,
+    };
 
 class _TvActionButton extends StatefulWidget {
   final FocusNode focusNode;
@@ -599,50 +570,54 @@ class _TvActionButtonState extends State<_TvActionButton> {
         }
         return KeyEventResult.ignored;
       },
-      child: Material(
-        color: glass ? Colors.transparent : bg,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: glass ? BorderSide.none : BorderSide(color: borderColor),
-        ),
-        child: Ink(
-          decoration: !glass
-              ? null
-              : focused
-              ? BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.transparent),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color.lerp(bg, Colors.white, 0.18)!, bg],
-                  ),
-                )
-              : moaiGlassChipDecoration(
-                  scheme,
-                  radius: 18,
-                  highlighted: widget.filled,
-                ),
-          child: InkWell(
-          onTap: widget.onPressed,
-          borderRadius: BorderRadius.circular(18),
-          splashColor: fg.withValues(alpha: 0.12),
-          child: SizedBox(
-            height: 36,
-            child: Center(
-              child: Text(
-                widget.label,
-                style: MoaiText.body(
-                  context,
-                  color: fg,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
+      child: glass
+          ? _glassButton(scheme, focused, fg)
+          : Material(
+              color: bg,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+                side: BorderSide(color: borderColor),
+              ),
+              child: InkWell(
+                onTap: widget.onPressed,
+                borderRadius: BorderRadius.circular(18),
+                splashColor: fg.withValues(alpha: 0.12),
+                child: _label(context, fg),
               ),
             ),
-          ),
+    );
+  }
+
+  Widget _label(BuildContext context, Color fg) => SizedBox(
+    height: 36,
+    child: Center(
+      child: Text(
+        widget.label,
+        style: MoaiText.body(
+          context,
+          color: fg,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
         ),
+      ),
+    ),
+  );
+
+  /// Cristal: los botones del Inicio (blanco con filo de luz; el principal
+  /// con el tinte del acento; con foco, el acento con brillo y halo).
+  Widget _glassButton(ColorScheme scheme, bool focused, Color fg) {
+    return GestureDetector(
+      onTap: widget.onPressed,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        decoration: moaiGlassButtonDecoration(
+          scheme,
+          focused: focused,
+          // Blanco como el resto; el principal se marca con el texto en el
+          // acento, no con vidrio teñido.
+          radius: 18,
         ),
+        child: _label(context, fg),
       ),
     );
   }
@@ -654,4 +629,3 @@ bool _isTvCancelKey(LogicalKeyboardKey key) {
       key == LogicalKeyboardKey.browserBack ||
       key == LogicalKeyboardKey.cancel;
 }
-

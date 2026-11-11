@@ -8,7 +8,7 @@ import 'package:moai3/widgets/tv_common/moai_glass.dart';
 /// En reposo usa el color del tema ([ColorScheme.primary]).
 /// Con la fila enfocada (fondo `primary` del [TvTile]), invierte a
 /// [ColorScheme.onPrimary] para mantener contraste legible.
-/// En modo edición ([isEditing]) el riel se marca con borde y flechas: ← →
+/// En modo edición ([isEditing]) aparecen flechas a los lados: ← →
 /// cambian la opción.
 class TvOptionSelector<T> extends StatefulWidget {
   final List<T> options;
@@ -52,15 +52,30 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
     final glassLine = dark ? Colors.white : scheme.onSurface;
 
     final BoxDecoration trackDecoration;
-    if (glass) {
+    if (glass && !dark) {
+      // Como un botón de cristal sin foco, pero más blanco que la ficha
+      // (que va al 45 %): el riel se lee como una pieza de vidrio encima.
       trackDecoration = BoxDecoration(
-        color: glassLine.withValues(alpha: dark ? 0.06 : 0.08),
+        color: const Color(0x99FFFFFF), // blanco al 60 %
         borderRadius: BorderRadius.circular(999),
+        // Editando, el mismo filo: las flechas ya avisan que se puede
+        // cambiar.
         border: Border.all(
-          color: widget.isEditing
-              ? scheme.primary
-              : glassLine.withValues(alpha: 0.14),
+          color: const Color(0xB3FFFFFF), // filo de luz al 70 %
         ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000), // negro al 8 %: lo despega apenas
+            blurRadius: 6,
+            offset: Offset(0, 1),
+          ),
+        ],
+      );
+    } else if (glass) {
+      trackDecoration = BoxDecoration(
+        color: glassLine.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: glassLine.withValues(alpha: 0.14)),
       );
     } else if (focused) {
       trackDecoration = BoxDecoration(
@@ -82,7 +97,7 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
     }
 
     final track = Container(
-      padding: const EdgeInsets.all(3),
+      padding: const EdgeInsets.all(2),
       decoration: trackDecoration,
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -151,6 +166,7 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
                 curve: Curves.easeOutCubic,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
+                  // 4 px más alto que el switch.
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(

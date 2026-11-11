@@ -1,6 +1,9 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/cards/channel_source_tag.dart';
 import 'package:moai3/widgets/cards/tv_list_card_leading_logo.dart';
 import 'package:moai3/widgets/cards/tv_list_card_metrics.dart';
 import 'package:moai3/widgets/cards/tv_list_card_style.dart';
@@ -101,6 +104,11 @@ class _NewChannelCardState extends State<NewChannelCard> {
                   final tag = (rawTag != null && rawTag.isNotEmpty)
                       ? rawTag.toUpperCase()
                       : null;
+                  // En cristal y con lugar, debajo del nombre: categoría y
+                  // país ("Deportes · Argentina").
+                  final info = glass && constraints.maxWidth >= 220
+                      ? _infoLine()
+                      : null;
 
                   return Row(
                     children: [
@@ -114,20 +122,48 @@ class _NewChannelCardState extends State<NewChannelCard> {
                         SizedBox(width: metrics.gap),
                       ],
                       Expanded(
-                        child: Text(
-                          widget.channel.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: MoaiText.body(
-                            context,
-                            fontSize: constraints.maxWidth < 120 ? 10.0 : 11.5,
-                            height: 1.15,
-                            color: labelColor,
-                            fontWeight: itemStyle.fontWeight,
-                          ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.channel.name,
+                              maxLines: info == null ? 2 : 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: MoaiText.body(
+                                context,
+                                fontSize: constraints.maxWidth < 120
+                                    ? 10.0
+                                    : (info == null ? 11.5 : 13.5),
+                                height: 1.15,
+                                color: labelColor,
+                                fontWeight: itemStyle.fontWeight,
+                              ),
+                            ),
+                            if (info != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                info,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: MoaiText.body(
+                                  context,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                      if (tag != null && constraints.maxWidth >= 130) ...[
+                      if (tag != null &&
+                          glass &&
+                          constraints.maxWidth >= 130) ...[
+                        const SizedBox(width: 8),
+                        ChannelSourceTag(channel: widget.channel, tag: tag),
+                      ] else if (tag != null &&
+                          constraints.maxWidth >= 130) ...[
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -167,6 +203,18 @@ class _NewChannelCardState extends State<NewChannelCard> {
         ),
       ),
     );
+  }
+
+  /// "Categoría · País", sin los "General" de relleno; null si no queda nada.
+  String? _infoLine() {
+    final parts = <String>{
+      for (final p in [widget.channel.category, widget.channel.country])
+        if (p.trim().isNotEmpty &&
+            p.trim().toLowerCase() !=
+                LocaleKeys.browser_group_general.tr().toLowerCase())
+          p.trim(),
+    };
+    return parts.isEmpty ? null : parts.join(' · ');
   }
 
   /// Fondo del ítem: cristal (foco con borde del acento, elegido teñido) o

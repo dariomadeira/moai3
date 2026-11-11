@@ -16,6 +16,7 @@ class SettingsAccentColorRow extends StatelessWidget {
   final VoidCallback? onKeyRight;
   final VoidCallback? onKeyUp;
   final VoidCallback? onKeyDown;
+  final Color? iconColor;
 
   const SettingsAccentColorRow({
     super.key,
@@ -27,20 +28,19 @@ class SettingsAccentColorRow extends StatelessWidget {
     this.onKeyRight,
     this.onKeyUp,
     this.onKeyDown,
+    this.iconColor,
   });
 
   void _openScreen(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const AccentColorScreen(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const AccentColorScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorName = selectedIndex >= 0 &&
-            selectedIndex < MoaiAccentColors.labelKeys.length
+    final colorName =
+        selectedIndex >= 0 && selectedIndex < MoaiAccentColors.labelKeys.length
         ? MoaiAccentColors.labelKeys[selectedIndex].tr()
         : '';
 
@@ -52,6 +52,7 @@ class SettingsAccentColorRow extends StatelessWidget {
       label: label,
       description: LocaleKeys.settings_general_accent_desc.tr(),
       icon: icon ?? MoaiIcons.palette,
+      iconColor: iconColor,
       onPressed: () => _openScreen(context),
       onKeyLeft: onKeyLeft,
       onKeyRight: onKeyRight,

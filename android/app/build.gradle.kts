@@ -15,7 +15,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        // No cambiar: con otro ID Android la toma como otra app y no se
+        // actualiza encima de la instalada.
         applicationId = "com.infomak.moai"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
@@ -34,11 +35,22 @@ android {
         }
     }
 
+    // Las versiones publicadas se firmaron siempre con esta clave (huella
+    // SHA-256 f4be…7479). Android sólo actualiza si la firma coincide: con otra
+    // clave las TV rechazan la actualización. Si el archivo falta, el build
+    // falla en vez de firmar con una clave nueva.
+    signingConfigs {
+        create("release") {
+            storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

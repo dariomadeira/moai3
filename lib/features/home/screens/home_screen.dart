@@ -15,6 +15,7 @@ import 'package:moai3/features/home/areas/home_dashboard_area.dart';
 import 'package:moai3/features/home/areas/home_discounts_area.dart';
 import 'package:moai3/models/discount_models.dart';
 import 'package:moai3/services/discounts_service.dart';
+import 'package:moai3/features/home/areas/home_live_tv_area.dart';
 import 'package:moai3/features/home/areas/home_movies_area.dart';
 import 'package:moai3/features/home/areas/home_settings_area.dart';
 import 'package:moai3/features/home/areas/home_tv_area.dart';
@@ -122,8 +123,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _listenToLiveEvents();
       _updatePresenceForSection(_section);
       _listenToArcadeInvites();
-      // Arranca con el foco en el contenido del Inicio.
-      _area?.requestEntryFocus();
+      // Arranca con el foco en el rail, sobre Inicio.
+      _railFocusNode.requestFocus();
     });
   }
 
@@ -192,8 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _updatePresenceForSection(HomeSection index) {
     _presence.setMode(switch (index) {
       HomeSection.tv => PresenceMode.watching,
-      HomeSection.arcade => PresenceMode.available,
-      _ => PresenceMode.offline,
+      _ => PresenceMode.available,
     });
   }
 
@@ -330,18 +330,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  /// Abre Agenda › Suscripciones con el foco en la lista.
-  void _openCalendarSubscriptions() {
-    _calendarPanelIndex = 1;
-    _switchSection(HomeSection.calendar);
-    // Después del foco al rail que pide [_switchSection].
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _railFocusNode.unfocus();
-      _areaKeys[HomeSection.calendar]?.currentState?.requestEntryFocus();
-    });
-  }
-
   /// Abre Descuentos desde la tarjeta del Inicio: en el día [dayIndex] de
   /// la semana o, con [settings], en Configurar.
   void _openDiscounts({int dayIndex = 0, bool settings = false}) {
@@ -411,7 +399,6 @@ class _HomeScreenState extends State<HomeScreen> {
         key: _areaKeys[HomeSection.home],
         onExitLeft: _focusRail,
         onTuneChannel: _tuneFromEvent,
-        onOpenSubscriptions: _openCalendarSubscriptions,
         onOpenDiscounts: _openDiscounts,
         romManager: _romManager,
       ),
@@ -420,6 +407,7 @@ class _HomeScreenState extends State<HomeScreen> {
         initialPanelIndex: _settingsPanelIndex,
         onPanelIndexChanged: (i) => _settingsPanelIndex = i,
         onExitLeft: _focusRail,
+        onTuneChannel: _tuneFromEvent,
       ),
       HomeSection.arcade => HomeArcadeArea(
         key: _areaKeys[HomeSection.arcade],
@@ -454,6 +442,7 @@ class _HomeScreenState extends State<HomeScreen> {
         accordionIcon: MoaiIcons.tvAccordionMovies,
         emptyMessage: LocaleKeys.movies_empty_movies.tr(),
         searchEnabled: true,
+        promoBanner: true,
         onExitLeft: _focusRail,
       ),
       HomeSection.series => HomeMoviesArea(
@@ -461,13 +450,20 @@ class _HomeScreenState extends State<HomeScreen> {
         section: FeaturedMoviesProvider.sectionSeries,
         panelTitle: LocaleKeys.movies_panel_series_title.tr(),
         accordionIcon: MoaiIcons.tvAccordionSeries,
+        accordionSvgIcon: MoaiIcons.seriesSvg,
+        sectionColor: TvVerticalNavRail.seriesColor,
         emptyMessage: LocaleKeys.movies_empty_series.tr(),
+        searchEnabled: true,
         onExitLeft: _focusRail,
       ),
       HomeSection.tv => HomeTvArea(
         key: _tvAreaKey,
         onExitLeft: _focusRail,
         session: _tvSession,
+      ),
+      HomeSection.liveTv => HomeLiveTvArea(
+        key: _areaKeys[HomeSection.liveTv],
+        onExitLeft: _focusRail,
       ),
     };
   }
@@ -519,6 +515,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             railFocusNode: _railFocusNode,
                             onSelected: _switchSection,
                             onFocusRight: _onRailFocusRight,
+                            onExit: () =>
+                                _doubleBackKey.currentState?.requestExit(),
                           ),
                         ),
                         Expanded(

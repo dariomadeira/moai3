@@ -10,9 +10,11 @@ import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'helpers/real_fonts.dart';
 import 'helpers/spanish_translations.dart';
 
 void main() {
+  setUpAll(loadRealFonts);
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     // Miércoles 21 Oct 2026, 12:00 ART: semana Lun 19 – Dom 25.

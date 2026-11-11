@@ -19,12 +19,11 @@ class ArcadeNetplayService extends ChangeNotifier {
 
   ArcadeNetplayService._internal();
 
-  static const String _globalChannelName = 'arcade_netplay_global';
   static const Duration _inviteTimeout = Duration(seconds: 30);
   static const Duration _iceTimeout = Duration(seconds: 20);
 
   SupabaseClient? _client;
-  RealtimeChannel? _globalChannel;
+  RealtimeChannel? _inboxChannel;
   RealtimeChannel? _sessionChannel;
   Completer<void>? _sessionSubscribed;
 
@@ -41,14 +40,43 @@ class ArcadeNetplayService extends ChangeNotifier {
   StreamSubscription? _webrtcSignalSub;
   StreamSubscription? _webrtcStateSub;
 
-  final StreamController<ArcadeNetplayInputPacket> _remoteInputController =
-      StreamController<ArcadeNetplayInputPacket>.broadcast();
   final StreamController<ArcadeNetplayInvite> _inviteStreamController =
       StreamController<ArcadeNetplayInvite>.broadcast();
 
-  /// Paquetes remotos con frame (WebRTC).
-  Stream<ArcadeNetplayInputPacket> get onRemoteInputPacket =>
-      _remoteInputController.stream;
+  /// 5 latidos de 3 s sin canal: el otro TV ya no está.
+  static const int _maxDisconnectedBeats = 5;
+  int _disconnectedBeats = 0;
+
+  void Function(ArcadeNetplayInputPacket packet)? _remoteInputHandler;
+
+  /// Lo que llegó antes de que el juego estuviera listo: el otro TV pudo
+  /// cargar antes y esos frames se mandan una sola vez.
+  final List<ArcadeNetplayInputPacket> _earlyRemoteInputs = [];
+
+  /// Empieza a entregar los inputs del otro TV, primero los que esperaban.
+  void attachRemoteInput(
+    void Function(ArcadeNetplayInputPacket packet) handler,
+  ) {
+    _remoteInputHandler = handler;
+    _earlyRemoteInputs
+      ..forEach(handler)
+      ..clear();
+  }
+
+  void detachRemoteInput() => _remoteInputHandler = null;
+
+  void _deliverRemoteInput(ArcadeNetplayInputPacket packet) {
+    final handler = _remoteInputHandler;
+    if (handler != null) {
+      handler(packet);
+    } else {
+      _earlyRemoteInputs.add(packet);
+    }
+  }
+
+  @visibleForTesting
+  void deliverRemoteInputForTest(ArcadeNetplayInputPacket packet) =>
+      _deliverRemoteInput(packet);
 
   Stream<ArcadeNetplayInvite> get onIncomingInvite =>
       _inviteStreamController.stream;
@@ -59,21 +87,46 @@ class ArcadeNetplayService extends ChangeNotifier {
       _currentSession!.status != ArcadeNetplayStatus.idle &&
       _currentSession!.status != ArcadeNetplayStatus.terminated;
 
-  void initialize({SupabaseClient? client, required String myDeviceId}) {
+  /// Sólo se aceptan invitaciones de quien pasa este control (amigos mutuos).
+  bool Function(String deviceId)? _isFriend;
+
+  void initialize({
+    SupabaseClient? client,
+    required String myDeviceId,
+    bool Function(String deviceId)? isFriend,
+  }) {
     _client = client ?? Supabase.instance.client;
-    _subscribeGlobal(myDeviceId);
+    _isFriend = isFriend;
+    _subscribeInbox(myDeviceId);
   }
 
-  void _subscribeGlobal(String myDeviceId) {
-    if (_globalChannel != null) return;
-    try {
-      _globalChannel = _client!.channel(_globalChannelName);
+  static String _inboxName(String deviceId) => 'arcade_inbox_$deviceId';
 
-      _globalChannel!.onBroadcast(
+  /// Manda [event] al canal propio de [deviceId], sin suscribirse a él.
+  Future<void> _sendToDevice(
+    String deviceId,
+    String event,
+    Map<String, dynamic> payload,
+  ) async {
+    final channel = _client!.channel(_inboxName(deviceId));
+    try {
+      await channel.sendBroadcastMessage(event: event, payload: payload);
+    } finally {
+      await _client!.removeChannel(channel);
+    }
+  }
+
+  void _subscribeInbox(String myDeviceId) {
+    if (_inboxChannel != null) return;
+    try {
+      _inboxChannel = _client!.channel(_inboxName(myDeviceId));
+
+      _inboxChannel!.onBroadcast(
         event: 'invite',
         callback: (payload) {
           final target = payload['guestDeviceId'] as String?;
-          if (target == myDeviceId) {
+          final host = payload['hostDeviceId'] as String? ?? '';
+          if (target == myDeviceId && (_isFriend?.call(host) ?? true)) {
             _handleIncomingInvite(
               ArcadeNetplayInvite.fromMap(payload),
               myDeviceId,
@@ -82,7 +135,7 @@ class ArcadeNetplayService extends ChangeNotifier {
         },
       );
 
-      _globalChannel!.onBroadcast(
+      _inboxChannel!.onBroadcast(
         event: 'invite_response',
         callback: (payload) {
           final target = payload['hostDeviceId'] as String?;
@@ -99,10 +152,10 @@ class ArcadeNetplayService extends ChangeNotifier {
         },
       );
 
-      _globalChannel!.subscribe();
+      _inboxChannel!.subscribe();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[ArcadeNetplayService] Error canal global: $e');
+        debugPrint('[ArcadeNetplayService] Error canal propio: $e');
       }
     }
   }
@@ -115,14 +168,16 @@ class ArcadeNetplayService extends ChangeNotifier {
 
   void _handleIncomingInvite(ArcadeNetplayInvite invite, String myDeviceId) {
     if (hasActiveSession || _playing) {
-      unawaited(_sendInviteResponse(
-        invite,
-        myDeviceId: myDeviceId,
-        accepted: false,
-        busy: true,
-      ).catchError((Object e) {
-        debugPrint('[ArcadeNetplayService] Error al responder ocupado: $e');
-      }));
+      unawaited(
+        _sendInviteResponse(
+          invite,
+          myDeviceId: myDeviceId,
+          accepted: false,
+          busy: true,
+        ).catchError((Object e) {
+          debugPrint('[ArcadeNetplayService] Error al responder ocupado: $e');
+        }),
+      );
       return;
     }
     _pendingIncomingInvite = invite;
@@ -149,7 +204,10 @@ class ArcadeNetplayService extends ChangeNotifier {
     } else {
       _currentSession!.status = ArcadeNetplayStatus.terminated;
       _currentSession!.exitReason =
-          (busy ? LocaleKeys.arcade_invite_busy : LocaleKeys.arcade_invite_rejected).tr();
+          (busy
+                  ? LocaleKeys.arcade_invite_busy
+                  : LocaleKeys.arcade_invite_rejected)
+              .tr();
       notifyListeners();
       unawaited(_cleanupSession());
     }
@@ -165,7 +223,7 @@ class ArcadeNetplayService extends ChangeNotifier {
   }) async {
     await cancelSession(reason: LocaleKeys.arcade_invite_replaced.tr());
 
-    if (_globalChannel == null) {
+    if (_inboxChannel == null) {
       if (kDebugMode) {
         debugPrint('[ArcadeNetplayService] inviteFriend: sin canal global');
       }
@@ -202,10 +260,7 @@ class ArcadeNetplayService extends ChangeNotifier {
         romUrl: rom.url,
       );
 
-      await _globalChannel!.sendBroadcastMessage(
-        event: 'invite',
-        payload: invite.toMap(),
-      );
+      await _sendToDevice(peerDeviceId, 'invite', invite.toMap());
 
       _inviteTimer?.cancel();
       _inviteTimer = Timer(_inviteTimeout, () {
@@ -221,8 +276,9 @@ class ArcadeNetplayService extends ChangeNotifier {
       return true;
     } catch (e) {
       _currentSession?.status = ArcadeNetplayStatus.terminated;
-      _currentSession?.exitReason =
-          LocaleKeys.arcade_invite_send_error.tr(namedArgs: {'error': '$e'});
+      _currentSession?.exitReason = LocaleKeys.arcade_invite_send_error.tr(
+        namedArgs: {'error': '$e'},
+      );
       notifyListeners();
       await _cleanupSession();
       return false;
@@ -260,8 +316,9 @@ class ArcadeNetplayService extends ChangeNotifier {
       await startRomPreparation(romManager);
     } catch (e) {
       _currentSession?.status = ArcadeNetplayStatus.terminated;
-      _currentSession?.exitReason =
-          LocaleKeys.arcade_invite_accept_error.tr(namedArgs: {'error': '$e'});
+      _currentSession?.exitReason = LocaleKeys.arcade_invite_accept_error.tr(
+        namedArgs: {'error': '$e'},
+      );
       notifyListeners();
       await _cleanupSession();
     }
@@ -273,7 +330,11 @@ class ArcadeNetplayService extends ChangeNotifier {
     notifyListeners();
     if (invite == null) return;
     try {
-      await _sendInviteResponse(invite, myDeviceId: myDeviceId, accepted: false);
+      await _sendInviteResponse(
+        invite,
+        myDeviceId: myDeviceId,
+        accepted: false,
+      );
     } catch (e) {
       debugPrint('[ArcadeNetplayService] Error al rechazar invitación: $e');
     }
@@ -306,8 +367,9 @@ class ArcadeNetplayService extends ChangeNotifier {
       return;
     }
 
-    session.myStatusText =
-        LocaleKeys.arcade_downloading_game.tr(namedArgs: {'percent': '0'});
+    session.myStatusText = LocaleKeys.arcade_downloading_game.tr(
+      namedArgs: {'percent': '0'},
+    );
     notifyListeners();
     await _broadcastPrepStatus(
       0.0,
@@ -325,18 +387,27 @@ class ArcadeNetplayService extends ChangeNotifier {
     );
 
     try {
+      var lastPercent = -1;
       final success = await romManager.downloadRom(
         item,
         onProgress: (progress) {
-          session.myProgress = progress;
           final percent = (progress * 100).toInt();
-          session.myStatusText = LocaleKeys.arcade_downloading_game
-              .tr(namedArgs: {'percent': '$percent'});
+          // Cada aviso es un mensaje a Supabase: uno por punto, no por pedacito.
+          if (percent == lastPercent) return;
+          lastPercent = percent;
+          session.myProgress = progress;
+          session.myStatusText = LocaleKeys.arcade_downloading_game.tr(
+            namedArgs: {'percent': '$percent'},
+          );
           notifyListeners();
-          unawaited(_broadcastPrepStatus(
-            progress,
-            LocaleKeys.arcade_downloading_short.tr(namedArgs: {'percent': '$percent'}),
-          ));
+          unawaited(
+            _broadcastPrepStatus(
+              progress,
+              LocaleKeys.arcade_downloading_short.tr(
+                namedArgs: {'percent': '$percent'},
+              ),
+            ),
+          );
         },
       );
 
@@ -352,10 +423,13 @@ class ArcadeNetplayService extends ChangeNotifier {
       }
     } catch (e) {
       session.status = ArcadeNetplayStatus.terminated;
-      session.exitReason =
-          LocaleKeys.arcade_netplay_error_rom.tr(namedArgs: {'error': '$e'});
+      session.exitReason = LocaleKeys.arcade_netplay_error_rom.tr(
+        namedArgs: {'error': '$e'},
+      );
       notifyListeners();
-      await _broadcastCancel(LocaleKeys.arcade_netplay_error_rom_broadcast.tr());
+      await _broadcastCancel(
+        LocaleKeys.arcade_netplay_error_rom_broadcast.tr(),
+      );
       await _cleanupSession();
     }
   }
@@ -431,6 +505,8 @@ class ArcadeNetplayService extends ChangeNotifier {
     _sessionChannel = null;
     _sessionSubscribed = null;
     _pendingIncomingInvite = null;
+    _earlyRemoteInputs.clear();
+    _remoteInputHandler = null;
     _currentSession = null;
     _romManager = null;
     notifyListeners();
@@ -443,12 +519,11 @@ class ArcadeNetplayService extends ChangeNotifier {
   void dispose() {
     unawaited(_cleanupSession());
     try {
-      _globalChannel?.unsubscribe();
+      _inboxChannel?.unsubscribe();
     } catch (e) {
       debugPrint('[ArcadeNetplayService] $e');
     }
-    _globalChannel = null;
-    _remoteInputController.close();
+    _inboxChannel = null;
     _inviteStreamController.close();
     super.dispose();
   }

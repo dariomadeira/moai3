@@ -22,8 +22,7 @@ class _FakePresence extends SupabasePresenceService {
   Future<void> updateOnlineStatus({
     required String deviceId,
     required bool online,
-  }) async =>
-      this.online.add(online);
+  }) async => this.online.add(online);
 
   @override
   Future<void> sendHeartbeat({required String deviceId}) async {}
@@ -98,6 +97,14 @@ void main() {
 
     expect(watchParty.currentChannelId, isNull);
     expect(presence.online.last, isFalse);
+  });
+
+  test('en otra sección sigue online, sin canal', () {
+    coordinator.setMode(PresenceMode.available);
+    channels.selectChannel(channel);
+
+    expect(watchParty.currentChannelId, isNull);
+    expect(presence.online.last, isTrue);
   });
 
   test('en TV se reporta el canal que se mira', () {

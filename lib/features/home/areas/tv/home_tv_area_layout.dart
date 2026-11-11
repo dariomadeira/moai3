@@ -17,6 +17,7 @@ extension _TvAreaLayout on HomeTvAreaState {
       onFocusUp: _focusCurrentTab,
       onLongPress: _activateSearchAlphabet,
       onSelectChannel: _selectChannel,
+      tunedChannelId: context.read<ChannelProvider>().selectedChannel?.id,
     );
 
     // Mismo cristal que los paneles del acordeón (Grupos / Canales).
@@ -26,6 +27,7 @@ extension _TvAreaLayout on HomeTvAreaState {
         borderRadius: 16,
         solid: true,
         elevated: false,
+        frosted: true,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -99,17 +101,15 @@ extension _TvAreaLayout on HomeTvAreaState {
                   children: [
                     TvTabBar(
                       selectedTab: _tvTab,
-                      onTabChanged: (tab) {
-                        _update(() => _tvTab = tab);
-                        _afterFrame(_focusActiveContent);
-                      },
+                      // OK sólo cambia de pestaña; a su contenido se baja con ↓.
+                      onTabChanged: (tab) => _update(() => _tvTab = tab),
                       exploreFocusNode: _exploreTabFocus,
                       searchFocusNode: _searchTabFocus,
                       groupsFocusNode: _groupsTabFocus,
                       onFocusDown: _focusActiveContent,
                       onFocusLeft: widget.onExitLeft,
                       onFocusPlayer: () {
-                        if (_watchPartyMicFocusNode.canRequestFocus) {
+                        if (_micVisible) {
                           _watchPartyMicFocusNode.requestFocus();
                         } else {
                           _viewerFocus.requestFocus();
@@ -181,8 +181,10 @@ extension _TvAreaLayout on HomeTvAreaState {
                                 alignment: Alignment.centerRight,
                                 child: TvWatchPartyHeaderBar(
                                   micFocusNode: _watchPartyMicFocusNode,
-                                  onLongPressMic: () =>
-                                      TvFriendsDialog.show(context),
+                                  onLongPressMic: () => TvFriendsDialog.show(
+                                    context,
+                                    onTuneChannel: _tuneFromFriend,
+                                  ),
                                   onKeyLeft: () {
                                     if (_groupsTabFocus.canRequestFocus) {
                                       _groupsTabFocus.requestFocus();
@@ -211,7 +213,7 @@ extension _TvAreaLayout on HomeTvAreaState {
                               hasChannels: allChannels.isNotEmpty,
                               onReturnToPanel: _focusActiveContent,
                               onKeyUp: () {
-                                if (_watchPartyMicFocusNode.canRequestFocus) {
+                                if (_micVisible) {
                                   _watchPartyMicFocusNode.requestFocus();
                                 } else {
                                   _focusCurrentTab();
@@ -229,8 +231,12 @@ extension _TvAreaLayout on HomeTvAreaState {
                             header: TvWatchPartyHeaderBar(
                               channelName: channel.name,
                               micFocusNode: _watchPartyMicFocusNode,
-                              onLongPressMic: () =>
-                                  TvFriendsDialog.show(context),
+                              onKeyLeft: _groupsTabFocus.requestFocus,
+                              onKeyDown: _viewerFocus.requestFocus,
+                              onLongPressMic: () => TvFriendsDialog.show(
+                                context,
+                                onTuneChannel: _tuneFromFriend,
+                              ),
                             ),
                             // Los márgenes del visor los pone el panel.
                             child: TvPlayerLayoutAnchor(
@@ -318,23 +324,15 @@ extension _TvAreaLayout on HomeTvAreaState {
                                 i,
                                 _favoritesBar.focusNodes.length,
                               ),
-                              onFocusLeft: _focusSelectedChannel,
-                              onFocusRight: _viewerFocus.requestFocus,
-                              onKeyUp: () {
-                                if (!channel.isAdult &&
-                                    _favoriteBtnFocus.canRequestFocus) {
-                                  _favoriteBtnFocus.requestFocus();
-                                } else if (favChannels.isNotEmpty &&
-                                    _clearFavoritesFocus.canRequestFocus) {
-                                  _clearFavoritesFocus.requestFocus();
-                                } else if (favChannels.isNotEmpty &&
-                                    _createGroupFocus.canRequestFocus) {
-                                  _createGroupFocus.requestFocus();
-                                } else {
-                                  _viewerFocus.requestFocus();
-                                }
-                              },
-                              onKeyDown: _viewerFocus.requestFocus,
+                              // El panel activo, que puede no ser Canales
+                              // (Buscar, Marcadores, otro panel del acordeón).
+                              onFocusLeft: _focusActiveContent,
+                              onKeyUp: () => _focusFavoritesActions(
+                                favChannels,
+                                channel,
+                              ),
+                              // Última fila: ↓ no tiene adónde ir.
+                              onKeyDown: () {},
                             ),
                           ),
                         ],
@@ -350,6 +348,8 @@ extension _TvAreaLayout on HomeTvAreaState {
             focusNode: _viewerFocus,
             onRequestListFocus: _focusActiveContent,
             onRequestUpFocus: _handlePlayerUpKey,
+            onRequestDownFocus: () =>
+                _focusFavoritesActions(favChannels, channel),
           ),
       ],
     );

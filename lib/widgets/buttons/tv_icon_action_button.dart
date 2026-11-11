@@ -20,6 +20,10 @@ class TvIconActionButton extends StatefulWidget {
   final VoidCallback? onKeyLeft;
   final VoidCallback? onKeyRight;
 
+  /// Acción destructiva (borrar): el ícono en rojo y, con foco, el botón
+  /// en rojo con halo en vez del acento.
+  final bool destructive;
+
   const TvIconActionButton({
     super.key,
     required this.focusNode,
@@ -31,6 +35,7 @@ class TvIconActionButton extends StatefulWidget {
     this.onKeyDown,
     this.onKeyLeft,
     this.onKeyRight,
+    this.destructive = false,
   });
 
   @override
@@ -57,23 +62,28 @@ class _TvIconActionButtonState extends State<TvIconActionButton> {
     if (mounted) setState(() => _isFocused = widget.focusNode.hasFocus);
   }
 
+  /// El destructivo con foco (borrar), igual en los dos modos: el rojo de
+  /// error del tema claro con el ícono blanco. El del tema oscuro es un rosa
+  /// claro (para leerse como texto) y relleno quedaba lavado.
+  static const Color _destructiveFill = Color(0xFFBA1A1A);
+  static const Color _onDestructiveFill = Colors.white;
+
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
     // Cristal: tenue en reposo (la fila no se rellena al enfocarse, así que
     // [parentFocused] no cambia colores); con foco, acento con brillo y halo.
     final glass = MoaiGlassScope.enabledOf(context);
-    final dark = scheme.brightness == Brightness.dark;
-    final glassLine = dark ? Colors.white : scheme.onSurface;
 
     final Color bg;
     final Color fg;
 
     if (glass) {
-      bg = _isFocused
-          ? scheme.primary
-          : glassLine.withValues(alpha: dark ? 0.06 : 0.08);
-      fg = _isFocused ? scheme.onPrimary : scheme.onSurface;
+      // El relleno lo da [moaiGlassButtonDecoration].
+      bg = Colors.transparent;
+      fg = _isFocused
+          ? (widget.destructive ? _onDestructiveFill : scheme.onPrimary)
+          : (widget.destructive ? scheme.error : scheme.onSurface);
     } else if (_isFocused) {
       if (widget.parentFocused) {
         bg = scheme.onPrimary;
@@ -122,43 +132,42 @@ class _TvIconActionButtonState extends State<TvIconActionButton> {
       child: AnimatedScale(
         scale: _isFocused ? 1.08 : 1.0,
         duration: const Duration(milliseconds: 100),
-        child: Material(
-          color: glass ? Colors.transparent : bg,
-          borderRadius: BorderRadius.circular(10),
-          child: Ink(
-            decoration: glass
-                ? BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    border: _isFocused
-                        ? Border.all(color: Colors.transparent)
-                        : Border.all(color: glassLine.withValues(alpha: 0.14)),
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: _isFocused
-                          ? [Color.lerp(bg, Colors.white, 0.18)!, bg]
-                          : [bg, bg],
-                    ),
-                    boxShadow: _isFocused
-                        ? [
-                            BoxShadow(
-                              color: bg.withValues(alpha: 0.4),
-                              blurRadius: 12,
-                            ),
-                          ]
-                        : null,
-                  )
-                : null,
-            child: InkWell(
-              onTap: widget.onPressed,
-              borderRadius: BorderRadius.circular(10),
-              child: SizedBox(
-                width: 36,
-                height: 36,
-                child: Icon(widget.icon, color: fg, size: MoaiIconSizes.md),
-              ),
-            ),
-          ),
+        child: glass ? _glassButton(scheme, fg) : _solidButton(bg, fg),
+      ),
+    );
+  }
+
+  /// Cristal: el botón de los del Inicio (blanco con filo de luz; con foco,
+  /// el acento con brillo y halo). Sin [Material]: el `Ink` se recortaba al
+  /// rectángulo del Material y el halo quedaba cuadrado, con puntas.
+  Widget _glassButton(ColorScheme scheme, Color fg) {
+    return GestureDetector(
+      onTap: widget.onPressed,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        width: 36,
+        height: 36,
+        decoration: moaiGlassButtonDecoration(
+          scheme,
+          focused: _isFocused,
+          accent: widget.destructive ? _destructiveFill : null,
+        ),
+        child: Icon(widget.icon, color: fg, size: MoaiIconSizes.md),
+      ),
+    );
+  }
+
+  Widget _solidButton(Color bg, Color fg) {
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: widget.onPressed,
+        borderRadius: BorderRadius.circular(10),
+        child: SizedBox(
+          width: 36,
+          height: 36,
+          child: Icon(widget.icon, color: fg, size: MoaiIconSizes.md),
         ),
       ),
     );

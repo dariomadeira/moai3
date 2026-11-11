@@ -1,141 +1,79 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:moai3/features/home/widgets/home_card.dart';
+import 'package:moai3/features/home/widgets/home_card_parts.dart';
+import 'package:moai3/features/home/widgets/home_edge_pill.dart';
+import 'package:moai3/features/home/widgets/home_row_window.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
+import 'package:moai3/widgets/tv_common/moai_status_tag.dart';
 
 /// Widget de eventos del Inicio, en franja como [HomeWeatherCard]: a la
 /// izquierda el resumen del día y a la derecha los eventos de hoy de las
-/// suscripciones que están en curso o por empezar, en fila. Sin eventos
-/// muestra un aviso y el botón para ir a Suscripciones.
+/// suscripciones que están en curso o por empezar, en fila. Sin eventos el
+/// Inicio no la muestra.
 ///
-/// El foco y la selección los maneja el Inicio: con eventos, [selectedIndex]
-/// es el evento elegido (←/→ lo mueven, OK abre el detalle); sin eventos el
-/// foco es de la tarjeta.
+/// El foco y la selección los maneja el Inicio: [selectedIndex] es el
+/// evento elegido (←/→ lo mueven, OK abre el detalle).
 class HomeEventsCard extends StatelessWidget {
   const HomeEventsCard({
     super.key,
     required this.events,
     required this.selectedIndex,
-    required this.hasSubscriptions,
     this.isFocused = false,
   });
 
   final List<CalendarEvent> events;
   final int selectedIndex;
-
-  /// Sin eventos: si hay alguna suscripción sólo se avisa que no hay nada
-  /// para mostrar; si no hay ninguna, se ofrece el botón a Suscripciones.
-  final bool hasSubscriptions;
   final bool isFocused;
 
   static const double radius = 16;
+
+  /// REDISEÑO: el color de la tarjeta (su ícono) y del tag "En vivo".
+  static const Color liveColor = MoaiStatusTag.liveColor;
   static const double _tileWidth = 236;
   static const double _tileGap = 10;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    final hasEvents = events.isNotEmpty;
+    final count = events.length;
 
-    return HomeCard(
-      glow: HomeCardColors.events,
-      // Con eventos el foco lo lleva el evento elegido, no la tarjeta.
-      focused: isFocused && !hasEvents,
+    // REDISEÑO: el cristal de las tarjetas del Inicio, sin halo de color
+    // (como el clima). El foco lo lleva el evento elegido, no la tarjeta.
+    return MoaiGlass(
+      borderRadius: radius,
+      solid: true,
+      elevated: false,
       padding: const EdgeInsets.fromLTRB(20, 10, 12, 10),
       child: Row(
         children: [
-          SizedBox(width: 214, child: _Summary(count: events.length)),
-          Container(
-            width: 1,
-            height: 72,
-            margin: const EdgeInsets.only(right: 16),
-            color: scheme.onSurface.withValues(alpha: 0.08),
+          SizedBox(
+            width: HomeCardSummary.width,
+            child: HomeCardSummary(
+              label: LocaleKeys.calendar_panel_events_title.tr(),
+              icon: MoaiIcons.calendarEvents,
+              color: liveColor,
+              title: LocaleKeys.home_events_today.tr(),
+              line: count == 1
+                  ? LocaleKeys.home_events_count_one.tr()
+                  : LocaleKeys.home_events_count.tr(
+                      namedArgs: {'count': '$count'},
+                    ),
+            ),
           ),
+          const HomeCardDivider(),
           Expanded(
-            child: hasEvents
-                ? _EventStrip(
-                    events: events,
-                    selectedIndex: selectedIndex,
-                    isFocused: isFocused,
-                  )
-                : hasSubscriptions
-                ? const _NothingToShow()
-                : _Empty(isFocused: isFocused),
+            child: _EventStrip(
+              events: events,
+              selectedIndex: selectedIndex,
+              isFocused: isFocused,
+            ),
           ),
         ],
       ),
-    );
-  }
-}
-
-/// "Eventos" + "Hoy" en grande + cuántos hay.
-class _Summary extends StatelessWidget {
-  const _Summary({required this.count});
-
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    final muted = scheme.onSurfaceVariant;
-    final countLabel = count == 1
-        ? LocaleKeys.home_events_count_one.tr()
-        : LocaleKeys.home_events_count.tr(namedArgs: {'count': '$count'});
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          LocaleKeys.calendar_panel_events_title.tr(),
-          style: MoaiText.body(
-            context,
-            color: muted,
-            fontSize: 12,
-            letterSpacing: 0.2,
-          ),
-        ),
-        Row(
-          children: [
-            Icon(
-              MoaiIcons.calendarEvents,
-              size: MoaiIconSizes.xl,
-              color: scheme.primary,
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                LocaleKeys.home_events_today.tr(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: MoaiText.display(
-                  context,
-                  color: scheme.onSurface,
-                  fontSize: 34,
-                  fontWeight: FontWeight.w500,
-                  height: 1.3,
-                ),
-              ),
-            ),
-          ],
-        ),
-        Text(
-          countLabel,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: MoaiText.body(
-            context,
-            color: muted,
-            fontSize: 11.5,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -160,77 +98,60 @@ class _EventStrip extends StatelessWidget {
       builder: (context, constraints) {
         const step = HomeEventsCard._tileWidth + HomeEventsCard._tileGap;
         // Las flechas ocupan su lugar siempre, así la fila no salta.
-        final tilesWidth = constraints.maxWidth - 2 * _Edge.width;
+        final tilesWidth = constraints.maxWidth - 2 * HomeEdgePill.width;
         final visible = ((tilesWidth + HomeEventsCard._tileGap) ~/ step).clamp(
           1,
           events.length,
         );
         final selected = selectedIndex.clamp(0, events.length - 1);
-        final start = (selected - visible + 1).clamp(
-          0,
-          events.length - visible,
-        );
-
-        return Row(
-          children: [
-            _Edge(icon: MoaiIcons.dpadLeft, active: start > 0),
-            Expanded(
-              child: Row(
-                children: [
-                  for (var i = start; i < start + visible; i++) ...[
-                    if (i > start)
-                      const SizedBox(width: HomeEventsCard._tileGap),
+        return HomeRowWindow(
+          count: events.length,
+          visible: visible,
+          selected: selected,
+          builder: (start) => Row(
+            children: [
+              HomeEdgePill(icon: MoaiIcons.dpadLeft, active: start > 0),
+              Expanded(
+                child: Row(
+                  // La primera arranca siempre donde arrancaría con la fila llena
+                  // (centrada entre las flechas), aunque haya menos.
+                  children: [
                     SizedBox(
-                      width: HomeEventsCard._tileWidth,
-                      child: _EventTile(
-                        event: events[i],
-                        isFocused: isFocused && i == selected,
+                      width: HomeRowWindow.inset(
+                        width: tilesWidth,
+                        tileWidth: HomeEventsCard._tileWidth,
+                        gap: HomeEventsCard._tileGap,
                       ),
                     ),
+                    for (var i = start; i < start + visible; i++) ...[
+                      if (i > start)
+                        const SizedBox(width: HomeEventsCard._tileGap),
+                      SizedBox(
+                        width: HomeEventsCard._tileWidth,
+                        child: _EventTile(
+                          event: events[i],
+                          isFocused: isFocused && i == selected,
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            _Edge(
-              icon: MoaiIcons.dpadRight,
-              active: start + visible < events.length,
-            ),
-          ],
+              HomeEdgePill(
+                icon: MoaiIcons.dpadRight,
+                active: start + visible < events.length,
+              ),
+            ],
+          ),
         );
       },
     );
   }
 }
 
-/// Flecha de un costado de la fila: con acento si hay eventos de ese lado,
-/// casi invisible si no.
-class _Edge extends StatelessWidget {
-  const _Edge({required this.icon, required this.active});
-
-  static const double width = 28;
-
-  final IconData icon;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    return SizedBox(
-      width: width,
-      child: Icon(
-        icon,
-        size: MoaiIconSizes.lg,
-        color: active
-            ? scheme.primary
-            : scheme.onSurfaceVariant.withValues(alpha: 0.15),
-      ),
-    );
-  }
-}
-
 /// Un evento: deporte, hora y estado arriba; título y competencia abajo.
-/// En vivo va teñido del acento, como en la grilla de la Agenda (acá sólo
-/// llegan eventos en curso o próximos).
+/// En vivo sólo lleva el tag, sin teñir la tarjeta (acá sólo llegan eventos
+/// en curso o próximos).
 class _EventTile extends StatelessWidget {
   const _EventTile({required this.event, required this.isFocused});
 
@@ -243,13 +164,13 @@ class _EventTile extends StatelessWidget {
     final isLive = event.status == CalendarEventStatus.live;
     final fg = scheme.onSurface;
     final accent = scheme.primary;
+    const live = HomeEventsCard.liveColor;
     final String? chip = isLive ? LocaleKeys.calendar_status_live.tr() : null;
 
     return MoaiGlass(
       borderRadius: 12,
       elevated: false,
       solid: true,
-      tint: isLive ? scheme.primary : null,
       focused: isFocused,
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       child: Column(
@@ -260,14 +181,19 @@ class _EventTile extends StatelessWidget {
               Icon(
                 CalendarProvider.getSubscriptionIcon(event.subscriptionId),
                 size: MoaiIconSizes.md,
-                color: accent,
+                // REDISEÑO: el color del deporte, como en la Agenda.
+                color: CalendarProvider.getSubscriptionColor(
+                  event.subscriptionId,
+                  accent,
+                ),
               ),
               const SizedBox(width: 8),
               Text(
                 event.formattedTime,
                 style: MoaiText.body(
                   context,
-                  color: accent,
+                  // REDISEÑO: gris suave, no el acento.
+                  color: scheme.onSurfaceVariant,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
@@ -293,26 +219,10 @@ class _EventTile extends StatelessWidget {
                       ),
               ),
               if (chip != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: moaiGlassChipDecoration(
-                    scheme,
-                    highlighted: isLive,
-                  ),
-                  child: Text(
-                    chip,
-                    style: MoaiText.body(
-                      context,
-                      color: fg,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.4,
-                    ),
-                  ),
-                ),
+                // REDISEÑO: chico, del tamaño del tag de la tarjeta grande
+                // de eventos, con el degradé de un botón con foco en el color
+                // de la tarjeta y un brillo suave.
+                MoaiStatusTag(label: chip, color: live),
             ],
           ),
           const Spacer(),
@@ -330,83 +240,6 @@ class _EventTile extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Hay suscripciones pero nada en curso ni por empezar hoy.
-class _NothingToShow extends StatelessWidget {
-  const _NothingToShow();
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        LocaleKeys.home_events_empty.tr(),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: MoaiText.body(
-          context,
-          color: context.scheme.onSurfaceVariant,
-          fontSize: 14,
-        ),
-      ),
-    );
-  }
-}
-
-/// Sin suscripciones: aviso y botón a Suscripciones (OK sobre la tarjeta).
-class _Empty extends StatelessWidget {
-  const _Empty({required this.isFocused});
-
-  final bool isFocused;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.scheme;
-
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            LocaleKeys.home_events_empty_desc.tr(),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: MoaiText.body(
-              context,
-              color: scheme.onSurfaceVariant,
-              fontSize: 14,
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-          decoration: moaiGlassButtonDecoration(scheme, focused: isFocused),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                MoaiIcons.calendarSubscriptions,
-                size: MoaiIconSizes.md,
-                color: isFocused ? scheme.onPrimary : scheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                LocaleKeys.home_events_subscribe.tr(),
-                style: MoaiText.body(
-                  context,
-                  color: isFocused ? scheme.onPrimary : scheme.onSurface,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 8),
-      ],
     );
   }
 }

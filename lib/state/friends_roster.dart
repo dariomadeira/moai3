@@ -2,8 +2,7 @@ import 'package:moai3/models/friend_info.dart';
 
 /// Lista de amigos de Miremos Juntos y su estado en vivo, sin red ni UI.
 ///
-/// Fusiona la presencia de Realtime y los cambios de la tabla de dispositivos,
-/// mantiene el orden (en línea primero, luego por nombre) y decide a qué amigos
+/// Aplica los cambios de la tabla de dispositivos, mantiene el orden (en línea primero, luego por nombre) y decide a qué amigos
 /// avisar cuando entran al canal que se está mirando (una vez por canal).
 class FriendsRoster {
   List<FriendInfo> _friends = [];
@@ -28,45 +27,6 @@ class FriendsRoster {
 
   /// Al cambiar de canal se vuelve a avisar de cero.
   void resetNotified() => _notifiedInChannel.clear();
-
-  /// Aplica la presencia activa de Realtime. `true` si cambió algo visible.
-  bool applyPresences(List<Map<String, dynamic>> activePresences) {
-    final byDevice = <String, Map<String, dynamic>>{};
-    for (final p in activePresences) {
-      final devId = p['device_id'] as String?;
-      if (devId != null && devId.isNotEmpty) byDevice[devId] = p;
-    }
-
-    var changed = false;
-    for (var i = 0; i < _friends.length; i++) {
-      final friend = _friends[i];
-      final presence = byDevice[friend.deviceId];
-      if (presence != null) {
-        final updated = _withLive(
-          friend,
-          isOnline: true,
-          nickname: presence['nickname'] as String?,
-          userCode: presence['user_code'] as String?,
-          lastSeen: DateTime.now(),
-          channelId: presence['channel_id'] as String?,
-          channelName: presence['channel_name'] as String?,
-        );
-        if (_hasVisibleChange(friend, updated)) {
-          _friends[i] = updated;
-          changed = true;
-        }
-      } else if (friend.isOnline || friend.currentChannelId != null) {
-        _friends[i] = _withLive(
-          friend,
-          isOnline: false,
-          lastSeen: friend.lastSeen,
-        );
-        changed = true;
-      }
-    }
-    if (changed) _sort();
-    return changed;
-  }
 
   /// Aplica un cambio de la tabla de dispositivos a un amigo.
   ///
@@ -151,12 +111,6 @@ class FriendsRoster {
     currentChannelId: channelId,
     currentChannelName: channelName,
   );
-
-  static bool _hasVisibleChange(FriendInfo a, FriendInfo b) =>
-      a.isOnline != b.isOnline ||
-      a.currentChannelId != b.currentChannelId ||
-      a.currentChannelName != b.currentChannelName ||
-      a.nickname != b.nickname;
 
   void _sort() {
     _friends.sort((a, b) {

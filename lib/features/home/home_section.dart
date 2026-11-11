@@ -2,6 +2,9 @@
 enum HomeSection {
   home,
   tv,
+
+  /// Visor de TV nuevo, rediseñado desde cero al lado del de siempre.
+  liveTv,
   featured,
   movies,
   series,

@@ -16,10 +16,7 @@ import 'package:moai3/theme/moai_icons.dart';
 class TvArcadeSelectFriendDialog extends StatefulWidget {
   final void Function(FriendInfo friend) onFriendSelected;
 
-  const TvArcadeSelectFriendDialog({
-    super.key,
-    required this.onFriendSelected,
-  });
+  const TvArcadeSelectFriendDialog({super.key, required this.onFriendSelected});
 
   static Future<void> show(
     BuildContext context, {
@@ -28,9 +25,8 @@ class TvArcadeSelectFriendDialog extends StatefulWidget {
     return showTvGeneralDialog(
       context: context,
       barrierLabel: 'TvArcadeSelectFriendDialog',
-      builder: (dialogContext) => TvArcadeSelectFriendDialog(
-        onFriendSelected: onFriendSelected,
-      ),
+      builder: (dialogContext) =>
+          TvArcadeSelectFriendDialog(onFriendSelected: onFriendSelected),
     );
   }
 
@@ -60,8 +56,9 @@ class _TvArcadeSelectFriendDialogState
   }
 
   List<FriendInfo> _sortedFriends(List<FriendInfo> friends) {
-    final sorted = friends.where((friend) => friend.isOnline).toList()
-      ..sort((a, b) => a.displayName.compareTo(b.displayName));
+    final sorted =
+        friends.where((f) => f.isOnline && !f.isPlayingArcade).toList()
+          ..sort((a, b) => a.displayName.compareTo(b.displayName));
     if (_sameFriends(_sorted, sorted)) return _sorted;
     _sorted = sorted;
     return _sorted;
@@ -89,7 +86,7 @@ class _TvArcadeSelectFriendDialogState
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final wp = context.watch<WatchPartyProvider?>();
-    final sortedFriends = _sortedFriends(wp?.friends ?? const []);
+    final sortedFriends = _sortedFriends(wp?.mutualFriends ?? const []);
     if (sortedFriends.isEmpty && !_askedEmptyFocus) {
       _askedEmptyFocus = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -100,7 +97,6 @@ class _TvArcadeSelectFriendDialogState
     return TvDialog(
       width: 580,
       icon: MoaiIcons.personSearch,
-      iconColor: scheme.primary,
       iconBgColor: scheme.primary.withValues(alpha: 0.15),
       title: LocaleKeys.arcade_select_friend_title.tr(),
       subtitle: LocaleKeys.arcade_select_friend_subtitle.tr(),
@@ -120,8 +116,8 @@ class _TvArcadeSelectFriendDialogState
           onKeyUp: sortedFriends.isEmpty
               ? _manageFocus.requestFocus
               : () => _listKey.currentState?.ensureVisible(
-                    sortedFriends.length - 1,
-                  ),
+                  sortedFriends.length - 1,
+                ),
         ),
       ],
     );
@@ -158,31 +154,43 @@ class _FriendWindow extends StatelessWidget {
         itemExtent: _TvArcadeSelectFriendDialogState._itemExtent,
         showScrollDots: true,
         onFocusDownFromLast: onFocusDownFromLast,
-        itemBuilder: (context, friend, focusNode, localIndex, globalIndex, onKeyUp, onKeyDown) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            child: TvTile(
-              focusNode: focusNode,
-              minHeight: 52,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              label: friend.displayName,
-              description: LocaleKeys.friends_status_online.tr(),
-              icon: MoaiIcons.person,
-              onPressed: () => onSelect(friend),
-              onKeyUp: onKeyUp,
-              onKeyDown: onKeyDown,
-              trailingBuilder: (context, isFocused) {
-                return Icon(
-                  MoaiIcons.gamepad,
-                  size: MoaiIconSizes.md,
-                  color: isFocused
-                      ? scheme.onPrimary
-                      : scheme.onSurfaceVariant.withValues(alpha: 0.7),
-                );
-              },
-            ),
-          );
-        },
+        itemBuilder:
+            (
+              context,
+              friend,
+              focusNode,
+              localIndex,
+              globalIndex,
+              onKeyUp,
+              onKeyDown,
+            ) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: TvTile(
+                  focusNode: focusNode,
+                  minHeight: 52,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  label: friend.displayName,
+                  description: LocaleKeys.friends_status_online.tr(),
+                  icon: MoaiIcons.person,
+                  onPressed: () => onSelect(friend),
+                  onKeyUp: onKeyUp,
+                  onKeyDown: onKeyDown,
+                  trailingBuilder: (context, isFocused) {
+                    return Icon(
+                      MoaiIcons.gamepad,
+                      size: MoaiIconSizes.md,
+                      color: isFocused
+                          ? scheme.onPrimary
+                          : scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    );
+                  },
+                ),
+              );
+            },
       ),
     );
   }

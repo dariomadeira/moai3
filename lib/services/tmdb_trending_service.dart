@@ -13,17 +13,40 @@ import 'package:moai3/l10n/locale_keys.g.dart';
 class TmdbTrendingService {
   static final TmdbTrendingService instance = TmdbTrendingService._internal();
 
+  /// `columnId` de la fila "Estrenos de Cartelera" (local, no del servidor).
+  static const int trendingColumnId = 88888;
+
   TmdbTrendingService._internal();
 
   static const _ranker = NewReleaseRanker();
 
+  static const _acclaimedRanker = AcclaimedRanker();
+
   List<TmdbMovie>? _cachedTmdbMovies;
   DateTime? _lastFetchTime;
+
+  /// El pedido en curso: al arrancar lo piden a la vez los estrenos y "Lo
+  /// mejor del año"; el segundo espera al primero en vez de repetir los
+  /// pedidos a TMDb.
+  Future<List<TmdbMovie>>? _trendingInFlight;
+
+  List<TmdbMovie>? _cachedAcclaimed;
+  DateTime? _lastAcclaimedFetch;
 
   /// Candidatas a estreno: tendencias de la semana, en cines ahora y lo
   /// estrenado en el último año y medio con votos suficientes. Las consultas
   /// van en paralelo. Guarda en caché en memoria por 4 horas.
-  Future<List<TmdbMovie>> fetchTrendingMovies({Duration timeout = const Duration(seconds: 4)}) async {
+  Future<List<TmdbMovie>> fetchTrendingMovies({
+    Duration timeout = const Duration(seconds: 4),
+  }) {
+    final inFlight = _trendingInFlight;
+    if (inFlight != null) return inFlight;
+    final request = _fetchTrendingMovies(timeout);
+    _trendingInFlight = request;
+    return request.whenComplete(() => _trendingInFlight = null);
+  }
+
+  Future<List<TmdbMovie>> _fetchTrendingMovies(Duration timeout) async {
     final now = DateTime.now();
     if (_cachedTmdbMovies != null &&
         _lastFetchTime != null &&
@@ -111,6 +134,81 @@ class TmdbTrendingService {
     }
   }
 
+  /// Las mejor votadas por el público de lo estrenado en el último año.
+  /// Caché en memoria de 4 horas, como las candidatas a estreno.
+  Future<List<TmdbMovie>> fetchAcclaimedMovies({
+    Duration timeout = const Duration(seconds: 4),
+  }) async {
+    final now = DateTime.now();
+    if (_cachedAcclaimed != null &&
+        _lastAcclaimedFetch != null &&
+        now.difference(_lastAcclaimedFetch!) < const Duration(hours: 4)) {
+      return _cachedAcclaimed!;
+    }
+    final token = kTmdbApiKey.trim();
+    if (token.isEmpty) return _cachedAcclaimed ?? const [];
+
+    final since = now.subtract(_acclaimedRanker.maxAge);
+    String day(DateTime d) =>
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    const discover =
+        'https://api.themoviedb.org/3/discover/movie?language=es-MX'
+        '&sort_by=vote_average.desc&include_adult=false&vote_count.gte=300';
+    final range =
+        '&primary_release_date.gte=${day(since)}&primary_release_date.lte=${day(now)}';
+
+    final client = HttpClient();
+    final pages = await Future.wait([
+      for (var page = 1; page <= 3; page++)
+        _fetchPage(
+          client,
+          '$discover$range&page=$page',
+          token,
+          timeout,
+          inTheaters: false,
+        ),
+    ]);
+    client.close();
+
+    final movies = pages.expand((p) => p).toList();
+    if (movies.isNotEmpty) {
+      _cachedAcclaimed = movies;
+      _lastAcclaimedFetch = now;
+    }
+    return _cachedAcclaimed ?? const [];
+  }
+
+  /// "Lo mejor del año" de Películas ([AcclaimedRanker]): espera a TMDb
+  /// como mucho [wait]; sin respuesta, sale sólo con el respaldo local.
+  Future<List<MovieItem>> buildBestOfYear({
+    required List<MovieItem> allCatalogMovies,
+    required Duration wait,
+  }) async {
+    var candidates = const <TmdbMovie>[];
+    try {
+      final lists = await Future.wait([
+        fetchAcclaimedMovies(),
+        fetchTrendingMovies(),
+      ]).timeout(wait);
+      final byId = <int, TmdbMovie>{
+        for (final movie in lists.expand((l) => l)) movie.id: movie,
+      };
+      candidates = byId.values.toList();
+    } catch (e) {
+      debugPrint('⚠️ [TMDB] Sin "lo mejor del año" de TMDb: $e');
+    }
+    final movies = _acclaimedRanker.rank(
+      candidates: candidates,
+      catalog: allCatalogMovies,
+      now: DateTime.now(),
+    );
+    debugPrint(
+      '🏆 [TMDB] Lo mejor del año (${movies.length}): '
+      '${movies.map((m) => m.name).join(' · ')}',
+    );
+    return movies;
+  }
+
   /// Arma la fila "Estrenos de cartelera" de Películas: las candidatas de
   /// TMDb que están en el catálogo, sólo nuevas y ordenadas por
   /// [NewReleaseRanker]. Si no llegan a 10 completa con la categoría de
@@ -145,7 +243,7 @@ class TmdbTrendingService {
     );
 
     return CategoryColumn(
-      columnId: 88888,
+      columnId: trendingColumnId,
       columnName: LocaleKeys.movies_category_new_releases.tr(),
       movies: movies,
     );

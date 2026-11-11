@@ -19,6 +19,9 @@ class TvInstallPill extends StatelessWidget {
 
   final double? downloadProgress;
 
+  /// Verde de "Instalado" (la etiqueta de cristal se tiñe con él).
+  static const Color installedColor = Color(0xFF16A34A);
+
   const TvInstallPill({
     super.key,
     required this.isInstalled,
@@ -35,17 +38,15 @@ class TvInstallPill extends StatelessWidget {
     // Cristal: "Instalar" es la acción (acento con brillo); "Instalado" es un
     // estado tranquilo (cristal tenue con el tilde en el acento).
     final glass = MoaiGlassScope.enabledOf(context);
-    final dark = scheme.brightness == Brightness.dark;
-    final glassLine = dark ? Colors.white : scheme.onSurface;
 
     final Color bg;
     final Color fg;
 
     if (glass) {
-      bg = isInstalled
-          ? glassLine.withValues(alpha: dark ? 0.06 : 0.08)
-          : scheme.primary;
-      fg = isInstalled ? scheme.onSurface : scheme.onPrimary;
+      // "Instalado" es un estado: la pastilla de los géneros de película
+      // (`TvMovieGenreChip`) en verde sólido, con texto blanco.
+      bg = isInstalled ? installedColor : scheme.primary;
+      fg = isInstalled ? Colors.white : scheme.onPrimary;
     } else if (isInstalled) {
       if (isFocused) {
         bg = scheme.onPrimary.withValues(alpha: 0.2);
@@ -104,11 +105,7 @@ class TvInstallPill extends StatelessWidget {
           : Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  iconData,
-                  size: MoaiIconSizes.sm,
-                  color: glass && isInstalled ? scheme.primary : fg,
-                ),
+                Icon(iconData, size: MoaiIconSizes.sm, color: fg),
                 const SizedBox(width: 6),
                 Text(
                   label,
@@ -125,17 +122,14 @@ class TvInstallPill extends StatelessWidget {
 
     final Decoration? glassDecoration = !glass
         ? null
+        : isInstalled
+        ? const ShapeDecoration(color: installedColor, shape: StadiumBorder())
         : BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            border: isInstalled
-                ? Border.all(color: glassLine.withValues(alpha: 0.14))
-                : null,
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: isInstalled
-                  ? [bg, bg]
-                  : [Color.lerp(bg, Colors.white, 0.15)!, bg],
+              colors: [Color.lerp(bg, Colors.white, 0.15)!, bg],
             ),
           );
 

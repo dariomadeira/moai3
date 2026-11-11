@@ -8,7 +8,7 @@ import 'package:moai3/state/watch_party_provider.dart';
 
 /// Único dueño de la presencia del dispositivo (SPEC-22 / SPEC-50 §2.4).
 ///
-/// - Online con heartbeat en TV y Arcade; offline en el resto de las secciones.
+/// - Online con heartbeat mientras la app esté visible, en cualquier sección.
 /// - El canal actual se reporta solo mientras la sección es TV.
 /// - Escucha el registro del dispositivo y avisa si lo bloquean en vivo.
 class PresenceCoordinator {
@@ -104,9 +104,9 @@ enum PresenceMode {
   /// TV: online y reportando el canal que se mira.
   watching,
 
-  /// Arcade: online (para recibir invitaciones) sin canal.
+  /// Cualquier otra sección: online sin canal.
   available,
 
-  /// Agenda, Ajustes, etc.: offline.
+  /// La app no está a la vista.
   offline,
 }

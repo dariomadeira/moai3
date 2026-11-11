@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:moai3/features/home/widgets/tv_movie_card.dart';
 import 'package:moai3/features/movies/controllers/movie_search_controller.dart';
 import 'package:moai3/features/movies/widgets/movie_poster_grid.dart';
 import 'package:moai3/features/movies/widgets/movie_search_panel.dart';
 import 'package:moai3/models/movie_models.dart';
+import 'package:moai3/platform/platform_channels.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'helpers/real_fonts.dart';
 import 'helpers/spanish_translations.dart';
 
 /// [n] películas para la página [page] de [query] (ids únicos).
@@ -20,6 +23,7 @@ List<MovieItem> page(String query, int page, int n) => [
 ];
 
 void main() {
+  setUpAll(loadRealFonts);
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   late List<(String, int)> calls;
@@ -181,7 +185,73 @@ void main() {
     expect(focused(), 'field');
   });
 
-  testWidgets('"Borrar búsquedas" vacía las recientes', (tester) async {
+  void mockDictation(
+    WidgetTester tester,
+    Future<Object?> Function() onDictate,
+  ) {
+    final messenger = tester.binding.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(PlatformChannels.remoteVoice, (
+      call,
+    ) async {
+      expect(call.method, 'recognizeSpeech');
+      return onDictate();
+    });
+    addTearDown(
+      () => messenger.setMockMethodCallHandler(
+        PlatformChannels.remoteVoice,
+        null,
+      ),
+    );
+  }
+
+  testWidgets('→ va al micrófono y lo dictado se busca', (tester) async {
+    final controller = await pump(tester);
+    mockDictation(tester, () async => ' matrix ');
+
+    await key(tester, LogicalKeyboardKey.arrowRight);
+    expect(focused(), 'movie_search_mic');
+    await key(tester, LogicalKeyboardKey.select);
+    await tester.pump();
+    await tester.pump();
+
+    expect(controller.queryController.text, 'matrix');
+    expect(calls.first, ('matrix', 1));
+    expect(controller.history, ['matrix']);
+  });
+
+  testWidgets('si se cancela el dictado no busca nada', (tester) async {
+    final controller = await pump(tester);
+    mockDictation(tester, () async => null);
+
+    await key(tester, LogicalKeyboardKey.arrowRight);
+    await key(tester, LogicalKeyboardKey.select);
+    await tester.pump();
+
+    expect(controller.queryController.text, isEmpty);
+    expect(calls, isEmpty);
+    expect(focused(), 'movie_search_mic');
+  });
+
+  testWidgets('sin reconocimiento de voz, avisa', (tester) async {
+    await pump(tester);
+    mockDictation(
+      tester,
+      () async => throw PlatformException(code: 'UNAVAILABLE'),
+    );
+
+    await key(tester, LogicalKeyboardKey.arrowRight);
+    await key(tester, LogicalKeyboardKey.select);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(
+      find.text('La búsqueda por voz no está disponible en este aparato'),
+      findsOneWidget,
+    );
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('"Borrar" vacía las recientes', (tester) async {
     final c = await pump(
       tester,
       prefs: {
@@ -189,7 +259,7 @@ void main() {
       },
     );
     await tester.pump();
-    expect(find.text('Borrar búsquedas'), findsOneWidget);
+    expect(find.text('Borrar'), findsOneWidget);
 
     await key(tester, LogicalKeyboardKey.arrowDown);
     await key(tester, LogicalKeyboardKey.arrowRight);
@@ -200,7 +270,7 @@ void main() {
 
     expect(c.history, isEmpty);
     expect(find.text('rocky'), findsNothing);
-    expect(find.text('Borrar búsquedas'), findsNothing);
+    expect(find.text('Borrar'), findsNothing);
     expect(find.text('Buscá por título, actor o director'), findsOneWidget);
     expect(focused(), 'field');
     // Quedó borrado también lo guardado.
@@ -248,4 +318,29 @@ void main() {
       expect(exitedLeft, 1);
     },
   );
+
+  testWidgets('sin scroll: dos filas enteras y ↓ corre la ventana de a una', (
+    tester,
+  ) async {
+    final c = await pump(tester);
+    await c.submit('batman');
+    await tester.pump();
+    // 20 = 4 filas: se ven las 2 primeras (10 pósters) y 3 posiciones.
+    expect(find.byType(TvMovieCard), findsNWidgets(10));
+    expect(find.text('batman 1-0'), findsOneWidget);
+    expect(find.text('batman 1-10'), findsNothing);
+
+    await key(tester, LogicalKeyboardKey.arrowDown);
+    await key(tester, LogicalKeyboardKey.arrowDown);
+    // En la 2.ª fila la ventana no se mueve.
+    expect(find.text('batman 1-0'), findsOneWidget);
+
+    await key(tester, LogicalKeyboardKey.arrowDown);
+    expect(selected(tester), 10);
+    // Fila 3 elegida: se ven la 2.ª y la 3.ª.
+    expect(find.text('batman 1-0'), findsNothing);
+    expect(find.text('batman 1-5'), findsOneWidget);
+    expect(find.text('batman 1-10'), findsOneWidget);
+    expect(find.byType(TvMovieCard), findsNWidgets(10));
+  });
 }

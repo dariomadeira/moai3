@@ -4,6 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/services/watch_party_voice_coordinator.dart';
 import 'package:moai3/state/watch_party_provider.dart';
@@ -102,14 +103,24 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
         children: [
           if (hasChannelName) ...[
             Expanded(
-              child: Text(
-                channelName.trim(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: MoaiText.display(
-                  context,
-                  color: scheme.onSurface,
-                  fontSize: 28,
+              // El degradado de los títulos de los paneles (el de la hora),
+              // del ancho del texto: estirado a toda la fila, un nombre corto
+              // quedaba sólo con la punta oscura.
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: ShaderMask(
+                  blendMode: BlendMode.srcIn,
+                  shaderCallback: HomeClock.timeShader,
+                  child: Text(
+                    channelName.trim(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: MoaiText.display(
+                      context,
+                      color: scheme.onSurface,
+                      fontSize: 28,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -121,21 +132,19 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
               child: AnimatedSize(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeInOut,
-                child: Container(
+                child: MoaiGlass(
+                  borderRadius: 18,
+                  elevated: false,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: scheme.primary,
-                    borderRadius: BorderRadius.circular(18),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         MoaiIcons.voice,
-                        color: scheme.onPrimary,
+                        color: scheme.primary,
                         size: MoaiIconSizes.sm,
                       ),
                       const SizedBox(width: 6),
@@ -152,7 +161,7 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
                             overflow: TextOverflow.ellipsis,
                             style: MoaiText.body(
                               context,
-                              color: scheme.onPrimary,
+                              color: scheme.onSurface,
                               fontSize: 12,
                             ),
                           ),
@@ -280,7 +289,7 @@ class _TvWatchPartyHeaderBarState extends State<TvWatchPartyHeaderBar> {
               ? moaiGlassButtonDecoration(
                   scheme,
                   focused: _isMicFocused || isRecording,
-                  accent: isRecording ? scheme.error : null,
+                  accent: isRecording ? scheme.error : scheme.primary,
                   radius: 20,
                 )
               : BoxDecoration(

@@ -178,6 +178,7 @@ class PlayerEntry(
     private var eventChannel: EventChannel? = null
     private var eventSink: EventChannel.EventSink? = null
     var player: ExoPlayer? = null
+    private var playerListener: Player.Listener? = null
 
     val textureId: Long get() = textureEntry.id()
 
@@ -216,6 +217,10 @@ class PlayerEntry(
     }
 
     fun buildAndPlay(args: Map<*, *>) {
+        // Vaciar el reproductor viejo avisa "ended": Flutter creería que la
+        // película terminó. Se lo deja de escuchar antes.
+        playerListener?.let { player?.removeListener(it) }
+        playerListener = null
         // Stop, clear surface, media items and release previous player properly
         try {
             player?.clearMediaItems()
@@ -243,6 +248,8 @@ class PlayerEntry(
         // Idioma de audio preferido (p. ej. "spa", "eng"): las películas traen
         // varios audios en el mismo stream y ExoPlayer elige según esto.
         val preferredAudio = args["preferredAudioLanguage"] as? String
+        // Cuál de los audios de ese idioma (hay películas con dos "spa").
+        val preferredAudioOccurrence = (args["preferredAudioOccurrence"] as? Number)?.toInt() ?: 0
         // Subtítulo externo (SRT/VTT) elegido en Flutter; el texto vuelve por
         // el evento "cues" y lo dibuja Flutter (no hay vista de ExoPlayer).
         val subtitleUrl = args["subtitleUrl"] as? String
@@ -334,7 +341,11 @@ class PlayerEntry(
         val mediaDsFactory: DataSource.Factory =
             if (!preferredAudio.isNullOrEmpty()) {
                 DataSource.Factory {
-                    TsAudioSwapDataSource(dsFactory.createDataSource(), preferredAudio)
+                    TsAudioSwapDataSource(
+                        dsFactory.createDataSource(),
+                        preferredAudio,
+                        preferredAudioOccurrence,
+                    )
                 }
             } else {
                 dsFactory
@@ -397,7 +408,7 @@ class PlayerEntry(
                 .build()
         }
 
-        newPlayer.addListener(object : Player.Listener {
+        val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
                 val name = when (state) {
                     Player.STATE_READY -> "ready"
@@ -496,9 +507,19 @@ class PlayerEntry(
                     )
                 )
             }
-        })
+        }
+        newPlayer.addListener(listener)
+        playerListener = listener
 
-        newPlayer.setMediaSource(mediaSourceFactory.createMediaSource(mediaItem))
+        // Al recargar se arranca directo ahí: el proxy de Titan da 404 por los
+        // tramos anteriores a donde está bajando.
+        val startPositionMs = (args["startPositionMs"] as? Number)?.toLong() ?: 0L
+        val mediaSource = mediaSourceFactory.createMediaSource(mediaItem)
+        if (startPositionMs > 0L) {
+            newPlayer.setMediaSource(mediaSource, startPositionMs)
+        } else {
+            newPlayer.setMediaSource(mediaSource)
+        }
         newPlayer.prepare()
         newPlayer.play()
         player = newPlayer

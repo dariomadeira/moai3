@@ -8,6 +8,7 @@ import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
+import 'package:moai3/widgets/tv_common/moai_status_tag.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
@@ -66,7 +67,9 @@ class TvPinDialog extends StatefulWidget {
   }) {
     return showGeneralDialog<String?>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.75),
+      // Más liviano que antes (0,75): el cristal del diálogo se
+      // despega igual y se sigue viendo dónde se está.
+      barrierColor: Colors.black.withValues(alpha: 0.55),
       pageBuilder: (context, _, _) => TvPinDialog(
         customTitle: title,
         customSubtitle: subtitle,
@@ -98,7 +101,9 @@ class TvPinDialog extends StatefulWidget {
 
     final success = await showGeneralDialog<bool?>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.75),
+      // Más liviano que antes (0,75): el cristal del diálogo se
+      // despega igual y se sigue viendo dónde se está.
+      barrierColor: Colors.black.withValues(alpha: 0.55),
       pageBuilder: (context, _, _) => TvPinDialog(
         tvSettings: tvSettings,
         customTitle: LocaleKeys.parental_pin_title_enter.tr(),
@@ -125,11 +130,11 @@ class TvPinDialog extends StatefulWidget {
   ) async {
     final success = await showGeneralDialog<bool?>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.75),
-      pageBuilder: (context, _, _) => TvPinDialog(
-        mode: TvPinDialogMode.create,
-        tvSettings: tvSettings,
-      ),
+      // Más liviano que antes (0,75): el cristal del diálogo se
+      // despega igual y se sigue viendo dónde se está.
+      barrierColor: Colors.black.withValues(alpha: 0.55),
+      pageBuilder: (context, _, _) =>
+          TvPinDialog(mode: TvPinDialogMode.create, tvSettings: tvSettings),
     );
 
     if (success == true && context.mounted) {
@@ -154,11 +159,11 @@ class TvPinDialog extends StatefulWidget {
 
     final success = await showGeneralDialog<bool?>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.75),
-      pageBuilder: (context, _, _) => TvPinDialog(
-        mode: TvPinDialogMode.change,
-        tvSettings: tvSettings,
-      ),
+      // Más liviano que antes (0,75): el cristal del diálogo se
+      // despega igual y se sigue viendo dónde se está.
+      barrierColor: Colors.black.withValues(alpha: 0.55),
+      pageBuilder: (context, _, _) =>
+          TvPinDialog(mode: TvPinDialogMode.change, tvSettings: tvSettings),
     );
 
     if (success == true && context.mounted) {
@@ -204,18 +209,12 @@ class _TvPinDialogState extends State<TvPinDialog>
     );
 
     _shakeAnimation = Tween<double>(begin: 0.0, end: 10.0).animate(
-      CurvedAnimation(
-        parent: _shakeController,
-        curve: const _PinShakeCurve(),
-      ),
+      CurvedAnimation(parent: _shakeController, curve: const _PinShakeCurve()),
     );
 
     _focusGrid = List.generate(
       4,
-      (r) => List.generate(
-        3,
-        (c) => FocusNode(debugLabel: 'pin_key_${r}_$c'),
-      ),
+      (r) => List.generate(3, (c) => FocusNode(debugLabel: 'pin_key_${r}_$c')),
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -258,7 +257,9 @@ class _TvPinDialogState extends State<TvPinDialog>
             ? LocaleKeys.parental_pin_title_create.tr()
             : LocaleKeys.parental_pin_title_confirm.tr();
       case TvPinDialogMode.change:
-        if (_currentStep == 1) return LocaleKeys.parental_pin_title_current.tr();
+        if (_currentStep == 1) {
+          return LocaleKeys.parental_pin_title_current.tr();
+        }
         if (_currentStep == 2) return LocaleKeys.parental_pin_title_create.tr();
         return LocaleKeys.parental_pin_title_confirm.tr();
     }
@@ -267,14 +268,19 @@ class _TvPinDialogState extends State<TvPinDialog>
   String get _currentSubtitle {
     switch (widget.mode) {
       case TvPinDialogMode.verify:
-        return widget.customSubtitle ?? LocaleKeys.parental_pin_create_subtitle.tr();
+        return widget.customSubtitle ??
+            LocaleKeys.parental_pin_create_subtitle.tr();
       case TvPinDialogMode.create:
         return _currentStep == 1
             ? LocaleKeys.parental_pin_create_subtitle.tr()
             : LocaleKeys.parental_pin_confirm_subtitle.tr();
       case TvPinDialogMode.change:
-        if (_currentStep == 1) return LocaleKeys.parental_pin_current_subtitle.tr();
-        if (_currentStep == 2) return LocaleKeys.parental_pin_create_subtitle.tr();
+        if (_currentStep == 1) {
+          return LocaleKeys.parental_pin_current_subtitle.tr();
+        }
+        if (_currentStep == 2) {
+          return LocaleKeys.parental_pin_create_subtitle.tr();
+        }
         return LocaleKeys.parental_pin_confirm_subtitle.tr();
     }
   }
@@ -283,19 +289,14 @@ class _TvPinDialogState extends State<TvPinDialog>
   Widget build(BuildContext context) {
     final scheme = context.scheme;
 
+    // El tag de "PRÓX." / "VIVO" de Eventos, en el acento.
     final stepBadge = _totalSteps > 1
-        ? Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: moaiGlassChipDecoration(scheme, radius: 12),
-            child: Text(
-              LocaleKeys.parental_pin_step.tr(args: ['$_currentStep', '$_totalSteps']),
-              style: MoaiText.body(
-                context,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: scheme.onSurface,
-              ),
-            ),
+        ? MoaiStatusTag(
+            label: LocaleKeys.parental_pin_step
+                .tr(args: ['$_currentStep', '$_totalSteps'])
+                .toUpperCase(),
+            color: Theme.of(context).colorScheme.primary,
+            large: true,
           )
         : null;
 
@@ -304,8 +305,13 @@ class _TvPinDialogState extends State<TvPinDialog>
       child: TvDialog(
         width: 440,
         icon: MoaiIcons.lock,
+        // El degradado del título lo pone [TvDialog] (en todos los diálogos).
         titleWidget: AnimatedSwitcher(
           duration: const Duration(milliseconds: 220),
+          layoutBuilder: (current, previous) => Stack(
+            alignment: Alignment.centerLeft,
+            children: [...previous, ?current],
+          ),
           child: Text(
             _currentTitle,
             key: ValueKey('title_$_currentStep'),
@@ -394,7 +400,6 @@ class _TvPinDialogState extends State<TvPinDialog>
             _buildKeypad(scheme),
           ],
         ),
-        actionsAlignment: MainAxisAlignment.center,
         actions: [
           TvDialogButton(
             focusNode: _cancelBtnFocus,

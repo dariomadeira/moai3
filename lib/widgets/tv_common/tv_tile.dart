@@ -11,6 +11,9 @@ class TvInfoTile extends StatelessWidget {
   final String label;
   final String? description;
   final IconData? icon;
+
+  /// Color propio del ícono (ver [TvTile.iconColor]).
+  final Color? iconColor;
   final Widget? trailing;
   final EdgeInsetsGeometry? padding;
   final double? minHeight;
@@ -21,6 +24,7 @@ class TvInfoTile extends StatelessWidget {
     required this.label,
     this.description,
     this.icon,
+    this.iconColor,
     this.trailing,
     this.padding,
     this.minHeight,
@@ -34,6 +38,7 @@ class TvInfoTile extends StatelessWidget {
       label: label,
       description: description,
       icon: icon,
+      iconColor: iconColor,
       trailing: trailing,
       padding: padding,
       minHeight: minHeight,
@@ -47,6 +52,10 @@ class TvTile extends StatefulWidget {
   final String label;
   final String? description;
   final IconData? icon;
+
+  /// Color propio del ícono (p. ej. el del deporte), siempre pleno. Sin él,
+  /// el acento.
+  final Color? iconColor;
   final Widget Function(BuildContext context, bool isFocused)? trailingBuilder;
   final VoidCallback? onPressed;
   final VoidCallback? onKeyLeft;
@@ -63,6 +72,7 @@ class TvTile extends StatefulWidget {
     required this.label,
     this.description,
     this.icon,
+    this.iconColor,
     this.trailingBuilder,
     this.onPressed,
     this.onKeyLeft,
@@ -150,6 +160,7 @@ class _TvTileState extends State<TvTile> {
             label: widget.label,
             description: widget.description,
             icon: widget.icon,
+            iconColor: widget.iconColor,
             padding: widget.padding,
             minHeight: widget.minHeight,
             // En cristal el foco no rellena la ficha, así que el trailing
@@ -170,6 +181,7 @@ class _TvTileChrome extends StatelessWidget {
   final String label;
   final String? description;
   final IconData? icon;
+  final Color? iconColor;
   final Widget? trailing;
   final EdgeInsetsGeometry? padding;
   final double? minHeight;
@@ -179,6 +191,7 @@ class _TvTileChrome extends StatelessWidget {
     required this.label,
     this.description,
     this.icon,
+    this.iconColor,
     this.trailing,
     this.padding,
     this.minHeight,
@@ -200,11 +213,14 @@ class _TvTileChrome extends StatelessWidget {
     final iconBg = isFocused
         ? scheme.onPrimary.withValues(alpha: 0.18)
         : scheme.primaryContainer;
-    // En cristal el ícono va suelto (como en el rail): acento suave, y pleno
-    // con foco para acompañar el borde.
+    // En cristal el ícono va suelto (como en el rail), en color sólido.
+    final ownColor = this.iconColor;
     final iconColor = glass
-        ? scheme.primary.withValues(alpha: isFocused ? 1 : 0.75)
-        : (solidFocus ? scheme.onPrimary : scheme.onPrimaryContainer);
+        // Sin color propio, el acento (2026-11-10; antes un índigo fijo).
+        ? (ownColor ?? scheme.primary)
+        : (solidFocus
+              ? scheme.onPrimary
+              : (ownColor ?? scheme.onPrimaryContainer));
 
     final borderColor = isFocused
         ? scheme.primary

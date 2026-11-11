@@ -145,30 +145,6 @@ void main() {
     },
   );
 
-  test(
-    'las películas y adelantos se publican sin esperar a la grilla',
-    () async {
-      final slow = Completer<List<MovieItem>?>();
-      final provider = FeaturedMoviesProvider(fetchShelf: (_, _) => slow.future)
-        ..setAvailableSections({section});
-      var notified = 0;
-      provider.addListener(() => notified++);
-
-      final loading = provider.loadSection(section);
-      // Esperar a que la carga lea el disco y quede esperando al servidor.
-      while (provider.itemsFor(section).isEmpty) {
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-      }
-      expect(provider.isLoadingFor(section), isTrue);
-      expect(provider.categoriesFor(section), isEmpty);
-      expect(notified, greaterThanOrEqualTo(2));
-
-      slow.complete(null);
-      await loading;
-      expect(provider.categoriesFor(section), isNotEmpty);
-    },
-  );
-
   group('Mejor puntuadas', () {
     // Acción trae dos buenas (a2: 8.5, a7: 9.0); Drama, una (d1: 7.5).
     setUp(() async {
@@ -346,4 +322,62 @@ void main() {
       expect(provider.categoriesFor(section)[2].hasMore, isTrue);
     });
   });
+
+  test(
+    'Series: sin repetidas, completa con series y lleva "Ver todas"',
+    () async {
+      const series = FeaturedMoviesProvider.sectionSeries;
+      Map<String, dynamic> seriesColumn(
+        int id,
+        String name,
+        List<String> ids,
+      ) => {
+        'columnId': id,
+        'name': name,
+        'assetList': [
+          for (final i in ids)
+            {'contentId': i, 'name': 'Serie $i T1', 'programType': 'teleplay'},
+        ],
+      };
+      await File('${dir.path}/masnew_series.json').writeAsString(
+        jsonEncode({
+          'recommendList': [
+            seriesColumn(40, 'Drama', range('s', 1, 10)),
+            seriesColumn(50, 'Policiales', ['s2', 's5', ...range('p', 1, 8)]),
+          ],
+        }),
+      );
+      final asked = <int>[];
+      final provider = FeaturedMoviesProvider(
+        fetchShelf: (id, page) async {
+          asked.add(id);
+          if (id != 50) return null;
+          // La lista del servidor trae también una película: se descarta.
+          return [
+            MovieItem(
+              contentId: 'x1',
+              name: 'Película x1',
+              programType: 'movie',
+            ),
+            for (final i in ['s2', 's5', ...range('p', 1, 20)])
+              MovieItem(
+                contentId: i,
+                name: 'Serie $i T1',
+                programType: 'teleplay',
+              ),
+          ];
+        },
+      )..setAvailableSections({series});
+      await provider.loadSection(series);
+
+      expect(asked, [50]);
+      final rows = [
+        for (final c in provider.categoriesFor(series))
+          [for (final m in c.movies) m.contentId],
+      ];
+      expect(rows[0], range('s', 1, 9));
+      expect(rows[1], range('p', 1, 9));
+      expect(provider.categoriesFor(series).every((c) => c.hasMore), isTrue);
+    },
+  );
 }

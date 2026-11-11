@@ -13,31 +13,40 @@ void main() {
   });
 
   group('CalendarProvider Tests', () {
-    test('Inicializa sin suscripciones activas por defecto en primera instalación', () async {
-      final provider = CalendarProvider();
-      await Future.delayed(const Duration(milliseconds: 50));
+    test(
+      'Inicializa sin suscripciones activas por defecto en primera instalación',
+      () async {
+        final provider = CalendarProvider();
+        await Future.delayed(const Duration(milliseconds: 50));
 
-      expect(provider.subscriptions.isNotEmpty, isTrue);
-      final hasAnySubscribed = provider.subscriptions.any((s) => s.isSubscribed);
-      expect(hasAnySubscribed, isFalse);
-      expect(provider.subscribedEvents, isEmpty);
-    });
+        expect(provider.subscriptions.isNotEmpty, isTrue);
+        final hasAnySubscribed = provider.subscriptions.any(
+          (s) => s.isSubscribed,
+        );
+        expect(hasAnySubscribed, isFalse);
+        expect(provider.subscribedEvents, isEmpty);
+      },
+    );
 
     test('Alternar suscripción cambia el estado y notifica', () async {
       final provider = CalendarProvider();
       await Future.delayed(const Duration(milliseconds: 50));
 
-      final motogpBefore = provider.subscriptions.firstWhere((s) => s.id == 'motogp');
-      expect(motogpBefore.isSubscribed, isFalse);
+      final nbaBefore = provider.subscriptions.firstWhere((s) => s.id == 'nba');
+      expect(nbaBefore.isSubscribed, isFalse);
 
-      await provider.toggleSubscription('motogp');
+      await provider.toggleSubscription('nba');
 
-      final motogpAfter = provider.subscriptions.firstWhere((s) => s.id == 'motogp');
-      expect(motogpAfter.isSubscribed, isTrue);
+      final nbaAfter = provider.subscriptions.firstWhere((s) => s.id == 'nba');
+      expect(nbaAfter.isSubscribed, isTrue);
     });
 
     test('Eventos de hoy y cálculo de todayEventCount', () {
-      final now = DateTime.now();
+      // Mediodía de Argentina fijo: con la hora real, "hace 4 horas" caía en
+      // el día anterior si el test corría entre las 00:00 y las 04:00.
+      ArgentinaTime.debugUtcNow = () => DateTime.utc(2026, 10, 21, 15);
+      addTearDown(() => ArgentinaTime.debugUtcNow = null);
+      final now = ArgentinaTime.utcNow();
       final todayEvent = CalendarEvent(
         id: 'test_1',
         subscriptionId: 'f1',
@@ -189,7 +198,6 @@ void main() {
       expect(list[2].id, '1'); // FINISHED
     });
 
-
     test('F1 no tiene eventos en fines de semana sin Gran Premio', () async {
       // Reloj fijo: el calendario de respaldo 2026 se evalúa como si hoy fuera 20 Sep.
       ArgentinaTime.debugUtcNow = () => DateTime.utc(2026, 9, 20, 15);
@@ -201,58 +209,96 @@ void main() {
 
       // 20 Sep 2026 (Hoy) NO hubo Gran Premio de F1
       final todayEvents = provider.getEventsForDay(DateTime(2026, 9, 20));
-      final f1Today = todayEvents.where((e) => e.subscriptionId == 'f1').toList();
+      final f1Today = todayEvents
+          .where((e) => e.subscriptionId == 'f1')
+          .toList();
       expect(f1Today, isEmpty, reason: 'Hoy 20 Sep 2026 no debe haber F1');
 
       // Próxima semana sí hay Gran Premio de Azerbaiyán
-      final nextWeekF1 = provider.subscribedEvents.where(
-        (e) => e.subscriptionId == 'f1' && e.startDateTime.isAfter(DateTime(2026, 9, 22)),
-      ).toList();
-      expect(nextWeekF1, isNotEmpty, reason: 'La próxima semana debe tener el GP de Azerbaiyán');
+      final nextWeekF1 = provider.subscribedEvents
+          .where(
+            (e) =>
+                e.subscriptionId == 'f1' &&
+                e.startDateTime.isAfter(DateTime(2026, 9, 22)),
+          )
+          .toList();
+      expect(
+        nextWeekF1,
+        isNotEmpty,
+        reason: 'La próxima semana debe tener el GP de Azerbaiyán',
+      );
 
       // Domingo 27 de Septiembre es la Carrera
       final sundayEvents = provider.getEventsForDay(DateTime(2026, 9, 27));
-      final sundayRace = sundayEvents.where((e) => e.subscriptionId == 'f1' && e.sessionType == 'f1_type_race').toList();
-      expect(sundayRace, isNotEmpty, reason: 'La carrera de F1 debe estar el Domingo 27 de Septiembre');
+      final sundayRace = sundayEvents
+          .where(
+            (e) => e.subscriptionId == 'f1' && e.sessionType == 'f1_type_race',
+          )
+          .toList();
+      expect(
+        sundayRace,
+        isNotEmpty,
+        reason: 'La carrera de F1 debe estar el Domingo 27 de Septiembre',
+      );
 
       // Sábado 26 de Septiembre es la Clasificación, no la Carrera
       final saturdayEvents = provider.getEventsForDay(DateTime(2026, 9, 26));
-      final saturdayRace = saturdayEvents.where((e) => e.subscriptionId == 'f1' && e.sessionType == 'f1_type_race').toList();
-      expect(saturdayRace, isEmpty, reason: 'La carrera de F1 NO debe estar el Sábado');
-      final saturdayQualy = saturdayEvents.where((e) => e.subscriptionId == 'f1' && e.sessionType == 'f1_type_qualy').toList();
-      expect(saturdayQualy, isNotEmpty, reason: 'El Sábado 26 debe tener la Clasificación');
+      final saturdayRace = saturdayEvents
+          .where(
+            (e) => e.subscriptionId == 'f1' && e.sessionType == 'f1_type_race',
+          )
+          .toList();
+      expect(
+        saturdayRace,
+        isEmpty,
+        reason: 'La carrera de F1 NO debe estar el Sábado',
+      );
+      final saturdayQualy = saturdayEvents
+          .where(
+            (e) => e.subscriptionId == 'f1' && e.sessionType == 'f1_type_qualy',
+          )
+          .toList();
+      expect(
+        saturdayQualy,
+        isNotEmpty,
+        reason: 'El Sábado 26 debe tener la Clasificación',
+      );
     });
 
-    test('F1 parser corrige desfase de 1 día de la API para que la carrera sea en Domingo', () {
-      final mockRaceJson = {
-        'season': '2026',
-        'round': '15',
-        'raceName': 'Azerbaijan Grand Prix',
-        'Circuit': {'circuitName': 'Baku City Circuit'},
-        'date': '2026-09-26', // Sábado en Ergast provisional
-        'time': '11:00:00Z',
-        'Qualifying': {'date': '2026-09-25', 'time': '12:00:00Z'},
-        'FirstPractice': {'date': '2026-09-24', 'time': '08:30:00Z'},
-      };
+    test(
+      'F1 parser corrige desfase de 1 día de la API para que la carrera sea en Domingo',
+      () {
+        final mockRaceJson = {
+          'season': '2026',
+          'round': '15',
+          'raceName': 'Azerbaijan Grand Prix',
+          'Circuit': {'circuitName': 'Baku City Circuit'},
+          'date': '2026-09-26', // Sábado en Ergast provisional
+          'time': '11:00:00Z',
+          'Qualifying': {'date': '2026-09-25', 'time': '12:00:00Z'},
+          'FirstPractice': {'date': '2026-09-24', 'time': '08:30:00Z'},
+        };
 
-      final events = F1CalendarService.parseRacesForTest([mockRaceJson]);
-      final race = events.firstWhere((e) => e.sessionType == 'f1_type_race');
-      final qualy = events.firstWhere((e) => e.sessionType == 'f1_type_qualy');
-      final fp1 = events.firstWhere((e) => e.sessionType == 'f1_type_p1');
+        final events = F1CalendarService.parseRacesForTest([mockRaceJson]);
+        final race = events.firstWhere((e) => e.sessionType == 'f1_type_race');
+        final qualy = events.firstWhere(
+          (e) => e.sessionType == 'f1_type_qualy',
+        );
+        final fp1 = events.firstWhere((e) => e.sessionType == 'f1_type_p1');
 
-      // El instante se guarda en UTC y el día civil es el de Argentina.
-      final raceCivil = ArgentinaTime.toCivil(race.startDateTime);
-      expect(raceCivil.weekday, DateTime.sunday);
-      expect(raceCivil.day, 27);
+        // El instante se guarda en UTC y el día civil es el de Argentina.
+        final raceCivil = ArgentinaTime.toCivil(race.startDateTime);
+        expect(raceCivil.weekday, DateTime.sunday);
+        expect(raceCivil.day, 27);
 
-      final qualyCivil = ArgentinaTime.toCivil(qualy.startDateTime);
-      expect(qualyCivil.weekday, DateTime.saturday);
-      expect(qualyCivil.day, 26);
+        final qualyCivil = ArgentinaTime.toCivil(qualy.startDateTime);
+        expect(qualyCivil.weekday, DateTime.saturday);
+        expect(qualyCivil.day, 26);
 
-      final fpCivil = ArgentinaTime.toCivil(fp1.startDateTime);
-      expect(fpCivil.weekday, DateTime.friday);
-      expect(fpCivil.day, 25);
-    });
+        final fpCivil = ArgentinaTime.toCivil(fp1.startDateTime);
+        expect(fpCivil.weekday, DateTime.friday);
+        expect(fpCivil.day, 25);
+      },
+    );
   });
 }
-

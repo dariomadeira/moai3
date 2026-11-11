@@ -69,6 +69,12 @@ class MoaiMediaSpec {
   /// stream, ExoPlayer elige éste si lo hay.
   final String? preferredAudioLanguage;
 
+  /// Cuál de los audios de ese idioma, contando desde 0.
+  final int preferredAudioOccurrence;
+
+  /// Desde dónde arranca el video (recargas); sin esto, desde el principio.
+  final Duration startPosition;
+
   /// Subtítulo externo (SRT/VTT) a mostrar; sin URL, sin subtítulos.
   final String? subtitleUrl;
   final String? subtitleMimeType;
@@ -83,6 +89,8 @@ class MoaiMediaSpec {
     this.drmLicenseUri,
     this.drmScheme,
     this.preferredAudioLanguage,
+    this.preferredAudioOccurrence = 0,
+    this.startPosition = Duration.zero,
     this.subtitleUrl,
     this.subtitleMimeType,
     this.subtitleLanguage,
@@ -313,6 +321,8 @@ class MoaiEngineController extends ChangeNotifier {
       'title': spec.title,
       'artist': 'Moai',
       'preferredAudioLanguage': spec.preferredAudioLanguage,
+      'preferredAudioOccurrence': spec.preferredAudioOccurrence,
+      'startPositionMs': spec.startPosition.inMilliseconds,
       'subtitleUrl': spec.subtitleUrl,
       'subtitleMimeType': spec.subtitleMimeType,
       'subtitleLanguage': spec.subtitleLanguage,

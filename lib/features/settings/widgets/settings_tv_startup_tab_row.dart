@@ -13,6 +13,7 @@ class SettingsTvStartupTabRow extends StatelessWidget {
   final VoidCallback? onKeyRight;
   final VoidCallback? onKeyUp;
   final VoidCallback? onKeyDown;
+  final Color? iconColor;
 
   const SettingsTvStartupTabRow({
     super.key,
@@ -23,13 +24,14 @@ class SettingsTvStartupTabRow extends StatelessWidget {
     this.onKeyRight,
     this.onKeyUp,
     this.onKeyDown,
+    this.iconColor,
   });
 
   static String _label(TvTab tab) => switch (tab) {
-        TvTab.explore => LocaleKeys.home_tab_explore,
-        TvTab.search => LocaleKeys.home_tab_search,
-        TvTab.groups => LocaleKeys.home_tab_groups,
-      }.tr();
+    TvTab.explore => LocaleKeys.home_tab_explore,
+    TvTab.search => LocaleKeys.home_tab_search,
+    TvTab.groups => LocaleKeys.home_tab_groups,
+  }.tr();
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +40,7 @@ class SettingsTvStartupTabRow extends StatelessWidget {
       label: LocaleKeys.settings_tv_startup_tab.tr(),
       description: LocaleKeys.settings_tv_startup_tab_desc.tr(),
       icon: MoaiIcons.settingsTvStartupTab,
+      iconColor: iconColor,
       options: TvTab.values,
       selected: selectedTab,
       onChanged: onChanged,

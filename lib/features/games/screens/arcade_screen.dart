@@ -7,8 +7,9 @@ import 'package:flutter/services.dart';
 import 'package:moai3/features/games/models/arcade_netplay_state.dart';
 import 'package:moai3/features/games/services/arcade_emulator_service.dart';
 import 'package:moai3/features/games/services/arcade_netplay_service.dart';
+import 'package:moai3/models/friend_info.dart';
 import 'package:moai3/services/modal_route_tracker.dart';
-import 'package:moai3/features/games/services/arcade_webrtc_transport.dart';
+import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/features/games/widgets/arcade_controller_overlay.dart';
 import 'package:moai3/features/games/widgets/arcade_view_container.dart';
 import 'package:moai3/services/arcade_plugin_service.dart';
@@ -16,17 +17,15 @@ import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Pantalla principal para emular y jugar juegos de Arcade (FBNeo / Libretro).
 class ArcadeScreen extends StatefulWidget {
   final String? initialRomPath;
   final ArcadeNetplaySession? netplaySession;
 
-  const ArcadeScreen({
-    super.key,
-    this.initialRomPath,
-    this.netplaySession,
-  });
+  const ArcadeScreen({super.key, this.initialRomPath, this.netplaySession});
 
   @override
   State<ArcadeScreen> createState() => _ArcadeScreenState();
@@ -40,12 +39,14 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
   int _activeInputMask = 0;
   StreamSubscription<void>? _exitSubscription;
   StreamSubscription<GamepadAssignment>? _gamepadSubscription;
-  StreamSubscription<ArcadeNetplayInputPacket>? _remoteInputSubscription;
+  AppLifecycleListener? _netplayLifecycle;
+  WatchPartyProvider? _watchParty;
   Timer? _netplayInputTicker;
   bool _isExiting = false;
   final Set<int> _notifiedPlayers = {};
 
-  static const String _defaultRomPath = '/data/user/0/com.infomak.moai/files/mvsc.zip';
+  static const String _defaultRomPath =
+      '/data/user/0/com.infomak.moai/files/mvsc.zip';
   static const MethodChannel _tvPlayerChannel = PlatformChannels.player;
 
   @override
@@ -55,6 +56,9 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
     // se responden "ocupado" (SPEC-50 §2.3).
     ModalRouteTracker.instance.pause();
     ArcadeNetplayService.instance.setPlaying(true);
+    // Para los amigos: "Jugando en Arcade".
+    _watchParty = context.read<WatchPartyProvider?>();
+    _watchParty?.reportCurrentChannel(channelId: FriendInfo.arcadeActivityId);
     // Pausar cualquier transmisión de TV activa para liberar decodificadores y CPU
     _tvPlayerChannel.invokeMethod<void>('pauseAll');
 
@@ -65,7 +69,9 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
       }
     });
 
-    _gamepadSubscription = _emulatorService.onGamepadAssigned.listen((assignment) {
+    _gamepadSubscription = _emulatorService.onGamepadAssigned.listen((
+      assignment,
+    ) {
       if (mounted && !_notifiedPlayers.contains(assignment.player)) {
         _notifiedPlayers.add(assignment.player);
         final String message;
@@ -81,29 +87,22 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
               ? LocaleKeys.arcade_pad_detected_p1.tr()
               : LocaleKeys.arcade_pad_detected_p2.tr();
         }
-        MoaiSnackBar.show(
-          context,
-          message: message,
-          icon: icon,
-        );
+        MoaiSnackBar.show(context, message: message, icon: icon);
       }
     });
 
     if (widget.netplaySession != null) {
-      _remoteInputSubscription =
-          ArcadeNetplayService.instance.onRemoteInputPacket.listen((packet) {
-        _emulatorService.netplaySubmitRemoteInput(
-          frame: packet.frame,
-          mask: packet.mask,
-        );
-      });
+      ArcadeNetplayService.instance.addListener(_onNetplaySessionChanged);
+      // En pausa el otro TV quedaría esperando: mejor salir y avisarle.
+      _netplayLifecycle = AppLifecycleListener(onHide: _popOnce);
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
+        _onNetplaySessionChanged();
+        if (mounted && !_isExiting) {
           MoaiSnackBar.show(
             context,
-            message: LocaleKeys.arcade_netplay_connected.tr(namedArgs: {
-              'friend': widget.netplaySession!.peerNickname,
-            }),
+            message: LocaleKeys.arcade_netplay_connected.tr(
+              namedArgs: {'friend': widget.netplaySession!.peerNickname},
+            ),
             icon: MoaiIcons.gamepadFilled,
           );
         }
@@ -131,41 +130,92 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
         enabled: true,
         isHost: session.isHost,
       );
-      _netplayInputTicker = Timer.periodic(const Duration(milliseconds: 16), (_) {
-        unawaited(_pushNetplayLocalInput());
+      if (!mounted) return;
+      // Recién ahora: activar el netplay vacía lo que tuviera el motor.
+      ArcadeNetplayService.instance.attachRemoteInput((packet) {
+        unawaited(
+          _emulatorService.netplaySubmitRemoteInput(
+            frame: packet.frame,
+            mask: packet.mask,
+          ),
+        );
+      });
+      _netplayInputTicker = Timer.periodic(const Duration(milliseconds: 16), (
+        _,
+      ) {
+        unawaited(_sendNetplayLocalInputs());
       });
     }
+    if (!mounted) return;
     final String romToLoad = widget.initialRomPath ?? _defaultRomPath;
     if (romToLoad.isNotEmpty) {
-      await _emulatorService.loadRom(romToLoad);
+      final started = await _emulatorService.loadRom(romToLoad);
+      if (!started && mounted) {
+        _exitAfterLoadFailure();
+        return;
+      }
     }
     if (mounted) {
       setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _pushNetplayLocalInput() async {
-    if (widget.netplaySession == null || !mounted) return;
-    final frame = await _emulatorService.netplayGetFrame();
-    await _emulatorService.netplaySubmitLocalInput(
-      frame: frame,
-      mask: _activeInputMask,
+  void _exitAfterLoadFailure() {
+    MoaiSnackBar.show(
+      context,
+      message: LocaleKeys.arcade_load_failed.tr(),
+      icon: MoaiIcons.error,
     );
-    ArcadeNetplayService.instance.sendLocalInput(
-      _activeInputMask,
-      frame: frame,
+    _popOnce();
+  }
+
+  void _popOnce() {
+    if (!_isExiting && mounted && Navigator.of(context).canPop()) {
+      _isExiting = true;
+      Navigator.of(context).pop();
+    }
+  }
+
+  /// La partida terminó del otro lado: avisar y salir, no quedar congelado.
+  void _onNetplaySessionChanged() {
+    if (!mounted || _isExiting) return;
+    final session = ArcadeNetplayService.instance.currentSession;
+    if (session != null && session.status != ArcadeNetplayStatus.terminated) {
+      return;
+    }
+    MoaiSnackBar.show(
+      context,
+      message: session?.exitReason ?? LocaleKeys.arcade_peer_canceled.tr(),
+      icon: MoaiIcons.info,
     );
+    _popOnce();
+  }
+
+  /// El motor toma el mando y programa cada frame; acá solo se reenvía.
+  Future<void> _sendNetplayLocalInputs() async {
+    final inputs = await _emulatorService.netplayDrainLocalInputs();
+    if (!mounted) return;
+    for (final input in inputs) {
+      ArcadeNetplayService.instance.sendLocalInput(
+        input.mask,
+        frame: input.frame,
+      );
+    }
   }
 
   @override
   void dispose() {
     _netplayInputTicker?.cancel();
-    _remoteInputSubscription?.cancel();
+    _netplayLifecycle?.dispose();
     if (widget.netplaySession != null) {
+      ArcadeNetplayService.instance.removeListener(_onNetplaySessionChanged);
+      ArcadeNetplayService.instance.detachRemoteInput();
       unawaited(_emulatorService.netplayEnable(enabled: false));
-      unawaited(ArcadeNetplayService.instance.cancelSession(
-        reason: LocaleKeys.arcade_player_left.tr(),
-      ));
+      unawaited(
+        ArcadeNetplayService.instance.cancelSession(
+          reason: LocaleKeys.arcade_player_left.tr(),
+        ),
+      );
     }
     _exitSubscription?.cancel();
     _gamepadSubscription?.cancel();
@@ -175,6 +225,7 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
     // Reanudar la transmisión de TV al salir del Arcade
     _tvPlayerChannel.invokeMethod<void>('resumeAll');
     ArcadeNetplayService.instance.setPlaying(false);
+    _watchParty?.reportCurrentChannel();
     ModalRouteTracker.instance.resume();
     super.dispose();
   }
@@ -194,7 +245,7 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
     // Escape / retroceso de teclado no generan back del sistema.
     if (event is KeyDownEvent &&
         (key == LogicalKeyboardKey.escape ||
-         key == LogicalKeyboardKey.backspace)) {
+            key == LogicalKeyboardKey.backspace)) {
       if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
         return KeyEventResult.handled;
@@ -209,61 +260,61 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
         key == LogicalKeyboardKey.keyW) {
       bit = ArcadeButtons.up;
     } else if (key == LogicalKeyboardKey.arrowDown ||
-               key == LogicalKeyboardKey.gameButton12 ||
-               key == LogicalKeyboardKey.keyS) {
+        key == LogicalKeyboardKey.gameButton12 ||
+        key == LogicalKeyboardKey.keyS) {
       bit = ArcadeButtons.down;
     } else if (key == LogicalKeyboardKey.arrowLeft ||
-               key == LogicalKeyboardKey.gameButton13 ||
-               key == LogicalKeyboardKey.keyA) {
+        key == LogicalKeyboardKey.gameButton13 ||
+        key == LogicalKeyboardKey.keyA) {
       bit = ArcadeButtons.left;
     } else if (key == LogicalKeyboardKey.arrowRight ||
-               key == LogicalKeyboardKey.gameButton14 ||
-               key == LogicalKeyboardKey.keyD) {
+        key == LogicalKeyboardKey.gameButton14 ||
+        key == LogicalKeyboardKey.keyD) {
       bit = ArcadeButtons.right;
     }
     // 2. COIN y START
     else if (key == LogicalKeyboardKey.gameButtonSelect ||
-               key == LogicalKeyboardKey.gameButton8 ||
-               key == LogicalKeyboardKey.gameButton9 ||
-               key == LogicalKeyboardKey.digit9 ||
-               key == LogicalKeyboardKey.space ||
-               key == LogicalKeyboardKey.keyC) {
+        key == LogicalKeyboardKey.gameButton8 ||
+        key == LogicalKeyboardKey.gameButton9 ||
+        key == LogicalKeyboardKey.digit9 ||
+        key == LogicalKeyboardKey.space ||
+        key == LogicalKeyboardKey.keyC) {
       bit = ArcadeButtons.coin;
     } else if (key == LogicalKeyboardKey.gameButtonStart ||
-               key == LogicalKeyboardKey.gameButton7 ||
-               key == LogicalKeyboardKey.gameButton10 ||
-               key == LogicalKeyboardKey.digit1 ||
-               key == LogicalKeyboardKey.enter ||
-               key == LogicalKeyboardKey.keyV) {
+        key == LogicalKeyboardKey.gameButton7 ||
+        key == LogicalKeyboardKey.gameButton10 ||
+        key == LogicalKeyboardKey.digit1 ||
+        key == LogicalKeyboardKey.enter ||
+        key == LogicalKeyboardKey.keyV) {
       bit = ArcadeButtons.start;
     }
     // 3. Botones de Ataque Arcade CPS-2 (6 botones)
     else if (key == LogicalKeyboardKey.gameButtonX ||
-               key == LogicalKeyboardKey.gameButton3 ||
-               key == LogicalKeyboardKey.keyU) {
+        key == LogicalKeyboardKey.gameButton3 ||
+        key == LogicalKeyboardKey.keyU) {
       bit = ArcadeButtons.punchLight; // LP
     } else if (key == LogicalKeyboardKey.gameButtonY ||
-               key == LogicalKeyboardKey.gameButton4 ||
-               key == LogicalKeyboardKey.keyI) {
+        key == LogicalKeyboardKey.gameButton4 ||
+        key == LogicalKeyboardKey.keyI) {
       bit = ArcadeButtons.punchMedium; // MP
     } else if (key == LogicalKeyboardKey.gameButtonRight1 ||
-               key == LogicalKeyboardKey.gameButtonLeft1 ||
-               key == LogicalKeyboardKey.gameButton5 ||
-               key == LogicalKeyboardKey.keyO) {
+        key == LogicalKeyboardKey.gameButtonLeft1 ||
+        key == LogicalKeyboardKey.gameButton5 ||
+        key == LogicalKeyboardKey.keyO) {
       bit = ArcadeButtons.punchHeavy; // HP
     } else if (key == LogicalKeyboardKey.gameButtonA ||
-               key == LogicalKeyboardKey.gameButton1 ||
-               key == LogicalKeyboardKey.gameButton2 ||
-               key == LogicalKeyboardKey.keyJ) {
+        key == LogicalKeyboardKey.gameButton1 ||
+        key == LogicalKeyboardKey.gameButton2 ||
+        key == LogicalKeyboardKey.keyJ) {
       bit = ArcadeButtons.kickLight; // LK
     } else if (key == LogicalKeyboardKey.gameButtonB ||
-               key == LogicalKeyboardKey.gameButton6 ||
-               key == LogicalKeyboardKey.keyK) {
+        key == LogicalKeyboardKey.gameButton6 ||
+        key == LogicalKeyboardKey.keyK) {
       bit = ArcadeButtons.kickMedium; // MK
     } else if (key == LogicalKeyboardKey.gameButtonRight2 ||
-               key == LogicalKeyboardKey.gameButtonLeft2 ||
-               key == LogicalKeyboardKey.gameButton7 ||
-               key == LogicalKeyboardKey.keyL) {
+        key == LogicalKeyboardKey.gameButtonLeft2 ||
+        key == LogicalKeyboardKey.gameButton7 ||
+        key == LogicalKeyboardKey.keyL) {
       bit = ArcadeButtons.kickHeavy; // HK
     }
 
@@ -276,7 +327,6 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
       if (widget.netplaySession != null) {
         final localPlayer = widget.netplaySession!.isHost ? 0 : 1;
         _emulatorService.sendInputMask(_activeInputMask, player: localPlayer);
-        unawaited(_pushNetplayLocalInput());
       } else {
         _emulatorService.sendInputMask(_activeInputMask);
       }
@@ -320,9 +370,7 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
           body: Stack(
             children: [
               // 1. Vista de Video del Emulador (AndroidView SurfaceView)
-              const Positioned.fill(
-                child: ArcadeViewContainer(),
-              ),
+              const Positioned.fill(child: ArcadeViewContainer()),
 
               // 2. Controles táctiles overlay
               Positioned.fill(
@@ -337,29 +385,50 @@ class _ArcadeScreenState extends State<ArcadeScreen> {
               Positioned(
                 top: overlapY + 8,
                 left: overlapX + 8,
-                child: IconButton(
-                  icon: const Icon(MoaiIcons.arrowBack, color: Colors.white70),
-                  onPressed: () => Navigator.pop(context),
+                child: DecoratedBox(
+                  decoration: moaiVideoGlassDecoration(radius: 999),
+                  child: IconButton(
+                    icon: const Icon(MoaiIcons.arrowBack, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
                 ),
               ),
 
-
-
               // 4. Indicador de Carga
               if (_isLoading)
-                Container(
-                  color: Colors.black87,
+                ColoredBox(
+                  color: Colors.black,
                   child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const CircularProgressIndicator(color: Colors.cyanAccent),
-                        const SizedBox(height: 16),
-                        Text(
-                          LocaleKeys.arcade_loading_engine.tr(),
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
-                        ),
-                      ],
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
+                      decoration: moaiVideoGlassDecoration(radius: 18),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            LocaleKeys.arcade_loading_engine.tr(),
+                            style: MoaiText.body(
+                              context,
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

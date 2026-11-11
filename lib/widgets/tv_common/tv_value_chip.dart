@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
-import 'package:moai3/widgets/tv_common/tv_tile.dart';
 
 /// Pastilla de valor para filas de ajustes (apodo, código de usuario).
 class TvValueChip extends StatelessWidget {
@@ -14,20 +13,33 @@ class TvValueChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
 
-    // Sobre el fondo ambiente: píldora de cristal como el riel del selector;
-    // con la ficha enfocada, el borde toma el acento.
+    // Sobre el fondo ambiente: píldora de cristal como el riel del selector
+    // (en claro, el mismo vidrio blanco con filo de luz). No cambia con el
+    // foco: el borde de acento es de la ficha, no de la pastilla.
     if (MoaiGlassScope.enabledOf(context)) {
       final dark = scheme.brightness == Brightness.dark;
       final line = dark ? Colors.white : scheme.onSurface;
-      final focused = TvTile.isFocusedOf(context);
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: line.withValues(alpha: dark ? 0.06 : 0.08),
+          color: dark
+              ? line.withValues(alpha: 0.06)
+              : const Color(0x99FFFFFF), // blanco al 60 %
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: focused ? scheme.primary : line.withValues(alpha: 0.14),
+            color: dark
+                ? line.withValues(alpha: 0.14)
+                : const Color(0xB3FFFFFF), // filo de luz al 70 %
           ),
+          boxShadow: dark
+              ? null
+              : const [
+                  BoxShadow(
+                    color: Color(0x14000000), // negro al 8 %: lo despega
+                    blurRadius: 6,
+                    offset: Offset(0, 1),
+                  ),
+                ],
         ),
         child: Text(
           text,

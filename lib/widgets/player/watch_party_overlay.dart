@@ -10,6 +10,7 @@ import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_friends_dialog.dart';
+import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
@@ -22,11 +23,7 @@ class WatchPartyOverlay extends StatefulWidget {
   final WatchPartyVoiceCoordinator? coordinator;
   final FocusNode? micFocusNode;
 
-  const WatchPartyOverlay({
-    super.key,
-    this.coordinator,
-    this.micFocusNode,
-  });
+  const WatchPartyOverlay({super.key, this.coordinator, this.micFocusNode});
 
   @override
   State<WatchPartyOverlay> createState() => _WatchPartyOverlayState();
@@ -141,14 +138,14 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
     final visible = context.select(
       (WatchPartyProvider p) => p.enabled && p.hasFriendsInSameChannel,
     );
-    final coordinator = widget.coordinator ??
-        (context.watch<WatchPartyVoiceCoordinator?>());
+    final coordinator =
+        widget.coordinator ?? (context.watch<WatchPartyVoiceCoordinator?>());
 
     if (_subscribedProvider != watchParty) {
       _notificationSubscription?.cancel();
       _subscribedProvider = watchParty;
-      _notificationSubscription =
-          watchParty.joinedChannelNotificationsStream.listen(_enqueueNotification);
+      _notificationSubscription = watchParty.joinedChannelNotificationsStream
+          .listen(_enqueueNotification);
     }
 
     // Regla de visibilidad SPEC-37: Si no está habilitado o no hay amigos en este canal, ocultar.
@@ -167,8 +164,6 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
       }
     });
 
-
-
     final isRecording = coordinator?.isRecording ?? false;
     final isPlaying = coordinator?.isPlaying ?? false;
     final speakerName = coordinator?.currentSpeakerName;
@@ -176,8 +171,9 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
     final scheme = Theme.of(context).colorScheme;
 
     final String? displayNotification = _activeNotificationMessage != null
-        ? LocaleKeys.watch_party_friend_joined
-            .tr(namedArgs: {'name': _activeNotificationMessage!})
+        ? LocaleKeys.watch_party_friend_joined.tr(
+            namedArgs: {'name': _activeNotificationMessage!},
+          )
         : null;
 
     final (overscanX, overscanY) = context.select(
@@ -201,7 +197,11 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
             child: Align(
               alignment: Alignment.topRight,
               child: displayNotification != null
-                  ? _buildJoinedNotificationChip(context, displayNotification, scheme)
+                  ? _buildJoinedNotificationChip(
+                      context,
+                      displayNotification,
+                      scheme,
+                    )
                   : const SizedBox.shrink(),
             ),
           ),
@@ -232,40 +232,24 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
     String message,
     ColorScheme scheme,
   ) {
-    // Usar colores idénticos a MoaiSnackBar (scheme.primary y scheme.onPrimary)
-    final bg = scheme.primary;
-    final fg = scheme.onPrimary;
+    const fg = Colors.white;
 
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 240),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: scheme.outlineVariant.withValues(alpha: 0.48),
-          ),
-        ),
+        decoration: moaiVideoGlassDecoration(radius: 18),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              MoaiIcons.person,
-              color: fg,
-              size: MoaiIconSizes.sm,
-            ),
+            const Icon(MoaiIcons.person, color: fg, size: MoaiIconSizes.sm),
             const SizedBox(width: 6),
             Flexible(
               child: Text(
                 message,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: MoaiText.body(
-                  context,
-                  color: fg,
-                  fontSize: 12,
-                ),
+                style: MoaiText.body(context, color: fg, fontSize: 12),
               ),
             ),
           ],
@@ -281,30 +265,28 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
     ColorScheme scheme,
   ) {
     // Cuenta hacia atrás de 30 a 0 segundos
-    final remainingSeconds =
-        (30 - (coordinator?.recordingSeconds ?? 0)).clamp(0, 30);
+    final remainingSeconds = (30 - (coordinator?.recordingSeconds ?? 0)).clamp(
+      0,
+      30,
+    );
 
-    // Color plano y sólido (sin transparencias ni bordes)
-    final backgroundColor = _isMicFocused
-        ? scheme.tertiary
-        : scheme.tertiaryContainer;
-
-    final iconColor = _isMicFocused
-        ? scheme.onTertiary
-        : (isRecording ? scheme.error : scheme.onTertiaryContainer);
+    // Cristal en reposo; sólido con foco o grabando, como fuera de pantalla
+    // completa.
+    final iconColor = isRecording
+        ? scheme.onError
+        : _isMicFocused
+        ? scheme.onPrimary
+        : Colors.white;
 
     final Widget micContent = Container(
       width: 48,
       height: 30,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: _isMicFocused
-              ? scheme.primary
-              : scheme.outlineVariant.withValues(alpha: 0.48),
-        ),
-      ),
+      decoration: _isMicFocused || isRecording
+          ? BoxDecoration(
+              color: isRecording ? scheme.error : scheme.primary,
+              borderRadius: BorderRadius.circular(15),
+            )
+          : moaiVideoGlassDecoration(radius: 15),
       child: Center(
         child: Icon(
           isRecording ? MoaiIcons.stop : MoaiIcons.mic,
@@ -381,10 +363,7 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
               const SizedBox(height: 3),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                  color: Colors.black, // Color sólido 100% opaco
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                decoration: moaiVideoGlassDecoration(radius: 8),
                 child: Text(
                   '0:${remainingSeconds.toString().padLeft(2, '0')}',
                   style: const TextStyle(
@@ -406,43 +385,28 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
     String? speakerName,
     ColorScheme scheme,
   ) {
-    // Usar colores idénticos a MoaiSnackBar (scheme.primary y scheme.onPrimary)
-    final bg = scheme.primary;
-    final fg = scheme.onPrimary;
+    const fg = Colors.white;
 
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 240),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: scheme.outlineVariant.withValues(alpha: 0.48),
-          ),
-        ),
+        decoration: moaiVideoGlassDecoration(radius: 18),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              MoaiIcons.voice,
-              color: fg,
-              size: MoaiIconSizes.sm,
-            ),
+            const Icon(MoaiIcons.voice, color: fg, size: MoaiIconSizes.sm),
             const SizedBox(width: 6),
             Flexible(
               child: Text(
                 speakerName != null
-                    ? LocaleKeys.watch_party_friend_speaking
-                        .tr(namedArgs: {'name': speakerName})
+                    ? LocaleKeys.watch_party_friend_speaking.tr(
+                        namedArgs: {'name': speakerName},
+                      )
                     : LocaleKeys.watch_party_listening_audio.tr(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: MoaiText.body(
-                  context,
-                  color: fg,
-                  fontSize: 12,
-                ),
+                style: MoaiText.body(context, color: fg, fontSize: 12),
               ),
             ),
           ],

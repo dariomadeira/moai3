@@ -139,6 +139,58 @@ String? preferredAudioCode(MovieAudioLanguage preference, String audioInfo) {
   }
 }
 
+/// Un audio de la película: [occurrence] dice cuál de los [sameLanguage] de
+/// ese idioma es, contando desde 0.
+typedef MovieAudioOption = ({String code, int occurrence, int sameLanguage});
+
+/// Audios que trae la película, en su orden, según [audioInfo] de la API.
+/// Los repetidos son pistas distintas ("spa,spa,eng": dos en español).
+List<MovieAudioOption> movieAudioOptions(String audioInfo) {
+  final codes = [
+    for (final part in audioInfo.split(',')) ?audioLanguageCode(part),
+  ];
+  final seen = <String, int>{};
+  return [
+    for (final code in codes)
+      (
+        code: code,
+        occurrence: (seen[code] = (seen[code] ?? -1) + 1),
+        sameLanguage: codes.where((c) => c == code).length,
+      ),
+  ];
+}
+
+/// "Español 2" si hay más de uno de ese idioma; si no, "Inglés". El stream no
+/// dice cuál es latino: las dos pistas sólo vienen marcadas "spa".
+String movieAudioLabel(MovieAudioOption option) {
+  final name = audioLanguageLabel(option.code);
+  return option.sameLanguage > 1 ? '$name ${option.occurrence + 1}' : name;
+}
+
+/// Idioma de un subtítulo para mostrar.
+String subtitleLabel(VodSubtitleOption subtitle) => audioLanguageLabel(
+  subtitle.language.isNotEmpty ? subtitle.language : subtitle.name,
+);
+
+/// Los subtítulos que se pueden elegir: con URL y uno por idioma.
+List<VodSubtitleOption> subtitleOptions(List<VodSubtitleOption> subtitles) {
+  final labels = <String>{};
+  return [
+    for (final subtitle in subtitles)
+      if (subtitle.url.isNotEmpty && labels.add(subtitleLabel(subtitle)))
+        subtitle,
+  ];
+}
+
+/// Nombre de un tamaño de subtítulos.
+String subtitleSizeLabel(MovieSubtitleSize size) => switch (size) {
+  MovieSubtitleSize.small => LocaleKeys.settings_movies_subtitle_size_small,
+  MovieSubtitleSize.medium => LocaleKeys.settings_movies_subtitle_size_medium,
+  MovieSubtitleSize.large => LocaleKeys.settings_movies_subtitle_size_large,
+  MovieSubtitleSize.extraLarge =>
+    LocaleKeys.settings_movies_subtitle_size_xlarge,
+}.tr();
+
 /// Calidad para mostrar: "1080P HD" o "FHD 1080" → "1080p".
 String qualityLabel(String quality) {
   final q = quality.toUpperCase();

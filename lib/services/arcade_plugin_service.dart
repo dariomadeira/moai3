@@ -13,6 +13,9 @@ class ArcadePluginService extends ChangeNotifier {
   static const String baseUrl =
       'https://raw.githubusercontent.com/dariomadeira/moai_roms/main/cores';
 
+  /// Sin recibir nada durante este tiempo, la descarga se da por caída.
+  static const Duration _stallTimeout = Duration(seconds: 30);
+
   bool _isInstalled = false;
   bool _isDownloading = false;
   double _downloadProgress = 0.0;
@@ -79,6 +82,10 @@ class ArcadePluginService extends ChangeNotifier {
     _statusMessage = LocaleKeys.plugins_arcade_downloading_engine.tr();
     notifyListeners();
 
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 15);
+    File? partialFile;
+    IOSink? openSink;
     try {
       final abi = getDeviceAbi();
       final url = '$baseUrl/$abi/libfbneo.so';
@@ -89,16 +96,14 @@ class ArcadePluginService extends ChangeNotifier {
         await pluginsDir.create(recursive: true);
       }
 
+      // A un .part: si falla, el motor anterior sigue intacto.
       final targetFile = File('${pluginsDir.path}/libfbneo.so');
-      if (await targetFile.exists()) {
-        await targetFile.delete();
-      }
+      final tempFile = File('${targetFile.path}.part');
+      partialFile = tempFile;
 
-      final client = HttpClient()
-        ..connectionTimeout = const Duration(seconds: 15);
       final request = await client.getUrl(Uri.parse(url));
       request.headers.set('User-Agent', 'Mozilla/5.0 MoaiTV');
-      final response = await request.close();
+      final response = await request.close().timeout(_stallTimeout);
 
       if (response.statusCode != 200) {
         throw HttpException(
@@ -110,21 +115,34 @@ class ArcadePluginService extends ChangeNotifier {
 
       final totalBytes = response.contentLength;
       var received = 0;
-      final sink = targetFile.openWrite();
+      var lastNotifiedProgress = -1.0;
+      var lastNotifyAt = DateTime.fromMillisecondsSinceEpoch(0);
+      final sink = tempFile.openWrite();
+      openSink = sink;
 
-      await for (final chunk in response) {
+      await for (final chunk in response.timeout(_stallTimeout)) {
         sink.add(chunk);
         received += chunk.length;
         if (totalBytes > 0) {
           _downloadProgress = (received / totalBytes).clamp(0.0, 1.0);
           onProgress?.call(_downloadProgress, received, totalBytes);
+          // Cada aviso redibuja el Inicio y el rail: no por cada pedacito.
+          final now = DateTime.now();
+          final jumped = _downloadProgress - lastNotifiedProgress >= 0.05;
+          final waited =
+              now.difference(lastNotifyAt) >= const Duration(milliseconds: 120);
+          if (jumped || waited) {
+            lastNotifiedProgress = _downloadProgress;
+            lastNotifyAt = now;
+            notifyListeners();
+          }
         }
-        notifyListeners();
       }
 
       await sink.flush();
       await sink.close();
-      client.close(force: true);
+      openSink = null;
+      await tempFile.rename(targetFile.path);
 
       _installedCorePath = targetFile.absolute.path;
       _isInstalled = true;
@@ -137,11 +155,24 @@ class ArcadePluginService extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('[ArcadePluginService] Error instalando plugin: $e');
+      await _discardPartialDownload(openSink, partialFile);
       _isDownloading = false;
-      _statusMessage =
-          LocaleKeys.plugins_arcade_error_download.tr(namedArgs: {'error': '$e'});
+      _statusMessage = LocaleKeys.plugins_arcade_error_download.tr(
+        namedArgs: {'error': '$e'},
+      );
       notifyListeners();
       return false;
+    } finally {
+      client.close(force: true);
+    }
+  }
+
+  Future<void> _discardPartialDownload(IOSink? sink, File? file) async {
+    try {
+      await sink?.close();
+      if (file != null && await file.exists()) await file.delete();
+    } catch (e) {
+      debugPrint('[ArcadePluginService] Error limpiando descarga: $e');
     }
   }
 

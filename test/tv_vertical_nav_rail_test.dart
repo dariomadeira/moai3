@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:moai3/features/home/widgets/tv_bottom_weather_pill.dart';
 import 'package:moai3/features/home/home_section.dart';
 import 'package:moai3/features/home/widgets/tv_vertical_nav_rail.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/featured_movies_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/tv_common/moai_svg_icon.dart';
 import 'package:provider/provider.dart';
 
 /// Por defecto, con login y catálogo de las 3 secciones.
@@ -52,6 +51,7 @@ void main() {
               railFocusNode: focusNode,
               onSelected: (_) {},
               onFocusRight: () {},
+              onExit: () {},
             ),
           ),
         );
@@ -59,10 +59,11 @@ void main() {
 
         expect(find.byIcon(MoaiIcons.railHomeSelected), findsOneWidget);
         expect(find.byIcon(MoaiIcons.railTv), findsOneWidget);
-        // Destacados y Series están ocultas por ahora (`_hiddenSections`).
+        // Destacados está oculta por ahora (`_hiddenSections`).
         expect(find.byIcon(MoaiIcons.railFeatured), findsNothing);
         expect(find.byIcon(MoaiIcons.railMovies), findsOneWidget);
-        expect(find.byIcon(MoaiIcons.railSeries), findsNothing);
+        // Series va con su SVG (no está en hugeicons_plus).
+        expect(find.byType(MoaiSvgIcon), findsOneWidget);
         expect(find.byIcon(MoaiIcons.railCalendar), findsOneWidget);
         expect(find.byIcon(MoaiIcons.railSettings), findsOneWidget);
         expect(find.byIcon(MoaiIcons.railArcade), findsNothing);
@@ -82,73 +83,8 @@ void main() {
       },
     );
 
-    testWidgets('fuera del Inicio: TvBottomWeatherPill arriba (top: 8)', (
-      tester,
-    ) async {
-      final scopeNode = FocusScopeNode();
-      final focusNode = FocusNode();
-
-      await tester.pumpWidget(
-        _wrap(
-          TvVerticalNavRail(
-            selected: HomeSection.tv,
-            railScopeNode: scopeNode,
-            railFocusNode: focusNode,
-            onSelected: (_) {},
-            onFocusRight: () {},
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final positionedFinder = find.ancestor(
-        of: find.byType(TvBottomWeatherPill),
-        matching: find.byType(Positioned),
-      );
-      expect(positionedFinder, findsOneWidget);
-
-      final positionedWidget = tester.widget<Positioned>(positionedFinder);
-      expect(positionedWidget.top, 8.0);
-      expect(positionedWidget.bottom, isNull);
-
-      scopeNode.dispose();
-      focusNode.dispose();
-    });
-
-    testWidgets('en el Inicio va el logo en lugar del reloj y el clima', (
-      tester,
-    ) async {
-      final scopeNode = FocusScopeNode();
-      final focusNode = FocusNode();
-
-      await tester.pumpWidget(
-        _wrap(
-          TvVerticalNavRail(
-            selected: HomeSection.home,
-            railScopeNode: scopeNode,
-            railFocusNode: focusNode,
-            onSelected: (_) {},
-            onFocusRight: () {},
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byType(TvBottomWeatherPill), findsNothing);
-      final logo = find.byType(SvgPicture);
-      expect(logo, findsOneWidget);
-      // Girado: se lee de abajo hacia arriba, como las pestañas.
-      expect(
-        find.ancestor(of: logo, matching: find.byType(RotatedBox)),
-        findsOneWidget,
-      );
-
-      scopeNode.dispose();
-      focusNode.dispose();
-    });
-
     testWidgets(
-      'D-pad sin Arcade recorre Inicio -> TV -> Películas -> Agenda -> Descuentos -> Ajustes',
+      'D-pad sin Arcade recorre Inicio -> TV -> Películas -> Series -> Agenda -> Descuentos -> Ajustes',
       (tester) async {
         var selected = HomeSection.home;
         final scopeNode = FocusScopeNode();
@@ -164,6 +100,7 @@ void main() {
                   railFocusNode: focusNode,
                   onSelected: (i) => setState(() => selected = i),
                   onFocusRight: () {},
+                  onExit: () {},
                 );
               },
             ),
@@ -181,14 +118,21 @@ void main() {
         await tester.pumpAndSettle();
         expect(selected, HomeSection.values[1]);
 
-        // TV -> Películas (Destacados y Series están ocultas)
+        // TV -> Películas (TV en vivo y Destacados están ocultas)
         await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
         await tester.pumpAndSettle();
         await tester.sendKeyEvent(LogicalKeyboardKey.select);
         await tester.pumpAndSettle();
         expect(selected, HomeSection.movies);
 
-        // Películas -> Agenda
+        // Películas -> Series
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(LogicalKeyboardKey.select);
+        await tester.pumpAndSettle();
+        expect(selected, HomeSection.series);
+
+        // Series -> Agenda
         await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
         await tester.pumpAndSettle();
         await tester.sendKeyEvent(LogicalKeyboardKey.select);
@@ -214,6 +158,59 @@ void main() {
       },
     );
 
+    testWidgets(
+      'debajo de Ajustes está Salir: OK llama a onExit y ▲ vuelve a Ajustes',
+      (tester) async {
+        var selected = HomeSection.settings;
+        var exits = 0;
+        final scopeNode = FocusScopeNode();
+        final focusNode = FocusNode();
+
+        await tester.pumpWidget(
+          _wrap(
+            StatefulBuilder(
+              builder: (context, setState) {
+                return TvVerticalNavRail(
+                  selected: selected,
+                  railScopeNode: scopeNode,
+                  railFocusNode: focusNode,
+                  onSelected: (i) => setState(() => selected = i),
+                  onFocusRight: () {},
+                  onExit: () => exits++,
+                );
+              },
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byIcon(MoaiIcons.exitApp), findsOneWidget);
+
+        focusNode.requestFocus();
+        await tester.pumpAndSettle();
+
+        // Ajustes es la última: ▼ va a Salir; OK no cambia de sección.
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(LogicalKeyboardKey.select);
+        await tester.pumpAndSettle();
+        expect(exits, 1);
+        expect(selected, HomeSection.settings);
+
+        // ▲ vuelve a Ajustes y ▲ otra vez sube a Descuentos.
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(LogicalKeyboardKey.select);
+        await tester.pumpAndSettle();
+        expect(selected, HomeSection.discounts);
+        expect(exits, 1);
+
+        scopeNode.dispose();
+        focusNode.dispose();
+      },
+    );
+
     testWidgets('sin login o catálogo oculta Destacados, Películas y Series; '
         'con catálogo parcial muestra solo lo que bajó', (tester) async {
       var selected = HomeSection.tv;
@@ -233,6 +230,7 @@ void main() {
                   railFocusNode: focusNode,
                   onSelected: (i) => setState(() => selected = i),
                   onFocusRight: () {},
+                  onExit: () {},
                 );
               },
             ),
@@ -263,9 +261,11 @@ void main() {
       await down();
       expect(selected, HomeSection.calendar);
 
-      // Solo Series: sigue oculta, TV -> Agenda.
+      // Solo Series: TV -> Series -> Agenda.
       selected = HomeSection.tv;
       await pumpRail(const {FeaturedMoviesProvider.sectionSeries});
+      await down();
+      expect(selected, HomeSection.series);
       await down();
       expect(selected, HomeSection.calendar);
 

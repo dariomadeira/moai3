@@ -1,6 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:moai3/features/home/widgets/home_card.dart';
+import 'package:moai3/features/home/widgets/home_card_parts.dart';
+import 'package:moai3/features/home/widgets/home_edge_pill.dart';
+import 'package:moai3/features/home/widgets/home_row_window.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/models/friend_info.dart';
@@ -8,7 +10,10 @@ import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/cards/tv_list_card_leading_logo.dart';
+import 'package:moai3/widgets/dialogs/tv_friends_dialog.dart';
 import 'package:moai3/widgets/feedback/moai_snackbar.dart';
+import 'package:moai3/widgets/tv_common/friend_avatar.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/tv_common/tv_press_detector.dart';
 import 'package:provider/provider.dart';
@@ -56,7 +61,11 @@ class _HomeFriendsItemState extends State<HomeFriendsItem> {
   int _index = 0;
 
   void _press(List<FriendInfo> online) {
-    if (online.isEmpty) return;
+    // Nadie conectado: el botón "Gestionar amigos" abre el modal.
+    if (online.isEmpty) {
+      TvFriendsDialog.show(context, onTuneChannel: widget.onTuneChannel);
+      return;
+    }
     final friend = online[_index];
     final channelName = friend.displayChannelName;
     if (channelName == null) {
@@ -89,7 +98,7 @@ class _HomeFriendsItemState extends State<HomeFriendsItem> {
   @override
   Widget build(BuildContext context) {
     final party = context.watch<WatchPartyProvider>();
-    final online = party.friends.where((f) => f.isOnline).toList();
+    final online = party.mutualFriends.where((f) => f.isOnline).toList();
     if (_index >= online.length) {
       _index = online.isEmpty ? 0 : online.length - 1;
     }
@@ -146,7 +155,11 @@ class HomeFriendsCard extends StatelessWidget {
   final String? myChannelId;
   final String? myChannelName;
 
-  static const double _tileWidth = 200;
+  /// REDISEÑO: el color de la tarjeta (su ícono).
+  static const Color color = Color(0xFF116699);
+
+  /// Mismo ancho, espacio y relleno que los eventos de Hoy.
+  static const double _tileWidth = 236;
   static const double _tileGap = 10;
 
   @override
@@ -154,23 +167,34 @@ class HomeFriendsCard extends StatelessWidget {
     final scheme = context.scheme;
     final hasFriends = friends.isNotEmpty;
 
-    return HomeCard(
-      glow: HomeCardColors.friends,
-      // Con amigos el foco lo lleva el elegido, no la tarjeta.
-      focused: isFocused && !hasFriends,
+    // REDISEÑO: el cristal de las tarjetas del Inicio, sin halo de color
+    // (como el clima). Sin amigos conectados se enfoca igual: abajo del
+    // aviso va el botón "Gestionar amigos" (OK sobre la tarjeta).
+    return MoaiGlass(
+      borderRadius: 16,
+      solid: true,
+      elevated: false,
       padding: const EdgeInsets.fromLTRB(20, 10, 12, 10),
       child: Row(
         children: [
+          // La línea no cambia con el foco: OK se sobreentiende.
           SizedBox(
-            width: 214,
-            child: _Summary(count: friends.length, showHint: isFocused),
+            width: HomeCardSummary.width,
+            child: HomeCardSummary(
+              label: LocaleKeys.home_friends_label.tr(),
+              icon: MoaiIcons.friends,
+              color: color,
+              title: LocaleKeys.home_friends_title.tr(),
+              line: switch (friends.length) {
+                0 => LocaleKeys.home_friends_online_none.tr(),
+                1 => LocaleKeys.home_friends_online_one.tr(),
+                final count => LocaleKeys.home_friends_online.tr(
+                  namedArgs: {'count': '$count'},
+                ),
+              },
+            ),
           ),
-          Container(
-            width: 1,
-            height: 72,
-            margin: const EdgeInsets.only(right: 16),
-            color: scheme.onSurface.withValues(alpha: 0.08),
-          ),
+          const HomeCardDivider(),
           Expanded(
             child: hasFriends
                 ? _FriendStrip(
@@ -180,96 +204,35 @@ class HomeFriendsCard extends StatelessWidget {
                     myChannelId: myChannelId,
                     myChannelName: myChannelName,
                   )
-                : Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      LocaleKeys.home_friends_none.tr(),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: MoaiText.body(
-                        context,
-                        color: scheme.onSurfaceVariant,
-                        fontSize: 14,
-                      ),
+                : Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          LocaleKeys.home_friends_none.tr(),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: MoaiText.body(
+                            context,
+                            color: scheme.onSurfaceVariant,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        // Como "Configurar" de Descuentos sin bancos: no
+                        // toma el foco, lo enciende el de la tarjeta.
+                        HomeGlassButton(
+                          icon: MoaiIcons.watchPartyFriends,
+                          label: LocaleKeys.settings_tv_manage_friends.tr(),
+                          focused: isFocused,
+                        ),
+                      ],
                     ),
                   ),
           ),
         ],
       ),
-    );
-  }
-}
-
-/// "Miremos juntos" + "Amigos" en grande + cuántos están conectados (o,
-/// con foco y amigos, qué hace OK).
-class _Summary extends StatelessWidget {
-  const _Summary({required this.count, required this.showHint});
-
-  final int count;
-  final bool showHint;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    final muted = scheme.onSurfaceVariant;
-    final hint = showHint && count > 0;
-    final line = hint
-        ? LocaleKeys.home_friends_hint.tr()
-        : count == 0
-        ? LocaleKeys.home_friends_online_none.tr()
-        : count == 1
-        ? LocaleKeys.home_friends_online_one.tr()
-        : LocaleKeys.home_friends_online.tr(namedArgs: {'count': '$count'});
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          LocaleKeys.home_friends_label.tr(),
-          style: MoaiText.body(
-            context,
-            color: muted,
-            fontSize: 12,
-            letterSpacing: 0.2,
-          ),
-        ),
-        Row(
-          children: [
-            Icon(
-              MoaiIcons.watchPartyFriends,
-              size: MoaiIconSizes.xl,
-              color: scheme.primary,
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                LocaleKeys.home_friends_title.tr(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: MoaiText.display(
-                  context,
-                  color: scheme.onSurface,
-                  fontSize: 34,
-                  fontWeight: FontWeight.w500,
-                  height: 1.3,
-                ),
-              ),
-            ),
-          ],
-        ),
-        Text(
-          line,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: MoaiText.body(
-            context,
-            color: hint ? scheme.primary : muted,
-            fontSize: 11.5,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -297,78 +260,57 @@ class _FriendStrip extends StatelessWidget {
       builder: (context, constraints) {
         const step = HomeFriendsCard._tileWidth + HomeFriendsCard._tileGap;
         // Las flechas ocupan su lugar siempre, así la fila no salta.
-        final tilesWidth = constraints.maxWidth - 2 * _Edge.width;
+        final tilesWidth = constraints.maxWidth - 2 * HomeEdgePill.width;
         final visible = ((tilesWidth + HomeFriendsCard._tileGap) ~/ step).clamp(
           1,
           friends.length,
         );
         final selected = selectedIndex.clamp(0, friends.length - 1);
-        final start = (selected - visible + 1).clamp(
-          0,
-          friends.length - visible,
-        );
-
-        return Row(
-          children: [
-            _Edge(icon: MoaiIcons.dpadLeft, active: start > 0),
-            Expanded(
-              child: Row(
-                children: [
-                  for (var i = start; i < start + visible; i++) ...[
-                    if (i > start)
-                      const SizedBox(width: HomeFriendsCard._tileGap),
-                    SizedBox(
-                      width: HomeFriendsCard._tileWidth,
-                      child: _FriendTile(
-                        friend: friends[i],
-                        isFocused: isFocused && i == selected,
-                        withMe: friends[i].isWatchingSameChannel(
-                          myChannelId,
-                          myChannelName,
+        return HomeRowWindow(
+          count: friends.length,
+          visible: visible,
+          selected: selected,
+          builder: (start) => Row(
+            children: [
+              HomeEdgePill(icon: MoaiIcons.dpadLeft, active: start > 0),
+              Expanded(
+                child: Row(
+                  // Siempre desde la izquierda: según el margen de calibración
+                  // de cada TV entran 1 o 2 fichas, y centrar las movía.
+                  children: [
+                    for (var i = start; i < start + visible; i++) ...[
+                      if (i > start)
+                        const SizedBox(width: HomeFriendsCard._tileGap),
+                      SizedBox(
+                        width: HomeFriendsCard._tileWidth,
+                        child: _FriendTile(
+                          friend: friends[i],
+                          isFocused: isFocused && i == selected,
+                          withMe: friends[i].isWatchingSameChannel(
+                            myChannelId,
+                            myChannelName,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            _Edge(
-              icon: MoaiIcons.dpadRight,
-              active: start + visible < friends.length,
-            ),
-          ],
+              HomeEdgePill(
+                icon: MoaiIcons.dpadRight,
+                active: start + visible < friends.length,
+              ),
+            ],
+          ),
         );
       },
     );
   }
 }
 
-class _Edge extends StatelessWidget {
-  const _Edge({required this.icon, required this.active});
-
-  static const double width = 28;
-
-  final IconData icon;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    return SizedBox(
-      width: width,
-      child: Icon(
-        icon,
-        size: MoaiIconSizes.lg,
-        color: active
-            ? scheme.primary
-            : scheme.onSurfaceVariant.withValues(alpha: 0.15),
-      ),
-    );
-  }
-}
-
-/// Un amigo: nombre arriba y el canal que mira abajo. Si mira lo mismo que
-/// yo va teñido del acento con "Con vos".
+/// Un amigo: avatar con su inicial y el punto de conectado, el nombre y el
+/// canal que mira, y a la derecha el logo de ese canal si está en la lista
+/// propia. Si mira lo mismo que yo va teñido del acento con "Con vos".
 class _FriendTile extends StatelessWidget {
   const _FriendTile({
     required this.friend,
@@ -383,7 +325,11 @@ class _FriendTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final channel = friend.displayChannelName;
+    final channelName = friend.displayChannelName;
+    final channels = context.select(
+      (ChannelProvider? p) => p?.allChannels ?? const <Channel>[],
+    );
+    final logoUrl = HomeFriendsItem.channelOf(friend, channels)?.logoUrl.trim();
 
     return MoaiGlass(
       borderRadius: 12,
@@ -392,83 +338,91 @@ class _FriendTile extends StatelessWidget {
       tint: withMe ? scheme.primary : null,
       focused: isFocused,
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(
-                MoaiIcons.person,
-                size: MoaiIconSizes.md,
-                color: scheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
+          FriendAvatar(userCode: friend.userCode),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
                   friend.displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: MoaiText.body(
                     context,
                     color: scheme.onSurface,
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-              ),
-              if (withMe)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: moaiGlassChipDecoration(
-                    scheme,
-                    highlighted: true,
-                  ),
-                  child: Text(
-                    LocaleKeys.home_friends_with_you.tr(),
-                    style: MoaiText.body(
-                      context,
-                      color: scheme.onSurface,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.4,
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    if (withMe) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: moaiGlassChipDecoration(
+                          scheme,
+                          highlighted: true,
+                        ),
+                        child: Text(
+                          LocaleKeys.home_friends_with_you.tr(),
+                          style: MoaiText.body(
+                            context,
+                            color: scheme.onSurface,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    Flexible(
+                      child: Text(
+                        channelName ??
+                            (friend.isPlayingArcade
+                                    ? LocaleKeys.home_friends_playing
+                                    : LocaleKeys.home_friends_no_channel)
+                                .tr(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: MoaiText.body(
+                          context,
+                          color: scheme.onSurfaceVariant,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-            ],
+              ],
+            ),
           ),
-          const Spacer(),
-          Row(
-            children: [
-              Icon(
-                MoaiIcons.tv,
-                size: MoaiIconSizes.sm,
-                color: channel == null
-                    ? scheme.onSurfaceVariant
-                    : scheme.primary,
+          // El logo del canal: lo que se va a ver con OK.
+          if (logoUrl != null && logoUrl.isNotEmpty) ...[
+            const SizedBox(width: 8),
+            Container(
+              width: 48,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(10),
               ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  channel ?? LocaleKeys.home_friends_no_channel.tr(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: MoaiText.body(
-                    context,
-                    color: channel == null
-                        ? scheme.onSurfaceVariant
-                        : scheme.onSurface,
-                    fontSize: 12.5,
-                    fontWeight: channel == null
-                        ? FontWeight.w500
-                        : FontWeight.w700,
-                  ),
-                ),
+              child: TvListCardLeadingLogo(
+                logoUrl: logoUrl,
+                width: 48,
+                height: 36,
               ),
-            ],
-          ),
+            ),
+          ],
         ],
       ),
     );

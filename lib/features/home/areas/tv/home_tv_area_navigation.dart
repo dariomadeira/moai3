@@ -75,11 +75,7 @@ extension _TvAreaNavigation on HomeTvAreaState {
   /// Smart: enfoca el fav que está on-air o el botón de favoritos si la lista está vacía.
   void _focusViewerFavoritesBar(List<Channel> favChannels, Channel? playing) {
     if (favChannels.isEmpty) {
-      if (_favoriteBtnFocus.canRequestFocus) {
-        _favoriteBtnFocus.requestFocus();
-      } else {
-        _viewerFocus.requestFocus();
-      }
+      _focusFavoritesActions(favChannels, playing);
       return;
     }
     _afterFrame(() {
@@ -87,23 +83,33 @@ extension _TvAreaNavigation on HomeTvAreaState {
     });
   }
 
-  /// Smart: ↑ desde player → Micrófono (si está disponible) / botón ♥ (no la barra). Si es canal adulto, salta a control disponible.
+  /// El micrófono sólo está en pantalla con amigos en el canal. No alcanza con
+  /// `canRequestFocus` (da true sin montar): pedirle foco a un nodo sin montar
+  /// no hace nada y, cuando aparece el micrófono, el foco salta solo a él.
+  bool get _micVisible => _watchPartyMicFocusNode.context != null;
+
+  /// La fila de botones de Favoritos: el ♥ o, si no está (canal adulto), el
+  /// primero que haya. Sin ninguno, el visor.
+  void _focusFavoritesActions(List<Channel> favChannels, Channel? playing) {
+    if (playing != null && !playing.isAdult) {
+      _favoriteBtnFocus.requestFocus();
+    } else if (favChannels.isNotEmpty) {
+      _clearFavoritesFocus.requestFocus();
+    } else if (playing != null &&
+        ChannelPlaybackHelpers.playableUrls(playing).length > 1) {
+      _serverSkipFocus.requestFocus();
+    } else {
+      _viewerFocus.requestFocus();
+    }
+  }
+
+  /// ↑ desde el visor: el micrófono si está o, si no, la pestaña actual.
   void _handlePlayerUpKey() {
-    if (_watchPartyMicFocusNode.canRequestFocus) {
+    if (_micVisible) {
       _watchPartyMicFocusNode.requestFocus();
-      return;
+    } else {
+      _focusCurrentTab();
     }
-    final channel =
-        (_channelProvider ?? context.read<ChannelProvider>()).selectedChannel;
-    if (channel != null && channel.isAdult) {
-      if (ChannelPlaybackHelpers.playableUrls(channel).length > 1) {
-        _serverSkipFocus.requestFocus();
-      } else {
-        _focusActiveContent();
-      }
-      return;
-    }
-    _favoriteBtnFocus.requestFocus();
   }
 
   void _selectCountry(String country) {

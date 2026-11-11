@@ -15,6 +15,7 @@ class SettingsAudioLanguageRow extends StatelessWidget {
   final VoidCallback? onKeyRight;
   final VoidCallback? onKeyUp;
   final VoidCallback? onKeyDown;
+  final Color? iconColor;
 
   const SettingsAudioLanguageRow({
     super.key,
@@ -25,6 +26,7 @@ class SettingsAudioLanguageRow extends StatelessWidget {
     this.onKeyRight,
     this.onKeyUp,
     this.onKeyDown,
+    this.iconColor,
   });
 
   static const _labelKeys = {
@@ -40,6 +42,7 @@ class SettingsAudioLanguageRow extends StatelessWidget {
       label: LocaleKeys.settings_movies_audio_language.tr(),
       description: LocaleKeys.settings_movies_audio_language_desc.tr(),
       icon: MoaiIcons.vodAudio,
+      iconColor: iconColor,
       options: MovieAudioLanguage.values,
       selected: selected,
       onChanged: onChanged,

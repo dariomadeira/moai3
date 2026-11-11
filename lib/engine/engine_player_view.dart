@@ -29,9 +29,7 @@ class EnginePlayerView extends StatelessWidget {
     final height = controller.event.videoHeight ?? 0;
 
     if (textureId == null) {
-      return Center(
-        child: CircularProgressIndicator(color: scheme.primary),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     return ColoredBox(
@@ -53,9 +51,7 @@ class EnginePlayerView extends StatelessWidget {
           if (showBuffering)
             ColoredBox(
               color: scheme.surface.withValues(alpha: 0.5),
-              child: Center(
-                child: CircularProgressIndicator(color: scheme.primary),
-              ),
+              child: const Center(child: CircularProgressIndicator()),
             ),
         ],
       ),

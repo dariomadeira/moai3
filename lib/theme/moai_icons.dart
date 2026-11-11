@@ -25,6 +25,7 @@ import 'package:moai3/utils/text_normalize.dart';
 /// 13. Flechas
 /// 14. Películas y series (VOD)
 /// 15. Teclado en pantalla y PIN
+/// 16. Arranque
 ///
 /// Tamaños: usar siempre [MoaiIconSizes], nunca un número suelto.
 abstract final class MoaiIcons {
@@ -36,16 +37,19 @@ abstract final class MoaiIcons {
   // ---------------------------------------------------------------------------
 
   /// Rail «Inicio» (sin seleccionar).
-  static const railHome = HugeIcons.home09;
+  static const railHome = HugeIcons.home04;
 
   /// Rail «Inicio» (seleccionado).
-  static const railHomeSelected = HugeIcons.home09;
+  static const railHomeSelected = HugeIcons.home04;
 
   /// Rail «TV» (sin seleccionar).
   static const railTv = HugeIcons.modernTv;
 
   /// Rail «TV» (seleccionado).
   static const railTvSelected = HugeIcons.modernTv;
+
+  /// Rail del visor de TV nuevo (en rediseño, al lado del de siempre).
+  static const railLiveTv = HugeIcons.tv01;
 
   /// Rail «Destacados» (sin seleccionar).
   static const railFeatured = HugeIcons.video01;
@@ -59,11 +63,44 @@ abstract final class MoaiIcons {
   /// Rail «Películas» (seleccionado).
   static const railMoviesSelected = HugeIcons.clapperboard;
 
-  /// Rail «Series» (sin seleccionar).
-  static const railSeries = HugeIcons.film01;
+  /// Series (rail y pestaña): `strokeRoundedTvMinimalPlay` de Hugeicons, que no está en
+  /// `hugeicons_plus` 0.1.1 (es de un set más nuevo). Copiado del paquete
+  /// oficial `hugeicons` 1.2.0 como SVG de 24×24 con el trazo de 1,5 de los
+  /// demás; se dibuja con [MoaiSvgIcon].
+  static const seriesSvg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
+      'fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" '
+      'stroke-linejoin="round">'
+      '<path d="M2 14C2 10.2288 2 8.34315 3.17157 7.17157C4.34315 6 6.22876 6 '
+      '10 6H14C17.7712 6 19.6569 6 20.8284 7.17157C22 8.34315 22 10.2288 22 '
+      '14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10'
+      'C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14Z"/>'
+      '<path d="M14.957 14.3384C14.8182 14.8756 14.1619 15.2552 12.8494 '
+      '16.0144C11.5806 16.7484 10.9462 17.1153 10.4349 16.9678C10.2236 16.9068 '
+      '10.031 16.791 9.87567 16.6315C9.5 16.2456 9.5 15.497 9.5 14C9.5 12.503 '
+      '9.5 11.7544 9.87567 11.3685C10.031 11.209 10.2236 11.0932 10.4349 '
+      '11.0322C10.9462 10.8847 11.5806 11.2516 12.8494 11.9856C14.1619 12.7448 '
+      '14.8182 13.1244 14.957 13.6616C15.0143 13.8834 15.0143 14.1166 14.957 '
+      '14.3384Z"/>'
+      '<path d="M9 3L12 6L16 2"/>'
+      '</svg>';
 
-  /// Rail «Series» (seleccionado).
-  static const railSeriesSelected = HugeIcons.film01;
+  /// Detalle de una serie, "N temporadas": `strokeRoundedSatelliteDish` de
+  /// Hugeicons, que tampoco está en `hugeicons_plus` (como [seriesSvg]).
+  static const seriesSeasonsSvg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
+      'fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" '
+      'stroke-linejoin="round">'
+      '<path d="M2.49229 13.5818C2.47031 17.9768 6.01534 21.5218 10.4103 '
+      '21.4998C11.4998 21.4944 12.5393 21.2702 13.4869 20.8692C14.5667 20.4122 '
+      '15.1067 20.1837 15.2594 19.4004C15.4121 18.6171 14.8913 18.0963 13.8499 '
+      '17.0549L6.93724 10.1422C5.89578 9.10076 5.37506 8.58003 4.59172 '
+      '8.73274C3.80838 8.88545 3.57988 9.42536 3.1229 10.5052C2.72188 11.4528 '
+      '2.49774 12.4923 2.49229 13.5818Z"/>'
+      '<path d="M13.4922 6C15.9775 6 17.9922 8.01472 17.9922 10.5"/>'
+      '<path d="M13.4922 2.5C17.9105 2.5 21.4922 6.08172 21.4922 10.5"/>'
+      '<path d="M13.4932 10.5L10.3945 13.5995"/>'
+      '</svg>';
 
   /// Rail «Agenda» (sin seleccionar).
   static const railCalendar = HugeIcons.calendar03;
@@ -72,14 +109,14 @@ abstract final class MoaiIcons {
   static const railCalendarSelected = HugeIcons.calendar03;
 
   /// Rail «Descuentos» (sin seleccionar / seleccionado).
-  static const railDiscounts = HugeIcons.discountTag02;
-  static const railDiscountsSelected = HugeIcons.discountTag02;
+  static const railDiscounts = HugeIcons.percentSquare;
+  static const railDiscountsSelected = HugeIcons.percentSquare;
 
   /// Rail «Arcade» (sin seleccionar).
-  static const railArcade = HugeIcons.gameController03;
+  static const railArcade = HugeIcons.joystick05;
 
   /// Rail «Arcade» (seleccionado).
-  static const railArcadeSelected = HugeIcons.gameController03;
+  static const railArcadeSelected = HugeIcons.joystick05;
 
   /// Rail «Ajustes» (sin seleccionar).
   static const railSettings = HugeIcons.settings01;
@@ -103,7 +140,7 @@ abstract final class MoaiIcons {
   static const tvAccordionCanales = HugeIcons.remoteControl;
 
   /// Acordeón «Inicio» (`home_panel_home_title`).
-  static const tvAccordionHome = HugeIcons.home09;
+  static const tvAccordionHome = HugeIcons.home04;
 
   /// Acordeón «Destacados» (`movies_panel_featured_title`).
   static const tvAccordionFeatured = HugeIcons.video01;
@@ -149,7 +186,7 @@ abstract final class MoaiIcons {
   static const tvEmptyViewer = HugeIcons.tv01;
 
   /// Sin logo / logo fallido en la grilla o lista de canales.
-  static const tvChannelLogoFallback = HugeIcons.tv02;
+  static const tvChannelLogoFallback = HugeIcons.modernTvIssue;
 
   /// Estado vacío sin canales (`browser_channels_empty`).
   /// Consumidor: `features/channel_browser/widgets/channel_list_panel.dart`
@@ -391,6 +428,9 @@ abstract final class MoaiIcons {
   /// Botón «ir a hoy» (`calendar_events_panel.dart`).
   static const calendarToday = HugeIcons.calendarCheck;
 
+  /// Botón «recargar» de la Agenda (`calendar_events_panel.dart`).
+  static const calendarRefresh = HugeIcons.calendarSync;
+
   /// Día sin eventos (`calendar_day_column.dart`).
   static const calendarEmptyDay = HugeIcons.calendarRemove01;
 
@@ -412,9 +452,6 @@ abstract final class MoaiIcons {
   /// Suscripción NFL — fútbol americano.
   static const calendarSubNfl = HugeIcons.americanFootball;
 
-  /// Suscripción MotoGP — motocicleta.
-  static const calendarSubMotogp = HugeIcons.motorbike02;
-
   /// Suscripción NBA — básquetbol.
   static const calendarSubNba = HugeIcons.basketball01;
 
@@ -428,7 +465,6 @@ abstract final class MoaiIcons {
     'champions': calendarSubChampions,
     'premier': calendarSubPremier,
     'nfl': calendarSubNfl,
-    'motogp': calendarSubMotogp,
     'nba': calendarSubNba,
   };
 
@@ -438,7 +474,6 @@ abstract final class MoaiIcons {
     if (exact != null) return exact;
     final lower = subscriptionId.toLowerCase();
     if (lower.contains('f1')) return calendarSubF1;
-    if (lower.contains('motogp')) return calendarSubMotogp;
     if (lower.contains('nfl') || lower.contains('football')) {
       return calendarSubNfl;
     }
@@ -471,8 +506,9 @@ abstract final class MoaiIcons {
   // Consumidores: `features/games/`, `features/home/areas/home_arcade_area.dart`.
   // ---------------------------------------------------------------------------
 
-  /// 1. Seleccionar juego Arcade (fantasma)
-  static const arcadeActionSelectGame = HugeIcons.ghost;
+  /// 1. Seleccionar juego Arcade (Pac-Man; también el botón «Cambiar» de la
+  /// tarjeta del Inicio)
+  static const arcadeActionSelectGame = HugeIcons.pacman01;
 
   /// 2. Configurar Gamepad Arcade (gamepad)
   static const arcadeActionConfigGamepad = HugeIcons.gameController03;
@@ -481,16 +517,16 @@ abstract final class MoaiIcons {
   static const arcadeActionStartGame = HugeIcons.play;
 
   /// Refrescar catálogo de ROMs (refresh)
-  static const arcadeCatalogRefresh = HugeIcons.refresh;
+  static const arcadeCatalogRefresh = HugeIcons.refresh03;
 
   /// Ícono de ROM / Juego en catálogo
-  static const arcadeRomItem = HugeIcons.ghost;
+  static const arcadeRomItem = HugeIcons.aircraftGame;
 
   /// Ícono del badge/pill de instalados en cabecera de Arcade (gameboy)
   static const arcadeRomInstalledBadge = HugeIcons.gameboy;
 
-  /// Ícono de la tarjeta de juego instalado (gamepad)
-  static const arcadeRomCard = HugeIcons.gameController03;
+  /// Ícono de la tarjeta de juego instalado (Pac-Man)
+  static const arcadeRomCard = HugeIcons.pacman02;
 
   /// Eliminar ROM instalada (papelera)
   static const arcadeRomDelete = HugeIcons.delete02;
@@ -524,8 +560,9 @@ abstract final class MoaiIcons {
   /// Amigos / jugar con un amigo.
   static const friends = HugeIcons.userGroup;
 
-  /// Resumen de amigos en Ajustes › Miremos juntos.
-  static const watchPartyFriends = HugeIcons.userGroup02;
+  /// Mis amigos: el modal y su ítem en Ajustes › Miremos juntos
+  /// (Contact01, stroke rounded).
+  static const watchPartyFriends = HugeIcons.contact01;
 
   /// Sin amigos todavía.
   static const friendsEmpty = HugeIcons.userGroup;
@@ -545,6 +582,9 @@ abstract final class MoaiIcons {
   /// Agregar amigo.
   static const personAdd = HugeIcons.userAdd01;
 
+  /// Botón «Agregar amigo» (por código) en Agregar y buscar.
+  static const friendAddButton = HugeIcons.computerAdd;
+
   /// Quitar amigo.
   static const personRemove = HugeIcons.userRemove01;
 
@@ -552,16 +592,20 @@ abstract final class MoaiIcons {
   static const personSearch = HugeIcons.userSearch01;
 
   /// Sección «Miremos juntos» en Ajustes.
-  static const watchParty = HugeIcons.bubbleChat;
+  static const watchParty = HugeIcons.speech;
 
-  /// Micrófono (mensajes de voz).
-  static const mic = HugeIcons.mic01;
+  /// Interruptor de «Mirar juntos» en Ajustes.
+  static const watchPartyToggle = HugeIcons.voice;
 
-  /// Prueba / ajustes de micrófono.
+  /// Micrófono (mensajes de voz). El de toda la app: `mic02`, la cápsula lisa
+  /// con la rayita de base (el `mic01` de este paquete tiene rayas).
+  static const mic = HugeIcons.mic02;
+
+  /// Prueba / ajustes de micrófono (la fila de Ajustes).
   static const micSettings = HugeIcons.slidersHorizontal;
 
   /// Mensajes de voz.
-  static const voice = HugeIcons.mic01;
+  static const voice = mic;
 
   /// Grabando.
   static const record = HugeIcons.record;
@@ -642,7 +686,7 @@ abstract final class MoaiIcons {
   static const extensionEmpty = HugeIcons.bulb;
 
   /// Extensión instalada / fuente de canales.
-  static const plugin = HugeIcons.plug01;
+  static const plugin = HugeIcons.blockGame;
 
   /// Actualizar extensión.
   static const pluginUpdate = HugeIcons.refresh01;
@@ -663,7 +707,7 @@ abstract final class MoaiIcons {
   static const catalogEmpty = HugeIcons.cloudAlert;
 
   /// Actualización de la app.
-  static const appUpdate = HugeIcons.download01;
+  static const appUpdate = HugeIcons.downloadSquare02;
 
   /// Instalación pendiente.
   static const installPending = HugeIcons.download01;
@@ -714,18 +758,36 @@ abstract final class MoaiIcons {
   /// Esquina inferior izquierda.
   static const southWest = HugeIcons.arrowDownLeft01;
 
+  /// Margen horizontal (bordes izquierdo y derecho).
+  static const overscanHorizontal = HugeIcons.arrowHorizontal;
+
+  /// Margen vertical (bordes superior e inferior).
+  static const overscanVertical = HugeIcons.arrowVertical;
+
   // ---------------------------------------------------------------------------
   // 12. Acciones y estados comunes
   // ---------------------------------------------------------------------------
 
   /// Confirmado / seleccionado.
-  static const check = HugeIcons.tick01;
+  /// Todos los tildes de la app (confirmar, instalado, éxito, visto, listo)
+  /// son el mismo: `strokeRoundedCheckmarkSquare02` (`checkmarkSquare02`).
+  static const check = HugeIcons.checkmarkSquare02;
+
+  /// La opción elegida de una lista (zona horaria): el tilde en un cuadrado.
+  /// Es el `strokeRoundedSquareCheck` de Hugeicons, que en `hugeicons_plus`
+  /// se llama así.
+  static const selectedCheck = HugeIcons.checkmarkSquare02;
+
+  /// Única excepción al tilde cuadrado: el color elegido en el selector de
+  /// color de acento va con el tilde solo (`strokeRoundedCheck`), dentro del
+  /// círculo de color.
+  static const colorSelected = HugeIcons.check;
 
   /// Éxito.
-  static const checkCircle = HugeIcons.checkmarkCircle01;
+  static const checkCircle = HugeIcons.checkmarkSquare02;
 
   /// Éxito (relleno/seleccionado).
-  static const checkCircleFilled = HugeIcons.checkmarkCircle01;
+  static const checkCircleFilled = HugeIcons.checkmarkSquare02;
 
   /// Error.
   static const error = HugeIcons.alertCircle;
@@ -753,6 +815,12 @@ abstract final class MoaiIcons {
 
   /// Reintentar / recargar.
   static const refresh = HugeIcons.refresh;
+
+  /// "Restablecer por defecto" del modal de gamepad.
+  static const gamepadReset = HugeIcons.refresh01;
+
+  /// Frecuencia de actualización del catálogo (Ajustes › Películas y series).
+  static const catalogFrequency = HugeIcons.cloudSync;
 
   /// Sincronizar extensión.
   static const sync = HugeIcons.refresh01;
@@ -818,13 +886,13 @@ abstract final class MoaiIcons {
   static const moviesSearchOffline = HugeIcons.wifiDisconnected01;
 
   /// Tarjeta "Ver todas" al final de cada categoría de la grilla.
-  static const moviesShowAll = HugeIcons.dashboardSquare01;
+  static const moviesShowAll = HugeIcons.popcorn;
+
+  /// Botón "más" (abre el detalle) de la tarjeta destacada.
+  static const moviesMore = HugeIcons.moreHorizontal;
 
   /// Tarjeta: película.
   static const vodMovie = HugeIcons.clapperboard;
-
-  /// Tarjeta: serie.
-  static const vodSeries = HugeIcons.film01;
 
   /// Tarjeta: tráiler.
   static const vodTrailer = HugeIcons.video01;
@@ -832,12 +900,18 @@ abstract final class MoaiIcons {
   /// Pestaña del detalle de la película.
   static const vodPoster = HugeIcons.clapperboard;
 
-  /// "Interesantes": el mismo en la tarjeta del Inicio, sus opciones y el
-  /// botón del detalle (marcada o no).
-  static const vodWatchlist = HugeIcons.ticket01;
+  /// Películas marcadas para ver después: la tarjeta del Inicio y "Marcar"
+  /// en la destacada y el detalle.
+  static const vodWatchlist = HugeIcons.award04;
+
+  /// "Desmarcar" (ya marcada) y quitarlas de la lista.
+  static const vodWatchlistRemove = HugeIcons.badgeMinus;
 
   /// Descuentos en comercios (tarjeta del Inicio).
   static const discounts = HugeIcons.discountTag02;
+
+  /// Actualizar las promos (encabezado de la semana de Descuentos).
+  static const discountRefresh = HugeIcons.refresh04;
 
   /// Bancos y billeteras del usuario, para los descuentos.
   static const discountBanks = HugeIcons.wallet01;
@@ -866,11 +940,14 @@ abstract final class MoaiIcons {
   /// Duración.
   static const vodDuration = HugeIcons.clock01;
 
+  /// Solicitud de amistad enviada, esperando respuesta.
+  static const friendPending = HugeIcons.clock01;
+
   /// Calidad de video.
   static const vodQuality = HugeIcons.hd;
 
   /// Vista completa.
-  static const vodWatched = HugeIcons.checkmarkCircle01;
+  static const vodWatched = HugeIcons.checkmarkSquare02;
 
   /// Continuar viendo.
   static const vodResume = HugeIcons.history;
@@ -887,11 +964,20 @@ abstract final class MoaiIcons {
   /// Subtítulos.
   static const vodSubtitles = HugeIcons.subtitle;
 
+  /// Tamaño de los subtítulos.
+  static const vodSubtitleSize = HugeIcons.textFont;
+
   /// Reproducir.
   static const vodPlay = HugeIcons.play;
 
   /// Pausa.
   static const vodPause = HugeIcons.pause;
+
+  /// Recomendar una película a los amigos.
+  static const vodRecommend = HugeIcons.thumbsUp;
+
+  /// No recomendarla (queda en el TV).
+  static const vodNotRecommend = HugeIcons.thumbsDown;
 
   // ---------------------------------------------------------------------------
   // 15. Teclado en pantalla y PIN
@@ -899,16 +985,68 @@ abstract final class MoaiIcons {
   // ---------------------------------------------------------------------------
 
   /// Tecla mayúsculas.
-  static const keyboardShift = HugeIcons.arrowUp01;
+  static const keyboardShift = HugeIcons.arrowUpBig;
 
   /// Tecla borrar.
-  static const keyboardBackspace = HugeIcons.delete02;
+  static const keyboardBackspace = HugeIcons.cancelSquare;
 
   /// Borrar dígito del PIN.
-  static const pinBackspace = HugeIcons.delete02;
+  static const pinBackspace = HugeIcons.cancelSquare;
 
   /// Cerrar el teclado de PIN.
   static const pinClose = HugeIcons.cancel01;
+
+  // ---------------------------------------------------------------------------
+  // 16. Arranque
+  // Consumidor: `features/loading/screens/loading_screen.dart`.
+  // ---------------------------------------------------------------------------
+
+  // Uno distinto por mensaje: así se nota que el arranque avanza.
+
+  /// Verificando el dispositivo.
+  static const bootDevice = HugeIcons.modernTv;
+
+  /// Pidiendo el permiso de la VPN.
+  static const bootPermission = HugeIcons.key01;
+
+  /// Iniciando los servicios de la VPN.
+  static const bootServices = HugeIcons.serverStack01;
+
+  /// Conectando con el servidor de la VPN.
+  static const bootServer = HugeIcons.router01;
+
+  /// Conexión segura (VPN).
+  static const bootSecure = HugeIcons.securityWifi;
+
+  /// Probando otra conexión.
+  static const bootRetry = HugeIcons.reload;
+
+  /// Conexión segura lista.
+  static const bootSecureReady = HugeIcons.securityCheck;
+
+  /// Iniciando sesión.
+  static const bootSession = HugeIcons.userCheck01;
+
+  /// Sin sesión: películas y series no disponibles.
+  static const bootSessionFailed = HugeIcons.userBlock01;
+
+  /// Descargando el catálogo.
+  static const bootCatalog = HugeIcons.cloudDownload;
+
+  /// Catálogo actualizado.
+  static const bootCatalogUpdated = HugeIcons.cloudSavingDone01;
+
+  /// Catálogo guardado (sin actualizar a propósito).
+  static const bootCatalogCached = HugeIcons.database;
+
+  /// No se pudo actualizar el catálogo: queda el guardado.
+  static const bootCatalogStale = HugeIcons.databaseRestore;
+
+  /// Cerrando la conexión segura.
+  static const bootDisconnect = HugeIcons.unlink02;
+
+  /// Listo.
+  static const bootReady = HugeIcons.checkmarkSquare02;
 }
 
 /// Escala única de tamaños de íconos (SPEC-50 §4.4).

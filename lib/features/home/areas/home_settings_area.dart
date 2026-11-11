@@ -11,6 +11,7 @@ import 'package:moai3/features/settings/widgets/settings_tv_panel.dart';
 import 'package:moai3/features/settings/widgets/settings_watch_party_panel.dart';
 import 'package:moai3/focus/focus_requester.dart';
 import 'package:moai3/focus/settings_panel_layout.dart';
+import 'package:moai3/models/channel.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
@@ -21,11 +22,15 @@ class HomeSettingsArea extends StatefulWidget {
   final ValueChanged<int>? onPanelIndexChanged;
   final VoidCallback onExitLeft;
 
+  /// Sintoniza el canal de un amigo desde el modal de amigos.
+  final ValueChanged<Channel>? onTuneChannel;
+
   const HomeSettingsArea({
     super.key,
     this.initialPanelIndex = SettingsPanelLayout.configTvPanelIndex,
     this.onPanelIndexChanged,
     required this.onExitLeft,
+    this.onTuneChannel,
   });
 
   static const icons = [
@@ -86,12 +91,14 @@ class _HomeSettingsAreaState extends HomeAreaState<HomeSettingsArea> {
       scheme.surface.withValues(alpha: 0.8),
     );
     final titles = [
-      LocaleKeys.settings_tv_title.tr(),
-      LocaleKeys.settings_movies_series_title.tr(),
-      LocaleKeys.settings_agenda_title.tr(),
-      LocaleKeys.settings_watch_party_title.tr(),
-      LocaleKeys.settings_general_title.tr(),
-      LocaleKeys.settings_about_title.tr(),
+      // Las pestañas, con el nombre corto; el encabezado de cada panel
+      // conserva el título largo ("Ajustes de TV").
+      LocaleKeys.settings_tab_tv.tr(),
+      LocaleKeys.settings_tab_movies_series.tr(),
+      LocaleKeys.settings_tab_agenda.tr(),
+      LocaleKeys.settings_tab_watch_party.tr(),
+      LocaleKeys.settings_tab_general.tr(),
+      LocaleKeys.settings_tab_about.tr(),
     ];
 
     // Ancho final fijo: interruptores y textos no se re-distribuyen mientras
@@ -142,6 +149,7 @@ class _HomeSettingsAreaState extends HomeAreaState<HomeSettingsArea> {
         } else if (SettingsPanelLayout.isWatchPartyPanel(index)) {
           panelWidget = SettingsWatchPartyPanel(
             focusNode: focusNode,
+            onTuneChannel: widget.onTuneChannel,
             initialIndex: itemIndex,
             onSelectedIndexChanged: onItemChanged,
             onKeyLeft: () =>

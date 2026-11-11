@@ -67,10 +67,7 @@ class WatchPartyService {
       final nowIso = DateTime.now().toUtc().toIso8601String();
       await client
           .from(tableDevices)
-          .update({
-            'nickname': nickname.trim(),
-            'updated_at': nowIso,
-          })
+          .update({'nickname': nickname.trim(), 'updated_at': nowIso})
           .eq('device_id', deviceId);
     } catch (e) {
       throw const WatchPartyException(LocaleKeys.nickname_save_error);
@@ -99,7 +96,9 @@ class WatchPartyService {
       // 2. Consultar el estado y metadatos de los amigos en 'devices'
       final devicesRows = await client
           .from(tableDevices)
-          .select('device_id, user_code, nickname, online, last_seen, current_channel_id, current_channel_name')
+          .select(
+            'device_id, user_code, nickname, online, last_seen, current_channel_id, current_channel_name',
+          )
           .inFilter('device_id', friendIds);
 
       final friendsList = (devicesRows as List)
@@ -121,6 +120,16 @@ class WatchPartyService {
       if (e is WatchPartyException) rethrow;
       throw const WatchPartyException(LocaleKeys.friends_load_error);
     }
+  }
+
+  /// Quiénes agregaron a [deviceId] (sólo los ids). Con eso se sabe qué
+  /// amigos agregados ya devolvieron la amistad y cuáles siguen esperando.
+  Future<Set<String>> getIncomingFriendIds(String deviceId) async {
+    final rows = await _effectiveClient
+        .from(tableFriends)
+        .select('device_id')
+        .eq('friend_device_id', deviceId);
+    return {for (final row in rows as List) row['device_id'] as String};
   }
 
   /// Obtiene la lista de solicitudes de amistad pendientes.
@@ -165,7 +174,9 @@ class WatchPartyService {
       // 4. Consultar datos de los dispositivos solicitantes
       final devicesRows = await client
           .from(tableDevices)
-          .select('device_id, user_code, nickname, online, last_seen, current_channel_id, current_channel_name')
+          .select(
+            'device_id, user_code, nickname, online, last_seen, current_channel_id, current_channel_name',
+          )
           .inFilter('device_id', pendingRequesterIds);
 
       final requestsList = (devicesRows as List)
@@ -212,7 +223,9 @@ class WatchPartyService {
       // RB-07: Validar si el código existe en 'devices'
       final targetDevice = await client
           .from(tableDevices)
-          .select('device_id, user_code, nickname, online, last_seen, current_channel_id, current_channel_name')
+          .select(
+            'device_id, user_code, nickname, online, last_seen, current_channel_id, current_channel_name',
+          )
           .eq('user_code', normalizedCode)
           .maybeSingle();
 
@@ -236,7 +249,9 @@ class WatchPartyService {
           .maybeSingle();
 
       if (existingFriendship != null) {
-        throw const WatchPartyException(LocaleKeys.friend_add_error_already_added);
+        throw const WatchPartyException(
+          LocaleKeys.friend_add_error_already_added,
+        );
       }
 
       // Insertar en 'device_friends'
@@ -259,13 +274,63 @@ class WatchPartyService {
   }) async {
     try {
       final client = _effectiveClient;
+      // Las dos filas: con una sola, el otro volvería como solicitud.
       await client
           .from(tableFriends)
           .delete()
-          .eq('device_id', deviceId)
-          .eq('friend_device_id', friendDeviceId);
+          .or(
+            'and(device_id.eq.$deviceId,friend_device_id.eq.$friendDeviceId),'
+            'and(device_id.eq.$friendDeviceId,friend_device_id.eq.$deviceId)',
+          );
     } catch (e) {
       throw const WatchPartyException(LocaleKeys.friends_delete_error);
+    }
+  }
+
+  /// Busca usuarios por apodo: los que lo contienen, sin distinguir
+  /// mayúsculas, sin [deviceId] (uno mismo). Con menos de 2 letras no busca.
+  Future<List<FriendInfo>> searchByNickname({
+    required String deviceId,
+    required String query,
+    int limit = 20,
+  }) async {
+    // Fuera los comodines de LIKE y lo que rompe el filtro de PostgREST.
+    final q = query.trim().replaceAll(RegExp(r'[%_\\,()*]'), '');
+    if (q.length < 2) return const [];
+    try {
+      final rows = await _effectiveClient
+          .from(tableDevices)
+          .select(
+            'device_id, user_code, nickname, online, last_seen, current_channel_id, current_channel_name',
+          )
+          .ilike('nickname', '%$q%')
+          .neq('device_id', deviceId)
+          .order('nickname')
+          .limit(limit);
+      return [
+        for (final row in rows as List)
+          FriendInfo.fromDeviceJson(row as Map<String, dynamic>),
+      ];
+    } catch (e) {
+      throw const WatchPartyException(LocaleKeys.friends_search_error);
+    }
+  }
+
+  /// Rechaza la solicitud de [requesterId]: borra su fila hacia [deviceId]
+  /// (lo que lo hacía figurar como solicitud). Si te vuelve a agregar,
+  /// reaparece.
+  Future<void> rejectFriendRequest({
+    required String deviceId,
+    required String requesterId,
+  }) async {
+    try {
+      await _effectiveClient
+          .from(tableFriends)
+          .delete()
+          .eq('device_id', requesterId)
+          .eq('friend_device_id', deviceId);
+    } catch (e) {
+      throw const WatchPartyException(LocaleKeys.friends_reject_error);
     }
   }
 
@@ -306,11 +371,16 @@ class WatchPartyService {
     try {
       final client = _effectiveClient;
       final filePath = 'audios/$deviceId/$fileName';
-      await client.storage.from(bucketVoiceMessages).uploadBinary(
-        filePath,
-        bytes,
-        fileOptions: const FileOptions(contentType: 'audio/mp4', upsert: true),
-      );
+      await client.storage
+          .from(bucketVoiceMessages)
+          .uploadBinary(
+            filePath,
+            bytes,
+            fileOptions: const FileOptions(
+              contentType: 'audio/mp4',
+              upsert: true,
+            ),
+          );
       return client.storage.from(bucketVoiceMessages).getPublicUrl(filePath);
     } catch (e) {
       throw const WatchPartyException('voice_upload_error');
@@ -327,13 +397,17 @@ class WatchPartyService {
   }) async {
     try {
       final client = _effectiveClient;
-      final row = await client.from(tableVoiceMessages).insert({
-        'sender_device_id': senderDeviceId,
-        'channel_id': channelId,
-        'channel_name': channelName,
-        'audio_url': audioUrl,
-        'duration_ms': durationMs,
-      }).select().single();
+      final row = await client
+          .from(tableVoiceMessages)
+          .insert({
+            'sender_device_id': senderDeviceId,
+            'channel_id': channelId,
+            'channel_name': channelName,
+            'audio_url': audioUrl,
+            'duration_ms': durationMs,
+          })
+          .select()
+          .single();
 
       return VoiceMessageRecord.fromJson(row);
     } catch (e) {
@@ -348,80 +422,89 @@ class WatchPartyService {
   }) {
     final client = _effectiveClient;
     final channel = client.channel('public:$tableVoiceMessages');
-    channel.onPostgresChanges(
-      event: PostgresChangeEvent.insert,
-      schema: 'public',
-      table: tableVoiceMessages,
-      callback: (payload) {
-        try {
-          final record = VoiceMessageRecord.fromJson(payload.newRecord);
-          onMessageReceived(record);
-        } catch (e) {
-          debugPrint('[WatchPartyService] $e');
-        }
-      },
-    ).subscribe();
+    channel
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: tableVoiceMessages,
+          callback: (payload) {
+            try {
+              final record = VoiceMessageRecord.fromJson(payload.newRecord);
+              onMessageReceived(record);
+            } catch (e) {
+              debugPrint('[WatchPartyService] $e');
+            }
+          },
+        )
+        .subscribe();
     return channel.unsubscribe;
   }
 
-  /// Se suscribe en tiempo real a actualizaciones de presencia y canal en 'devices' (SPEC-37).
+  /// Cambios de presencia y canal, sólo de [deviceIds] (Realtime admite 100).
   RealtimeChannel subscribeToDevicesUpdates({
+    required List<String> deviceIds,
     required void Function(Map<String, dynamic> record) onDeviceUpdated,
   }) {
     final client = _effectiveClient;
-    final channel = client.channel('public:$tableDevices');
-    channel.onPostgresChanges(
-      event: PostgresChangeEvent.update,
-      schema: 'public',
-      table: tableDevices,
-      callback: (payload) {
-        try {
-          onDeviceUpdated(payload.newRecord);
-        } catch (e) {
-          debugPrint('[WatchPartyService] $e');
-        }
-      },
-    ).subscribe();
+    // Tópico nuevo: al cambiar la lista, el anterior todavía se está cerrando.
+    final channel = client.channel(
+      'friends_devices_${DateTime.now().microsecondsSinceEpoch}',
+    );
+    channel
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: tableDevices,
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.inFilter,
+            column: 'device_id',
+            value: deviceIds.take(100).toList(),
+          ),
+          callback: (payload) {
+            try {
+              onDeviceUpdated(payload.newRecord);
+            } catch (e) {
+              debugPrint('[WatchPartyService] $e');
+            }
+          },
+        )
+        .subscribe();
     return channel;
   }
 
-  /// Se suscribe al canal WebSocket de presencia en tiempo real (Supabase Realtime Presence).
-  RealtimeChannel joinWatchPartyPresence({
+  /// Avisa cuando cambia una amistad que involucra a [deviceId]: alguien lo
+  /// agregó o se borró una fila. Realtime no filtra los borrados por columna;
+  /// son pocos y acá se descartan los ajenos.
+  RealtimeChannel subscribeToFriendLinks({
     required String deviceId,
-    required Map<String, dynamic> initialPayload,
-    required void Function(List<Map<String, dynamic>> activePresences) onPresenceUpdated,
+    required void Function() onChanged,
   }) {
-    final client = _effectiveClient;
-    final channel = client.channel(
-      'watch_party_presence',
-      opts: const RealtimeChannelConfig(key: 'device_id'),
-    );
-
-    void emitPresences() {
-      try {
-        final state = channel.presenceState();
-        final List<Map<String, dynamic>> presencesList = [];
-        for (final item in state) {
-          for (final presence in item.presences) {
-            presencesList.add(presence.payload);
-          }
-        }
-        onPresenceUpdated(presencesList);
-      } catch (e) {
-        debugPrint('[WatchPartyService] $e');
-      }
-    }
-
+    final channel = _effectiveClient.channel('friend_links_$deviceId');
     channel
-        .onPresenceSync((_) => emitPresences())
-        .onPresenceJoin((_) => emitPresences())
-        .onPresenceLeave((_) => emitPresences())
-        .subscribe((status, [error]) async {
-      if (status == RealtimeSubscribeStatus.subscribed) {
-        await channel.track(initialPayload);
-      }
-    });
-
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: tableFriends,
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'friend_device_id',
+            value: deviceId,
+          ),
+          callback: (_) => onChanged(),
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.delete,
+          schema: 'public',
+          table: tableFriends,
+          callback: (payload) {
+            final old = payload.oldRecord;
+            if (old['device_id'] == deviceId ||
+                old['friend_device_id'] == deviceId) {
+              onChanged();
+            }
+          },
+        )
+        .subscribe();
     return channel;
   }
 }

@@ -17,7 +17,8 @@ class ArcadeControllerOverlay extends StatefulWidget {
   });
 
   @override
-  State<ArcadeControllerOverlay> createState() => _ArcadeControllerOverlayState();
+  State<ArcadeControllerOverlay> createState() =>
+      _ArcadeControllerOverlayState();
 }
 
 class _ArcadeControllerOverlayState extends State<ArcadeControllerOverlay> {
@@ -37,17 +38,6 @@ class _ArcadeControllerOverlayState extends State<ArcadeControllerOverlay> {
       _activeInputMask,
       player: widget.netplayActive ? localPlayer : 0,
     );
-    if (widget.netplayActive) {
-      final frame = await widget.service.netplayGetFrame();
-      await widget.service.netplaySubmitLocalInput(
-        frame: frame,
-        mask: _activeInputMask,
-      );
-      ArcadeNetplayService.instance.sendLocalInput(
-        _activeInputMask,
-        frame: frame,
-      );
-    }
   }
 
   Widget _buildArcadeButton({
@@ -221,25 +211,15 @@ class _ArcadeControllerOverlayState extends State<ArcadeControllerOverlay> {
       child: Stack(
         children: [
           // D-Pad a la izquierda abajo
-          Positioned(
-            left: 20,
-            bottom: 20,
-            child: _buildDPad(),
-          ),
+          Positioned(left: 20, bottom: 20, child: _buildDPad()),
           // Botones de acción a la derecha abajo
-          Positioned(
-            right: 20,
-            bottom: 20,
-            child: _buildCapcom6ButtonGrid(),
-          ),
+          Positioned(right: 20, bottom: 20, child: _buildCapcom6ButtonGrid()),
           // Botones COIN / START arriba al centro
           Positioned(
             top: 20,
             left: 0,
             right: 0,
-            child: Center(
-              child: _buildSystemButtons(),
-            ),
+            child: Center(child: _buildSystemButtons()),
           ),
         ],
       ),

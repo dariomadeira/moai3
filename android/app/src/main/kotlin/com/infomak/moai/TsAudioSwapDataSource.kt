@@ -25,6 +25,8 @@ import androidx.media3.datasource.TransferListener
 class TsAudioSwapDataSource(
     private val upstream: DataSource,
     preferredLanguage: String,
+    /** Cuál de los audios de ese idioma, por PID y contando desde 0. */
+    private val preferredOccurrence: Int = 0,
 ) : DataSource {
 
     private val preferred = Util.normalizeLanguageCode(preferredLanguage)
@@ -176,9 +178,10 @@ class TsAudioSwapDataSource(
 
         if (swap.isEmpty()) {
             val audios = streams.filter { it.type in AUDIO_TYPES }
-            val target = audios.firstOrNull {
+            val matches = audios.filter {
                 it.lang != null && Util.normalizeLanguageCode(it.lang) == preferred
-            } ?: return
+            }.sortedBy { it.pid }
+            val target = matches.getOrNull(preferredOccurrence) ?: matches.firstOrNull() ?: return
             val first = audios.filter { it.type == target.type }.minByOrNull { it.pid } ?: return
             // El intercambio sólo cambia el byte bajo del PID: los altos deben coincidir.
             if (first.pid == target.pid || first.pid shr 8 != target.pid shr 8) return

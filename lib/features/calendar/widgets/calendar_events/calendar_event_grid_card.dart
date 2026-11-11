@@ -26,34 +26,37 @@ class _CalendarEventGridCard extends StatelessWidget {
       event.subscriptionId,
     );
 
-    // Ficha de cristal como TvTile: el foco es el borde del acento y el texto
-    // no se invierte. El estado se lee por el chip y la intensidad del texto:
-    // en vivo va teñido del acento, terminado queda apagado.
-    final Color fgColor;
-    final Color iconColor;
-    if (isFinished && !isFocused) {
-      fgColor = scheme.onSurfaceVariant.withValues(alpha: 0.6);
-      iconColor = fgColor;
-    } else {
-      fgColor = scheme.onSurface;
-      iconColor = isFinished
-          ? scheme.onSurfaceVariant
-          : scheme.primary.withValues(alpha: isFocused ? 1 : 0.75);
-    }
-    final timeColor = isSoon || isLive ? scheme.primary : fgColor;
+    // Ficha de cristal como las del Inicio: el foco es el borde del acento.
+    // REDISEÑO: el ícono en el color del deporte; título y hora en el gris
+    // oscuro de los subtítulos (no negro), el del modo. Terminado queda
+    // apagado.
+    final subtitleColor = MoaiPalette.of(context).inkSoft;
+    final dimmed = isFinished && !isFocused;
+    final fgColor = dimmed
+        ? subtitleColor.withValues(alpha: 0.55)
+        : subtitleColor;
+    final sportColor = CalendarProvider.getSubscriptionColor(
+      event.subscriptionId,
+      scheme.primary,
+    );
+    final iconColor = dimmed ? sportColor.withValues(alpha: 0.55) : sportColor;
 
+    // El tag "En vivo" del Inicio, con un color para FIN y otro para PRÓX.
     final Widget? chip;
     if (isFinished) {
-      chip = TvWeekStatusChip(label: LocaleKeys.calendar_status_finished.tr());
+      chip = MoaiStatusTag(
+        label: LocaleKeys.calendar_status_finished.tr(),
+        color: MoaiStatusTag.finishedColor,
+      );
     } else if (isLive) {
-      chip = TvWeekStatusChip(
+      chip = MoaiStatusTag(
         label: LocaleKeys.calendar_status_live.tr(),
-        style: TvWeekChipStyle.live,
+        color: MoaiStatusTag.liveColor,
       );
     } else if (isSoon) {
-      chip = TvWeekStatusChip(
+      chip = MoaiStatusTag(
         label: LocaleKeys.calendar_status_upcoming_short.tr(),
-        style: TvWeekChipStyle.highlighted,
+        color: MoaiStatusTag.soonColor,
       );
     } else {
       chip = null;
@@ -69,7 +72,6 @@ class _CalendarEventGridCard extends StatelessWidget {
           elevated: false,
           solid: true,
           focused: isFocused,
-          tint: isLive ? scheme.primary : null,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -84,14 +86,15 @@ class _CalendarEventGridCard extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(sportIcon, size: MoaiIconSizes.xs, color: iconColor),
-                      const SizedBox(width: 4),
+                      Icon(sportIcon, size: MoaiIconSizes.md, color: iconColor),
+                      const SizedBox(width: 6),
                       Text(
                         event.formattedTime,
                         style: MoaiText.display(
                           context,
-                          fontSize: 10.5,
-                          color: timeColor,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                          color: fgColor,
                         ),
                       ),
                       if (chip != null) ...[const SizedBox(width: 5), chip],

@@ -98,6 +98,7 @@ extension _TvAreaGroups on HomeTvAreaState {
                     }
                   },
                   onFocusUp: _focusCurrentTab,
+                  tunedChannelId: channelProv.selectedChannel?.id,
                 ),
               )
             : Actions(
@@ -124,6 +125,7 @@ extension _TvAreaGroups on HomeTvAreaState {
                   selectedCategory: '',
                   channels: _groups.filteredChannels,
                   selectedChannel: _groups.selectedChannel,
+                  tunedChannelId: channelProv.selectedChannel?.id,
                   onSelect: _selectChannel,
                   onLongPress: () {
                     if (_groups.activateChannelsAlphabetMode()) {

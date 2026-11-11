@@ -102,7 +102,6 @@ void main() {
       const strings = CatalogStrings(
         untitled: 'Sin título',
         defaultCategory: 'Varias',
-        trailersCategory: 'Adelantos',
       );
       final raw = jsonEncode({
         'recommendList': [
@@ -125,7 +124,7 @@ void main() {
         () => MoiamovCatalogStore.parseCategories(raw, strings),
       );
 
-      expect(categories.map((c) => c.columnName), ['Adelantos', 'Varias']);
+      expect(categories.map((c) => c.columnName), ['Trailer', 'Varias']);
       expect(categories.first.movies.single.name, 'Sin título');
     },
   );

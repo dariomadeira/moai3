@@ -77,7 +77,7 @@ extension _ArcadeGamesLayout on _ArcadeGamesScreenState {
                 child: !hasInstalled
                     ? TvEmptyStateCard(
                         focusNode: _emptyFocusNode,
-                        icon: MoaiIcons.arcadeRomItem,
+                        icon: MoaiIcons.arcadeRomCard,
                         message: LocaleKeys.arcade_empty_installed_msg.tr(),
                         onFocusLeft: _backFocusNode.requestFocus,
                         onFocusUp: _urlFocus.requestFocus,
@@ -87,8 +87,8 @@ extension _ArcadeGamesLayout on _ArcadeGamesScreenState {
                         builder: (context, constraints) {
                           const windowSize = 4;
                           final availableH = constraints.maxHeight;
-                          final itemExtent =
-                              (availableH / windowSize).floorToDouble();
+                          final itemExtent = (availableH / windowSize)
+                              .floorToDouble();
 
                           return SizedBox(
                             height: availableH,
@@ -104,38 +104,43 @@ extension _ArcadeGamesLayout on _ArcadeGamesScreenState {
                                 _selectedInstalledIndex = idx;
                               },
                               onFocusUpFromFirst: _urlFocus.requestFocus,
-                              itemBuilder: (
-                                context,
-                                item,
-                                focusNode,
-                                local,
-                                global,
-                                onKeyUp,
-                                onKeyDown,
-                              ) {
-                                final isFirst = global == 0;
-                                final deleteNode = _installedDeleteFocuses[global];
+                              itemBuilder:
+                                  (
+                                    context,
+                                    item,
+                                    focusNode,
+                                    local,
+                                    global,
+                                    onKeyUp,
+                                    onKeyDown,
+                                  ) {
+                                    final isFirst = global == 0;
+                                    final deleteNode =
+                                        _installedDeleteFocuses[global];
 
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 3),
-                                  child: _InstalledRomTile(
-                                    key: ValueKey(item.filename),
-                                    item: item,
-                                    deleteFocus: deleteNode,
-                                    onDeleteKeyUp: () {
-                                      if (isFirst) {
-                                        _urlFocus.requestFocus();
-                                      } else {
-                                        onKeyUp();
-                                      }
-                                    },
-                                    onDeleteKeyDown: onKeyDown,
-                                    onDeleteKeyLeft: _backFocusNode.requestFocus,
-                                    onDeleteKeyRight: _focusCatalogList,
-                                    onDelete: () => _deleteRom(item),
-                                  ),
-                                );
-                              },
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 3,
+                                      ),
+                                      child: _InstalledRomTile(
+                                        key: ValueKey(item.filename),
+                                        item: item,
+                                        deleteFocus: deleteNode,
+                                        onDeleteKeyUp: () {
+                                          if (isFirst) {
+                                            _urlFocus.requestFocus();
+                                          } else {
+                                            onKeyUp();
+                                          }
+                                        },
+                                        onDeleteKeyDown: onKeyDown,
+                                        onDeleteKeyLeft:
+                                            _backFocusNode.requestFocus,
+                                        onDeleteKeyRight: _focusCatalogList,
+                                        onDelete: () => _deleteRom(item),
+                                      ),
+                                    );
+                                  },
                             ),
                           );
                         },
@@ -166,41 +171,41 @@ extension _ArcadeGamesLayout on _ArcadeGamesScreenState {
                 child: widget.romManager.isLoading
                     ? Center(
                         child: CircularProgressIndicator(
-                          color: scheme.primary,
+                          color: scheme.onSurfaceVariant,
                           strokeWidth: 3,
                         ),
                       )
                     : catalog.isEmpty
-                        ? Center(
-                            child: Text(
-                              widget.romManager.errorMessage?.tr() ??
-                                  LocaleKeys.arcade_catalog_empty.tr(),
-                              style:
-                                  MoaiText.body(context, color: scheme.error),
-                            ),
-                          )
-                        : LayoutBuilder(
-                            builder: (context, constraints) {
-                              const windowSize = 4;
-                              final availableH = constraints.maxHeight;
-                              final itemExtent =
-                                  (availableH / windowSize).floorToDouble();
+                    ? Center(
+                        child: Text(
+                          widget.romManager.errorMessage?.tr() ??
+                              LocaleKeys.arcade_catalog_empty.tr(),
+                          style: MoaiText.body(context, color: scheme.error),
+                        ),
+                      )
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          const windowSize = 4;
+                          final availableH = constraints.maxHeight;
+                          final itemExtent = (availableH / windowSize)
+                              .floorToDouble();
 
-                              return SizedBox(
-                                height: availableH,
-                                child: TvWindowedList<ArcadeRomItem>(
-                                  key: _catalogListKey,
-                                  items: catalog,
-                                  windowSize: windowSize,
-                                  itemExtent: itemExtent,
-                                  showScrollDots: true,
-                                  initialGlobalIndex: _selectedCatalogIndex,
-                                  focusOnMount: false,
-                                  onFocusedGlobalIndex: (idx) {
-                                    _selectedCatalogIndex = idx;
-                                  },
-                                  onFocusUpFromFirst: _refreshFocus.requestFocus,
-                                  itemBuilder: (
+                          return SizedBox(
+                            height: availableH,
+                            child: TvWindowedList<ArcadeRomItem>(
+                              key: _catalogListKey,
+                              items: catalog,
+                              windowSize: windowSize,
+                              itemExtent: itemExtent,
+                              showScrollDots: true,
+                              initialGlobalIndex: _selectedCatalogIndex,
+                              focusOnMount: false,
+                              onFocusedGlobalIndex: (idx) {
+                                _selectedCatalogIndex = idx;
+                              },
+                              onFocusUpFromFirst: _refreshFocus.requestFocus,
+                              itemBuilder:
+                                  (
                                     context,
                                     item,
                                     focusNode,
@@ -209,13 +214,15 @@ extension _ArcadeGamesLayout on _ArcadeGamesScreenState {
                                     onKeyUp,
                                     onKeyDown,
                                   ) {
-                                    final progress = widget.romManager
+                                    final progress = widget
+                                        .romManager
                                         .downloadProgress[item.filename];
                                     final isDownloading = progress != null;
 
                                     return Padding(
-                                      padding:
-                                          const EdgeInsets.symmetric(vertical: 3),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 3,
+                                      ),
                                       child: TvTile(
                                         focusNode: focusNode,
                                         minHeight: 0,
@@ -229,16 +236,18 @@ extension _ArcadeGamesLayout on _ArcadeGamesScreenState {
                                         icon: MoaiIcons.arcadeRomItem,
                                         onPressed:
                                             item.isInstalled || isDownloading
-                                                ? null
-                                                : () => widget.romManager
-                                                    .downloadRom(item),
+                                            ? null
+                                            : () => widget.romManager
+                                                  .downloadRom(item),
                                         onKeyLeft: () {
                                           if (hasInstalled) {
                                             final targetIndex =
                                                 _selectedInstalledIndex.clamp(
-                                              0,
-                                              _installedDeleteFocuses.length - 1,
-                                            );
+                                                  0,
+                                                  _installedDeleteFocuses
+                                                          .length -
+                                                      1,
+                                                );
                                             _installedDeleteFocuses[targetIndex]
                                                 .requestFocus();
                                           } else {
@@ -249,25 +258,29 @@ extension _ArcadeGamesLayout on _ArcadeGamesScreenState {
                                         onKeyDown: onKeyDown,
                                         trailingBuilder: (context, isFocused) =>
                                             TvInstallPill(
-                                          isInstalled: item.isInstalled,
-                                          isFocused: isFocused,
-                                          downloadProgress: progress,
-                                          installLabel: LocaleKeys.common_install.tr(),
-                                          installedLabel:
-                                              LocaleKeys.common_installed.tr(),
-                                          onPressed:
-                                              item.isInstalled || isDownloading
+                                              isInstalled: item.isInstalled,
+                                              isFocused: isFocused,
+                                              downloadProgress: progress,
+                                              installLabel: LocaleKeys
+                                                  .common_install
+                                                  .tr(),
+                                              installedLabel: LocaleKeys
+                                                  .common_installed
+                                                  .tr(),
+                                              onPressed:
+                                                  item.isInstalled ||
+                                                      isDownloading
                                                   ? null
                                                   : () => widget.romManager
-                                                      .downloadRom(item),
-                                        ),
+                                                        .downloadRom(item),
+                                            ),
                                       ),
                                     );
                                   },
-                                ),
-                              );
-                            },
-                          ),
+                            ),
+                          );
+                        },
+                      ),
               ),
             ],
           ),

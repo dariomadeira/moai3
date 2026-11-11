@@ -200,7 +200,7 @@ class WatchPartySettings {
 | **RB-03** | Al desactivar el switch (`OFF`), las opciones secundarias se ocultan inmediatamente, manteniendo la interfaz despejada. |
 | **RB-04** | El código `user_code` es inmutable y único por dispositivo (asignado en el registro de `SPEC-22`). Es de solo lectura. |
 | **RB-05** | Un usuario no puede agregarse a sí mismo como amigo. Si intenta ingresar su propio código, el sistema muestra: *"No puedes agregarte a ti mismo"*. |
-| **RB-06** | La relación de amistad es **unidireccional simple**: si A agrega a B, B aparece en la lista de A con su estado online en vivo. B no tiene a A en su lista hasta que decida agregarlo con su respectivo código. |
+| **RB-06** | Agregar es una **solicitud**: si A agrega a B, la amistad queda pendiente hasta que B agregue a A. Estado en línea, canal, voz, invitaciones y recomendaciones son solo entre amigos mutuos (`WatchPartyProvider.mutualFriends`). |
 | **RB-07** | Si el código ingresado no existe en la tabla `devices`, el sistema muestra: *"Usuario no encontrado"*. |
 | **RB-08** | Si el usuario ya tenía a ese amigo registrado, el sistema muestra: *"Ya tienes a este usuario como amigo"*. |
 | **RB-09** | Al eliminar a un amigo, se remueve el registro correspondiente de `device_friends` para el `device_id` local. |

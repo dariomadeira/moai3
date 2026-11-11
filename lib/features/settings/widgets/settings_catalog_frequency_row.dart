@@ -10,23 +10,29 @@ class SettingsCatalogFrequencyRow extends StatelessWidget {
 
   /// Por defecto, el título de la frecuencia.
   final String? label;
+
+  /// Por defecto, la pregunta de cuándo actualizar.
+  final String? description;
   final CatalogUpdateFrequency selected;
   final ValueChanged<CatalogUpdateFrequency> onChanged;
   final VoidCallback? onKeyLeft;
   final VoidCallback? onKeyRight;
   final VoidCallback? onKeyUp;
   final VoidCallback? onKeyDown;
+  final Color? iconColor;
 
   const SettingsCatalogFrequencyRow({
     super.key,
     required this.focusNode,
     this.label,
+    this.description,
     required this.selected,
     required this.onChanged,
     this.onKeyLeft,
     this.onKeyRight,
     this.onKeyUp,
     this.onKeyDown,
+    this.iconColor,
   });
 
   static const _labelKeys = {
@@ -43,8 +49,11 @@ class SettingsCatalogFrequencyRow extends StatelessWidget {
     return SettingsOptionRow<CatalogUpdateFrequency>(
       focusNode: focusNode,
       label: label ?? LocaleKeys.settings_general_catalog_frequency.tr(),
-      description: LocaleKeys.settings_general_catalog_frequency_desc.tr(),
-      icon: MoaiIcons.refresh,
+      description:
+          description ??
+          LocaleKeys.settings_general_catalog_frequency_desc.tr(),
+      icon: MoaiIcons.catalogFrequency,
+      iconColor: iconColor,
       options: CatalogUpdateFrequency.options,
       selected: selected,
       onChanged: onChanged,

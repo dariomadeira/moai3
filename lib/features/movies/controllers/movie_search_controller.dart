@@ -25,11 +25,24 @@ class MovieSearchController extends ChangeNotifier with SafeChangeNotifier {
   final List<MovieItem> Function() localMovies;
   final MovieSearchHistory _history;
 
+  /// Buscar de Series: el mismo buscador, pero se queda con las series (el
+  /// servidor trae todo mezclado) y guarda sus recientes aparte.
+  final bool series;
+
   MovieSearchController({
     required this.fetch,
     required this.localMovies,
     MovieSearchHistory? history,
-  }) : _history = history ?? MovieSearchHistory();
+    this.series = false,
+  }) : _history =
+           history ??
+           MovieSearchHistory(
+             storageKey: series
+                 ? MovieSearchHistory.seriesKey
+                 : MovieSearchHistory.moviesKey,
+           );
+
+  bool _accepts(MovieItem item) => series ? item.isSeries : item.isMovie;
 
   final TextEditingController queryController = TextEditingController();
 
@@ -131,7 +144,7 @@ class MovieSearchController extends ChangeNotifier with SafeChangeNotifier {
     safeNotifyListeners();
   }
 
-  /// "Borrar búsquedas": vacía las recientes.
+  /// "Borrar": vacía las recientes.
   Future<void> clearHistory() async {
     history = await _history.clear();
     safeNotifyListeners();
@@ -153,14 +166,19 @@ class MovieSearchController extends ChangeNotifier with SafeChangeNotifier {
       if (generation != _generation) return;
       if (response == null) {
         if (page == 1) {
-          results = searchLocalMovies(localMovies(), _query);
+          results = searchLocalMovies(localMovies(), _query, accept: _accepts);
           isOffline = true;
         }
         _exhausted = true;
         return;
       }
       _page = page;
-      final clean = cleanSearchPage(response.items, _query, _seen);
+      final clean = cleanSearchPage(
+        response.items,
+        _query,
+        _seen,
+        accept: _accepts,
+      );
       if (clean.isNotEmpty) results = [...results, ...clean];
       if (response.items.isEmpty ||
           page * MovieSearchPage.pageSize >= response.total) {
@@ -177,17 +195,21 @@ class MovieSearchController extends ChangeNotifier with SafeChangeNotifier {
   }
 }
 
-/// Limpia una página del servidor (SPEC-45 §4.3): sólo películas, sin las ya
-/// vistas en [seen] (que se actualiza) y, dentro de la página, primero las
-/// que tienen todas las palabras buscadas en el título.
+bool _isMovie(MovieItem item) => item.isMovie;
+
+/// Limpia una página del servidor (SPEC-45 §4.3): sólo películas (o lo que
+/// acepte [accept], p. ej. las series), sin las ya vistas en [seen] (que se
+/// actualiza) y, dentro de la página, primero las que tienen todas las
+/// palabras buscadas en el título.
 List<MovieItem> cleanSearchPage(
   List<MovieItem> items,
   String query,
-  Set<String> seen,
-) {
+  Set<String> seen, {
+  bool Function(MovieItem) accept = _isMovie,
+}) {
   final movies = <MovieItem>[];
   for (final movie in items) {
-    if (!movie.isMovie) continue;
+    if (!accept(movie)) continue;
     final byTitle = '${normalizeText(movie.name)}|${movie.year ?? ''}';
     final isNew = movie.contentId.isEmpty
         ? seen.add(byTitle)
@@ -198,14 +220,19 @@ List<MovieItem> cleanSearchPage(
 }
 
 /// Búsqueda en el catálogo guardado cuando el servidor no contesta: todas las
-/// palabras en el título, el alias, los actores o el director.
-List<MovieItem> searchLocalMovies(List<MovieItem> movies, String query) {
+/// palabras en el título, el alias, los actores o el director. Sólo lo que
+/// acepte [accept] (por defecto, películas).
+List<MovieItem> searchLocalMovies(
+  List<MovieItem> movies,
+  String query, {
+  bool Function(MovieItem) accept = _isMovie,
+}) {
   final words = _words(query);
   if (words.isEmpty) return const [];
   final seen = <String>{};
   final matches = [
     for (final movie in movies)
-      if (movie.isMovie &&
+      if (accept(movie) &&
           seen.add(movie.contentId.isEmpty ? movie.name : movie.contentId) &&
           _hasAll(
             normalizeText(

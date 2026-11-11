@@ -23,8 +23,8 @@ class MoaiImageCacheManager {
 
   static const String _legacyClearedPref = 'moai_channel_logos_v2_cleared';
 
-  /// Borra una sola vez la caché v2 (logos deformados). TODO(SPEC-50 §1.7):
-  /// quitar en la release siguiente a la que la incluye.
+  /// Borra una sola vez la caché v2 (logos deformados). Pendiente (SPEC-50
+  /// §1.7): quitar en la release siguiente a la que la incluye.
   static Future<void> clearLegacyCacheOnce(AppPreferences prefs) async {
     if (prefs.readPreferenceBool(_legacyClearedPref)) return;
     try {

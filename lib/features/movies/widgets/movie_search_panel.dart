@@ -1,19 +1,23 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/features/movies/widgets/movie_poster_grid.dart';
 import 'package:moai3/features/movies/controllers/movie_search_controller.dart';
 import 'package:moai3/features/search/widgets/search_panel.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/models/movie_models.dart';
+import 'package:moai3/services/voice_search_service.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/tv_input/tv_input.dart';
 
 /// Panel Buscar de Películas (SPEC-45 §3): campo + "X", últimas búsquedas
-/// con el campo vacío y resultados en la grilla de 5 columnas.
+/// con el campo vacío y resultados en la grilla de 5 columnas. Es también el
+/// de Series ([MovieSearchController.series]), con sus textos.
 class MovieSearchPanel extends StatefulWidget {
   final MovieSearchController controller;
   final FocusNode fieldFocusNode;
@@ -39,6 +43,7 @@ class MovieSearchPanel extends StatefulWidget {
 class _MovieSearchPanelState extends State<MovieSearchPanel> {
   /// Un solo foco para todos los resultados ([MoviePosterGrid]).
   final FocusNode _resultsFocus = FocusNode(debugLabel: 'movie_search_results');
+  final FocusNode _micFocus = FocusNode(debugLabel: 'movie_search_mic');
   final List<FocusNode> _historyNodes = [];
 
   MovieSearchController get _search => widget.controller;
@@ -49,6 +54,7 @@ class _MovieSearchPanelState extends State<MovieSearchPanel> {
       node.dispose();
     }
     _resultsFocus.dispose();
+    _micFocus.dispose();
     super.dispose();
   }
 
@@ -84,14 +90,33 @@ class _MovieSearchPanelState extends State<MovieSearchPanel> {
     _focusField();
   }
 
-  /// "Borrar búsquedas": vacía las recientes y el foco vuelve al campo.
+  /// OK en el micrófono: lo dictado se busca como si se hubiera escrito.
+  Future<void> _dictate() async {
+    final String? text;
+    try {
+      text = await VoiceSearchService.listen();
+    } on PlatformException {
+      if (mounted) {
+        MoaiSnackBar.show(
+          context,
+          message: LocaleKeys.movies_search_voice_unavailable.tr(),
+          icon: MoaiIcons.mic,
+        );
+      }
+      return;
+    }
+    final query = text?.trim() ?? '';
+    if (mounted && query.isNotEmpty) _searchRecent(query);
+  }
+
+  /// "Borrar": vacía las recientes y el foco vuelve al campo.
   void _clearHistory() {
     _search.clearHistory();
     _focusField();
   }
 
-  /// Mueve el foco entre las pastillas de recientes (la última es "Borrar
-  /// búsquedas") según dónde quedaron en el [Wrap]: ←/→ dentro de la fila
+  /// Mueve el foco entre las pastillas de recientes (la última es
+  /// "Borrar") según dónde quedaron en el [Wrap]: ←/→ dentro de la fila
   /// (← al principio sale a la grilla), ↑/↓ a la pastilla más cercana de la
   /// fila de arriba o de abajo (↑ desde la primera vuelve al campo).
   void _moveChip(int from, TraversalDirection direction) {
@@ -149,7 +174,7 @@ class _MovieSearchPanelState extends State<MovieSearchPanel> {
     return ListenableBuilder(
       listenable: Listenable.merge([_search, _search.queryController]),
       builder: (context, _) {
-        // Una por búsqueda reciente y la última para "Borrar búsquedas".
+        // Una por búsqueda reciente y la última para "Borrar".
         _syncNodes(
           _historyNodes,
           _search.showHistory && _search.history.isNotEmpty
@@ -158,7 +183,7 @@ class _MovieSearchPanelState extends State<MovieSearchPanel> {
           'movie_search_recent',
         );
         return Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 14, 8),
+          padding: const EdgeInsets.fromLTRB(12, 14, 14, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -182,24 +207,37 @@ class _MovieSearchPanelState extends State<MovieSearchPanel> {
             controller: _search.queryController,
             focusNode: widget.fieldFocusNode,
             label: LocaleKeys.movies_panel_search_title.tr(),
-            hint: LocaleKeys.movies_search_hint.tr(),
+            hint:
+                (_search.series
+                        ? LocaleKeys.movies_search_hint_series
+                        : LocaleKeys.movies_search_hint)
+                    .tr(),
             keyboardType: TvKeyboardType.search,
             textInputAction: TvTextInputAction.search,
             dense: true,
             leadingIcon: MoaiIcons.keyboard,
             onFocusLeft: widget.onExitLeft,
-            onFocusRight: hasText ? widget.clearFocusNode.requestFocus : null,
+            onFocusRight: _micFocus.requestFocus,
             onFocusDown: _focusBody,
             // Sólo con "Buscar" del teclado: ni por letra ni al cerrarlo.
             onSubmitted: _search.submit,
           ),
+        ),
+        const SizedBox(width: 8),
+        SearchClearButton(
+          focusNode: _micFocus,
+          icon: MoaiIcons.mic,
+          onClear: _dictate,
+          onKeyLeft: _focusField,
+          onKeyRight: hasText ? widget.clearFocusNode.requestFocus : () {},
+          onKeyDown: _focusBody,
         ),
         if (hasText) ...[
           const SizedBox(width: 8),
           SearchClearButton(
             focusNode: widget.clearFocusNode,
             onClear: _clear,
-            onKeyLeft: _focusField,
+            onKeyLeft: _micFocus.requestFocus,
             onKeyDown: _focusBody,
           ),
         ],
@@ -241,9 +279,11 @@ class _MovieSearchPanelState extends State<MovieSearchPanel> {
     if (_search.results.isEmpty) {
       return _Message(
         icon: MoaiIcons.moviesSearch,
-        text: LocaleKeys.movies_search_no_results.tr(
-          namedArgs: {'query': _search.query},
-        ),
+        text:
+            (_search.series
+                    ? LocaleKeys.movies_search_no_results_series
+                    : LocaleKeys.movies_search_no_results)
+                .tr(namedArgs: {'query': _search.query}),
       );
     }
     return _buildResults();
@@ -263,17 +303,23 @@ class _MovieSearchPanelState extends State<MovieSearchPanel> {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 10),
-          child: Text(
-            LocaleKeys.movies_search_recent.tr(),
-            style: MoaiText.display(
-              context,
-              fontSize: 16,
-              color: scheme.onSurface,
+          // Con el degradado de los títulos de los paneles.
+          child: ShaderMask(
+            blendMode: BlendMode.srcIn,
+            shaderCallback: HomeClock.timeShader,
+            child: Text(
+              LocaleKeys.movies_search_recent.tr(),
+              style: MoaiText.display(
+                context,
+                fontSize: 18,
+                headline: true,
+                color: scheme.onSurface,
+              ),
             ),
           ),
         ),
         // Una al lado de la otra; si no entran, pasan a la fila siguiente.
-        // Al final, "Borrar búsquedas".
+        // Al final, "Borrar".
         Expanded(
           child: SingleChildScrollView(
             child: Wrap(
@@ -291,6 +337,7 @@ class _MovieSearchPanelState extends State<MovieSearchPanel> {
                 _RecentSearchTile(
                   text: LocaleKeys.movies_search_clear_history.tr(),
                   icon: MoaiIcons.delete,
+                  destructive: true,
                   focusNode: _historyNodes[history.length],
                   onTap: _clearHistory,
                   onMove: (direction) => _moveChip(history.length, direction),
@@ -317,6 +364,8 @@ class _MovieSearchPanelState extends State<MovieSearchPanel> {
       onExitLeft: widget.onExitLeft,
       onExitUp: _focusField,
       horizontalPadding: 0,
+      // Sin scroll: dos filas enteras y los puntos al costado.
+      windowRows: 2,
     );
   }
 }
@@ -356,8 +405,8 @@ class _Message extends StatelessWidget {
   }
 }
 
-/// Una pastilla de las recientes: una búsqueda (OK la repite) o "Borrar
-/// búsquedas". Las flechas las resuelve el panel según dónde quedó.
+/// Una pastilla de las recientes: una búsqueda (OK la repite) o
+/// "Borrar" (en rojo). Las flechas las resuelve el panel según dónde quedó.
 class _RecentSearchTile extends StatefulWidget {
   final String text;
   final IconData icon;
@@ -365,9 +414,13 @@ class _RecentSearchTile extends StatefulWidget {
   final VoidCallback onTap;
   final ValueChanged<TraversalDirection> onMove;
 
+  /// "Borrar": el ícono en rojo y, con foco, la pastilla roja.
+  final bool destructive;
+
   const _RecentSearchTile({
     required this.text,
     required this.icon,
+    this.destructive = false,
     required this.focusNode,
     required this.onTap,
     required this.onMove,
@@ -383,11 +436,15 @@ class _RecentSearchTileState extends State<_RecentSearchTile> {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final color = _focused ? scheme.onPrimary : scheme.onSurface;
+    final accent = widget.destructive ? scheme.error : scheme.primary;
+    final color = _focused
+        ? (widget.destructive ? scheme.onError : scheme.onPrimary)
+        : scheme.onSurface;
+    final iconColor = widget.destructive && !_focused ? scheme.error : color;
     final content = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(widget.icon, size: MoaiIconSizes.sm, color: color),
+        Icon(widget.icon, size: MoaiIconSizes.sm, color: iconColor),
         const SizedBox(width: 10),
         // Una búsqueda muy larga se corta en vez de desbordar la fila.
         Flexible(
@@ -439,11 +496,11 @@ class _RecentSearchTileState extends State<_RecentSearchTile> {
             ? Container(
                 padding: padding,
                 decoration: BoxDecoration(
-                  color: scheme.primary,
+                  color: accent,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: scheme.primary.withValues(alpha: 0.4),
+                      color: accent.withValues(alpha: 0.4),
                       blurRadius: 14,
                     ),
                   ],

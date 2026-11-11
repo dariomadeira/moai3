@@ -195,7 +195,10 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
       final inWindow =
           target >= _windowStart && target < _windowStart + _visibleCount;
       if (!inWindow || oldWidget.items.length != widget.items.length) {
-        final hadFocus = List.generate(_visibleCount, _nodeAt).any((n) => n.hasFocus);
+        final hadFocus = List.generate(
+          _visibleCount,
+          _nodeAt,
+        ).any((n) => n.hasFocus);
         _placeWindowFor(target);
         if (hadFocus) {
           SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -231,7 +234,10 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
       return;
     }
 
-    final hadFocus = List.generate(_visibleCount, _nodeAt).any((n) => n.hasFocus);
+    final hadFocus = List.generate(
+      _visibleCount,
+      _nodeAt,
+    ).any((n) => n.hasFocus);
     setState(() => _placeWindowFor(target));
     if (requestFocus || hadFocus) {
       SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -477,10 +483,14 @@ class TvWindowedGridState<T> extends State<TvWindowedGrid<T>> {
                   curve: Curves.easeOutCubic,
                   margin: const EdgeInsets.symmetric(vertical: 2.5),
                   width: 5.0,
-                  height: 5.0,
+                  // Como en [TvWindowedList]: el de la página actual se
+                  // estira hacia abajo y los otros van en gris medio.
+                  height: isActive ? 5.0 * 2.4 : 5.0,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isActive ? scheme.primary : scheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(5.0),
+                    color: isActive
+                        ? scheme.primary
+                        : scheme.onSurface.withValues(alpha: 0.3),
                   ),
                 );
               }),

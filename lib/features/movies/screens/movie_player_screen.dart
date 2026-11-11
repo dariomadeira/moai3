@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,8 +9,13 @@ import 'package:moai3/features/movies/movie_player_format.dart';
 import 'package:moai3/features/movies/titan_playback_bridge.dart';
 import 'package:moai3/features/movies/widgets/movie_player_osd.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
+import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/models/movie_models.dart';
+import 'package:moai3/widgets/feedback/moai_snackbar.dart';
+import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/services/movie_audio_choices.dart';
 import 'package:moai3/services/movie_library.dart';
+import 'package:moai3/state/movie_recommendations_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -17,8 +23,9 @@ import 'package:provider/provider.dart';
 ///
 /// Controles: OK pausa/reanuda; ←/→ buscan (mantenidas aceleran) y el salto
 /// se hace una sola vez al confirmar con OK o al soltar; atrás cancela la
-/// búsqueda, esconde la interfaz o sale. Si el video falla, OK reintenta
-/// desde el mismo punto.
+/// búsqueda, esconde la interfaz o sale. ↓ pasa a las píldoras de audio y
+/// subtítulos (←/→ las recorren, OK abre su menú, ↑ o atrás vuelven). Si el
+/// video falla, OK reintenta desde el mismo punto.
 class MoviePlayerScreen extends StatefulWidget {
   final MovieItem movie;
   final ResolvedPlayStream stream;
@@ -80,6 +87,13 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
   /// Idioma pedido al motor según Ajustes › Películas y series.
   String? _preferredAudio;
 
+  /// Cuál de los audios de ese idioma se le pide al motor.
+  int _preferredAudioOccurrence = 0;
+
+  /// El audio elegido a mano en esta película (o guardado de otra vez).
+  MovieAudioOption? _chosenAudio;
+  bool _savedAudioChecked = false;
+
   /// Audios del stream según el motor (vacío hasta que los conoce).
   List<MoaiAudioTrack> _audioTracks = const [];
 
@@ -89,9 +103,99 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
   /// Texto del subtítulo de este momento, según el motor.
   String _subtitleText = '';
 
+  /// Audios y subtítulos que se pueden elegir en esta película.
+  late final List<MovieAudioOption> _audioOptions = movieAudioOptions(
+    widget.stream.audioInfo,
+  );
+  late final List<VodSubtitleOption> _subtitleOptions = subtitleOptions(
+    widget.stream.subtitles,
+  );
+
+  /// Cartel de recomendar (SPEC-51): la respuesta elegida, o null si no está.
+  MovieRecommendAnswer? _recommendAnswer;
+  Timer? _recommendTimer;
+
+  /// Ya se decidió en esta reproducción: se preguntó o se llegó saltando.
+  bool _recommendSettled = false;
+  static const _recommendWindow = Duration(minutes: 5);
+  static const _recommendVisibleFor = Duration(seconds: 20);
+
+  /// Píldora elegida (null: ←/→ buscan en la película).
+  MoviePlayerMenu? _selectedMenu;
+
+  /// Menú abierto y su opción elegida.
+  MoviePlayerMenu? _openMenu;
+  int _menuIndex = 0;
+
+  /// Lo que se puede cambiar: el audio con más de uno y, con subtítulos,
+  /// cuál y su tamaño.
+  List<MoviePlayerMenu> get _menus => [
+    if (_audioOptions.length > 1) MoviePlayerMenu.audio,
+    if (_subtitleOptions.isNotEmpty) ...[
+      MoviePlayerMenu.subtitles,
+      MoviePlayerMenu.size,
+    ],
+  ];
+
+  /// El audio que suena: el del motor o, mientras no se sabe, el pedido.
+  /// El motor sólo sabe el idioma: entre dos iguales, vale el elegido.
+  MovieAudioOption? get _currentAudio {
+    String? code;
+    for (final track in _audioTracks) {
+      if (!track.selected) continue;
+      code = audioLanguageCode(track.language ?? '');
+      if (code != null) break;
+    }
+    code ??= _preferredAudio;
+    if (_chosenAudio?.code == code) return _chosenAudio;
+    for (final option in _audioOptions) {
+      if (option.code == code) return option;
+    }
+    return _audioOptions.firstOrNull;
+  }
+
+  MovieSubtitleSize get _subtitleSize =>
+      context.read<TvSettingsProvider?>()?.movieSubtitleSize ??
+      MovieSubtitleSize.defaultValue;
+
+  List<MoviePlayerMenuOption> get _menuOptions => switch (_openMenu) {
+    MoviePlayerMenu.audio => [
+      for (final option in _audioOptions)
+        MoviePlayerMenuOption(
+          movieAudioLabel(option),
+          current: option == _currentAudio,
+        ),
+    ],
+    MoviePlayerMenu.subtitles => [
+      MoviePlayerMenuOption(
+        LocaleKeys.settings_movies_subtitles_off.tr(),
+        current: _subtitle == null,
+      ),
+      for (final option in _subtitleOptions)
+        MoviePlayerMenuOption(
+          subtitleLabel(option),
+          current:
+              _subtitle != null &&
+              subtitleLabel(_subtitle!) == subtitleLabel(option),
+        ),
+    ],
+    MoviePlayerMenu.size => [
+      for (final size in MovieSubtitleSize.values)
+        MoviePlayerMenuOption(
+          subtitleSizeLabel(size),
+          current: size == _subtitleSize,
+        ),
+    ],
+    null => const [],
+  };
+
   /// Chip de audio: el que suena según el motor; mientras no se sabe, el
   /// pedido (si la película lo trae) o el primero de la API.
   String get _audioLabel {
+    final current = _currentAudio;
+    if (current != null && current.sameLanguage > 1) {
+      return movieAudioLabel(current);
+    }
     for (final track in _audioTracks) {
       if (track.selected) {
         return audioLanguageLabel(
@@ -158,6 +262,7 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
         _hasError = failed;
         _audioTracks = _engine.audioTracks;
         _subtitleText = _engine.subtitleText;
+        if (failed) _selectedMenu = _openMenu = null;
       });
     }
     if (failed) {
@@ -187,8 +292,25 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
     programName: widget.movie.contentId,
   );
 
+  /// Lo elegido otra vez en esta película manda sobre el ajuste general.
+  Future<void> _restoreSavedAudio() async {
+    if (_savedAudioChecked || !widget.saveProgress) return;
+    _savedAudioChecked = true;
+    final saved = await MovieAudioChoices.read(widget.movie.contentId);
+    if (saved == null) return;
+    for (final option in _audioOptions) {
+      if (option.code == saved.code && option.occurrence == saved.occurrence) {
+        _chosenAudio = option;
+        _preferredAudio = option.code;
+        _preferredAudioOccurrence = option.occurrence;
+      }
+    }
+  }
+
   Future<void> _initPlayer() async {
     try {
+      await _restoreSavedAudio();
+      if (!mounted) return;
       // Las cabeceras llevan PORTAL_KEY y userId: sólo en debug.
       if (kDebugMode) {
         debugPrint(
@@ -202,6 +324,8 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
           title: widget.movie.displayName,
           headers: widget.stream.headers,
           preferredAudioLanguage: _preferredAudio,
+          preferredAudioOccurrence: _preferredAudioOccurrence,
+          startPosition: _loadPosition,
           subtitleUrl: _subtitle?.url,
           subtitleMimeType: _subtitle?.mimeType,
           subtitleLanguage: _subtitle?.language,
@@ -220,17 +344,106 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
     final seekFailed =
         _lastSeekAt != null &&
         DateTime.now().difference(_lastSeekAt!) < const Duration(seconds: 60);
-    final resumeAt = seekFailed ? _beforeLastSeek : _currentPosition;
+    _reloadAt(seekFailed ? _beforeLastSeek : _currentPosition);
+  }
+
+  void _maybeAskRecommendation() {
+    if (_recommendSettled || !widget.saveProgress) return;
+    final remaining = _totalDuration - _currentPosition;
+    if (_totalDuration <= _recommendWindow ||
+        remaining > _recommendWindow ||
+        remaining <= Duration.zero) {
+      return;
+    }
+    // Sin pisar lo que se esté usando: se reintenta en la próxima vuelta.
+    if (_isBuffering ||
+        !_isPlaying ||
+        _hasError ||
+        _openMenu != null ||
+        _selectedMenu != null ||
+        _scrubTarget != null) {
+      return;
+    }
+    _recommendSettled = true;
+    final recommendations = context.read<MovieRecommendationsProvider?>();
+    if (recommendations == null ||
+        !recommendations.canRecommend ||
+        !recommendations.shouldAsk(widget.movie.contentId)) {
+      return;
+    }
+    // Arranca en Cancelar: un OK distraído no recomienda.
+    setState(() => _recommendAnswer = MovieRecommendAnswer.cancel);
+    _recommendTimer = Timer(_recommendVisibleFor, _closeRecommendPrompt);
+  }
+
+  void _closeRecommendPrompt() {
+    _recommendTimer?.cancel();
+    if (mounted) setState(() => _recommendAnswer = null);
+  }
+
+  KeyEventResult _onRecommendKey(KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.handled;
+    final key = event.logicalKey;
+    final answer = _recommendAnswer!;
+    if (key == LogicalKeyboardKey.arrowLeft ||
+        key == LogicalKeyboardKey.arrowRight) {
+      final step = key == LogicalKeyboardKey.arrowLeft ? -1 : 1;
+      const answers = MovieRecommendAnswer.values;
+      setState(() {
+        _recommendAnswer =
+            answers[(answer.index + step).clamp(0, answers.length - 1)];
+      });
+    } else if (TvKeyHandler.isActionKey(key)) {
+      _applyRecommendAnswer(answer);
+    } else if (_isBackKey(key)) {
+      _closeRecommendPrompt();
+    }
+    return KeyEventResult.handled;
+  }
+
+  void _applyRecommendAnswer(MovieRecommendAnswer answer) {
+    _closeRecommendPrompt();
+    final recommendations = context.read<MovieRecommendationsProvider?>();
+    if (recommendations == null) return;
+    switch (answer) {
+      case MovieRecommendAnswer.yes:
+        unawaited(recommendations.setVote(widget.movie, MovieVote.up));
+        MoaiSnackBar.show(
+          context,
+          message: LocaleKeys.movies_recommend_sent.tr(),
+          icon: MoaiIcons.vodRecommend,
+        );
+      case MovieRecommendAnswer.no:
+        unawaited(recommendations.setVote(widget.movie, MovieVote.down));
+      case MovieRecommendAnswer.cancel:
+        break;
+    }
+  }
+
+  /// Desde dónde arranca la próxima carga del video.
+  Duration _loadPosition = Duration.zero;
+
+  /// Vuelve a cargar el video y lo retoma en [resumeAt]: primero salta
+  /// Ranger y el video arranca directo ahí, porque el proxy da 404 por los
+  /// tramos anteriores.
+  void _reloadAt(Duration resumeAt) {
     _lastSeekAt = null;
-    _startAt = resumeAt > Duration.zero ? resumeAt : null;
+    _startAt = null;
+    _loadPosition = resumeAt;
+    _seekSettlesAt = DateTime.now().add(const Duration(seconds: 3));
     _currentPosition = resumeAt;
     _titan.reset();
     setState(() {
       _hasError = false;
       _isBuffering = true;
+      _userPaused = false;
     });
     _resetOsdTimer();
-    _initPlayer();
+    unawaited(
+      _titan.beforeSeek(resumeAt).then((_) {
+        if (mounted) _initPlayer();
+      }),
+    );
   }
 
   void _startPositionPolling() {
@@ -248,7 +461,8 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
           final settling =
               _seekSettlesAt != null &&
               DateTime.now().isBefore(_seekSettlesAt!);
-          if (!settling) _currentPosition = pos;
+          // Mientras se recarga el motor dice 0: la barra se queda donde está.
+          if (!settling && _startAt == null) _currentPosition = pos;
           // La duración casi nunca cambia: sólo entonces se reconstruye.
           final dur = status.duration;
           if (dur > Duration.zero && dur != _totalDuration) {
@@ -261,6 +475,7 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
             _lastSavedSecond = currentSec;
             unawaited(_saveProgress());
           }
+          _maybeAskRecommendation();
         }
       } catch (_) {}
     });
@@ -275,7 +490,8 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
   void _resetOsdTimer() {
     _osdTimer?.cancel();
     setState(() => _showOsd = true);
-    _scheduleOsdHide(const Duration(seconds: 4));
+    // Con las píldoras o un menú hay que leer y elegir: un poco más de tiempo.
+    _scheduleOsdHide(Duration(seconds: _selectedMenu == null ? 4 : 8));
   }
 
   void _scheduleOsdHide(Duration after) {
@@ -284,7 +500,10 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
       if (!mounted || !_showOsd) return;
       if (_userPaused || _scrubTarget != null || _hasError) return;
       if (_isPlaying && !_isBuffering) {
-        setState(() => _showOsd = false);
+        setState(() {
+          _showOsd = false;
+          _selectedMenu = _openMenu = null;
+        });
       } else {
         _scheduleOsdHide(const Duration(seconds: 1));
       }
@@ -355,6 +574,10 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
   DateTime? _lastSeekAt;
 
   Future<void> _seekTo(Duration target) async {
+    if (_totalDuration > Duration.zero &&
+        target >= _totalDuration - _recommendWindow) {
+      _recommendSettled = true;
+    }
     _beforeLastSeek = _currentPosition;
     _lastSeekAt = DateTime.now();
     _seekSettlesAt = DateTime.now().add(const Duration(seconds: 3));
@@ -425,6 +648,7 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
 
   @override
   void dispose() {
+    _recommendTimer?.cancel();
     _osdTimer?.cancel();
     _positionTimer?.cancel();
     _scrubCommitTimer?.cancel();
@@ -440,7 +664,116 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
     super.dispose();
   }
 
+  static bool _isBackKey(LogicalKeyboardKey key) =>
+      key == LogicalKeyboardKey.escape ||
+      key == LogicalKeyboardKey.backspace ||
+      key == LogicalKeyboardKey.goBack;
+
+  /// Con un menú abierto: ↑/↓ recorren, OK elige, ← o atrás lo cierran.
+  KeyEventResult _onMenuKey(KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    final key = event.logicalKey;
+    final last = _menuOptions.length - 1;
+    if (key == LogicalKeyboardKey.arrowUp ||
+        key == LogicalKeyboardKey.arrowDown) {
+      final step = key == LogicalKeyboardKey.arrowUp ? -1 : 1;
+      setState(() => _menuIndex = (_menuIndex + step).clamp(0, last));
+      _resetOsdTimer();
+    } else if (event is KeyDownEvent) {
+      if (TvKeyHandler.isActionKey(key)) {
+        _applyMenuOption(_menuIndex);
+      } else if (key == LogicalKeyboardKey.arrowLeft || _isBackKey(key)) {
+        setState(() => _openMenu = null);
+        _resetOsdTimer();
+      }
+    }
+    return KeyEventResult.handled;
+  }
+
+  /// En las píldoras: ←/→ recorren, OK abre, ↑ o atrás vuelven a la barra.
+  KeyEventResult _onMenuBarKey(KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.handled;
+    final key = event.logicalKey;
+    final menus = _menus;
+    final at = menus.indexOf(_selectedMenu!);
+    if (key == LogicalKeyboardKey.arrowLeft ||
+        key == LogicalKeyboardKey.arrowRight) {
+      final step = key == LogicalKeyboardKey.arrowLeft ? -1 : 1;
+      setState(() {
+        _selectedMenu = menus[(at + step).clamp(0, menus.length - 1)];
+      });
+    } else if (TvKeyHandler.isActionKey(key)) {
+      _openSelectedMenu();
+    } else if (key == LogicalKeyboardKey.arrowUp || _isBackKey(key)) {
+      setState(() => _selectedMenu = null);
+    }
+    _resetOsdTimer();
+    return KeyEventResult.handled;
+  }
+
+  /// Abre el menú de la píldora con el foco en lo que está en uso.
+  void _openSelectedMenu() {
+    setState(() {
+      _openMenu = _selectedMenu;
+      final current = _menuOptions.indexWhere((o) => o.current);
+      _menuIndex = current < 0 ? 0 : current;
+    });
+  }
+
+  /// Aplica la opción [index] del menú abierto. Audio y subtítulo valen para
+  /// esta película (el ajuste general no cambia; el audio queda recordado) y
+  /// se fijan al cargar el video: se recarga en el mismo punto. El tamaño se
+  /// ve al instante y queda abierto para probar.
+  void _applyMenuOption(int index) {
+    final resumeAt = _startAt ?? _currentPosition;
+    switch (_openMenu) {
+      case MoviePlayerMenu.audio:
+        final option = _audioOptions[index];
+        final changed = option != _currentAudio;
+        setState(() => _selectedMenu = _openMenu = null);
+        if (changed) {
+          _chosenAudio = option;
+          _preferredAudio = option.code;
+          _preferredAudioOccurrence = option.occurrence;
+          if (widget.saveProgress) {
+            unawaited(
+              MovieAudioChoices.save(
+                widget.movie.contentId,
+                code: option.code,
+                occurrence: option.occurrence,
+              ),
+            );
+          }
+          _reloadAt(resumeAt);
+        } else {
+          _resetOsdTimer();
+        }
+      case MoviePlayerMenu.subtitles:
+        final next = index == 0 ? null : _subtitleOptions[index - 1];
+        final changed = next?.url != _subtitle?.url;
+        setState(() => _selectedMenu = _openMenu = null);
+        if (changed) {
+          _subtitle = next;
+          _reloadAt(resumeAt);
+        } else {
+          _resetOsdTimer();
+        }
+      case MoviePlayerMenu.size:
+        context.read<TvSettingsProvider?>()?.setMovieSubtitleSize(
+          MovieSubtitleSize.values[index],
+        );
+        _resetOsdTimer();
+      case null:
+        break;
+    }
+  }
+
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    if (_recommendAnswer != null) return _onRecommendKey(event);
+    if (_openMenu != null) return _onMenuKey(event);
+    if (_selectedMenu != null) return _onMenuBarKey(event);
     final key = event.logicalKey;
     final isArrow =
         key == LogicalKeyboardKey.arrowLeft ||
@@ -467,15 +800,21 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
       }
       return KeyEventResult.handled;
     }
+    if (key == LogicalKeyboardKey.arrowDown &&
+        !_hasError &&
+        _scrubTarget == null &&
+        _menus.isNotEmpty) {
+      setState(() => _selectedMenu = _menus.first);
+      _resetOsdTimer();
+      return KeyEventResult.handled;
+    }
     if (key == LogicalKeyboardKey.arrowUp ||
         key == LogicalKeyboardKey.arrowDown ||
         key == LogicalKeyboardKey.contextMenu) {
       _resetOsdTimer();
       return KeyEventResult.handled;
     }
-    if (key == LogicalKeyboardKey.escape ||
-        key == LogicalKeyboardKey.backspace ||
-        key == LogicalKeyboardKey.goBack) {
+    if (_isBackKey(key)) {
       _handleBack();
       return KeyEventResult.handled;
     }
@@ -485,6 +824,18 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
   @override
   Widget build(BuildContext context) {
     final scrubTarget = _scrubTarget;
+    final menus = _menus;
+    final selectedMenu = _selectedMenu;
+    final subtitleFontSize = context
+        .select<TvSettingsProvider?, MovieSubtitleSize>(
+          (s) => s?.movieSubtitleSize ?? MovieSubtitleSize.defaultValue,
+        )
+        .fontSize;
+    // Eligiendo el tamaño, una muestra si en ese momento nadie habla.
+    final subtitleText =
+        _subtitleText.isEmpty && _openMenu == MoviePlayerMenu.size
+        ? LocaleKeys.movies_player_subtitle_sample.tr()
+        : _subtitleText;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -526,21 +877,31 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
                       : const SizedBox.shrink(),
                 ),
 
-                // Subtítulo: abajo; con la interfaz visible, sobre el panel.
-                if (_subtitleText.isNotEmpty && !_hasError)
+                if (_recommendAnswer != null)
+                  Positioned(
+                    top: 72,
+                    right: 40,
+                    child: MovieRecommendPrompt(selected: _recommendAnswer!),
+                  ),
+
+                // Subtítulo: abajo; con la interfaz visible, sobre los controles.
+                if (subtitleText.isNotEmpty && !_hasError)
                   AnimatedPositioned(
                     duration: const Duration(milliseconds: 240),
                     curve: Curves.easeOutCubic,
                     left: 120,
                     right: 120,
-                    bottom: _showOsd ? 108 : 40,
+                    bottom: _showOsd ? 114 : 40,
                     child: Center(
-                      child: MoviePlayerSubtitle(text: _subtitleText),
+                      child: MoviePlayerSubtitle(
+                        text: subtitleText,
+                        fontSize: subtitleFontSize,
+                      ),
                     ),
                   ),
 
-                // 3. Interfaz: franja superior y panel inferior de cristal
-                // sobre viñetas suaves.
+                // 3. Interfaz: sin paneles, directo sobre un oscurecido suave
+                // arriba y abajo.
                 AnimatedOpacity(
                   opacity: _showOsd && !_hasError ? 1.0 : 0.0,
                   duration: const Duration(milliseconds: 240),
@@ -553,8 +914,8 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
                         const _Vignette(top: false),
                         Positioned(
                           top: 24,
-                          left: 32,
-                          right: 32,
+                          left: 40,
+                          right: 40,
                           child: MoviePlayerTopBar(
                             title: widget.movie.displayName,
                             quality: qualityLabel(widget.stream.quality),
@@ -563,8 +924,8 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
                         ),
                         Positioned(
                           bottom: 24,
-                          left: 32,
-                          right: 32,
+                          left: 40,
+                          right: 40,
                           // Se repinta sola con la posición, sin el resto.
                           child: RepaintBoundary(
                             child: ValueListenableBuilder<Duration>(
@@ -575,10 +936,21 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
                                     duration: _totalDuration,
                                     isPlaying: _isPlaying,
                                     scrubTarget: scrubTarget,
+                                    menus: menus,
+                                    selectedMenu: selectedMenu,
                                   ),
                             ),
                           ),
                         ),
+                        if (_openMenu != null)
+                          Positioned(
+                            right: 40,
+                            bottom: 24 + MoviePlayerBottomBar.menuRowHeight + 8,
+                            child: MoviePlayerMenuPanel(
+                              options: _menuOptions,
+                              focused: _menuIndex,
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -592,8 +964,8 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
   }
 }
 
-/// Oscurece el borde del video detrás de la franja o el panel, para que el
-/// cristal se lea sobre imágenes claras.
+/// Oscurece suavemente arriba y abajo para que los controles se lean sin
+/// paneles: varios tonos para que no se note dónde termina.
 class _Vignette extends StatelessWidget {
   const _Vignette({required this.top});
 
@@ -606,13 +978,24 @@ class _Vignette extends StatelessWidget {
       bottom: top ? null : 0,
       left: 0,
       right: 0,
-      height: top ? 130 : 170,
+      height: top ? 120 : 200,
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: top ? Alignment.topCenter : Alignment.bottomCenter,
             end: top ? Alignment.bottomCenter : Alignment.topCenter,
-            colors: [Colors.black.withValues(alpha: 0.7), Colors.transparent],
+            colors: top
+                ? const [
+                    Color(0x8C000000),
+                    Color(0x40000000),
+                    Color(0x00000000),
+                  ]
+                : const [
+                    Color(0xCC000000),
+                    Color(0x8C000000),
+                    Color(0x33000000),
+                    Color(0x00000000),
+                  ],
           ),
         ),
       ),

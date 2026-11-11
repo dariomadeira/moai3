@@ -122,9 +122,8 @@ class MovieMetadataService {
       return notAnswered;
     }
 
-    // Extraer títulos limpios para la búsqueda (quitando marcas de tráiler)
-    final cleanName = MovieItem.withoutTrailerTag(movie.name).trim();
-    final cleanAlias = MovieItem.withoutTrailerTag(movie.alias ?? '').trim();
+    final cleanName = movie.name.trim();
+    final cleanAlias = (movie.alias ?? '').trim();
 
     final queries = <String>[];
     if (cleanName.isNotEmpty) queries.add(cleanName);

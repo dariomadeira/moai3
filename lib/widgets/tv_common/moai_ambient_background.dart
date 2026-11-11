@@ -17,6 +17,27 @@ import 'package:moai3/state/theme_provider.dart';
 class MoaiAmbientBackground extends StatefulWidget {
   const MoaiAmbientBackground({super.key});
 
+  /// La copia desenfocada del fondo de la app (la del vidrio esmerilado y el
+  /// loading): sigue a la prueba de fondo elegida en el estado.
+  static const String blurredAsset = _MoaiAmbientBackgroundState.blurredAsset;
+
+  /// Modo oscuro (2026-11-10): el mismo fondo de noche, con su copia
+  /// desenfocada. Sale del claro con
+  /// `assets_src/backgrounds/gen_background_dark.py`; si cambia el claro,
+  /// se regenera.
+  static const String darkAsset = 'assets/images/background_dark.webp';
+  static const String darkBlurredAsset =
+      'assets/images/background_dark_blur.webp';
+
+  /// El fondo de cada modo.
+  static String assetFor(Brightness brightness) => brightness == Brightness.dark
+      ? darkAsset
+      : _MoaiAmbientBackgroundState.backgroundAsset;
+
+  /// La copia desenfocada del fondo de cada modo.
+  static String blurredAssetFor(Brightness brightness) =>
+      brightness == Brightness.dark ? darkBlurredAsset : blurredAsset;
+
   @override
   State<MoaiAmbientBackground> createState() => _MoaiAmbientBackgroundState();
 }
@@ -50,11 +71,17 @@ class _MoaiAmbientBackgroundState extends State<MoaiAmbientBackground>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (use3DWallpaper) {
-      final accentIndex = context.read<ThemeProvider?>()?.accentColorIndex;
-      final asset = wallpaperForAccent(accentIndex);
-      precacheImage(AssetImage(asset), context);
-    }
+    // REDISEÑO: un fondo fijo por modo.
+    precacheImage(
+      AssetImage(MoaiAmbientBackground.assetFor(Theme.of(context).brightness)),
+      context,
+    );
+    // ANTES (a limpiar): una imagen por color de acento.
+    // if (use3DWallpaper) {
+    //   final accentIndex = context.read<ThemeProvider?>()?.accentColorIndex;
+    //   final asset = wallpaperForAccent(accentIndex);
+    //   precacheImage(AssetImage(asset), context);
+    // }
     final next = _AmbientPalette.of(Theme.of(context).colorScheme);
     if (_to == null) {
       _from = _to = next;
@@ -98,31 +125,91 @@ class _MoaiAmbientBackgroundState extends State<MoaiAmbientBackground>
     super.dispose();
   }
 
+  /// REDISEÑO (2026-10-30): el fondo de toda la app. Siempre el mismo, sin
+  /// importar el tema ni el acento, sin tinte ni desenfoque. Fuente:
+  /// `assets/images/redesing/backgound.jpg` (pasado a WebP, misma resolución,
+  /// aclarado mezclándolo con un 30 % de blanco). `background_blur.webp` (el
+  /// del vidrio esmerilado) sale de la misma imagen aclarada: a la mitad de
+  /// resolución y con desenfoque gaussiano de radio 30. Si se cambia uno, se
+  /// regeneran los dos para que coincidan.
+  // PRUEBA (2026-11-01): `background_color.webp` es este mismo fondo gris
+  // con curvas tenues de color (celeste, durazno, lila y agua) que lo tiñen
+  // sin cambiar su luz. Se genera junto con su copia desenfocada con
+  // `assets_src/backgrounds/gen_background_color.py`. El de antes:
+  // 'assets/images/background.webp'.
+  // PRUEBA (2026-11-02, descartada el 2026-11-03: se veía mejor éste):
+  // `background_new.webp`, la foto `assets/images/new font.jpg`
+  // desenfocada (radio 40), con `assets_src/backgrounds/gen_background_new.py`.
+  // PRUEBA (2026-11-03): fondos para probar de a uno. CAMBIAR ACÁ A MANO el
+  // nombre del archivo de `assets/images/` sin `.webp` (y hot restart):
+  //   'background_color'   el aprobado
+  //   'background_trial_1' `2.jpg` (blanco con amarillo abajo)
+  //   'background_trial_2' `2.png` (celeste, crema y rosa)
+  //   'bg_blue', 'bg_deep_blue', 'bg_teal', 'bg_green', 'bg_emerald',
+  //   'bg_cyan', 'bg_orange', 'bg_coral', 'bg_yellow', 'bg_red', 'bg_pink',
+  //   'bg_indigo', 'bg_violet'   los viejos de cada color de acento
+  // Cada uno tiene al lado su copia desenfocada `<nombre>_blur.webp` (la del
+  // vidrio esmerilado y el loading). Los trial salen con
+  // `assets_src/backgrounds/gen_background_trial.py`.
+  static const String trialBackground = 'background_new_blur';
+
+  static const String backgroundAsset = 'assets/images/$trialBackground.webp';
+
+  /// La copia desenfocada de [backgroundAsset] (la del vidrio esmerilado).
+  static const String blurredAsset =
+      'assets/images/${trialBackground}_blur.webp';
+
   /// Si es true, usa el fondo 3D orgánico renderizado en WebP.
   static const bool use3DWallpaper = true;
 
   /// Retorna el asset correspondiente según el índice de color de acento actual.
   static String wallpaperForAccent(int? accentIndex) {
     return switch (accentIndex) {
-      0 => 'assets/images/bg_blue.webp',         // Azul (default)
-      1 => 'assets/images/bg_deep_blue.webp',    // Azul Oscuro
-      2 => 'assets/images/bg_teal.webp',         // Teal
-      3 => 'assets/images/bg_green.webp',        // Verde
-      4 => 'assets/images/bg_emerald.webp',      // Esmeralda
-      5 => 'assets/images/bg_cyan.webp',         // Cian
-      6 => 'assets/images/bg_orange.webp',       // Naranja
-      7 => 'assets/images/bg_coral.webp',        // Coral
-      8 => 'assets/images/bg_yellow.webp',       // Ámbar (Amarillo)
-      9 => 'assets/images/bg_red.webp',          // Rojo
-      10 => 'assets/images/bg_pink.webp',        // Rosa
-      11 => 'assets/images/bg_indigo.webp',      // Índigo
-      12 => 'assets/images/bg_violet.webp',      // Violeta
-      _ => 'assets/images/bg_blue.webp',         // Default de Moai (Azul)
+      0 => 'assets/images/bg_blue.webp', // Azul (default)
+      1 => 'assets/images/bg_deep_blue.webp', // Azul Oscuro
+      2 => 'assets/images/bg_teal.webp', // Teal
+      3 => 'assets/images/bg_green.webp', // Verde
+      4 => 'assets/images/bg_emerald.webp', // Esmeralda
+      5 => 'assets/images/bg_cyan.webp', // Cian
+      6 => 'assets/images/bg_orange.webp', // Naranja
+      7 => 'assets/images/bg_coral.webp', // Coral
+      8 => 'assets/images/bg_yellow.webp', // Ámbar (Amarillo)
+      9 => 'assets/images/bg_red.webp', // Rojo
+      10 => 'assets/images/bg_pink.webp', // Rosa
+      11 => 'assets/images/bg_indigo.webp', // Índigo
+      12 => 'assets/images/bg_violet.webp', // Violeta
+      _ => 'assets/images/bg_blue.webp', // Default de Moai (Azul)
     };
   }
 
   @override
   Widget build(BuildContext context) {
+    // REDISEÑO: siempre la misma imagen, decodificada al ancho de la
+    // pantalla (no a 2912 px) para no gastar memoria de más en el TV.
+    final screen = MediaQuery.sizeOf(context);
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final asset = MoaiAmbientBackground.assetFor(Theme.of(context).brightness);
+    // Al cambiar de modo, un fundido de una imagen a la otra.
+    return RepaintBoundary(
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 500),
+        child: Image.asset(
+          asset,
+          key: ValueKey(asset),
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          cacheWidth: screen.width > 0 ? (screen.width * dpr).round() : null,
+          gaplessPlayback: true,
+        ),
+      ),
+    );
+  }
+
+  // ANTES (a limpiar): fondo por acento con tinte y viñeta según el tema, o
+  // las manchas de luz pintadas.
+  // ignore: unused_element
+  Widget _previousBuild(BuildContext context) {
     if (use3DWallpaper) {
       final dark = Theme.of(context).brightness == Brightness.dark;
       final accentIndex = context.select<ThemeProvider?, int?>(

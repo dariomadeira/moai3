@@ -7,6 +7,7 @@ import 'package:moai3/state/featured_movies_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'helpers/real_fonts.dart';
 import 'helpers/spanish_translations.dart';
 
 /// Películas disponibles con un total fijo; cuenta los pedidos.
@@ -31,6 +32,7 @@ class _FakeMovies extends FeaturedMoviesProvider {
 }
 
 void main() {
+  setUpAll(loadRealFonts);
   late AppPreferences prefs;
 
   setUp(() async {

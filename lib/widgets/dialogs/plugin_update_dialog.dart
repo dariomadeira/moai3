@@ -102,7 +102,10 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
       if (!mounted) return;
       setState(() {
         _state = _PluginUpdateState.error;
-        _errorMessage = e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+        _errorMessage = e.toString().replaceFirst(
+          RegExp(r'^Exception:\s*'),
+          '',
+        );
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _retryBtnFocus.requestFocus();
@@ -230,7 +233,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
           children: [
             CircularProgressIndicator(
               strokeWidth: 3,
-              color: scheme.primary,
+              color: scheme.onSurfaceVariant,
             ),
             const SizedBox(height: 16),
             Text(
@@ -283,13 +286,15 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
         decoration: BoxDecoration(
           color: scheme.errorContainer.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: scheme.error.withValues(alpha: 0.4),
-          ),
+          border: Border.all(color: scheme.error.withValues(alpha: 0.4)),
         ),
         child: Row(
           children: [
-            Icon(MoaiIcons.errorFilled, color: scheme.error, size: MoaiIconSizes.lg),
+            Icon(
+              MoaiIcons.errorFilled,
+              color: scheme.error,
+              size: MoaiIconSizes.lg,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(

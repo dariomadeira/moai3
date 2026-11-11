@@ -13,6 +13,7 @@ class SettingsAgendaSnackDurationRow extends StatelessWidget {
   final VoidCallback? onKeyRight;
   final VoidCallback? onKeyUp;
   final VoidCallback? onKeyDown;
+  final Color? iconColor;
 
   const SettingsAgendaSnackDurationRow({
     super.key,
@@ -23,6 +24,7 @@ class SettingsAgendaSnackDurationRow extends StatelessWidget {
     this.onKeyRight,
     this.onKeyUp,
     this.onKeyDown,
+    this.iconColor,
   });
 
   static const _labelKeys = {
@@ -39,6 +41,7 @@ class SettingsAgendaSnackDurationRow extends StatelessWidget {
       label: LocaleKeys.settings_agenda_snack_duration.tr(),
       description: LocaleKeys.settings_agenda_snack_duration_desc.tr(),
       icon: MoaiIcons.timer,
+      iconColor: iconColor,
       options: options,
       selected: options.contains(selectedSeconds)
           ? selectedSeconds

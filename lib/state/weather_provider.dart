@@ -115,8 +115,8 @@ class WeatherProvider extends ChangeNotifier {
   }
 
   /// Retorna la URL CDN del archivo JSON Lottie animado correspondiente al clima actual.
-  String get lottieUrl {
-    return WeatherIconMapper.getLottieUrl(
+  String get lottieAsset {
+    return WeatherIconMapper.getLottieAsset(
       code: _weather?.conditionCode,
       isDay: _weather?.isDay ?? true,
     );

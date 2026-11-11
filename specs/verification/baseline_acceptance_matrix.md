@@ -113,7 +113,7 @@
 ## 7. Módulo: Estilo de Foco en Tarjetas TV (SPEC-33)
 
 ### CASO-CARD-01: Foco con Borde Primario sin Lavado de Fondo
-- **Given**: Una tarjeta de canal en la grilla (`ChannelGridTile`) o en la barra de favoritos (`ViewerFavoriteTile`).
+- **Given**: Una tarjeta de canal (`ChannelGridTile`) en la grilla, en Buscar o en la barra de favoritos.
 - **When**: El elemento recibe el foco del D-Pad (`isFocused == true`).
 - **Then**: Debe renderizar un borde perimetral de 2 dp con el color primario del tema (`Border.all(color: scheme.primary, width: 2)`) y preservar su fondo base, sin teñir la tarjeta con un fondo primario sólido opaco.
 

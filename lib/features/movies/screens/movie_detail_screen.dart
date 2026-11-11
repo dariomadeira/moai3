@@ -1,17 +1,15 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
+import 'package:moai3/features/movies/widgets/movie_detail_parts.dart';
 import 'package:moai3/features/movies/widgets/tv_movie_genre_chip.dart';
 import 'package:moai3/features/movies/widgets/tv_movie_hero_card.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/utils/image_decode.dart';
 import 'package:moai3/widgets/buttons/tv_back_pill.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
@@ -23,6 +21,9 @@ import 'package:moai3/services/movie_metadata_service.dart';
 import 'package:moai3/services/movie_watchlist_service.dart';
 import 'package:moai3/services/movie_progress_service.dart';
 import 'package:moai3/services/titan_ranger_service.dart';
+import 'package:moai3/services/youtube_launcher.dart';
+import 'package:moai3/state/movie_recommendations_provider.dart';
+import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/widgets/tv_common/moai_ambient_background.dart';
@@ -39,11 +40,16 @@ class MovieDetailScreen extends StatefulWidget {
   /// Los tests lo reemplazan si quieren simular red o respuesta fija.
   final Future<String?> Function(MovieItem movie)? resolveYear;
 
+  /// Abre un adelanto en YouTube; por defecto [YoutubeLauncher.open]. `false`
+  /// si no se pudo.
+  final Future<bool> Function(String videoId)? openTrailer;
+
   const MovieDetailScreen({
     super.key,
     required this.movie,
     this.resolveStream,
     this.resolveYear,
+    this.openTrailer,
   });
 
   @override
@@ -55,22 +61,15 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   final FocusNode _watchlistFocusNode = FocusNode(
     debugLabel: 'movie_detail_watchlist',
   );
-  final FocusNode _heroFocusNode = FocusNode(debugLabel: 'movie_detail_hero');
-  final FocusNode _synopsisFocusNode = FocusNode(
-    debugLabel: 'movie_detail_synopsis',
+  final FocusNode _voteUpFocusNode = FocusNode(debugLabel: 'movie_detail_up');
+  final FocusNode _voteDownFocusNode = FocusNode(
+    debugLabel: 'movie_detail_down',
   );
-  final ScrollController _synopsisScroll = ScrollController();
-
+  final FocusNode _heroFocusNode = FocusNode(debugLabel: 'movie_detail_hero');
   bool _inWatchlist = false;
   bool _isLoadingStream = false;
   MovieWatchProgress? _watchProgress;
   String? _resolvedYear;
-
-  /// La sinopsis no entra entera: se puede enfocar y scrollear con ↑/↓.
-  bool _synopsisScrollable = false;
-  bool _synopsisFocused = false;
-
-  static const double _synopsisStep = 60;
 
   /// Un tráiler se ve de una vez: sin progreso ni "Marcar como interesante".
   bool get _isTrailer => widget.movie.isTrailer;
@@ -84,8 +83,9 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   void initState() {
     super.initState();
     // Titan tarda 1,5 s en quedar listo la primera vez: arranca mientras se
-    // mira el detalle, no al tocar Reproducir. Una vez por arranque.
-    unawaited(TitanRangerService.init());
+    // mira el detalle, no al tocar Reproducir. Una vez por arranque. Un
+    // adelanto no lo usa (se ve en YouTube).
+    if (!_isTrailer) unawaited(TitanRangerService.init());
     _resolvedYear = widget.movie.formattedYear;
     if (_resolvedYear == null) {
       _loadYear();
@@ -148,57 +148,10 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   void dispose() {
     _backFocusNode.dispose();
     _watchlistFocusNode.dispose();
+    _voteUpFocusNode.dispose();
+    _voteDownFocusNode.dispose();
     _heroFocusNode.dispose();
-    _synopsisFocusNode.dispose();
-    _synopsisScroll.dispose();
     super.dispose();
-  }
-
-  /// ← desde la Hero o Marcar como interesante: a la sinopsis si se puede scrollear; si no,
-  /// al botón atrás.
-  void _focusLeftOfActions() {
-    (_synopsisScrollable ? _synopsisFocusNode : _backFocusNode).requestFocus();
-  }
-
-  bool _onSynopsisMetrics(ScrollMetricsNotification n) {
-    final scrollable = n.metrics.maxScrollExtent > 0;
-    if (scrollable != _synopsisScrollable) {
-      // Llega durante el layout: el cambio va al frame siguiente.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _synopsisScrollable = scrollable);
-      });
-    }
-    return false;
-  }
-
-  KeyEventResult _onSynopsisKey(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
-      return KeyEventResult.ignored;
-    }
-    final key = event.logicalKey;
-    if (key == LogicalKeyboardKey.arrowUp ||
-        key == LogicalKeyboardKey.arrowDown) {
-      if (!_synopsisScroll.hasClients) return KeyEventResult.handled;
-      final position = _synopsisScroll.position;
-      final delta = key == LogicalKeyboardKey.arrowDown
-          ? _synopsisStep
-          : -_synopsisStep;
-      _synopsisScroll.animateTo(
-        (position.pixels + delta).clamp(0.0, position.maxScrollExtent),
-        duration: const Duration(milliseconds: 160),
-        curve: Curves.easeOutCubic,
-      );
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.arrowLeft) {
-      _backFocusNode.requestFocus();
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.arrowRight) {
-      _heroFocusNode.requestFocus();
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
   }
 
   /// Con algo visto (en progreso), pregunta si retomar o empezar de nuevo.
@@ -244,11 +197,12 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
 
   Future<void> _onPlayPressed() async {
     if (_isLoadingStream) return;
+    if (_isTrailer) return _openTrailer();
 
-    // Retomar o desde el principio (los adelantos no tienen progreso).
+    // Retomar o desde el principio.
     int? startAt;
     final progress = _watchProgress;
-    if (!_isTrailer && progress != null && progress.canResume) {
+    if (progress != null && progress.canResume) {
       final resume = await _askResume(progress);
       if (resume == null || !mounted) return;
       startAt = resume ? progress.positionSeconds : null;
@@ -264,12 +218,23 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     if (!mounted) return;
     setState(() => _isLoadingStream = false);
 
-    if (!_isTrailer) {
-      await _loadProgress();
-      // Si quedó vista, salió de Interesantes: el botón lo refleja.
-      await _loadWatchlist();
-    }
+    await _loadProgress();
+    // Si quedó vista, salió de Interesantes: el botón lo refleja.
+    await _loadWatchlist();
     if (mounted) _heroFocusNode.requestFocus();
+  }
+
+  /// Un adelanto se ve en la app de YouTube; Atrás allá vuelve acá.
+  Future<void> _openTrailer() async {
+    final open = widget.openTrailer ?? YoutubeLauncher.open;
+    final opened = await open(widget.movie.youtubeTrailerKey!);
+    if (!opened && mounted) {
+      MoaiSnackBar.showError(
+        context,
+        message: LocaleKeys.movies_trailer_open_error.tr(),
+        duration: const Duration(seconds: 4),
+      );
+    }
   }
 
   Future<void> _toggleWatchlist() async {
@@ -284,10 +249,32 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     }
   }
 
+  void _toggleVote(MovieVote vote) {
+    final recommendations = context.read<MovieRecommendationsProvider>();
+    final recommending =
+        vote == MovieVote.up &&
+        recommendations.voteOf(widget.movie.contentId) != MovieVote.up;
+    unawaited(recommendations.toggleVote(widget.movie, vote));
+    if (!recommending) return;
+    MoaiSnackBar.show(
+      context,
+      message: LocaleKeys.movies_recommend_sent.tr(),
+      icon: MoaiIcons.vodRecommend,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final movie = widget.movie;
+    final canRecommend =
+        !_isTrailer &&
+        context.select(
+          (MovieRecommendationsProvider? r) => r?.canRecommend ?? false,
+        );
+    final vote = context.select(
+      (MovieRecommendationsProvider? r) => r?.voteOf(movie.contentId),
+    );
 
     final overlapX = context.select(
       (TvSettingsProvider s) => s.overlapPaddingX,
@@ -395,12 +382,11 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                   Positioned(
                                     top: 0,
                                     right: 0,
-                                    width: 525,
-                                    height: 285,
+                                    width: movieDetailAmbientWidth,
+                                    height: movieDetailAmbientHeight,
                                     child: IgnorePointer(
-                                      child: _buildAmbientBackdrop(
-                                        context,
-                                        ambientUrl,
+                                      child: MovieDetailAmbient(
+                                        imageUrl: ambientUrl,
                                       ),
                                     ),
                                   ),
@@ -452,7 +438,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                                     .tr(),
                                                 onPressed: _onPlayPressed,
                                                 onArrowLeft:
-                                                    _focusLeftOfActions,
+                                                    _backFocusNode.requestFocus,
                                                 onArrowDown: _isTrailer
                                                     ? null
                                                     : _watchlistFocusNode
@@ -471,28 +457,106 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                               Align(
                                                 alignment:
                                                     Alignment.centerRight,
-                                                child: TvFocusButton(
-                                                  focusNode:
-                                                      _watchlistFocusNode,
-                                                  label: _inWatchlist
-                                                      ? LocaleKeys
-                                                            .movies_watchlist_added
-                                                            .tr()
-                                                      : LocaleKeys
-                                                            .movies_watchlist_add
-                                                            .tr(),
-                                                  icon: MoaiIcons.vodWatchlist,
-                                                  variant: _inWatchlist
-                                                      ? TvButtonVariant.tonal
-                                                      : TvButtonVariant.surface,
-                                                  height: 38,
-                                                  fontSize: 13,
-                                                  radius: 20,
-                                                  onPressed: _toggleWatchlist,
-                                                  onArrowLeft:
-                                                      _focusLeftOfActions,
-                                                  onArrowUp: _heroFocusNode
-                                                      .requestFocus,
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    TvFocusButton(
+                                                      focusNode:
+                                                          _watchlistFocusNode,
+                                                      label: _inWatchlist
+                                                          ? LocaleKeys
+                                                                .movies_watchlist_added
+                                                                .tr()
+                                                          : LocaleKeys
+                                                                .movies_watchlist_add
+                                                                .tr(),
+                                                      icon: _inWatchlist
+                                                          ? MoaiIcons
+                                                                .vodWatchlistRemove
+                                                          : MoaiIcons
+                                                                .vodWatchlist,
+                                                      variant: _inWatchlist
+                                                          ? TvButtonVariant
+                                                                .tonal
+                                                          : TvButtonVariant
+                                                                .surface,
+                                                      height: 38,
+                                                      fontSize: 13,
+                                                      radius: 20,
+                                                      onPressed:
+                                                          _toggleWatchlist,
+                                                      onArrowLeft:
+                                                          _backFocusNode
+                                                              .requestFocus,
+                                                      onArrowRight: canRecommend
+                                                          ? _voteUpFocusNode
+                                                                .requestFocus
+                                                          : null,
+                                                      onArrowUp: _heroFocusNode
+                                                          .requestFocus,
+                                                    ),
+                                                    if (canRecommend) ...[
+                                                      const SizedBox(width: 10),
+                                                      TvFocusButton(
+                                                        focusNode:
+                                                            _voteUpFocusNode,
+                                                        label: '',
+                                                        icon: MoaiIcons
+                                                            .vodRecommend,
+                                                        variant:
+                                                            vote == MovieVote.up
+                                                            ? TvButtonVariant
+                                                                  .secondary
+                                                            : TvButtonVariant
+                                                                  .surface,
+                                                        height: 38,
+                                                        fontSize: 13,
+                                                        radius: 20,
+                                                        onPressed: () =>
+                                                            _toggleVote(
+                                                              MovieVote.up,
+                                                            ),
+                                                        onArrowLeft:
+                                                            _watchlistFocusNode
+                                                                .requestFocus,
+                                                        onArrowRight:
+                                                            _voteDownFocusNode
+                                                                .requestFocus,
+                                                        onArrowUp:
+                                                            _heroFocusNode
+                                                                .requestFocus,
+                                                      ),
+                                                      const SizedBox(width: 10),
+                                                      TvFocusButton(
+                                                        focusNode:
+                                                            _voteDownFocusNode,
+                                                        label: '',
+                                                        icon: MoaiIcons
+                                                            .vodNotRecommend,
+                                                        variant:
+                                                            vote ==
+                                                                MovieVote.down
+                                                            ? TvButtonVariant
+                                                                  .secondary
+                                                            : TvButtonVariant
+                                                                  .surface,
+                                                        height: 38,
+                                                        fontSize: 13,
+                                                        radius: 20,
+                                                        onPressed: () =>
+                                                            _toggleVote(
+                                                              MovieVote.down,
+                                                            ),
+                                                        onArrowLeft:
+                                                            _voteUpFocusNode
+                                                                .requestFocus,
+                                                        onArrowUp:
+                                                            _heroFocusNode
+                                                                .requestFocus,
+                                                      ),
+                                                    ],
+                                                  ],
                                                 ),
                                               ),
                                           ],
@@ -517,56 +581,6 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     );
   }
 
-  /// Foto difuminada arriba a la derecha. Va en su propia capa: la Hero de al
-  /// lado cambia de foto cada 4 s y, sin esto, las máscaras se repintaban en
-  /// cada cuadro del fundido.
-  Widget _buildAmbientBackdrop(BuildContext context, String imageUrl) {
-    return RepaintBoundary(child: _buildAmbientMasks(context, imageUrl));
-  }
-
-  Widget _buildAmbientMasks(BuildContext context, String imageUrl) {
-    return ShaderMask(
-      blendMode: BlendMode.dstIn,
-      shaderCallback: (bounds) {
-        // Desvanecimiento suave en X: el borde izquierdo se vuelve 100% transparente
-        return const LinearGradient(
-          colors: [Colors.transparent, Colors.white],
-          stops: [0.0, 0.40],
-        ).createShader(bounds);
-      },
-      child: ShaderMask(
-        blendMode: BlendMode.dstIn,
-        shaderCallback: (bounds) {
-          // Desvanecimiento suave en Y: el borde inferior se vuelve 100% transparente
-          return const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.white, Colors.transparent],
-            stops: [0.45, 1.0],
-          ).createShader(bounds);
-        },
-        // La transparencia va en la imagen misma (sin una capa más de
-        // Opacity).
-        child: CachedNetworkImage(
-          imageUrl: imageUrl,
-          fit: BoxFit.cover,
-          color: Colors.white.withValues(alpha: 0.70),
-          colorBlendMode: BlendMode.modulate,
-          // Al tamaño del recuadro (525×285), no al de la foto (hasta
-          // 4096 px).
-          memCacheWidth: coverDecodeWidth(
-            width: 525,
-            height: 285,
-            devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
-          ),
-          alignment: Alignment.centerRight,
-          placeholder: (_, _) => const SizedBox.shrink(),
-          errorWidget: (_, _, _) => const SizedBox.shrink(),
-        ),
-      ),
-    );
-  }
-
   Widget _buildInfoColumn(
     BuildContext context,
     ColorScheme scheme,
@@ -575,48 +589,21 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     final year = _resolvedYear ?? movie.formattedYear;
     final duration = movie.formattedDuration;
     final genres = movie.genreList;
-    final scorePill = _buildScorePill(context, scheme, movie);
+    final scorePill = movieScorePill(context, movie);
     final dark = Theme.of(context).brightness == Brightness.dark;
-    // En un tráiler, sin la marca "(Tráiler)" que trae el catálogo.
-    final alias = MovieItem.withoutTrailerTag(movie.alias ?? '');
+    final alias = (movie.alias ?? '').trim();
     final hasAlias =
-        alias.isNotEmpty &&
-        alias.toLowerCase() !=
-            MovieItem.withoutTrailerTag(movie.name).toLowerCase();
+        alias.isNotEmpty && alias.toLowerCase() != movie.name.toLowerCase();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 1. Título
-        Text(
-          movie.displayName,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: MoaiText.display(
-            context,
-            color: scheme.onSurface,
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            height: 1.15,
-          ),
-        ),
+        // 1. Título, en cristal con el degradado de los encabezados.
+        MovieDetailTitle(movie.displayName),
         const SizedBox(height: 6),
 
         // 2. Título original / Alias
-        if (hasAlias) ...[
-          Text(
-            alias,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: MoaiText.body(
-              context,
-              color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
+        if (hasAlias) ...[MovieDetailAlias(alias), const SizedBox(height: 8)],
 
         // 3. Fila de metadatos rápidos (Puntuación, Año, Duración, Progreso).
         // La calidad no va: recién se sabe al resolver el stream.
@@ -628,6 +615,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
             ?scorePill,
             if (year != null && year.isNotEmpty)
               TvMetaPill(
+                dense: true,
                 color: scheme.tertiaryContainer,
                 foreground: scheme.onTertiaryContainer,
                 icon: MoaiIcons.vodReleaseDate,
@@ -636,6 +624,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
             // La duración de un tráiler en el catálogo es la de la película.
             if (!movie.isTrailer && duration != null && duration.isNotEmpty)
               TvMetaPill(
+                dense: true,
                 color: scheme.tertiaryContainer,
                 foreground: scheme.onTertiaryContainer,
                 icon: MoaiIcons.vodDuration,
@@ -644,6 +633,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
             if (_watchProgress != null)
               if (_watchProgress!.isCompleted)
                 TvMetaPill(
+                  dense: true,
                   color: const Color(0xFF10B981).withValues(alpha: 0.22),
                   foreground: dark
                       ? const Color(0xFF34D399)
@@ -653,6 +643,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                 )
               else if (_watchProgress!.canResume)
                 TvMetaPill(
+                  dense: true,
                   color: scheme.primary.withValues(alpha: 0.2),
                   foreground: scheme.primary,
                   icon: MoaiIcons.vodResume,
@@ -678,186 +669,26 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
         ],
 
         // 5. Director y Elenco
-        if (movie.director != null && movie.director!.trim().isNotEmpty) ...[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                LocaleKeys.movies_director.tr(),
-                style: MoaiText.body(
-                  context,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-              Expanded(
-                child: Text(
-                  movie.director!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: MoaiText.body(
-                    context,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500,
-                    color: scheme.onSurface,
-                  ),
-                ),
-              ),
-            ],
+        if (movie.formattedDirector case final director?) ...[
+          MovieCreditRow(
+            label: LocaleKeys.movies_director.tr(),
+            value: director,
           ),
           const SizedBox(height: 4),
         ],
 
-        if (movie.actorDisplay != null &&
-            movie.actorDisplay!.trim().isNotEmpty) ...[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                LocaleKeys.movies_cast.tr(),
-                style: MoaiText.body(
-                  context,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-              Expanded(
-                child: Text(
-                  movie.actorDisplay!,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: MoaiText.body(
-                    context,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500,
-                    color: scheme.onSurface,
-                  ),
-                ),
-              ),
-            ],
+        if (movie.formattedCast case final cast?) ...[
+          MovieCreditRow(
+            label: LocaleKeys.movies_cast.tr(),
+            value: cast,
+            maxLines: 2,
           ),
           const SizedBox(height: 8),
         ],
 
-        // 6. Sinopsis con scroll
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                LocaleKeys.movies_synopsis.tr(),
-                style: MoaiText.body(
-                  context,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 3),
-              // Si no entra, se enfoca con ← desde la Hero y ↑/↓ la scrollean.
-              Expanded(
-                child: Focus(
-                  focusNode: _synopsisFocusNode,
-                  canRequestFocus: _synopsisScrollable,
-                  skipTraversal: !_synopsisScrollable,
-                  onFocusChange: (f) => setState(() => _synopsisFocused = f),
-                  onKeyEvent: _onSynopsisKey,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Positioned.fill(
-                        child: NotificationListener<ScrollMetricsNotification>(
-                          onNotification: _onSynopsisMetrics,
-                          child: SingleChildScrollView(
-                            controller: _synopsisScroll,
-                            child: Text(
-                              (movie.description != null &&
-                                      movie.description!.trim().isNotEmpty)
-                                  ? movie.description!
-                                  : LocaleKeys.movies_synopsis_empty.tr(),
-                              style: MoaiText.body(
-                                context,
-                                fontSize: 13,
-                                height: 1.35,
-                                color: scheme.onSurface.withValues(alpha: 0.88),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Marco de foco por fuera del texto: no lo corre.
-                      Positioned(
-                        left: -8,
-                        top: -4,
-                        right: -8,
-                        bottom: -4,
-                        child: IgnorePointer(
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 160),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: _synopsisFocused
-                                    ? scheme.primary
-                                    : Colors.transparent,
-                                width: 1.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        // 6. Sinopsis: sin foco ni scroll, la letra se achica para que entre.
+        Expanded(child: MovieSynopsisBlock(description: movie.description)),
       ],
-    );
-  }
-
-  Widget? _buildScorePill(
-    BuildContext context,
-    ColorScheme scheme,
-    MovieItem movie,
-  ) {
-    final scoreText = movie.formattedScore;
-    if (scoreText == null || scoreText.isEmpty) return null;
-
-    final val = double.tryParse(movie.score ?? '');
-    // En tema claro, el mismo tono más oscuro para que se lea sobre el fondo.
-    final dark = Theme.of(context).brightness == Brightness.dark;
-
-    final Color bg;
-    final Color fg;
-
-    if (val != null) {
-      if (val > 7.0) {
-        // > 7.0: Amarillo / Dorado
-        bg = const Color(0xFFF59E0B).withValues(alpha: 0.22);
-        fg = dark ? const Color(0xFFFBBF24) : const Color(0xFFB45309);
-      } else if (val >= 5.0) {
-        // 5.0 a 7.0: Plata / Gris
-        bg = const Color(0xFF94A3B8).withValues(alpha: 0.24);
-        fg = dark ? const Color(0xFFE2E8F0) : const Color(0xFF475569);
-      } else {
-        // < 5.0: Rojo
-        bg = const Color(0xFFEF4444).withValues(alpha: 0.24);
-        fg = dark ? const Color(0xFFF87171) : const Color(0xFFB91C1C);
-      }
-    } else {
-      bg = scheme.tertiaryContainer;
-      fg = scheme.onTertiaryContainer;
-    }
-
-    return TvMetaPill(
-      color: bg,
-      foreground: fg,
-      icon: MoaiIcons.vodRatingFilled,
-      label: scoreText,
     );
   }
 }

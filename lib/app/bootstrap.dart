@@ -18,6 +18,7 @@ import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/arcade_plugin_service.dart';
 import 'package:moai3/services/device_identity_service.dart';
 import 'package:moai3/services/moai_image_cache_manager.dart';
+import 'package:moai3/services/movie_image_cache.dart';
 import 'package:moai3/services/plugin_host_service.dart';
 import 'package:moai3/services/supabase_presence_service.dart';
 import 'package:moai3/services/watch_party_service.dart';
@@ -26,8 +27,10 @@ import 'package:moai3/state/agenda_clock_provider.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/debug_log_controller.dart';
+import 'package:moai3/state/movie_recommendations_provider.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/state/featured_movies_provider.dart';
+import 'package:moai3/state/home_trailers_provider.dart';
 import 'package:moai3/state/playback_stats_controller.dart';
 import 'package:moai3/state/theme_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
@@ -58,6 +61,8 @@ class AppDependencies {
     required this.weather,
     required this.calendar,
     required this.featuredMovies,
+    required this.homeTrailers,
+    required this.recommendations,
     required this.playbackStats,
     required this.debugLog,
     required this.identity,
@@ -78,6 +83,8 @@ class AppDependencies {
   final WeatherProvider weather;
   final CalendarProvider calendar;
   final FeaturedMoviesProvider featuredMovies;
+  final HomeTrailersProvider homeTrailers;
+  final MovieRecommendationsProvider recommendations;
   final PlaybackStatsController playbackStats;
   final DebugLogController debugLog;
   final DeviceIdentityService identity;
@@ -97,11 +104,13 @@ class AppDependencies {
     ChangeNotifierProvider.value(value: favorites),
     ChangeNotifierProvider.value(value: calendar),
     ChangeNotifierProvider.value(value: featuredMovies),
+    ChangeNotifierProvider.value(value: homeTrailers),
     ChangeNotifierProvider.value(value: playbackStats),
     ChangeNotifierProvider.value(value: debugLog),
     ChangeNotifierProvider.value(value: pluginHost),
     ChangeNotifierProvider.value(value: watchParty),
     ChangeNotifierProvider.value(value: voiceCoordinator),
+    ChangeNotifierProvider.value(value: recommendations),
     ChangeNotifierProvider<ArcadeNetplayService>.value(
       value: ArcadeNetplayService.instance,
     ),
@@ -145,6 +154,7 @@ abstract final class AppBootstrap {
     final preferences = await prefsFuture;
     await ArcadePluginService.instance.init(preferences);
     unawaited(MoaiImageCacheManager.clearLegacyCacheOnce(preferences));
+    unawaited(MovieImageCache.clearDefaultCacheOnce(preferences));
 
     final theme = ThemeProvider(preferences);
     final tvSettings = TvSettingsProvider(preferences);
@@ -159,6 +169,7 @@ abstract final class AppBootstrap {
     final weather = WeatherProvider(preferences);
     final calendar = CalendarProvider(preferences: preferences);
     final featuredMovies = FeaturedMoviesProvider();
+    final homeTrailers = HomeTrailersProvider(preferences);
     final playbackStats = PlaybackStatsController();
     final debugLog = DebugLogController();
 
@@ -174,10 +185,24 @@ abstract final class AppBootstrap {
       identityService: identity,
     );
 
+    // No depende de qué pantalla esté abierta.
+    final recommendations = MovieRecommendationsProvider();
+    void syncRecommendationFriends() => recommendations.setFriends(
+      deviceId: watchParty.deviceId,
+      friends: {
+        if (watchParty.enabled)
+          for (final friend in watchParty.mutualFriends)
+            friend.deviceId: friend.displayName,
+      },
+    );
+    watchParty.addListener(syncRecommendationFriends);
+    syncRecommendationFriends();
+
     if (supabaseReady) {
       ArcadeNetplayService.instance.initialize(
         client: Supabase.instance.client,
         myDeviceId: identity.getOrCreateDeviceId(),
+        isFriend: watchParty.isMutualFriend,
       );
     }
 
@@ -192,6 +217,8 @@ abstract final class AppBootstrap {
       weather: weather,
       calendar: calendar,
       featuredMovies: featuredMovies,
+      homeTrailers: homeTrailers,
+      recommendations: recommendations,
       playbackStats: playbackStats,
       debugLog: debugLog,
       identity: identity,

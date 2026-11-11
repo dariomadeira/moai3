@@ -37,5 +37,17 @@ void main() {
       detector.leadMinutes = 15;
       expect(detector.takeNew([soon]).map((e) => e.id), ['a']);
     });
+
+    test('sin hora confirmada no avisa por la hora de relleno', () {
+      final detector = LiveEventDetector()..prime(const []);
+      final tbd = event(
+        'a',
+        const Duration(minutes: -1),
+      ).copyWith(timeConfirmed: false);
+      expect(detector.takeNew([tbd]), isEmpty);
+      // Si la fuente dice que está en vivo, sí.
+      final live = tbd.copyWith(status: CalendarEventStatus.live);
+      expect(detector.takeNew([live]).map((e) => e.id), ['a']);
+    });
   });
 }

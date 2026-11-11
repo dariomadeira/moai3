@@ -10,7 +10,10 @@ import 'package:moai3/features/games/services/gamepad_manager_service.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/widgets/buttons/tv_install_pill.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
+import 'package:moai3/widgets/tv_common/moai_status_tag.dart';
+import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 
 part 'tv_gamepad/gamepad_config_columns.dart';
 part 'tv_gamepad/squircle_button.dart';
@@ -197,91 +200,55 @@ class _TvGamepadConfigDialogState extends State<TvGamepadConfigDialog> {
       child: AnimatedBuilder(
         animation: _gamepadService,
         builder: (context, _) {
-          final isConnected = _gamepadService.hasGamepadConnected;
           final connectedList = _gamepadService.connectedGamepads;
+          final isConnected = connectedList.isNotEmpty;
 
-          // Paneles hundidos de cristal, como en el resto de los modales.
-          final panelDecoration = moaiGlassWellDecoration(scheme);
           final borderColor = scheme.onSurface.withValues(alpha: 0.08);
 
           return TvDialog(
-            width: 860,
+            width: 900,
+            padding: const EdgeInsets.all(20),
             icon: MoaiIcons.gamepad,
             title: LocaleKeys.gamepad_dialog_title.tr(),
             subtitle: LocaleKeys.gamepad_dialog_subtitle.tr(),
-            trailingHeader: DecoratedBox(
-              decoration: moaiGlassChipDecoration(
-                scheme,
-                highlighted: isConnected,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isConnected ? MoaiIcons.checkCircle : MoaiIcons.gamepad,
-                      size: MoaiIconSizes.sm,
-                      color: isConnected
-                          ? scheme.primary
-                          : scheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      isConnected
-                          ? (connectedList.length == 1
-                                ? LocaleKeys.gamepad_count_single.tr(
-                                    namedArgs: {
-                                      'count': '${connectedList.length}',
-                                    },
-                                  )
-                                : LocaleKeys.gamepad_count_plural.tr(
-                                    namedArgs: {
-                                      'count': '${connectedList.length}',
-                                    },
-                                  ))
-                          : LocaleKeys.gamepad_status_not_connected.tr(),
-                      style: MoaiText.body(
-                        context,
-                        color: isConnected
-                            ? scheme.primary
-                            : scheme.onSurfaceVariant,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            // Estado como las pastillas de "Instalado" / géneros: verde con
+            // mandos, gris pizarra sin ninguno.
+            trailingHeader: TvMetaPill(
+              icon: isConnected ? MoaiIcons.checkCircle : MoaiIcons.gamepad,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              tint: isConnected
+                  ? TvInstallPill.installedColor
+                  : MoaiStatusTag.finishedColor,
+              label: isConnected
+                  ? (connectedList.length == 1
+                        ? LocaleKeys.gamepad_count_single.tr(
+                            namedArgs: {'count': '${connectedList.length}'},
+                          )
+                        : LocaleKeys.gamepad_count_plural.tr(
+                            namedArgs: {'count': '${connectedList.length}'},
+                          ))
+                  : LocaleKeys.gamepad_status_not_connected.tr(),
             ),
-            content: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Columna 1: Lista de mandos detectados
-                _buildDevicesColumn(
-                  context,
-                  scheme,
-                  panelDecoration,
-                  borderColor,
-                  isConnected,
-                  connectedList,
-                ),
-                const SizedBox(width: 20),
-                _buildButtonBoard(
-                  context,
-                  scheme,
-                  panelDecoration,
-                  borderColor,
-                ),
-              ],
+            content: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Columna 1: Lista de mandos detectados
+                  _buildDevicesColumn(
+                    context,
+                    scheme,
+                    isConnected,
+                    connectedList,
+                  ),
+                  const SizedBox(width: 16),
+                  _buildButtonBoard(context, scheme, borderColor),
+                ],
+              ),
             ),
             actions: [
               TvDialogButton(
                 focusNode: _refreshFocus,
-                icon: MoaiIcons.refresh,
+                icon: MoaiIcons.gamepadReset,
                 label: LocaleKeys.gamepad_action_reset.tr(),
                 onPressed: _clearTest,
               ),

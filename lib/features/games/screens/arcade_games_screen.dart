@@ -1,3 +1,4 @@
+import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -35,9 +36,9 @@ class ArcadeGamesScreen extends StatefulWidget {
 }
 
 class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
-  final TextEditingController _urlController = TextEditingController(
-    text: ArcadeRomManagerService.defaultManifestUrl,
-  );
+  // Vacío: se ve la pista "https://..." en vez de la URL real; sin texto
+  // se usa el repositorio por defecto.
+  final TextEditingController _urlController = TextEditingController();
   final FocusNode _backFocusNode = FocusNode(debugLabel: 'games_rail_back');
   final FocusNode _urlFocus = FocusNode(debugLabel: 'games_url');
   final FocusNode _refreshFocus = FocusNode(debugLabel: 'games_refresh');
@@ -69,7 +70,10 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
 
   Future<void> _loadData() async {
     await widget.romManager.refreshInstalledRoms();
-    await widget.romManager.fetchCatalog(_urlController.text.trim());
+    final url = _urlController.text.trim();
+    await widget.romManager.fetchCatalog(
+      url.isEmpty ? ArcadeRomManagerService.defaultManifestUrl : url,
+    );
     _syncFocusNodes();
   }
 
@@ -172,7 +176,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                         activeIndex: 0,
                         colors: [scheme.surface.withValues(alpha: 0.8)],
                         titles: [LocaleKeys.arcade_action_select_game.tr()],
-                        icons: const [MoaiIcons.arcadeRomItem],
+                        icons: const [MoaiIcons.arcadeActionSelectGame],
                         onPanelTap: (_) {},
                         tabBuilder: (index, isExpanded) {
                           return Padding(
@@ -199,7 +203,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                                 ),
                                 const SizedBox(height: 6),
                                 Icon(
-                                  MoaiIcons.arcadeRomItem,
+                                  MoaiIcons.arcadeActionSelectGame,
                                   size: MoaiIconSizes.md,
                                   color: scheme.onSurfaceVariant.withValues(
                                     alpha: 0.85,
@@ -225,6 +229,7 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                                             .arcade_games_subtitle
                                             .tr(),
                                         padding: EdgeInsets.zero,
+                                        titleShader: HomeClock.timeShader,
                                       ),
                                     ),
                                     if (installedCount > 0) ...[
@@ -243,6 +248,8 @@ class _ArcadeGamesScreenState extends State<ArcadeGamesScreen> {
                                                           .toString(),
                                                     },
                                                   ),
+                                        // Gris, como el total de canales y de extensiones.
+                                        tint: TvMetaPill.countTint,
                                       ),
                                     ],
                                   ],

@@ -65,18 +65,27 @@ class DoubleBackExitScopeState extends State<DoubleBackExitScope> {
       return;
     }
 
-    final nowAfterIntercept = DateTime.now();
+    _confirmExit(LocaleKeys.home_exit_double_back.tr());
+  }
+
+  /// Botón de salir del rail: el primer toque avisa con el snack y el
+  /// segundo (dentro de [DoubleBackExitScope.exitWindow]) sale. Comparte la
+  /// ventana con atrás: atrás + OK también sale.
+  void requestExit() => _confirmExit(LocaleKeys.home_exit_double_ok.tr());
+
+  void _confirmExit(String message) {
+    final now = DateTime.now();
     if (_lastBackTime != null &&
-        nowAfterIntercept.difference(_lastBackTime!) < widget.exitWindow) {
+        now.difference(_lastBackTime!) < widget.exitWindow) {
       _lastBackTime = null;
       _exitApp();
       return;
     }
 
-    _lastBackTime = nowAfterIntercept;
+    _lastBackTime = now;
     MoaiSnackBar.show(
       context,
-      message: LocaleKeys.home_exit_double_back.tr(),
+      message: message,
       icon: MoaiIcons.exitApp,
       bottomMargin: _exitSnackBottomMargin,
       duration: widget.exitWindow,

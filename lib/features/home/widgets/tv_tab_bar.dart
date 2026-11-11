@@ -1,19 +1,23 @@
 import 'package:moai3/features/home/tv_tab.dart';
+import 'package:moai3/features/home/widgets/tv_vertical_nav_rail.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
+import 'package:moai3/theme/moai_focus_style.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
-/// Barra flotante de pestañas Explorar / Buscar / Marcadores, hermana del
-/// rail del home:
-///  - Cápsula de cristal del mismo grosor que el rail (48).
-///  - Pestaña activa expandida con ícono y texto, en cristal teñido del acento.
-///  - Pestaña inactiva compacta, sólo ícono.
-///  - Foco D-pad: acento sólido con brillo arriba y halo.
+/// Barra de pestañas Explorar / Buscar / Marcadores: el rail del home
+/// acostado, con texto.
+///  - Cápsula de vidrio esmerilado del mismo grosor que el rail (48).
+///  - Pestañas de 40 de alto, separadas 5: sin elegir, el círculo de 40 de
+///    un destino del rail (sólo ícono).
+///  - Elegida: el vidrio blanco del destino elegido del rail, estirado a
+///    pastilla con el título.
+///  - Foco D-pad: el verde esmeralda de TV del rail, con brillo y halo.
 class TvTabBar extends StatelessWidget {
   final TvTab selectedTab;
   final ValueChanged<TvTab> onTabChanged;
@@ -24,7 +28,7 @@ class TvTabBar extends StatelessWidget {
   final VoidCallback onFocusLeft;
   final VoidCallback onFocusPlayer;
 
-  /// Altura de cada píldora (como los íconos del rail).
+  /// Altura de cada pestaña (como los destinos del rail).
   static const double indicatorHeight = 40;
 
   const TvTabBar({
@@ -48,12 +52,14 @@ class TvTabBar extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
         child: MoaiGlass(
+          height: 48,
           borderRadius: 24,
+          frosted: true,
           padding: const EdgeInsets.all(4),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _M3EFloatingTabPill(
+              _TvTabPill(
                 title: LocaleKeys.home_tab_explore.tr(),
                 icon: MoaiIcons.tvTabExplorar,
                 selectedIcon: MoaiIcons.tvTabExplorarSelected,
@@ -65,7 +71,7 @@ class TvTabBar extends StatelessWidget {
                 onKeyDown: onFocusDown,
               ),
               const SizedBox(width: 5),
-              _M3EFloatingTabPill(
+              _TvTabPill(
                 title: LocaleKeys.home_tab_search.tr(),
                 icon: MoaiIcons.tvTabBuscar,
                 selectedIcon: MoaiIcons.tvTabBuscarSelected,
@@ -77,7 +83,7 @@ class TvTabBar extends StatelessWidget {
                 onKeyDown: onFocusDown,
               ),
               const SizedBox(width: 5),
-              _M3EFloatingTabPill(
+              _TvTabPill(
                 title: LocaleKeys.home_tab_groups.tr(),
                 icon: MoaiIcons.tvTabMarcadores,
                 selectedIcon: MoaiIcons.tvTabMarcadoresSelected,
@@ -96,7 +102,7 @@ class TvTabBar extends StatelessWidget {
   }
 }
 
-class _M3EFloatingTabPill extends StatefulWidget {
+class _TvTabPill extends StatefulWidget {
   final String title;
   final IconData icon;
   final IconData selectedIcon;
@@ -107,7 +113,7 @@ class _M3EFloatingTabPill extends StatefulWidget {
   final VoidCallback onKeyRight;
   final VoidCallback onKeyDown;
 
-  const _M3EFloatingTabPill({
+  const _TvTabPill({
     required this.title,
     required this.icon,
     required this.selectedIcon,
@@ -120,149 +126,116 @@ class _M3EFloatingTabPill extends StatefulWidget {
   });
 
   @override
-  State<_M3EFloatingTabPill> createState() => _M3EFloatingTabPillState();
+  State<_TvTabPill> createState() => _TvTabPillState();
 }
 
-class _M3EFloatingTabPillState extends State<_M3EFloatingTabPill> {
+class _TvTabPillState extends State<_TvTabPill> {
   bool _focused = false;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-
-    // Mismos estados que el rail: foco = acento sólido, activa = cristal
-    // teñido, resto = sólo ícono.
-    final Color fg;
-    if (_focused) {
-      fg = scheme.onPrimary;
-    } else if (widget.isSelected) {
-      fg = scheme.onSurface;
-    } else {
-      fg = scheme.onSurfaceVariant;
-    }
-    const radius = TvTabBar.indicatorHeight / 2;
-    final padding = EdgeInsets.symmetric(
-      horizontal: widget.isSelected ? 14 : 10,
+    const radius = BorderRadius.all(
+      Radius.circular(TvTabBar.indicatorHeight / 2),
     );
 
-    return Focus(
-      focusNode: widget.focusNode,
-      onFocusChange: (v) => setState(() => _focused = v),
-      onKeyEvent: (node, event) {
-        if (event is! KeyDownEvent) return KeyEventResult.ignored;
-        final key = event.logicalKey;
-        if (key == LogicalKeyboardKey.arrowLeft) {
-          widget.onKeyLeft();
-          return KeyEventResult.handled;
-        }
-        if (key == LogicalKeyboardKey.arrowRight) {
-          widget.onKeyRight();
-          return KeyEventResult.handled;
-        }
-        if (key == LogicalKeyboardKey.arrowDown) {
-          widget.onKeyDown();
-          return KeyEventResult.handled;
-        }
-        if (TvKeyHandler.isActionKey(key)) {
-          widget.onSelect();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      child: GestureDetector(
-        onTap: () {
-          widget.focusNode.requestFocus();
-          widget.onSelect();
+    // Mismos estados que los destinos del rail: foco = acento sólido con
+    // su texto, elegida = vidrio blanco, resto = nada; sin foco el contenido
+    // va casi negro. (El verde de TV queda sólo en el rail.)
+    final fg = _focused
+        ? scheme.onPrimary
+        : TvVerticalNavRail.idleIconColorOf(context);
+    final BoxDecoration? decoration;
+    if (_focused) {
+      decoration = MoaiFocusStyle.decoration(scheme, borderRadius: radius);
+    } else if (widget.isSelected) {
+      decoration = moaiGlassButtonDecoration(scheme, focused: false);
+    } else {
+      decoration = null;
+    }
+
+    return Semantics(
+      label: widget.title,
+      button: true,
+      selected: widget.isSelected,
+      excludeSemantics: true,
+      child: Focus(
+        focusNode: widget.focusNode,
+        onFocusChange: (v) => setState(() => _focused = v),
+        onKeyEvent: (node, event) {
+          if (event is! KeyDownEvent) return KeyEventResult.ignored;
+          final key = event.logicalKey;
+          if (key == LogicalKeyboardKey.arrowLeft) {
+            widget.onKeyLeft();
+            return KeyEventResult.handled;
+          }
+          if (key == LogicalKeyboardKey.arrowRight) {
+            widget.onKeyRight();
+            return KeyEventResult.handled;
+          }
+          if (key == LogicalKeyboardKey.arrowDown) {
+            widget.onKeyDown();
+            return KeyEventResult.handled;
+          }
+          if (TvKeyHandler.isActionKey(key)) {
+            widget.onSelect();
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
         },
-        child: _buildFrame(
-          scheme,
-          radius,
-          padding,
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                widget.isSelected ? widget.selectedIcon : widget.icon,
-                color: fg,
-                size: MoaiIconSizes.md,
-              ),
-              AnimatedSize(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutCubic,
-                child: widget.isSelected
-                    ? Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const SizedBox(width: 6),
-                          Text(
-                            widget.title,
-                            maxLines: 1,
-                            softWrap: false,
-                            style: MoaiText.display(
-                              context,
-                              color: fg,
-                              fontSize: 12,
-                              fontWeight: widget.isSelected || _focused
-                                  ? FontWeight.w700
-                                  : FontWeight.w600,
-                              letterSpacing: 0.3,
+        child: GestureDetector(
+          onTap: () {
+            widget.focusNode.requestFocus();
+            widget.onSelect();
+          },
+          // Sin elegir: el círculo de 40 de un destino del rail, sólo ícono.
+          // Elegida: se estira a pastilla con el título.
+          child: Container(
+            height: TvTabBar.indicatorHeight,
+            constraints: const BoxConstraints(
+              minWidth: TvTabBar.indicatorHeight,
+            ),
+            alignment: Alignment.center,
+            padding: widget.isSelected
+                ? const EdgeInsets.only(left: 10, right: 14)
+                : EdgeInsets.zero,
+            decoration: decoration,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  widget.isSelected ? widget.selectedIcon : widget.icon,
+                  color: fg,
+                  size: MoaiIconSizes.md,
+                ),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutCubic,
+                  child: widget.isSelected
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(width: 6),
+                            Text(
+                              widget.title,
+                              maxLines: 1,
+                              softWrap: false,
+                              style: MoaiText.display(
+                                context,
+                                color: fg,
+                                fontSize: 12,
+                                letterSpacing: 0.3,
+                              ),
                             ),
-                          ),
-                        ],
-                      )
-                    : const SizedBox.shrink(),
-              ),
-            ],
+                          ],
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildFrame(
-    ColorScheme scheme,
-    double radius,
-    EdgeInsets padding,
-    Widget content,
-  ) {
-    if (_focused) {
-      return Container(
-        height: TvTabBar.indicatorHeight,
-        padding: padding,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(radius),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color.lerp(scheme.primary, Colors.white, 0.22)!,
-              scheme.primary,
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: scheme.primary.withValues(alpha: 0.45),
-              blurRadius: 16,
-            ),
-          ],
-        ),
-        child: content,
-      );
-    }
-    if (widget.isSelected) {
-      return MoaiGlass(
-        height: TvTabBar.indicatorHeight,
-        borderRadius: radius,
-        tint: scheme.primary,
-        elevated: false,
-        padding: padding,
-        child: content,
-      );
-    }
-    return Container(
-      height: TvTabBar.indicatorHeight,
-      padding: padding,
-      child: content,
     );
   }
 }

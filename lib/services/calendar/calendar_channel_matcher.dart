@@ -164,11 +164,19 @@ class CalendarChannelMatcher {
     return chName.contains(target) || chId.contains(target);
   }
 
-  static List<String> _getFallbackKeywords(String subId, String comp, String title) {
-    if (subId.contains('lpf') || comp.contains('liga profesional') || comp.contains('argentin')) {
+  static List<String> _getFallbackKeywords(
+    String subId,
+    String comp,
+    String title,
+  ) {
+    if (subId.contains('lpf') ||
+        comp.contains('liga profesional') ||
+        comp.contains('argentin')) {
       return const ['tnt sports premium', 'espn premium', 'tyc sports'];
     }
-    if (subId.contains('f1') || comp.contains('formula 1') || comp.contains('f1')) {
+    if (subId.contains('f1') ||
+        comp.contains('formula 1') ||
+        comp.contains('f1')) {
       return const ['fox sports', 'espn', 'f1'];
     }
     if (subId.contains('champions') || comp.contains('champions')) {
@@ -180,10 +188,6 @@ class CalendarChannelMatcher {
     if (subId.contains('nba') || comp.contains('nba')) {
       return const ['nba', 'espn'];
     }
-    if (subId.contains('motogp') || comp.contains('motogp')) {
-      return const ['espn'];
-    }
     return const [];
   }
-
 }

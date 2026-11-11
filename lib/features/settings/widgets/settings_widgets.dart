@@ -9,6 +9,9 @@ class TvSettingsActionRow extends StatelessWidget {
   final String label;
   final String description;
   final IconData? icon;
+
+  /// Color propio del ícono (ver [TvTile.iconColor]).
+  final Color? iconColor;
   final VoidCallback onPressed;
   final VoidCallback onKeyLeft;
   final VoidCallback? onKeyRight;
@@ -23,6 +26,7 @@ class TvSettingsActionRow extends StatelessWidget {
     required this.label,
     required this.description,
     this.icon,
+    this.iconColor,
     required this.onPressed,
     required this.onKeyLeft,
     this.onKeyRight,
@@ -39,6 +43,7 @@ class TvSettingsActionRow extends StatelessWidget {
       label: label,
       description: description,
       icon: icon,
+      iconColor: iconColor,
       padding: padding,
       minHeight: minHeight,
       onPressed: onPressed,
@@ -63,6 +68,9 @@ class TvSettingsSwitchRow extends StatelessWidget {
   final String label;
   final String? description;
   final IconData? icon;
+
+  /// Color propio del ícono (ver [TvTile.iconColor]).
+  final Color? iconColor;
   final bool value;
   final ValueChanged<bool> onChanged;
   final VoidCallback onKeyLeft;
@@ -78,6 +86,7 @@ class TvSettingsSwitchRow extends StatelessWidget {
     required this.label,
     this.description,
     this.icon,
+    this.iconColor,
     required this.value,
     required this.onChanged,
     required this.onKeyLeft,
@@ -95,6 +104,7 @@ class TvSettingsSwitchRow extends StatelessWidget {
       label: label,
       description: description,
       icon: icon,
+      iconColor: iconColor,
       padding: padding,
       minHeight: minHeight,
       onPressed: () => onChanged(!value),
@@ -141,71 +151,73 @@ class TvSettingsSwitchRow extends StatelessWidget {
   }
 }
 
-/// Switch del estilo cristal: pista translúcida apagado, del acento con un
-/// brillo leve encendido; con foco y apagado, la pista toma el borde del
-/// acento. Solo lectura: la ficha que lo contiene maneja el cambio.
+/// Switch del estilo cristal, uno solo para toda la app. Encendido: pista
+/// del acento con brillo arriba y halo del acento. Apagado: el mismo efecto
+/// en gris suave. El foco es de la ficha: el switch no cambia con él. Solo
+/// lectura: la ficha que lo contiene maneja el cambio.
 class _GlassSwitch extends StatelessWidget {
   const _GlassSwitch({required this.value});
 
   final bool value;
 
-  static const _width = 46.0;
-  static const _height = 26.0;
-  static const _thumb = 20.0;
-  static const _duration = Duration(milliseconds: 160);
+  static const _width = 52.0;
+  static const _height = 30.0;
+  static const _inset = 3.0;
+  static const _thumb = _height - 2 * _inset - 2; // descuenta el borde
+  static const _duration = Duration(milliseconds: 220);
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
     final dark = scheme.brightness == Brightness.dark;
-    final focused = TvTile.isFocusedOf(context);
+    // Gris suave del apagado: mismo tratamiento que el acento encendido.
+    final grey = dark ? const Color(0xFF8A8F98) : const Color(0xFFB7BCC4);
+    final tone = value ? scheme.primary : grey;
 
-    final offFill = (dark ? Colors.white : scheme.onSurface).withValues(
-      alpha: dark ? 0.06 : 0.08,
+    final track = BoxDecoration(
+      borderRadius: BorderRadius.circular(_height / 2),
+      border: Border.all(
+        color: Color.lerp(tone, Colors.black, 0.12)!.withValues(alpha: 0.5),
+      ),
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color.lerp(tone, Colors.white, 0.28)!, tone],
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: tone.withValues(alpha: value ? 0.32 : 0.22),
+          blurRadius: 10,
+          spreadRadius: -2,
+          offset: const Offset(0, 3),
+        ),
+      ],
     );
-    final rim = value
-        ? Colors.transparent
-        : (focused
-              ? scheme.primary
-              : (dark ? Colors.white : scheme.onSurface).withValues(
-                  alpha: 0.14,
-                ));
 
     return AnimatedContainer(
       duration: _duration,
       curve: Curves.easeOutCubic,
       width: _width,
       height: _height,
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(_height / 2),
-        border: Border.all(color: rim),
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: value
-              ? [
-                  Color.lerp(scheme.primary, Colors.white, 0.15)!,
-                  scheme.primary,
-                ]
-              : [offFill, offFill],
-        ),
-      ),
+      padding: const EdgeInsets.all(_inset),
+      decoration: track,
       child: AnimatedAlign(
         duration: _duration,
-        curve: Curves.easeOutCubic,
+        curve: Curves.easeOutBack,
         alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-        child: AnimatedContainer(
-          duration: _duration,
-          width: _thumb - 2,
-          height: _thumb - 2,
+        child: Container(
+          width: _thumb,
+          height: _thumb,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: value
-                ? scheme.onPrimary
-                : scheme.onSurfaceVariant.withValues(
-                    alpha: focused ? 0.9 : 0.6,
-                  ),
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 4,
+                offset: const Offset(0, 1.5),
+              ),
+            ],
           ),
         ),
       ),

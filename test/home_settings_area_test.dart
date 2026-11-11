@@ -6,9 +6,11 @@ import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'helpers/real_fonts.dart';
 import 'helpers/spanish_translations.dart';
 
 void main() {
+  setUpAll(loadRealFonts);
   TestWidgetsFlutterBinding.ensureInitialized();
   late AppPreferences prefs;
 

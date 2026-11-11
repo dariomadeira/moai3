@@ -1,14 +1,21 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
+import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/cards/channel_source_tag.dart';
 import 'package:moai3/widgets/cards/tv_list_card_leading_logo.dart';
 import 'package:moai3/widgets/cards/tv_list_card_style.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
+import 'package:moai3/widgets/tv_common/tv_focus_ring.dart';
 import 'package:moai3/widgets/tv_common/tv_press_detector.dart';
 import 'package:provider/provider.dart';
 
-/// Tile de canal para grilla 2 columnas: logo arriba, nombre abajo.
+/// Ficha de canal de la grilla (2 columnas), de Buscar y de la barra de
+/// Favoritos. El elegido lleva el check abajo a la derecha (sin teñir) y el
+/// foco pone el borde del acento.
 class ChannelGridTile extends StatefulWidget {
   final Channel channel;
   final bool isSelected;
@@ -32,6 +39,10 @@ class ChannelGridTile extends StatefulWidget {
     this.onKeyDown,
     this.onLongPress,
   });
+
+  /// Separación entre fichas (la mitad arriba y la mitad abajo de cada una;
+  /// entre columnas, entera).
+  static const double gap = 8;
 
   @override
   State<ChannelGridTile> createState() => _ChannelGridTileState();
@@ -70,11 +81,14 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
     );
     final showLabel = showLabelSetting || !_logoOk;
     final isFocused = _isFocused || (widget.focusNode?.hasFocus ?? false);
-    // Canales: foco SOLO con borde primary (sin relleno).
+    final selected = widget.isSelected;
+    // El foco va en el acento (el verde de TV queda sólo en el rail).
+    final accent = scheme.primary;
     final baseStyle = TvListCardStyle.resolve(
       scheme: scheme,
       focused: false,
-      selected: widget.isSelected,
+      // El elegido no se tiñe: lo marca el check de abajo.
+      selected: false,
     );
     final itemStyle = isFocused
         ? TvListCardStyle(
@@ -82,20 +96,18 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
             foregroundColor: baseStyle.foregroundColor,
             iconColor: baseStyle.iconColor,
             fontWeight: FontWeight.w700,
-            border: Border.all(color: scheme.primary, width: 2),
+            border: Border.all(color: accent, width: 2),
           )
         : baseStyle;
-    // Sobre el fondo ambiente el tile es de cristal; fuera, estilo opaco.
-    final glass = MoaiGlassScope.enabledOf(context);
-    // En cristal el foco no rellena el tile: texto y etiqueta no cambian.
-    final solidFocus = isFocused && !glass;
-    final labelColor = glass ? scheme.onSurface : itemStyle.foregroundColor;
-    const padding = EdgeInsets.fromLTRB(6, 6, 6, 4);
 
     final rawTag = widget.channel.pluginTag?.trim();
     final tag = (rawTag != null && rawTag.isNotEmpty)
         ? rawTag.toUpperCase()
         : null;
+
+    final glass = MoaiGlassScope.enabledOf(context);
+    final labelColor = glass ? scheme.onSurface : itemStyle.foregroundColor;
+    const padding = EdgeInsets.symmetric(horizontal: 4, vertical: 4);
 
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -103,15 +115,20 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
         Expanded(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final side = constraints.maxWidth;
-              final logoH = (constraints.maxHeight).clamp(0.0, side);
+              final side = math.min(
+                constraints.maxWidth,
+                constraints.maxHeight,
+              );
               return Center(
                 child: TvListCardLeadingLogo(
                   key: ValueKey(widget.channel.logoUrl),
                   logoUrl: widget.channel.logoUrl,
                   width: side,
-                  height: logoH,
+                  height: side,
                   isFocused: isFocused,
+                  contentPadding: const EdgeInsets.all(3),
+                  // Sin logo: el ícono en el acento, como los de Categorías.
+                  fallbackColor: accent,
                   onLogoResolved: (ok) {
                     if (mounted && _logoOk != ok) {
                       setState(() => _logoOk = ok);
@@ -126,89 +143,96 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
           const SizedBox(height: 3),
           Text(
             widget.channel.name,
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
             style: MoaiText.body(
               context,
-              fontSize: 11,
-              height: 1.12,
               color: labelColor,
+              fontSize: 10.5,
               fontWeight: itemStyle.fontWeight,
             ),
           ),
         ],
-        if (tag != null) ...[
-          const SizedBox(height: 3),
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-              decoration: BoxDecoration(
-                color: solidFocus
-                    ? itemStyle.foregroundColor.withValues(alpha: 0.2)
-                    : scheme.tertiaryContainer,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                tag,
-                maxLines: 1,
-                style: MoaiText.body(
-                  context,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  height: 1.0,
-                  letterSpacing: 0.4,
-                  color: solidFocus
-                      ? itemStyle.foregroundColor
-                      : scheme.onTertiaryContainer,
-                ),
-              ),
+        // Fila de abajo: la etiqueta de origen centrada y, en el elegido, el
+        // check a la derecha. Va fuera del lugar del logo: nunca lo pisa.
+        if (tag != null || selected) ...[
+          const SizedBox(height: 2),
+          SizedBox(
+            height: 21,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                if (tag != null)
+                  ChannelSourceTag(channel: widget.channel, tag: tag),
+                if (selected)
+                  Positioned(
+                    right: 4,
+                    child: Icon(
+                      MoaiIcons.selectedCheck,
+                      size: MoaiIconSizes.sm,
+                      color: accent,
+                    ),
+                  ),
+              ],
             ),
           ),
+          // Aire abajo: que la fila no quede pegada al borde.
+          const SizedBox(height: 4),
         ],
       ],
     );
 
+    final Widget chrome = glass
+        ? TvFocusRing(
+            // Foco: borde del acento y una sombrita del mismo color, como los
+            // botones de las listas.
+            focused: isFocused,
+            color: accent,
+            child: MoaiGlass(
+              borderRadius: 10,
+              elevated: false,
+              solid: true,
+              padding: padding,
+              child: content,
+            ),
+          )
+        : AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            padding: padding,
+            decoration: BoxDecoration(
+              color: itemStyle.backgroundColor,
+              borderRadius: BorderRadius.circular(10),
+              border: itemStyle.border,
+            ),
+            child: content,
+          );
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: TvPressDetector(
-        focusNode: widget.focusNode,
-        onFocusChange: (focus) => setState(() => _isFocused = focus),
-        onPress: widget.onTap,
-        onLongPress: widget.onLongPress,
-        onLeft: widget.onKeyLeft,
-        onRight: widget.onKeyRight,
-        onUp: widget.onKeyUp,
-        onDown: widget.onKeyDown,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () {
-            widget.focusNode?.requestFocus();
-            widget.onTap();
-          },
+      padding: const EdgeInsets.symmetric(vertical: ChannelGridTile.gap / 2),
+      child: Semantics(
+        label: widget.channel.name,
+        button: true,
+        selected: widget.isSelected,
+        excludeSemantics: true,
+        child: TvPressDetector(
+          focusNode: widget.focusNode,
+          onFocusChange: (focus) => setState(() => _isFocused = focus),
+          onPress: widget.onTap,
           onLongPress: widget.onLongPress,
-          child: glass
-              // Mismo criterio que [TvIconListCard]: foco con borde del
-              // acento y tinte suave; el canal elegido va teñido.
-              ? MoaiGlass(
-                  borderRadius: 12,
-                  elevated: false,
-                  solid: true,
-                  tint: widget.isSelected ? scheme.primary : null,
-                  focused: isFocused,
-                  padding: padding,
-                  child: content,
-                )
-              : AnimatedContainer(
-                  duration: const Duration(milliseconds: 120),
-                  padding: padding,
-                  decoration: BoxDecoration(
-                    color: itemStyle.backgroundColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: itemStyle.border,
-                  ),
-                  child: content,
-                ),
+          onLeft: widget.onKeyLeft,
+          onRight: widget.onKeyRight,
+          onUp: widget.onKeyUp,
+          onDown: widget.onKeyDown,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              widget.focusNode?.requestFocus();
+              widget.onTap();
+            },
+            onLongPress: widget.onLongPress,
+            child: chrome,
+          ),
         ),
       ),
     );

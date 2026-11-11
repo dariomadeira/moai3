@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
+import 'package:moai3/widgets/tv_common/moai_count_badge.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
 
 /// Piezas de la grilla semanal de 7 columnas que comparten la Agenda
@@ -58,21 +59,22 @@ class TvWeekDayColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final headerDayNameColor = isToday
-        ? scheme.primary
-        : scheme.onSurfaceVariant;
+    // REDISEÑO: el día de semana en gris; hoy, el día en el acento y más
+    // bold (sin teñir el cristal).
+    final dayNameColor = isToday ? scheme.primary : scheme.onSurfaceVariant;
+    final dayNumberColor = isToday ? scheme.primary : scheme.onSurface;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         GestureDetector(
           onTap: onSelectColumn,
+          // El cristal de las tarjetas del Inicio.
           child: MoaiGlass(
             borderRadius: 12,
             elevated: false,
             solid: true,
             focused: isColumnFocused,
-            tint: isToday ? scheme.primary : null,
             padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 7),
             child: Stack(
               children: [
@@ -86,8 +88,8 @@ class TvWeekDayColumn extends StatelessWidget {
                       style: MoaiText.body(
                         context,
                         fontSize: 11,
-                        fontWeight: isToday ? FontWeight.w800 : FontWeight.w700,
-                        color: headerDayNameColor,
+                        fontWeight: isToday ? FontWeight.w900 : FontWeight.w600,
+                        color: dayNameColor,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -96,39 +98,18 @@ class TvWeekDayColumn extends StatelessWidget {
                       style: MoaiText.display(
                         context,
                         fontSize: 15,
-                        fontWeight: isToday ? FontWeight.w800 : FontWeight.w700,
-                        color: scheme.onSurface,
+                        fontWeight: isToday ? FontWeight.w900 : FontWeight.w600,
+                        color: dayNumberColor,
                       ),
                     ),
                   ],
                 ),
+                // Cuántos hay ese día: el mismo contador del rail.
                 if (itemCount > 0)
                   Positioned(
                     right: 0,
                     bottom: 0,
-                    child: Container(
-                      constraints: const BoxConstraints(minWidth: 18),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 1,
-                      ),
-                      decoration: moaiGlassChipDecoration(
-                        scheme,
-                        highlighted: isToday || isColumnFocused,
-                      ),
-                      child: Text(
-                        '$itemCount',
-                        textAlign: TextAlign.center,
-                        style: MoaiText.body(
-                          context,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: isToday || isColumnFocused
-                              ? scheme.primary
-                              : scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
+                    child: MoaiCountBadge(count: itemCount),
                   ),
               ],
             ),
@@ -191,16 +172,20 @@ class TvWeekDayColumn extends StatelessWidget {
           children: [
             SizedBox(
               height: indicatorAreaHeight,
-              child: start > 0
-                  ? const _MoreArrow(icon: MoaiIcons.chevronUp, top: true)
-                  : null,
+              child: _MoreArrow(
+                icon: MoaiIcons.chevronUp,
+                top: true,
+                active: start > 0,
+              ),
             ),
             ...cards(slotHeight.clamp(30.0, 150.0)),
             SizedBox(
               height: indicatorAreaHeight,
-              child: start + windowSize < itemCount
-                  ? const _MoreArrow(icon: MoaiIcons.chevronDown, top: false)
-                  : null,
+              child: _MoreArrow(
+                icon: MoaiIcons.chevronDown,
+                top: false,
+                active: start + windowSize < itemCount,
+              ),
             ),
           ],
         );
@@ -211,42 +196,33 @@ class TvWeekDayColumn extends StatelessWidget {
   Widget _buildEmptyState(BuildContext context) {
     final scheme = context.scheme;
     final isFocused = isColumnFocused;
+    // REDISEÑO: con foco no hay borde ni tinte: sólo el ícono y el texto
+    // pasan a negro.
     final dark = scheme.brightness == Brightness.dark;
-    final line = dark ? Colors.white : scheme.onSurface;
     final contentColor = isFocused
         ? scheme.onSurface
         : scheme.onSurfaceVariant.withValues(alpha: 0.6);
 
     return GestureDetector(
       onTap: onSelectColumn,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
+      child: Container(
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-        // Pozo de cristal; con foco, el borde del acento se pinta encima
-        // (no ocupa espacio) y el relleno toma un tinte suave.
+        // REDISEÑO: pozo de vidrio blanco, más tenue que las tarjetas (45 %)
+        // pero que se note blanco, con un filo de luz suave. En el oscuro,
+        // ahumado como el resto del cristal.
         decoration: BoxDecoration(
-          color: isFocused
-              ? scheme.primary.withValues(alpha: dark ? 0.08 : 0.06)
-              : line.withValues(alpha: dark ? 0.03 : 0.04),
+          color: Colors.white.withValues(alpha: dark ? 0.05 : 0.25),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: line.withValues(alpha: 0.08)),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: dark ? 0.12 : 0.4),
+          ),
         ),
-        foregroundDecoration: isFocused
-            ? BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: scheme.primary, width: 2),
-              )
-            : null,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              emptyIcon,
-              size: MoaiIconSizes.lg,
-              color: isFocused ? scheme.primary : contentColor,
-            ),
+            Icon(emptyIcon, size: MoaiIconSizes.lg, color: contentColor),
             const SizedBox(height: 8),
             Text(
               emptyText,
@@ -265,12 +241,20 @@ class TvWeekDayColumn extends StatelessWidget {
   }
 }
 
-/// Flecha de "hay más" arriba o abajo de la columna.
+/// Flecha de "hay más" arriba o abajo de la columna. REDISEÑO: la misma idea
+/// que las flechas de las filas del Inicio (`HomeEdgePill`), acostada: si se
+/// puede correr de ese lado, como un botón con foco (el acento); si no, de
+/// vidrio blanco con la flecha gris.
 class _MoreArrow extends StatelessWidget {
-  const _MoreArrow({required this.icon, required this.top});
+  const _MoreArrow({
+    required this.icon,
+    required this.top,
+    required this.active,
+  });
 
   final IconData icon;
   final bool top;
+  final bool active;
 
   @override
   Widget build(BuildContext context) {
@@ -279,8 +263,16 @@ class _MoreArrow extends StatelessWidget {
       child: Container(
         margin: EdgeInsets.only(bottom: top ? 2 : 0, top: top ? 0 : 2),
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-        decoration: moaiGlassChipDecoration(scheme, highlighted: true),
-        child: Icon(icon, size: MoaiIconSizes.xs, color: scheme.primary),
+        // Sin brillo: el cambio de vidrio a acento no parpadea al moverse.
+        decoration: moaiGlassButtonDecoration(
+          scheme,
+          focused: active,
+        ).copyWith(boxShadow: const []),
+        child: Icon(
+          icon,
+          size: MoaiIconSizes.xs,
+          color: active ? scheme.onPrimary : scheme.onSurfaceVariant,
+        ),
       ),
     );
   }

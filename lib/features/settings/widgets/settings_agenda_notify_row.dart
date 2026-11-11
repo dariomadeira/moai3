@@ -13,6 +13,7 @@ class SettingsAgendaNotifyRow extends StatelessWidget {
   final VoidCallback? onKeyRight;
   final VoidCallback? onKeyUp;
   final VoidCallback? onKeyDown;
+  final Color? iconColor;
 
   const SettingsAgendaNotifyRow({
     super.key,
@@ -23,6 +24,7 @@ class SettingsAgendaNotifyRow extends StatelessWidget {
     this.onKeyRight,
     this.onKeyUp,
     this.onKeyDown,
+    this.iconColor,
   });
 
   static const _labelKeys = {
@@ -40,6 +42,7 @@ class SettingsAgendaNotifyRow extends StatelessWidget {
       label: LocaleKeys.settings_agenda_notify.tr(),
       description: LocaleKeys.settings_agenda_notify_desc.tr(),
       icon: MoaiIcons.notifications,
+      iconColor: iconColor,
       options: options,
       selected: options.contains(selectedMinutes)
           ? selectedMinutes

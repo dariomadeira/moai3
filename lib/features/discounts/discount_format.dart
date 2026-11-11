@@ -57,6 +57,15 @@ abstract final class DiscountFormat {
   };
 
   /// Ícono del rubro.
+  /// Un color por rubro para su ícono (como los deportes en la Agenda): se
+  /// lee de un vistazo qué es cada promo.
+  static Color rubroColor(DiscountRubro r) => switch (r) {
+    DiscountRubro.supermercados => const Color(0xFF16A34A), // verde
+    DiscountRubro.mayoristas => const Color(0xFF92400E), // marrón
+    DiscountRubro.farmacias => const Color(0xFFDC2626), // rojo
+    DiscountRubro.combustible => const Color(0xFF0F766E), // azul petróleo
+  };
+
   static IconData rubroIcon(DiscountRubro r) => switch (r) {
     DiscountRubro.supermercados => MoaiIcons.discountRubroSuper,
     DiscountRubro.mayoristas => MoaiIcons.discountRubroMayoristas,

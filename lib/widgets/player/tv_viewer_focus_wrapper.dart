@@ -14,6 +14,7 @@ class TvViewerFocusWrapper extends StatelessWidget {
   final VoidCallback? onExitFullScreen;
   final VoidCallback? onRequestListFocus;
   final VoidCallback? onRequestUpFocus;
+  final VoidCallback? onRequestDownFocus;
   final ValueChanged<bool>? onFocusChange;
   final Widget child;
 
@@ -26,6 +27,7 @@ class TvViewerFocusWrapper extends StatelessWidget {
     this.onExitFullScreen,
     this.onRequestListFocus,
     this.onRequestUpFocus,
+    this.onRequestDownFocus,
     this.onFocusChange,
     required this.child,
   });
@@ -78,7 +80,10 @@ class TvViewerFocusWrapper extends StatelessWidget {
       }
       return KeyEventResult.ignored;
     }
-    // Smart: ↓ del viewer = ignored (no saltar a favs).
+    if (key == LogicalKeyboardKey.arrowDown && onRequestDownFocus != null) {
+      onRequestDownFocus!();
+      return KeyEventResult.handled;
+    }
     if (key == LogicalKeyboardKey.arrowRight) {
       return KeyEventResult.ignored;
     }
@@ -100,4 +105,3 @@ class TvViewerFocusWrapper extends StatelessWidget {
     );
   }
 }
-

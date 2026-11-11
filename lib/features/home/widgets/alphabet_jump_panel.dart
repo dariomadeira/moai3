@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/focus/tv_layout_constants.dart';
+import 'package:moai3/theme/moai_focus_style.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/cards/alphabet_letter_card.dart';
 
@@ -27,7 +28,7 @@ class AlphabetDeleteCard extends StatefulWidget {
 }
 
 class _AlphabetDeleteCardState extends State<AlphabetDeleteCard> {
-  bool _isFocused = false;
+  late bool _isFocused = widget.focusNode?.hasFocus ?? false;
   bool _isKeyDown = false;
 
   @override
@@ -74,19 +75,20 @@ class _AlphabetDeleteCardState extends State<AlphabetDeleteCard> {
         child: Center(
           child: GestureDetector(
             onTap: widget.onTap,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+            // Como las letras ([AlphabetLetterCard]): con foco, el círculo
+            // del rail pero en rojo (borra) y el ícono en blanco; sin animación, para
+            // que no titile. En reposo, el tacho suelto en rojo.
+            child: Container(
               width: 26,
               height: 26,
-              decoration: BoxDecoration(
-                color: _isFocused ? scheme.errorContainer : Colors.transparent,
-                shape: BoxShape.circle,
-              ),
+              decoration: _isFocused
+                  ? MoaiFocusStyle.decoration(scheme, color: scheme.error)
+                  : null,
               alignment: Alignment.center,
               child: Icon(
                 MoaiIcons.delete,
                 size: MoaiIconSizes.sm,
-                color: _isFocused ? scheme.onErrorContainer : scheme.error,
+                color: _isFocused ? Colors.white : scheme.error,
               ),
             ),
           ),
@@ -156,6 +158,8 @@ class AlphabetJumpPanel extends StatelessWidget {
                     return AlphabetLetterCard(
                       key: ValueKey('alpha-$letter'),
                       letter: letter,
+                      // Sin color propio: el acento, como las fichas de
+                      // grupos.
                       focusNode: focusNode,
                       onTap: () => onLetterTap(letter),
                       onKeyUp: onKeyUp,

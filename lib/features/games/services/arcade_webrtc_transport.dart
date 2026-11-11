@@ -18,11 +18,11 @@ class ArcadeNetplayInputPacket {
   });
 
   Map<String, dynamic> toJson() => {
-        't': 'input',
-        'frame': frame,
-        'mask': mask,
-        'senderDeviceId': senderDeviceId,
-      };
+    't': 'input',
+    'frame': frame,
+    'mask': mask,
+    'senderDeviceId': senderDeviceId,
+  };
 
   static ArcadeNetplayInputPacket? tryParse(Map<String, dynamic> map) {
     if (map['t'] != 'input') return null;
@@ -58,11 +58,11 @@ class ArcadeWebRtcTransport {
 
   Future<void> startAsHost() async {
     await _createPeer(isHost: true);
+    // Confiable y en orden: cada frame se manda una sola vez y, si se perdiera,
+    // la partida quedaría esperándolo para siempre.
     final dc = await _pc!.createDataChannel(
       'arcade_inputs',
-      RTCDataChannelInit()
-        ..ordered = true
-        ..maxRetransmits = 0,
+      RTCDataChannelInit()..ordered = true,
     );
     _attachDataChannel(dc);
     final offer = await _pc!.createOffer();

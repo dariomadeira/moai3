@@ -3,11 +3,14 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
+import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/models/sport_subscription.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
+import 'package:moai3/widgets/tv_common/tv_panel_slots.dart';
 
 /// Panel de Gestión de Suscripciones Deportivas en Moai TV.
 /// Utiliza exactamente la misma métrica de lista y alineación inferior que ChannelListPanel (TvWindowedList),
@@ -33,9 +36,6 @@ class CalendarSubscriptionsPanel extends StatefulWidget {
 
 class CalendarSubscriptionsPanelState
     extends State<CalendarSubscriptionsPanel> {
-  static const int _windowSize = 6;
-  static const double _itemExtent = 70.0; // 62px card + 8px gap vertical
-
   final _listKey = GlobalKey<TvWindowedListState<SportSubscription>>();
   late int _selectedIndex;
 
@@ -82,27 +82,33 @@ class CalendarSubscriptionsPanelState
         }
       },
       child: Container(
-        padding: const EdgeInsets.only(left: 4, right: 12, top: 8, bottom: 8),
+        padding: TvPanelSlots.panelPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TvPanelHeader(
               title: LocaleKeys.calendar_panel_subscriptions_title.tr(),
               subtitle: LocaleKeys.calendar_subscriptions_desc.tr(),
+              // El degradado de la hora del Inicio, como el rango de fechas
+              // de Eventos.
+              titleShader: HomeClock.timeShader,
             ),
+            TvPanelSlots.belowHeader,
             Expanded(
               child: subscriptions.isEmpty
                   ? const SizedBox.shrink()
                   : LayoutBuilder(
                       builder: (context, constraints) {
-                        final targetHeight = (_windowSize * _itemExtent).clamp(
-                          0.0,
+                        final itemExtent = TvPanelSlots.extentFor(
                           constraints.maxHeight,
                         );
                         return Align(
-                          alignment: Alignment.bottomCenter,
+                          alignment: Alignment.topCenter,
                           child: SizedBox(
-                            height: targetHeight,
+                            height: (TvPanelSlots.count * itemExtent).clamp(
+                              0.0,
+                              constraints.maxHeight,
+                            ),
                             child: Align(
                               alignment: Alignment.topCenter,
                               child: TvWindowedList<SportSubscription>(
@@ -110,7 +116,7 @@ class CalendarSubscriptionsPanelState
                                 // La entrada de foco la decide el área (rail →, cambio de panel).
                                 focusOnMount: false,
                                 items: subscriptions,
-                                itemExtent: _itemExtent,
+                                itemExtent: itemExtent,
                                 showScrollDots: true,
                                 initialGlobalIndex: _selectedIndex,
                                 onFocusedGlobalIndex: (idx) {
@@ -127,13 +133,21 @@ class CalendarSubscriptionsPanelState
                                       onKeyUp,
                                       onKeyDown,
                                     ) {
+                                      // El color del deporte, el mismo de
+                                      // sus eventos, encendido o no.
+                                      final sportColor =
+                                          CalendarProvider.getSubscriptionColor(
+                                            sub.id,
+                                            context.scheme.primary,
+                                          );
                                       return Padding(
                                         padding: const EdgeInsets.symmetric(
-                                          vertical: 4,
+                                          vertical: TvPanelSlots.gap / 2,
                                         ),
                                         child: TvSettingsSwitchRow(
                                           focusNode: focusNode,
                                           icon: sub.icon,
+                                          iconColor: sportColor,
                                           label: sub.name.tr(),
                                           description: sub.description?.tr(),
                                           value: sub.isSubscribed,

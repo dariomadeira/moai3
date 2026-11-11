@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:moai3/theme/moai_palette.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:moai3/config/app_info.dart';
+import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/services/update_service.dart';
 import 'package:moai3/state/channel_provider.dart';
@@ -13,6 +16,7 @@ import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/update_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
+import 'package:moai3/widgets/tv_common/tv_panel_slots.dart';
 import 'package:moai3/widgets/tv_common/tv_value_chip.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
@@ -38,8 +42,8 @@ class SettingsAboutPanel extends StatefulWidget {
 }
 
 class SettingsAboutPanelState extends State<SettingsAboutPanel> {
-  static const int _windowSize = 5;
-  static const double _itemExtent = 70.0;
+  /// Lugares para las opciones: el primero de los 6 es la marca.
+  static const int _windowSize = TvPanelSlots.count - 1;
 
   final _listKey = GlobalKey<TvWindowedListState<_AboutItemType>>();
   late int _selectedIndex = widget.initialIndex;
@@ -68,7 +72,11 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
       _statusChip = null;
     });
 
-    final updateInfo = await UpdateService.checkForUpdate();
+    // PRUEBA: con [UpdateDialog.previewInDebug] (sólo en debug) se abre el
+    // modal con una versión de mentira para ver cómo queda.
+    final updateInfo = UpdateDialog.previewInDebug && kDebugMode
+        ? UpdateDialog.previewInfo
+        : await UpdateService.checkForUpdate();
 
     if (!mounted) return;
 
@@ -107,24 +115,25 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
     }
 
     // Películas sólo con login y catálogo (como en el rail).
-    final (moviesAvailable, moviesTotal, moviesLoading) = context.select(
+    // La fila sólo aparece cuando ya hay un total mayor que cero (ni
+    // "cargando" ni 0 ni "—").
+    final (moviesAvailable, moviesTotal) = context.select(
       (FeaturedMoviesProvider? p) => (
         p?.isSectionAvailable(FeaturedMoviesProvider.sectionMovies) ?? false,
         p?.libraryTotal,
-        p?.libraryTotalLoading ?? false,
       ),
     );
-    final moviesText = moviesTotal != null
+    final showMovies =
+        moviesAvailable && moviesTotal != null && moviesTotal > 0;
+    final moviesText = showMovies
         ? LocaleKeys.movies_count.tr(
             namedArgs: {'count': MoaiFormats.thousands(moviesTotal)},
           )
-        : moviesLoading
-        ? LocaleKeys.settings_about_loading.tr()
-        : '—';
+        : '';
 
     final items = [
       for (final item in _AboutItemType.values)
-        if (item != _AboutItemType.moviesInLibrary || moviesAvailable) item,
+        if (item != _AboutItemType.moviesInLibrary || showMovies) item,
     ];
 
     if (_selectedIndex >= items.length) {
@@ -139,127 +148,84 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
         }
       },
       child: Container(
-        padding: const EdgeInsets.only(left: 4, right: 12, top: 8, bottom: 8),
+        padding: TvPanelSlots.panelPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TvPanelHeader(
               title: LocaleKeys.settings_about_title.tr(),
               subtitle: LocaleKeys.settings_about_subtitle.tr(),
-              padding: const EdgeInsets.only(left: 6, top: 4, bottom: 10),
-              extraContent: LayoutBuilder(
-                builder: (context, constraints) {
-                  final narrow = constraints.maxWidth < 220;
-                  final image = Image.asset(
-                    'assets/images/moaiAbout.png',
-                    height: narrow ? 60 : 76,
-                    cacheHeight:
-                        ((narrow ? 60 : 76) *
-                                MediaQuery.devicePixelRatioOf(context))
-                            .ceil(),
-                    width: narrow ? constraints.maxWidth : null,
-                    fit: BoxFit.contain,
-                  );
-                  final meta = Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SvgPicture.asset(
-                        'assets/svgs/appLogo.svg',
-                        height: narrow ? 20 : 26,
-                        colorFilter: ColorFilter.mode(
-                          scheme.onSurface,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        LocaleKeys.settings_about_version.tr(
-                          namedArgs: {'version': AppInfo.version},
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: MoaiText.body(
-                          context,
-                          color: scheme.onSurfaceVariant,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  );
-
-                  if (narrow) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [image, const SizedBox(height: 8), meta],
-                    );
-                  }
-                  return Row(
-                    children: [
-                      image,
-                      const SizedBox(width: 16),
-                      Expanded(child: meta),
-                    ],
-                  );
-                },
-              ),
+              titleShader: HomeClock.timeShader,
             ),
+            TvPanelSlots.belowHeader,
+            // La marca ocupa el primer lugar de los 6 y las opciones los
+            // otros 5: las fichas miden lo mismo que en los demás paneles.
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final targetHeight = (_windowSize * _itemExtent).clamp(
-                    0.0,
+                  final itemExtent = TvPanelSlots.extentFor(
                     constraints.maxHeight,
                   );
-                  return Align(
-                    alignment: Alignment.bottomCenter,
-                    child: SizedBox(
-                      height: targetHeight,
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        child: TvWindowedList<_AboutItemType>(
-                          key: _listKey,
-                          // La entrada de foco la decide el área (rail →, cambio de panel).
-                          focusOnMount: false,
-                          items: items,
-                          windowSize: _windowSize,
-                          itemExtent: _itemExtent,
-                          showScrollDots: true,
-                          initialGlobalIndex: _selectedIndex,
-                          onFocusedGlobalIndex: (idx) {
-                            _selectedIndex = idx;
-                            widget.onSelectedIndexChanged?.call(idx);
-                          },
-                          itemBuilder:
-                              (
-                                context,
-                                item,
-                                focusNode,
-                                local,
-                                global,
-                                onKeyUp,
-                                onKeyDown,
-                              ) {
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 4,
-                                  ),
-                                  child: _buildItem(
-                                    context: context,
-                                    item: item,
-                                    valueText: valueText,
-                                    moviesText: moviesText,
-                                    scheme: scheme,
-                                    focusNode: focusNode,
-                                    onKeyUp: onKeyUp,
-                                    onKeyDown: onKeyDown,
-                                  ),
-                                );
-                              },
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TvPanelSlots.slot(
+                        extent: itemExtent,
+                        child: _AboutBrand(height: itemExtent),
+                      ),
+                      SizedBox(
+                        height: (_windowSize * itemExtent).clamp(
+                          0.0,
+                          (constraints.maxHeight - itemExtent).clamp(
+                            0.0,
+                            double.infinity,
+                          ),
+                        ),
+                        child: Align(
+                          alignment: Alignment.topCenter,
+                          child: TvWindowedList<_AboutItemType>(
+                            key: _listKey,
+                            // La entrada de foco la decide el área (rail →, cambio de panel).
+                            focusOnMount: false,
+                            items: items,
+                            windowSize: _windowSize,
+                            itemExtent: itemExtent,
+                            showScrollDots: true,
+                            initialGlobalIndex: _selectedIndex,
+                            onFocusedGlobalIndex: (idx) {
+                              _selectedIndex = idx;
+                              widget.onSelectedIndexChanged?.call(idx);
+                            },
+                            itemBuilder:
+                                (
+                                  context,
+                                  item,
+                                  focusNode,
+                                  local,
+                                  global,
+                                  onKeyUp,
+                                  onKeyDown,
+                                ) {
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: TvPanelSlots.gap / 2,
+                                    ),
+                                    child: _buildItem(
+                                      context: context,
+                                      item: item,
+                                      valueText: valueText,
+                                      moviesText: moviesText,
+                                      scheme: scheme,
+                                      focusNode: focusNode,
+                                      onKeyUp: onKeyUp,
+                                      onKeyDown: onKeyDown,
+                                    ),
+                                  );
+                                },
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   );
                 },
               ),
@@ -323,38 +289,15 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    isFocused ? scheme.onPrimary : scheme.primary,
+                    isFocused ? scheme.onPrimary : scheme.onSurfaceVariant,
                   ),
                 ),
               );
             }
             if (_statusChip != null) {
-              final chipBg = isFocused
-                  ? scheme.onPrimary.withValues(alpha: 0.18)
-                  : scheme.primaryContainer;
-              final chipFg = isFocused
-                  ? scheme.onPrimary
-                  : scheme.onPrimaryContainer;
-
-              return Material(
-                color: chipBg,
-                borderRadius: BorderRadius.circular(10),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  child: Text(
-                    _statusChip!,
-                    style: MoaiText.body(
-                      context,
-                      color: chipFg,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              );
+              // La misma etiqueta de cristal que los contadores de canales y
+              // películas.
+              return TvValueChip(text: _statusChip!, isFocused: isFocused);
             }
             return Icon(
               MoaiIcons.chevronRight,
@@ -364,5 +307,70 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
           },
         );
     }
+  }
+}
+
+/// La marca de Acerca de (imagen, logo y versión), del alto de un lugar de
+/// la lista. Angosto, sin la imagen.
+class _AboutBrand extends StatelessWidget {
+  const _AboutBrand({required this.height});
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    final imageHeight = height - TvPanelSlots.gap;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final meta = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SvgPicture.asset(
+              'assets/svgs/appLogo.svg',
+              height: 24,
+              // Del mismo gris oscuro que el logo del Inicio.
+              colorFilter: ColorFilter.mode(
+                MoaiPalette.of(context).inkMuted,
+                BlendMode.srcIn,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              LocaleKeys.settings_about_version.tr(
+                namedArgs: {'version': AppInfo.version},
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: MoaiText.body(
+                context,
+                color: scheme.onSurfaceVariant,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        );
+        if (constraints.maxWidth < 220) return meta;
+        return Padding(
+          padding: const EdgeInsets.only(left: 6),
+          child: Row(
+            children: [
+              Image.asset(
+                'assets/images/moaiAbout.png',
+                height: imageHeight,
+                cacheHeight:
+                    (imageHeight * MediaQuery.devicePixelRatioOf(context))
+                        .ceil(),
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(width: 16),
+              Expanded(child: meta),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

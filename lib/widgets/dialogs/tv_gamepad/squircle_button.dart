@@ -27,38 +27,17 @@ class _SquircleButton extends StatelessWidget {
 
     final effectiveActiveColor = activeColor ?? scheme.primary;
 
-    final dark = scheme.brightness == Brightness.dark;
-    final line = dark ? Colors.white : scheme.onSurface;
-
     final fg = isPressed ? Colors.white : scheme.onSurface;
 
-    // En reposo: tecla de cristal como el teclado en pantalla. Presionada:
-    // degradé del color del botón. El borde no cambia de ancho para que
-    // nada se mueva.
-    final decoration = isPressed
-        ? BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color.lerp(effectiveActiveColor, Colors.white, 0.18)!,
-                effectiveActiveColor,
-              ],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: effectiveActiveColor.withValues(alpha: 0.35),
-                blurRadius: 10,
-              ),
-            ],
-          )
-        : BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            color: line.withValues(alpha: dark ? 0.045 : 0.05),
-            border: Border.all(color: line.withValues(alpha: 0.08)),
-          );
+    // En reposo: el vidrio blanco con filo de luz de los botones de cristal.
+    // Presionada: el color del botón con brillo y halo (como un botón con
+    // foco). Misma forma en los dos estados para que la animación no titile.
+    final decoration = moaiGlassButtonDecoration(
+      scheme,
+      focused: isPressed,
+      accent: effectiveActiveColor,
+      radius: 12,
+    );
 
     return AnimatedScale(
       scale: isPressed ? 0.90 : 1.0,
@@ -70,7 +49,7 @@ class _SquircleButton extends StatelessWidget {
         height: h,
         padding: size != null
             ? null
-            : const EdgeInsets.symmetric(horizontal: 10),
+            : const EdgeInsets.symmetric(horizontal: 14),
         decoration: decoration,
         alignment: Alignment.center,
         child: icon != null
@@ -88,7 +67,7 @@ class _SquircleButton extends StatelessWidget {
                     style: MoaiText.body(
                       context,
                       color: fg,
-                      fontSize: 12,
+                      fontSize: 13.5,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -100,8 +79,8 @@ class _SquircleButton extends StatelessWidget {
                         context,
                         color: isPressed
                             ? Colors.white.withValues(alpha: 0.8)
-                            : scheme.onSurfaceVariant.withValues(alpha: 0.7),
-                        fontSize: 9,
+                            : scheme.onSurfaceVariant,
+                        fontSize: 11,
                       ),
                     ),
                   ],

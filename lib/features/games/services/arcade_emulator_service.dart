@@ -40,8 +40,7 @@ class GamepadAssignment {
 
 /// Servicio singleton/provider para controlar el motor emulador nativo FBNeo vía MethodChannel.
 class ArcadeEmulatorService {
-  static const MethodChannel _channel =
-      PlatformChannels.arcade;
+  static const MethodChannel _channel = PlatformChannels.arcade;
 
   /// Retardo de input del lockstep de netplay (SPEC-38).
   static const int netplayInputDelayFrames = 3;
@@ -51,7 +50,8 @@ class ArcadeEmulatorService {
   final StreamController<void> _onRequestExitController =
       StreamController<void>.broadcast();
 
-  Stream<GamepadAssignment> get onGamepadAssigned => _onGamepadAssignedController.stream;
+  Stream<GamepadAssignment> get onGamepadAssigned =>
+      _onGamepadAssignedController.stream;
   Stream<void> get onRequestExit => _onRequestExitController.stream;
 
   int _currentInputMask = 0;
@@ -90,8 +90,8 @@ class ArcadeEmulatorService {
         }
         break;
       case 'onEmulatorError':
-        final String error = call.arguments as String? ??
-            LocaleKeys.common_error_unknown.tr();
+        final String error =
+            call.arguments as String? ?? LocaleKeys.common_error_unknown.tr();
         if (kDebugMode) {
           debugPrint('[ArcadeEmulatorService] Error nativo: $error');
         }
@@ -107,7 +107,9 @@ class ArcadeEmulatorService {
       return result;
     } on PlatformException catch (e) {
       if (kDebugMode) {
-        debugPrint('[ArcadeEmulatorService] Error al inicializar: ${e.message}');
+        debugPrint(
+          '[ArcadeEmulatorService] Error al inicializar: ${e.message}',
+        );
       }
       return false;
     }
@@ -116,11 +118,15 @@ class ArcadeEmulatorService {
   /// Configura la ruta dinámica del archivo .so del core de emulación.
   Future<bool> setCustomCorePath(String path) async {
     try {
-      final bool result = await _channel.invokeMethod('setCustomCorePath', {'path': path}) ?? false;
+      final bool result =
+          await _channel.invokeMethod('setCustomCorePath', {'path': path}) ??
+          false;
       return result;
     } on PlatformException catch (e) {
       if (kDebugMode) {
-        debugPrint('[ArcadeEmulatorService] Error al configurar ruta de core: ${e.message}');
+        debugPrint(
+          '[ArcadeEmulatorService] Error al configurar ruta de core: ${e.message}',
+        );
       }
       return false;
     }
@@ -134,7 +140,9 @@ class ArcadeEmulatorService {
       return result;
     } on PlatformException catch (e) {
       if (kDebugMode) {
-        debugPrint('[ArcadeEmulatorService] Error al cargar ROM $path: ${e.message}');
+        debugPrint(
+          '[ArcadeEmulatorService] Error al cargar ROM $path: ${e.message}',
+        );
       }
       return false;
     }
@@ -147,10 +155,15 @@ class ArcadeEmulatorService {
       _currentInputMask = mask;
     }
     try {
-      await _channel.invokeMethod('sendInputState', {'mask': mask, 'player': player});
+      await _channel.invokeMethod('sendInputState', {
+        'mask': mask,
+        'player': player,
+      });
     } on PlatformException catch (e) {
       if (kDebugMode) {
-        debugPrint('[ArcadeEmulatorService] Error al enviar input: ${e.message}');
+        debugPrint(
+          '[ArcadeEmulatorService] Error al enviar input: ${e.message}',
+        );
       }
     }
   }
@@ -173,33 +186,38 @@ class ArcadeEmulatorService {
     }
   }
 
-  Future<void> netplaySubmitLocalInput({required int frame, required int mask}) async {
+  /// Inputs locales que el motor ya programó y faltan mandar al otro TV.
+  Future<List<({int frame, int mask})>> netplayDrainLocalInputs() async {
     try {
-      await _channel.invokeMethod('netplaySubmitLocalInput', {
-        'frame': frame,
-        'mask': mask,
-      });
-    } on PlatformException catch (_) {}
+      final raw = await _channel.invokeMethod<List<dynamic>>(
+        'netplayDrainLocalInputs',
+      );
+      return decodeNetplayInputs(raw);
+    } on PlatformException catch (_) {
+      return const [];
+    }
   }
 
-  Future<void> netplaySubmitRemoteInput({required int frame, required int mask}) async {
+  /// El motor manda `[frame, máscara, frame, máscara…]`.
+  @visibleForTesting
+  static List<({int frame, int mask})> decodeNetplayInputs(List<dynamic>? raw) {
+    if (raw == null) return const [];
+    return [
+      for (var i = 0; i + 1 < raw.length; i += 2)
+        (frame: (raw[i] as num).toInt(), mask: (raw[i + 1] as num).toInt()),
+    ];
+  }
+
+  Future<void> netplaySubmitRemoteInput({
+    required int frame,
+    required int mask,
+  }) async {
     try {
       await _channel.invokeMethod('netplaySubmitRemoteInput', {
         'frame': frame,
         'mask': mask,
       });
     } on PlatformException catch (_) {}
-  }
-
-  Future<int> netplayGetFrame() async {
-    try {
-      final v = await _channel.invokeMethod<dynamic>('netplayGetFrame');
-      if (v is int) return v;
-      if (v is num) return v.toInt();
-      return 0;
-    } on PlatformException catch (_) {
-      return 0;
-    }
   }
 
   /// Pausa la emulación.

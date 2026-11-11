@@ -28,6 +28,18 @@ class ArcadeEmulatorManager(
     private var p1Mask: Int = 0
     private var p2Mask: Int = 0
 
+    // Lo que aportan stick y gatillos, aparte de las teclas: así un movimiento
+    // del stick no borra el D-pad y un gatillo se suelta solo.
+    private var p1AxisMask: Int = 0
+    private var p2AxisMask: Int = 0
+
+    // Cargar y parar pueden tardar: en un solo hilo, siempre en el orden pedido.
+    private val lifecycleExecutor = java.util.concurrent.Executors.newSingleThreadExecutor()
+    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+
+    @Volatile
+    private var isHostVisible = true
+
     init {
         channel.setMethodCallHandler(this)
     }
@@ -87,20 +99,14 @@ class ArcadeEmulatorManager(
                 nativeNetplayEnable(enabled, delay, isHost)
                 result.success(true)
             }
-            "netplaySubmitLocalInput" -> {
-                val frame = (call.argument<Number>("frame") ?: 0).toLong()
-                val mask = call.argument<Int>("mask") ?: 0
-                nativeNetplaySubmitLocalInput(frame, mask)
-                result.success(true)
+            "netplayDrainLocalInputs" -> {
+                result.success(nativeNetplayDrainLocalInputs())
             }
             "netplaySubmitRemoteInput" -> {
                 val frame = (call.argument<Number>("frame") ?: 0).toLong()
                 val mask = call.argument<Int>("mask") ?: 0
                 nativeNetplaySubmitRemoteInput(frame, mask)
                 result.success(true)
-            }
-            "netplayGetFrame" -> {
-                result.success(nativeNetplayGetFrame())
             }
             "pause" -> {
                 isPaused = true
@@ -117,8 +123,7 @@ class ArcadeEmulatorManager(
                 result.success(true)
             }
             "stop" -> {
-                stopEmulation()
-                result.success(true)
+                stopEmulation { result.success(true) }
             }
             "getRomDirectory" -> {
                 result.success(context.filesDir.absolutePath)
@@ -229,23 +234,45 @@ class ArcadeEmulatorManager(
         currentRomPath = resolvedPath
         isRunning = true
         isPaused = false
-        val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
         mainHandler.post {
             detectAndAssignConnectedGamepads()
         }
-        Thread({
-            try {
+        lifecycleExecutor.execute {
+            val started = try {
                 nativeLoadRom(resolvedPath)
-                mainHandler.post {
-                    onComplete(true)
-                }
-            } catch (e: Exception) {
-                mainHandler.post {
-                    channel.invokeMethod("onEmulatorError", "Error al cargar ROM: ${e.message}")
-                    onComplete(false)
-                }
+            } catch (e: Throwable) {
+                android.util.Log.e("ArcadeEmulatorManager", "Error al cargar ROM: ${e.message}")
+                false
             }
-        }, "ArcadeRomLoader").start()
+            mainHandler.post {
+                if (started) {
+                    // Se fue a segundo plano mientras cargaba.
+                    if (!isHostVisible) nativePause()
+                } else if (currentRomPath == resolvedPath) {
+                    // Sin esto el emulador seguiría quedándose con las teclas.
+                    isRunning = false
+                    currentRomPath = null
+                    channel.invokeMethod("onEmulatorError", "No se pudo cargar la ROM: $resolvedPath")
+                }
+                onComplete(started)
+            }
+        }
+    }
+
+    /** La app dejó de verse (pantalla principal del TV): nada de juego ni audio de fondo. */
+    fun onHostStopped() {
+        isHostVisible = false
+        if (isRunning) nativePause()
+    }
+
+    fun onHostStarted() {
+        isHostVisible = true
+        if (isRunning && !isPaused) nativeResume()
+    }
+
+    fun release() {
+        stopEmulation {}
+        lifecycleExecutor.shutdown()
     }
 
     /**
@@ -358,7 +385,7 @@ class ArcadeEmulatorManager(
         }
     }
 
-    private fun stopEmulation() {
+    private fun stopEmulation(onComplete: () -> Unit) {
         isRunning = false
         isPaused = false
         currentRomPath = null
@@ -366,7 +393,19 @@ class ArcadeEmulatorManager(
         realControllerIds.clear()
         p1Mask = 0
         p2Mask = 0
-        nativeStop()
+        p1AxisMask = 0
+        p2AxisMask = 0
+        // Antes de encolar: una carga en curso no debe llegar a arrancar el juego.
+        nativeRequestStop()
+        lifecycleExecutor.execute {
+            nativeStop()
+            mainHandler.post(onComplete)
+        }
+    }
+
+    private fun sendPlayerMask(player: Int) {
+        val mask = if (player == 0) p1Mask or p1AxisMask else p2Mask or p2AxisMask
+        nativeSendPlayerInputMask(player, mask)
     }
 
     fun handleKeyEvent(event: android.view.KeyEvent): Boolean {
@@ -414,13 +453,13 @@ class ArcadeEmulatorManager(
 
         if (player == 0) {
             p1Mask = if (isDown) (p1Mask or bit) else (p1Mask and bit.inv())
-            nativeSendPlayerInputMask(0, p1Mask)
+            sendPlayerMask(0)
             if ((p1Mask and (1 shl 4)) != 0 && (p1Mask and (1 shl 5)) != 0) {
                 channel.invokeMethod("onRequestExitGame", null)
             }
         } else {
             p2Mask = if (isDown) (p2Mask or bit) else (p2Mask and bit.inv())
-            nativeSendPlayerInputMask(1, p2Mask)
+            sendPlayerMask(1)
             if ((p2Mask and (1 shl 4)) != 0 && (p2Mask and (1 shl 5)) != 0) {
                 channel.invokeMethod("onRequestExitGame", null)
             }
@@ -460,18 +499,15 @@ class ArcadeEmulatorManager(
         val lTrigger = maxOf(event.getAxisValue(android.view.MotionEvent.AXIS_LTRIGGER), event.getAxisValue(android.view.MotionEvent.AXIS_BRAKE))
         val triggerPressed = (rTrigger > 0.5f || lTrigger > 0.5f)
 
+        val axisMask = if (triggerPressed) dirMask or (1 shl 11) else dirMask
         if (player == 0) {
-            p1Mask = (p1Mask and 0xFFF0) or dirMask
-            if (triggerPressed) {
-                p1Mask = p1Mask or (1 shl 11)
+            if (axisMask != p1AxisMask) {
+                p1AxisMask = axisMask
+                sendPlayerMask(0)
             }
-            nativeSendPlayerInputMask(0, p1Mask)
-        } else {
-            p2Mask = (p2Mask and 0xFFF0) or dirMask
-            if (triggerPressed) {
-                p2Mask = p2Mask or (1 shl 11)
-            }
-            nativeSendPlayerInputMask(1, p2Mask)
+        } else if (axisMask != p2AxisMask) {
+            p2AxisMask = axisMask
+            sendPlayerMask(1)
         }
         return true
     }
@@ -481,13 +517,13 @@ class ArcadeEmulatorManager(
     private external fun nativeSetCustomCorePath(path: String)
     private external fun nativeSetSurface(surface: Surface?)
     private external fun nativeSetSurfaceSize(width: Int, height: Int)
-    private external fun nativeLoadRom(path: String)
+    private external fun nativeLoadRom(path: String): Boolean
+    private external fun nativeRequestStop()
     private external fun nativeSendInputMask(mask: Int)
     private external fun nativeSendPlayerInputMask(player: Int, mask: Int)
     private external fun nativeNetplayEnable(enabled: Boolean, delayFrames: Int, isHost: Boolean)
-    private external fun nativeNetplaySubmitLocalInput(frame: Long, mask: Int)
+    private external fun nativeNetplayDrainLocalInputs(): LongArray
     private external fun nativeNetplaySubmitRemoteInput(frame: Long, mask: Int)
-    private external fun nativeNetplayGetFrame(): Long
     private external fun nativePause()
     private external fun nativeResume()
     private external fun nativeReset()

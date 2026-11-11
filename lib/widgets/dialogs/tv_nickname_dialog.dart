@@ -154,7 +154,9 @@ class _TvNicknameDialogState extends State<TvNicknameDialog> {
           focusNode: _saveFocusNode,
           label: LocaleKeys.nickname_dialog_confirm.tr(),
           variant: TvDialogButtonVariant.primary,
-          onKeyLeft: widget.isMandatory ? null : () => _cancelFocusNode.requestFocus(),
+          onKeyLeft: widget.isMandatory
+              ? null
+              : () => _cancelFocusNode.requestFocus(),
           onKeyUp: () => _textFieldFocusNode.requestFocus(),
           onPressed: _save,
         ),
@@ -162,10 +164,7 @@ class _TvNicknameDialogState extends State<TvNicknameDialog> {
     );
 
     if (widget.isMandatory) {
-      return PopScope(
-        canPop: false,
-        child: dialog,
-      );
+      return PopScope(canPop: false, child: dialog);
     }
 
     return dialog;

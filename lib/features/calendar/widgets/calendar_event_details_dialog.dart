@@ -6,15 +6,16 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/models/channel.dart';
+import 'package:moai3/services/calendar/argentina_time.dart';
 import 'package:moai3/services/calendar/calendar_channel_matcher.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/widgets/cards/new_channel_card.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
+import 'package:moai3/widgets/tv_common/moai_status_tag.dart';
 
 /// Diálogo de detalle de un evento de la Agenda con los canales que lo pasan.
 class _CalendarEventDialogContent extends StatefulWidget {
@@ -75,67 +76,116 @@ class _CalendarEventDialogContentState
     }
   }
 
-  /// Chip de estado del encabezado: EN VIVO pleno del acento, PRONTO
-  /// resaltado y FIN neutro (mismo criterio que la tarjeta de la grilla).
-  Widget _statusChip(BuildContext context, ColorScheme scheme) {
-    final isFinished = widget.event.status == CalendarEventStatus.finished;
-    final BoxDecoration decoration;
-    final Color color;
-    final String label;
+  /// Tag de estado del encabezado: el de las tarjetas de la Agenda
+  /// ([MoaiStatusTag], grande), con más información: EN VIVO, FINALIZADO o,
+  /// si falta, cuándo empieza (HOY · 12:30, MAÑANA, EN 3 DÍAS).
+  Widget _statusTag() {
+    final event = widget.event;
     if (widget.isLive) {
-      label = LocaleKeys.calendar_status_live.tr();
-      color = scheme.onPrimary;
-      decoration = BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.transparent),
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color.lerp(scheme.primary, Colors.white, 0.18)!,
-            scheme.primary,
-          ],
-        ),
-      );
-    } else if (isFinished) {
-      label = LocaleKeys.calendar_status_finished.tr();
-      color = scheme.onSurfaceVariant;
-      decoration = moaiGlassChipDecoration(scheme, radius: 6);
-    } else {
-      label = LocaleKeys.calendar_status_upcoming_short.tr();
-      color = scheme.primary;
-      decoration = moaiGlassChipDecoration(
-        scheme,
-        radius: 6,
-        highlighted: true,
+      return MoaiStatusTag(
+        label: LocaleKeys.calendar_status_live_long.tr(),
+        color: MoaiStatusTag.liveColor,
+        large: true,
       );
     }
+    if (event.status == CalendarEventStatus.finished) {
+      return MoaiStatusTag(
+        label: LocaleKeys.calendar_status_finished_long.tr(),
+        color: MoaiStatusTag.finishedColor,
+        large: true,
+      );
+    }
+    final days = ArgentinaTime.dateOnly(
+      event.startDateTime,
+    ).difference(ArgentinaTime.dateOnly(ArgentinaTime.utcNow())).inDays;
+    final time = {'time': event.formattedTime};
+    final String label;
+    if (days <= 0) {
+      label = event.timeConfirmed
+          ? LocaleKeys.calendar_status_today_at.tr(namedArgs: time)
+          : LocaleKeys.calendar_status_today.tr();
+    } else if (days == 1) {
+      label = event.timeConfirmed
+          ? LocaleKeys.calendar_status_tomorrow_at.tr(namedArgs: time)
+          : LocaleKeys.calendar_status_tomorrow.tr();
+    } else {
+      label = LocaleKeys.calendar_status_in_days.tr(
+        namedArgs: {'days': '$days'},
+      );
+    }
+    return MoaiStatusTag(
+      label: label,
+      color: MoaiStatusTag.soonColor,
+      large: true,
+    );
+  }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: decoration,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (widget.isLive) ...[
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 4),
-          ],
-          Text(
-            label,
-            style: MoaiText.body(
-              context,
-              fontSize: 9.5,
-              fontWeight: FontWeight.w800,
-              color: color,
-              letterSpacing: 0.4,
-            ),
+  /// Un dato del evento: ícono en el acento en una etiqueta de cristal, el nombre
+  /// en gris y el valor en negro.
+  Widget _detailRow(
+    BuildContext context,
+    ColorScheme scheme, {
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: moaiGlassTagDecoration(scheme, radius: 12),
+          child: Icon(
+            icon,
+            size: MoaiIconSizes.md,
+            color: Theme.of(context).colorScheme.primary,
           ),
-        ],
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: MoaiText.body(
+                  context,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 1),
+              Text(
+                value,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: MoaiText.body(
+                  context,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: scheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Título chico de una columna ("Dónde verlo").
+  Widget _sectionTitle(BuildContext context, ColorScheme scheme, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 6),
+      child: Text(
+        text,
+        style: MoaiText.body(
+          context,
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: scheme.onSurface,
+        ),
       ),
     );
   }
@@ -146,35 +196,63 @@ class _CalendarEventDialogContentState
     final scheme = context.scheme;
     final hasChannels = _matchingChannels.isNotEmpty;
 
-    final detailsColumn = Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        TvInfoTile(
-          icon: MoaiIcons.calendarDialogTime,
-          label: LocaleKeys.calendar_event_time.tr(),
-          description: LocaleKeys.calendar_event_date_time.tr(
-            namedArgs: {
-              'date': event.formattedDate,
-              'time': event.formattedTime,
-            },
+    // REDISEÑO (2026-11-04): los datos en UNA ficha de cristal, separados
+    // por líneas finas (antes tres recuadros sueltos).
+    final divider = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Divider(
+        height: 1,
+        thickness: 1,
+        color: scheme.onSurface.withValues(alpha: 0.08),
+      ),
+    );
+    final hasBroadcaster =
+        event.broadcaster != null && event.broadcaster!.isNotEmpty;
+    final detailsColumn = MoaiGlass(
+      borderRadius: MoaiGlass.panelRadius,
+      solid: true,
+      elevated: false,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _detailRow(
+            context,
+            scheme,
+            icon: MoaiIcons.calendarDialogTime,
+            label: LocaleKeys.calendar_event_time.tr(),
+            value: event.timeConfirmed
+                ? LocaleKeys.calendar_event_date_time.tr(
+                    namedArgs: {
+                      'date': event.formattedDate,
+                      'time': event.formattedTime,
+                    },
+                  )
+                : LocaleKeys.calendar_event_date_time_tbd.tr(
+                    namedArgs: {'date': event.formattedDate},
+                  ),
           ),
-        ),
-        const SizedBox(height: 8),
-        TvInfoTile(
-          icon: MoaiIcons.calendarDialogSport,
-          label: LocaleKeys.calendar_event_sport.tr(),
-          description: event.sessionType?.tr() ?? event.competition,
-        ),
-        if (event.broadcaster != null && event.broadcaster!.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          TvInfoTile(
-            icon: MoaiIcons.calendarDialogBroadcast,
-            label: LocaleKeys.calendar_event_broadcaster.tr(),
-            description: event.broadcaster!,
+          divider,
+          _detailRow(
+            context,
+            scheme,
+            icon: MoaiIcons.calendarDialogSport,
+            label: LocaleKeys.calendar_event_sport.tr(),
+            value: event.sessionType?.tr() ?? event.competition,
           ),
+          if (hasBroadcaster) ...[
+            divider,
+            _detailRow(
+              context,
+              scheme,
+              icon: MoaiIcons.calendarDialogBroadcast,
+              label: LocaleKeys.calendar_event_broadcaster.tr(),
+              value: event.broadcaster!,
+            ),
+          ],
         ],
-      ],
+      ),
     );
 
     final contentWidget = hasChannels
@@ -184,48 +262,52 @@ class _CalendarEventDialogContentState
               // Columna 1: Datos del evento
               Expanded(flex: 10, child: detailsColumn),
               const SizedBox(width: 20),
-              // Columna 2: Panel contenedor con borde redondeado y lista oficial de canales
+              // Columna 2: los canales que lo pasan, sueltos sobre el panel
+              // (antes en un pozo gris que apagaba los ítems de cristal).
               Expanded(
                 flex: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: moaiGlassWellDecoration(scheme),
-                  child: TvWindowedList<Channel>(
-                    key: _listKey,
-                    items: _matchingChannels,
-                    windowSize: 4,
-                    showScrollDots: true,
-                    itemBuilder:
-                        (
-                          context,
-                          ch,
-                          focusNode,
-                          local,
-                          global,
-                          onKeyUp,
-                          onKeyDown,
-                        ) {
-                          return NewChannelCard(
-                            key: ValueKey(ch.id),
-                            channel: ch,
-                            isSelected: false,
-                            focusNode: focusNode,
-                            onKeyLeft: _closeFocusNode.requestFocus,
-                            onKeyUp: onKeyUp,
-                            onKeyDown: () {
-                              if (global >= _matchingChannels.length - 1) {
-                                _closeFocusNode.requestFocus();
-                              } else {
-                                onKeyDown();
-                              }
-                            },
-                            onTap: () => _tuneChannel(ch),
-                          );
-                        },
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _sectionTitle(
+                      context,
+                      scheme,
+                      LocaleKeys.calendar_event_channels_title.tr(),
+                    ),
+                    TvWindowedList<Channel>(
+                      key: _listKey,
+                      items: _matchingChannels,
+                      windowSize: 4,
+                      showScrollDots: true,
+                      itemBuilder:
+                          (
+                            context,
+                            ch,
+                            focusNode,
+                            local,
+                            global,
+                            onKeyUp,
+                            onKeyDown,
+                          ) {
+                            return NewChannelCard(
+                              key: ValueKey(ch.id),
+                              channel: ch,
+                              isSelected: false,
+                              focusNode: focusNode,
+                              onKeyLeft: _closeFocusNode.requestFocus,
+                              onKeyUp: onKeyUp,
+                              onKeyDown: () {
+                                if (global >= _matchingChannels.length - 1) {
+                                  _closeFocusNode.requestFocus();
+                                } else {
+                                  onKeyDown();
+                                }
+                              },
+                              onTap: () => _tuneChannel(ch),
+                            );
+                          },
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -233,11 +315,12 @@ class _CalendarEventDialogContentState
         : detailsColumn;
 
     return TvDialog(
-      width: hasChannels ? 800 : 480,
+      width: hasChannels ? 860 : 520,
+      padding: const EdgeInsets.all(20),
       icon: MoaiIcons.calendarDialogTitle,
       title: event.title,
       subtitle: event.competition,
-      trailingHeader: _statusChip(context, scheme),
+      trailingHeader: _statusTag(),
       content: contentWidget,
       actions: [
         Focus(

@@ -1,12 +1,15 @@
 package com.infomak.moai
 
 import android.app.ActivityManager
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.os.StatFs
 import android.provider.Settings
+import android.speech.RecognizerIntent
 import androidx.core.content.FileProvider
 import id.laskarmedia.openvpn_flutter.OpenVPNFlutterPlugin
 import java.io.File
@@ -29,6 +32,9 @@ import com.infomak.moai.net.StrictTls
 class MainActivity : FlutterActivity() {
 
     companion object {
+        private const val SPEECH_REQUEST_CODE = 4201
+        private const val GOOGLE_SPEECH_PACKAGE = "com.google.android.tts"
+
         init {
             configurePermissiveSsl()
         }
@@ -69,6 +75,7 @@ class MainActivity : FlutterActivity() {
     private val engine = PlayerEngine()
     private lateinit var pluginLoader: PluginLoader
     private var voiceManager: RemoteVoiceManager? = null
+    private var pendingSpeechResult: MethodChannel.Result? = null
     private var uiDpadSounds: UiDpadSounds? = null
 
     private var arcadeManager: com.infomak.moai.games.ArcadeEmulatorManager? = null
@@ -95,7 +102,19 @@ class MainActivity : FlutterActivity() {
         pluginLoader.attach(flutterEngine.dartExecutor.binaryMessenger)
     }
 
+    override fun onStart() {
+        super.onStart()
+        arcadeManager?.onHostStarted()
+    }
+
+    override fun onStop() {
+        arcadeManager?.onHostStopped()
+        super.onStop()
+    }
+
     override fun onDestroy() {
+        arcadeManager?.release()
+        arcadeManager = null
         if (::pluginLoader.isInitialized) {
             pluginLoader.shutdown()
         }
@@ -108,7 +127,47 @@ class MainActivity : FlutterActivity() {
         super.onDestroy()
     }
 
+    /** Abre la pantalla de voz del sistema: micrófono del control, sin permiso propio. */
+    private fun recognizeSpeech(result: MethodChannel.Result) {
+        if (pendingSpeechResult != null) {
+            result.error("BUSY", "Ya hay un dictado en curso", null)
+            return
+        }
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            .putExtra(
+                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM,
+            )
+            .putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+        pendingSpeechResult = result
+        try {
+            // Directo al reconocimiento de voz de Google: el Chromecast trae
+            // dos opciones y sin esto Android pregunta cuál usar.
+            startActivityForResult(
+                Intent(intent).setPackage(GOOGLE_SPEECH_PACKAGE),
+                SPEECH_REQUEST_CODE,
+            )
+        } catch (e: ActivityNotFoundException) {
+            try {
+                startActivityForResult(intent, SPEECH_REQUEST_CODE)
+            } catch (e: ActivityNotFoundException) {
+                pendingSpeechResult = null
+                result.error("UNAVAILABLE", "Sin reconocimiento de voz", null)
+            }
+        }
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == SPEECH_REQUEST_CODE) {
+            val text = if (resultCode == RESULT_OK) {
+                data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+            } else {
+                null
+            }
+            pendingSpeechResult?.success(text)
+            pendingSpeechResult = null
+            return
+        }
         // openvpn_flutter: requestCode 24 = VpnService.prepare.
         // connectWhileGranted llama startVPN con la config estática del plugin.
         // Si solo se pidió permiso (config vacía), startVPN crashea / tumba la app.
@@ -267,6 +326,14 @@ class MainActivity : FlutterActivity() {
                     uiDpadSounds?.setEnabled(enabled)
                     result.success(null)
                 }
+                "openYoutube" -> {
+                    val videoId = call.argument<String>("videoId")
+                    if (videoId.isNullOrEmpty()) {
+                        result.error("INVALID_ID", "videoId is null or empty", null)
+                        return@setMethodCallHandler
+                    }
+                    result.success(openYoutube(videoId))
+                }
                 "installApk" -> {
                     val path = call.argument<String>("path")
                     if (path.isNullOrEmpty()) {
@@ -301,6 +368,28 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    /**
+     * Abre [videoId] en la app de YouTube: la de TV si está, si no la de
+     * teléfono y, como último recurso, lo que abra el enlace. Atrás vuelve a
+     * Moai. `false` si nada lo pudo abrir.
+     */
+    private fun openYoutube(videoId: String): Boolean {
+        val uri = Uri.parse("https://www.youtube.com/watch?v=$videoId")
+        for (pkg in listOf("com.google.android.youtube.tv", "com.google.android.youtube", null)) {
+            val intent = Intent(Intent.ACTION_VIEW, uri)
+            if (pkg != null) intent.setPackage(pkg)
+            try {
+                startActivity(intent)
+                return true
+            } catch (e: ActivityNotFoundException) {
+                // Sin esa app: sigue con la siguiente.
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error opening YouTube ($pkg): ${e.message}", e)
+            }
+        }
+        return false
+    }
+
     /** Permiso VPN: Flutter pregunta si ya está concedido; el aviso de rechazo va en onActivityResult. */
     private fun setupVpnPermissionChannel(flutterEngine: FlutterEngine) {
         MethodChannel(
@@ -326,6 +415,7 @@ class MainActivity : FlutterActivity() {
                 return@setMethodCallHandler
             }
             when (call.method) {
+                "recognizeSpeech" -> recognizeSpeech(result)
                 "checkHardware" -> {
                     result.success(vm.checkHardware())
                 }

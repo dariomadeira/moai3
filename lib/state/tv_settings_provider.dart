@@ -73,6 +73,27 @@ enum MovieSubtitleLanguage {
   }
 }
 
+/// Tamaño de los subtítulos de películas y series ([fontSize], en puntos).
+enum MovieSubtitleSize {
+  small('small', 16),
+  medium('medium', 19),
+  large('large', 23),
+  extraLarge('extra_large', 28);
+
+  const MovieSubtitleSize(this.storageValue, this.fontSize);
+  final String storageValue;
+  final double fontSize;
+
+  static const MovieSubtitleSize defaultValue = MovieSubtitleSize.medium;
+
+  static MovieSubtitleSize fromStorage(String? raw) {
+    for (final value in MovieSubtitleSize.values) {
+      if (value.storageValue == raw) return value;
+    }
+    return defaultValue;
+  }
+}
+
 /// Provider responsable de los ajustes físicos de la TV (calibración overscan y logs en pantalla).
 class TvSettingsProvider extends ChangeNotifier {
   static const String _showTvLogKey = 'show_tv_log';
@@ -87,9 +108,9 @@ class TvSettingsProvider extends ChangeNotifier {
   static const String _startupTvTabKey = 'startup_tv_tab';
   static const String _movieAudioLanguageKey = 'movie_audio_language';
   static const String _movieSubtitleLanguageKey = 'movie_subtitle_language';
+  static const String _movieSubtitleSizeKey = 'movie_subtitle_size';
 
-  static const MethodChannel _deviceChannel =
-      PlatformChannels.device;
+  static const MethodChannel _deviceChannel = PlatformChannels.device;
 
   final AppPreferences _prefs;
 
@@ -104,22 +125,26 @@ class TvSettingsProvider extends ChangeNotifier {
   late TvTab _startupTvTab;
   late MovieAudioLanguage _movieAudioLanguage;
   late MovieSubtitleLanguage _movieSubtitleLanguage;
+  late MovieSubtitleSize _movieSubtitleSize;
 
   String? _parentalPin;
   bool _isAdultUnlocked = false;
 
   TvSettingsProvider(this._prefs) {
     _showTvLog = _prefs.readPreferenceBool(_showTvLogKey);
-    _showChannelLabels =
-        _prefs.readPreferenceBool(_showChannelLabelsKey); // default false
-    _overlapPaddingX =
-        _prefs.readPreferenceDouble(_overlapPaddingXKey, defaultValue: 20.0);
-    _overlapPaddingY =
-        _prefs.readPreferenceDouble(_overlapPaddingYKey, defaultValue: 20.0);
-    _hasOverlapConfig = _prefs.readPreferenceBool(_hasOverlapConfigKey);
-    _uiSoundsDisabled = _prefs.readPreferenceBool(
-      _uiSoundsDisabledKey,
+    _showChannelLabels = _prefs.readPreferenceBool(
+      _showChannelLabelsKey,
+    ); // default false
+    _overlapPaddingX = _prefs.readPreferenceDouble(
+      _overlapPaddingXKey,
+      defaultValue: 20.0,
     );
+    _overlapPaddingY = _prefs.readPreferenceDouble(
+      _overlapPaddingYKey,
+      defaultValue: 20.0,
+    );
+    _hasOverlapConfig = _prefs.readPreferenceBool(_hasOverlapConfigKey);
+    _uiSoundsDisabled = _prefs.readPreferenceBool(_uiSoundsDisabledKey);
     _showHomeTrailers = _prefs.readPreferenceBool(
       _showHomeTrailersKey,
       defaultValue: true,
@@ -135,6 +160,9 @@ class TvSettingsProvider extends ChangeNotifier {
     );
     _movieSubtitleLanguage = MovieSubtitleLanguage.fromStorage(
       _prefs.readOptionalString(_movieSubtitleLanguageKey),
+    );
+    _movieSubtitleSize = MovieSubtitleSize.fromStorage(
+      _prefs.readOptionalString(_movieSubtitleSizeKey),
     );
     _parentalPin = _prefs.readOptionalString(_parentalPinKey);
     _isAdultUnlocked = false; // Siempre bloqueado al iniciar
@@ -161,6 +189,8 @@ class TvSettingsProvider extends ChangeNotifier {
   MovieAudioLanguage get movieAudioLanguage => _movieAudioLanguage;
 
   MovieSubtitleLanguage get movieSubtitleLanguage => _movieSubtitleLanguage;
+
+  MovieSubtitleSize get movieSubtitleSize => _movieSubtitleSize;
 
   /// Decide si el arranque debe intentar VPN+sync según fecha y frecuencia.
   ///
@@ -194,8 +224,8 @@ class TvSettingsProvider extends ChangeNotifier {
   Future<void> setParentalPin(String newPin) async {
     final clean = newPin.trim();
     _parentalPin = clean;
-    await _prefs.saveString(_parentalPinKey, clean);
     notifyListeners();
+    await _prefs.saveString(_parentalPinKey, clean);
   }
 
   void unlockAdultForSession() {
@@ -210,82 +240,85 @@ class TvSettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setOverlapConfig({
-    required double x,
-    required double y,
-  }) async {
+  Future<void> setOverlapConfig({required double x, required double y}) async {
     _overlapPaddingX = x;
     _overlapPaddingY = y;
     _hasOverlapConfig = true;
+    notifyListeners();
     await _prefs.saveDouble(_overlapPaddingXKey, x);
     await _prefs.saveDouble(_overlapPaddingYKey, y);
     await _prefs.saveBool(_hasOverlapConfigKey, true);
-    notifyListeners();
   }
 
   Future<void> setShowTvLog(bool value) async {
     if (_showTvLog == value) return;
     _showTvLog = value;
-    await _prefs.saveBool(_showTvLogKey, value);
     notifyListeners();
+    await _prefs.saveBool(_showTvLogKey, value);
   }
 
   Future<void> setShowChannelLabels(bool value) async {
     if (_showChannelLabels == value) return;
     _showChannelLabels = value;
-    await _prefs.saveBool(_showChannelLabelsKey, value);
     notifyListeners();
+    await _prefs.saveBool(_showChannelLabelsKey, value);
   }
 
   Future<void> setShowHomeTrailers(bool value) async {
     if (_showHomeTrailers == value) return;
     _showHomeTrailers = value;
-    await _prefs.saveBool(_showHomeTrailersKey, value);
     notifyListeners();
+    await _prefs.saveBool(_showHomeTrailersKey, value);
   }
 
   Future<void> setUiSoundsDisabled(bool value) async {
     if (_uiSoundsDisabled == value) return;
     _uiSoundsDisabled = value;
+    notifyListeners();
     await _prefs.saveBool(_uiSoundsDisabledKey, value);
     await _syncUiSoundsToNative();
-    notifyListeners();
   }
 
   Future<void> setCatalogUpdateFrequency(CatalogUpdateFrequency value) async {
     if (_catalogUpdateFrequency == value) return;
     _catalogUpdateFrequency = value;
-    await _prefs.saveString(_catalogUpdateFrequencyKey, value.storageValue);
     notifyListeners();
+    await _prefs.saveString(_catalogUpdateFrequencyKey, value.storageValue);
   }
 
   Future<void> setMovieAudioLanguage(MovieAudioLanguage value) async {
     if (_movieAudioLanguage == value) return;
     _movieAudioLanguage = value;
-    await _prefs.saveString(_movieAudioLanguageKey, value.storageValue);
     notifyListeners();
+    await _prefs.saveString(_movieAudioLanguageKey, value.storageValue);
   }
 
   Future<void> setMovieSubtitleLanguage(MovieSubtitleLanguage value) async {
     if (_movieSubtitleLanguage == value) return;
     _movieSubtitleLanguage = value;
-    await _prefs.saveString(_movieSubtitleLanguageKey, value.storageValue);
     notifyListeners();
+    await _prefs.saveString(_movieSubtitleLanguageKey, value.storageValue);
+  }
+
+  Future<void> setMovieSubtitleSize(MovieSubtitleSize value) async {
+    if (_movieSubtitleSize == value) return;
+    _movieSubtitleSize = value;
+    notifyListeners();
+    await _prefs.saveString(_movieSubtitleSizeKey, value.storageValue);
   }
 
   Future<void> setStartupTvTab(TvTab value) async {
     if (_startupTvTab == value) return;
     _startupTvTab = value;
-    await _prefs.saveString(_startupTvTabKey, value.name);
     notifyListeners();
+    await _prefs.saveString(_startupTvTabKey, value.name);
   }
 
   Future<void> _syncUiSoundsToNative() async {
     try {
-      await _deviceChannel.invokeMethod<void>(
-        'setUiDpadSoundsEnabled',
-        {'enabled': !_uiSoundsDisabled},
-      );
+      await _deviceChannel.invokeMethod<void>('setUiDpadSoundsEnabled', {
+        'enabled': !_uiSoundsDisabled,
+      });
     } catch (e) {
       // No-Android / canal no listo: ignorar.
       debugPrint('TvSettingsProvider: sync UI sounds failed: $e');

@@ -303,4 +303,50 @@ void main() {
       expect(history.entries.first, 'busqueda 11');
     });
   });
+
+  group('Buscar de Series', () {
+    test('se queda con las series y guarda sus recientes aparte', () async {
+      final server = FakeServer({
+        1: [
+          movie('1', 'Batman', year: '1989'),
+          movie('2', 'Batman T2', type: 'teleplay'),
+          movie('3', '(Tráiler) Batman', type: 'trailer'),
+        ],
+      }, total: 3);
+      final series = MovieSearchController(
+        fetch: server.call,
+        localMovies: () => const [],
+        series: true,
+      );
+      addTearDown(series.dispose);
+
+      await series.submit('batman');
+
+      expect(names(series.results), ['Batman T2']);
+      expect(
+        await MovieSearchHistory(
+          storageKey: MovieSearchHistory.seriesKey,
+        ).load(),
+        ['batman'],
+      );
+      expect(await MovieSearchHistory().load(), isEmpty);
+    });
+
+    test('sin servidor busca series en el catálogo guardado', () async {
+      final series = MovieSearchController(
+        fetch: (query, page) async => null,
+        localMovies: () => [
+          movie('1', 'Hacks', year: '2021'),
+          movie('2', 'Hacks T5', type: 'teleplay'),
+        ],
+        series: true,
+      );
+      addTearDown(series.dispose);
+
+      await series.search('hacks');
+
+      expect(series.isOffline, isTrue);
+      expect(names(series.results), ['Hacks T5']);
+    });
+  });
 }

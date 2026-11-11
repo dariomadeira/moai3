@@ -33,7 +33,18 @@ class MoviePlayerDarkTheme extends StatelessWidget {
   }
 }
 
-/// Franja superior: atrás, título y chips de calidad y audio.
+/// Cristal oscuro de las piezas sobre el video: deja ver la película detrás y
+/// se lee sobre imágenes claras (sin desenfoque en vivo, como el resto).
+BoxDecoration moviePlayerGlassDecoration({double radius = 14}) =>
+    moaiVideoGlassDecoration(radius: radius);
+
+/// Texto directo sobre el video: sombra suave para leerse sin caja.
+const List<Shadow> _onVideoShadows = [
+  Shadow(color: Color(0x99000000), blurRadius: 8, offset: Offset(0, 1)),
+];
+
+/// Arriba, sin panel: el título sobre el oscurecido y, a la derecha, las
+/// etiquetas de calidad y audio.
 class MoviePlayerTopBar extends StatelessWidget {
   const MoviePlayerTopBar({
     super.key,
@@ -48,45 +59,28 @@ class MoviePlayerTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
-    return MoaiGlass(
-      borderRadius: 18,
-      padding: const EdgeInsets.fromLTRB(10, 8, 12, 8),
-      child: Row(
-        children: [
-          // Atrás lo maneja el reproductor; acá es la guía visual.
-          Container(
-            width: 36,
-            height: 36,
-            decoration: moaiGlassChipDecoration(scheme),
-            child: Icon(
-              MoaiIcons.arrowBack,
-              size: MoaiIconSizes.md,
-              color: scheme.onSurface,
-            ),
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: MoaiText.display(
+              context,
+              fontSize: 19,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ).copyWith(shadows: _onVideoShadows),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: MoaiText.display(
-                context,
-                fontSize: 19,
-                fontWeight: FontWeight.w600,
-                color: scheme.onSurface,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          if (quality.isNotEmpty) ...[
-            _Chip(icon: MoaiIcons.vodQuality, label: quality),
-            const SizedBox(width: 8),
-          ],
-          _Chip(icon: MoaiIcons.vodAudio, label: audio),
+        ),
+        const SizedBox(width: 12),
+        if (quality.isNotEmpty) ...[
+          _Chip(icon: MoaiIcons.vodQuality, label: quality),
+          const SizedBox(width: 8),
         ],
-      ),
+        _Chip(icon: MoaiIcons.vodAudio, label: audio),
+      ],
     );
   }
 }
@@ -99,23 +93,17 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: moaiGlassChipDecoration(scheme),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: moviePlayerGlassDecoration(radius: 999),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: MoaiIconSizes.sm, color: scheme.primary),
+          Icon(icon, size: MoaiIconSizes.xs, color: Colors.white),
           const SizedBox(width: 6),
           Text(
             label,
-            style: MoaiText.body(
-              context,
-              fontSize: 12.5,
-              fontWeight: FontWeight.w700,
-              color: scheme.onSurface,
-            ),
+            style: MoaiText.body(context, fontSize: 12, color: Colors.white),
           ),
         ],
       ),
@@ -123,8 +111,11 @@ class _Chip extends StatelessWidget {
   }
 }
 
-/// Panel inferior: tiempo actual, barra (con el destino de la búsqueda si se
-/// está buscando), tiempo restante y la ayuda de teclas.
+/// Qué se puede cambiar durante la película.
+enum MoviePlayerMenu { audio, subtitles, size }
+
+/// Abajo, sin panel: tiempo, barra fina, tiempo restante y, debajo, las
+/// píldoras de audio y subtítulos ([menus]; [selectedMenu] es la elegida).
 class MoviePlayerBottomBar extends StatelessWidget {
   const MoviePlayerBottomBar({
     super.key,
@@ -132,6 +123,8 @@ class MoviePlayerBottomBar extends StatelessWidget {
     required this.duration,
     required this.isPlaying,
     this.scrubTarget,
+    this.menus = const [],
+    this.selectedMenu,
   });
 
   final Duration position;
@@ -141,127 +134,276 @@ class MoviePlayerBottomBar extends StatelessWidget {
   /// Destino de la búsqueda en curso (todavía sin saltar).
   final Duration? scrubTarget;
 
+  final List<MoviePlayerMenu> menus;
+  final MoviePlayerMenu? selectedMenu;
+
+  /// Alto de la fila de píldoras: el menú abierto se apoya encima.
+  static const double menuRowHeight = 36;
+
   @override
   Widget build(BuildContext context) {
-    final scheme = context.scheme;
     final shown = scrubTarget ?? position;
     final remaining = duration > shown ? duration - shown : Duration.zero;
     final timeStyle = MoaiText.body(
       context,
       fontSize: 13,
       fontWeight: FontWeight.w700,
-      color: scheme.onSurface,
-    );
+      color: Colors.white,
+    ).copyWith(shadows: _onVideoShadows);
 
-    return MoaiGlass(
-      borderRadius: 18,
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 10),
-      child: Column(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Icon(
+              isPlaying ? MoaiIcons.vodPlay : MoaiIcons.vodPause,
+              size: MoaiIconSizes.sm,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 10),
+            SizedBox(
+              width: 60,
+              child: Text(formatPlayerTime(shown), style: timeStyle),
+            ),
+            Expanded(
+              child: MoviePlayerProgressBar(
+                position: position,
+                duration: duration,
+                scrubTarget: scrubTarget,
+              ),
+            ),
+            SizedBox(
+              width: 68,
+              child: Text(
+                duration > Duration.zero
+                    ? '−${formatPlayerTime(remaining)}'
+                    : '',
+                textAlign: TextAlign.right,
+                style: timeStyle.copyWith(
+                  color: const Color(0xCCFFFFFF),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (menus.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          SizedBox(
+            height: menuRowHeight,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                for (final menu in menus) ...[
+                  if (menu != menus.first) const SizedBox(width: 8),
+                  _MenuPill(menu: menu, selected: menu == selectedMenu),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _MenuPill extends StatelessWidget {
+  const _MenuPill({required this.menu, required this.selected});
+
+  final MoviePlayerMenu menu;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    final (icon, label) = switch (menu) {
+      MoviePlayerMenu.audio => (
+        MoaiIcons.vodAudio,
+        LocaleKeys.movies_player_menu_audio,
+      ),
+      MoviePlayerMenu.subtitles => (
+        MoaiIcons.vodSubtitles,
+        LocaleKeys.settings_movies_subtitles,
+      ),
+      MoviePlayerMenu.size => (
+        MoaiIcons.vodSubtitleSize,
+        LocaleKeys.movies_player_menu_size,
+      ),
+    };
+    final color = selected ? scheme.onPrimary : Colors.white;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: selected
+          ? BoxDecoration(
+              color: scheme.primary,
+              borderRadius: BorderRadius.circular(999),
+            )
+          : moviePlayerGlassDecoration(radius: 999),
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Icon(
-                isPlaying ? MoaiIcons.vodPlay : MoaiIcons.vodPause,
-                size: MoaiIconSizes.md,
-                color: scheme.primary,
-              ),
-              const SizedBox(width: 10),
-              SizedBox(
-                width: 64,
-                child: Text(formatPlayerTime(shown), style: timeStyle),
-              ),
-              Expanded(
-                child: MoviePlayerProgressBar(
-                  position: position,
-                  duration: duration,
-                  scrubTarget: scrubTarget,
-                ),
-              ),
-              SizedBox(
-                width: 72,
-                child: Text(
-                  duration > Duration.zero
-                      ? '−${formatPlayerTime(remaining)}'
-                      : '',
-                  textAlign: TextAlign.right,
-                  style: timeStyle.copyWith(
-                    color: scheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
+          Icon(icon, size: MoaiIconSizes.xs, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label.tr(),
+            style: MoaiText.body(context, fontSize: 12, color: color),
           ),
-          const SizedBox(height: 8),
-          _KeyHints(isPlaying: isPlaying),
         ],
       ),
     );
   }
 }
 
-/// "◀ ▶ Buscar · OK Pausar".
-class _KeyHints extends StatelessWidget {
-  const _KeyHints({required this.isPlaying});
+/// Las respuestas del cartel de recomendar, en orden en pantalla.
+enum MovieRecommendAnswer { yes, no, cancel }
 
-  final bool isPlaying;
+/// Cartel de los últimos minutos (SPEC-51): chico, en una esquina y sin
+/// pausar. [selected] es la respuesta elegida con ←/→.
+class MovieRecommendPrompt extends StatelessWidget {
+  const MovieRecommendPrompt({super.key, required this.selected});
+
+  final MovieRecommendAnswer selected;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
-    final style = MoaiText.body(
-      context,
-      fontSize: 11.5,
-      fontWeight: FontWeight.w500,
-      color: scheme.onSurfaceVariant,
-    );
-    Widget key(Widget child) => Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-      decoration: moaiGlassChipDecoration(scheme, radius: 6),
-      child: child,
-    );
+    Widget pill(MovieRecommendAnswer answer, IconData? icon, String label) {
+      final isSelected = answer == selected;
+      final color = isSelected ? scheme.onPrimary : Colors.white;
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: isSelected
+            ? BoxDecoration(
+                color: scheme.primary,
+                borderRadius: BorderRadius.circular(999),
+              )
+            : moviePlayerGlassDecoration(radius: 999),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: MoaiIconSizes.xs, color: color),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: MoaiText.body(context, fontSize: 12, color: color),
+            ),
+          ],
+        ),
+      );
+    }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        key(
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: moviePlayerGlassDecoration(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            LocaleKeys.movies_recommend_prompt.tr(),
+            style: MoaiText.body(context, fontSize: 13, color: Colors.white),
+          ),
+          const SizedBox(height: 10),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                MoaiIcons.dpadLeft,
-                size: MoaiIconSizes.xs,
-                color: scheme.onSurface,
+              pill(
+                MovieRecommendAnswer.yes,
+                MoaiIcons.vodRecommend,
+                LocaleKeys.movies_recommend_yes.tr(),
               ),
-              Icon(
-                MoaiIcons.dpadRight,
-                size: MoaiIconSizes.xs,
-                color: scheme.onSurface,
+              const SizedBox(width: 8),
+              pill(
+                MovieRecommendAnswer.no,
+                MoaiIcons.vodNotRecommend,
+                LocaleKeys.movies_recommend_no.tr(),
+              ),
+              const SizedBox(width: 8),
+              pill(
+                MovieRecommendAnswer.cancel,
+                null,
+                LocaleKeys.common_cancel.tr(),
               ),
             ],
           ),
-        ),
-        const SizedBox(width: 6),
-        Text(LocaleKeys.movies_player_hint_seek.tr(), style: style),
-        const SizedBox(width: 18),
-        key(
-          Text(
-            'OK',
-            style: style.copyWith(
-              color: scheme.onSurface,
-              fontWeight: FontWeight.w700,
+        ],
+      ),
+    );
+  }
+}
+
+/// Una opción del menú abierto; [current] es la que está en uso.
+class MoviePlayerMenuOption {
+  const MoviePlayerMenuOption(this.label, {this.current = false});
+
+  final String label;
+  final bool current;
+}
+
+/// Menú chico sobre las píldoras: la película sigue a la vista. [focused] es
+/// la opción elegida; si no entran todas, corre la ventana.
+class MoviePlayerMenuPanel extends StatelessWidget {
+  const MoviePlayerMenuPanel({
+    super.key,
+    required this.options,
+    required this.focused,
+  });
+
+  final List<MoviePlayerMenuOption> options;
+  final int focused;
+
+  static const int _maxVisible = 6;
+  static const double width = 200;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    final count = options.length.clamp(0, _maxVisible);
+    final start = (focused - count + 1).clamp(0, options.length - count);
+    return Container(
+      width: width,
+      padding: const EdgeInsets.all(5),
+      decoration: moviePlayerGlassDecoration(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = start; i < start + count; i++)
+            Container(
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: i == focused ? scheme.primary : null,
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      options[i].label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: MoaiText.body(
+                        context,
+                        fontSize: 13,
+                        color: i == focused ? scheme.onPrimary : Colors.white,
+                      ),
+                    ),
+                  ),
+                  if (options[i].current)
+                    Icon(
+                      MoaiIcons.check,
+                      size: MoaiIconSizes.xs,
+                      color: i == focused ? scheme.onPrimary : Colors.white,
+                    ),
+                ],
+              ),
             ),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          isPlaying
-              ? LocaleKeys.movies_player_hint_pause.tr()
-              : LocaleKeys.movies_player_hint_play.tr(),
-          style: style,
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -281,8 +423,8 @@ class MoviePlayerProgressBar extends StatelessWidget {
   final Duration duration;
   final Duration? scrubTarget;
 
-  static const double _track = 6;
-  static const double _dot = 16;
+  static const double _track = 4;
+  static const double _dot = 12;
 
   double _fraction(Duration d) => duration.inMilliseconds <= 0
       ? 0
@@ -307,7 +449,7 @@ class MoviePlayerProgressBar extends StatelessWidget {
                 height: _track,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(_track),
-                  color: Colors.white.withValues(alpha: 0.14),
+                  color: Colors.white.withValues(alpha: 0.28),
                 ),
               ),
               Container(
@@ -377,8 +519,9 @@ class MoviePlayerScrubPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
     final delta = target - from;
-    return MoaiGlass(
-      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      decoration: moviePlayerGlassDecoration(radius: 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -386,7 +529,7 @@ class MoviePlayerScrubPreview extends StatelessWidget {
             formatPlayerTime(target),
             style: MoaiText.display(
               context,
-              fontSize: 34,
+              fontSize: 26,
               fontWeight: FontWeight.w600,
               color: scheme.onSurface,
             ),
@@ -423,9 +566,14 @@ class MoviePlayerScrubPreview extends StatelessWidget {
 /// Subtítulo del momento: texto blanco con sombra suave, sin caja, como en
 /// los reproductores de TV.
 class MoviePlayerSubtitle extends StatelessWidget {
-  const MoviePlayerSubtitle({super.key, required this.text});
+  const MoviePlayerSubtitle({
+    super.key,
+    required this.text,
+    this.fontSize = 19,
+  });
 
   final String text;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) {
@@ -434,21 +582,25 @@ class MoviePlayerSubtitle extends StatelessWidget {
     return Text(
       text,
       textAlign: TextAlign.center,
-      style: MoaiText.body(
-        context,
-        fontSize: 19,
-        height: 1.25,
-        color: Colors.white,
-      ).copyWith(
-        shadows: [
-          Shadow(
-            color: Colors.black.withValues(alpha: 0.85),
-            blurRadius: 6,
-            offset: const Offset(0, 1),
+      style:
+          MoaiText.body(
+            context,
+            fontSize: fontSize,
+            height: 1.25,
+            color: Colors.white,
+          ).copyWith(
+            shadows: [
+              Shadow(
+                color: Colors.black.withValues(alpha: 0.85),
+                blurRadius: 6,
+                offset: const Offset(0, 1),
+              ),
+              Shadow(
+                color: Colors.black.withValues(alpha: 0.6),
+                blurRadius: 14,
+              ),
+            ],
           ),
-          Shadow(color: Colors.black.withValues(alpha: 0.6), blurRadius: 14),
-        ],
-      ),
     );
   }
 }
@@ -464,30 +616,31 @@ class MoviePlayerStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
     if (paused) {
-      return MoaiGlass(
-        borderRadius: 40,
-        width: 80,
-        height: 80,
+      return Container(
+        width: 56,
+        height: 56,
         alignment: Alignment.center,
-        child: Icon(
+        decoration: moviePlayerGlassDecoration(radius: 28),
+        child: const Icon(
           MoaiIcons.vodPause,
-          size: MoaiIconSizes.xl,
-          color: scheme.onSurface,
+          size: MoaiIconSizes.lg,
+          color: Colors.white,
         ),
       );
     }
-    return MoaiGlass(
-      borderRadius: 18,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+      decoration: moviePlayerGlassDecoration(radius: 999),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
+          const SizedBox(
             width: 18,
             height: 18,
             child: CircularProgressIndicator(
               strokeWidth: 2.2,
-              color: scheme.primary,
+              // Gris claro: va sobre el cristal oscuro del reproductor.
+              color: Colors.white70,
             ),
           ),
           const SizedBox(width: 12),
@@ -520,9 +673,9 @@ class MoviePlayerErrorPanel extends StatelessWidget {
       child: Text(label, style: hint.copyWith(fontWeight: FontWeight.w800)),
     );
 
-    return MoaiGlass(
-      borderRadius: 22,
+    return Container(
       padding: const EdgeInsets.fromLTRB(28, 22, 28, 20),
+      decoration: moviePlayerGlassDecoration(radius: 22),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

@@ -11,6 +11,8 @@ import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/platform/platform_channels.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/movie_progress_service.dart';
+import 'package:moai3/services/movie_recommendations_api.dart';
+import 'package:moai3/state/movie_recommendations_provider.dart';
 import 'package:moai3/services/movie_watchlist_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:provider/provider.dart';
@@ -73,6 +75,19 @@ class _FakeEngine {
   }
 }
 
+class _RecommendationsApi extends MovieRecommendationsApi {
+  final sent = <String>[];
+
+  @override
+  Future<List<Map<String, dynamic>>> fetch(List<String> friendIds) async =>
+      const [];
+
+  @override
+  Future<void> recommend(String deviceId, MovieItem movie) async {
+    sent.add(movie.contentId);
+  }
+}
+
 void main() {
   group('preferredAudioCode', () {
     test('español e inglés se piden siempre', () {
@@ -86,6 +101,29 @@ void main() {
       expect(preferredAudioCode(original, 'spa,kor'), 'ko');
       // Película en español: sin preferencia, suena la que trae.
       expect(preferredAudioCode(original, 'spa'), isNull);
+    });
+  });
+
+  group('movieAudioOptions', () {
+    test('dos audios del mismo idioma son opciones distintas', () {
+      useSpanishTranslations();
+      final options = movieAudioOptions('spa,spa,eng');
+
+      expect(options.map((o) => o.code), ['es', 'es', 'en']);
+      expect(options.map((o) => o.occurrence), [0, 1, 0]);
+      expect(options.map(movieAudioLabel), [
+        'Español 1',
+        'Español 2',
+        'Inglés',
+      ]);
+    });
+
+    test('con uno solo de cada idioma no se numera', () {
+      useSpanishTranslations();
+      expect(movieAudioOptions('spa,eng').map(movieAudioLabel), [
+        'Español',
+        'Inglés',
+      ]);
     });
   });
 
@@ -194,6 +232,8 @@ void main() {
     Future<void> pumpPlayer(
       WidgetTester tester, {
       Map<String, Object> prefs = const {},
+      String audioInfo = 'esp',
+      MovieRecommendationsProvider? recommendations,
     }) async {
       useSpanishTranslations();
       SharedPreferences.setMockInitialValues(prefs);
@@ -203,17 +243,26 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
 
       engine = _FakeEngine()..install(tester);
+      recommendations?.setFriends(
+        deviceId: 'yo',
+        friends: const {'ana': 'Ana'},
+      );
+      await recommendations?.ensureLoaded();
       await tester.pumpWidget(
-        ChangeNotifierProvider.value(
-          value: settings,
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: settings),
+            if (recommendations != null)
+              ChangeNotifierProvider.value(value: recommendations),
+          ],
           child: MaterialApp(
             home: MoviePlayerScreen(
               movie: MovieItem(contentId: 'p1', name: 'Tenzing'),
-              stream: const ResolvedPlayStream(
+              stream: ResolvedPlayStream(
                 streamUrl: 'https://example.com/v.m3u8',
                 quality: '1080P HD',
-                audioInfo: 'esp',
-                subtitles: [
+                audioInfo: audioInfo,
+                subtitles: const [
                   VodSubtitleOption(
                     name: 'en',
                     language: 'en',
@@ -261,6 +310,118 @@ void main() {
       await tester.pump();
       expect(find.text('Inglés'), findsOneWidget);
       expect(find.text('Español'), findsNothing);
+      await finish(tester);
+    });
+
+    group('recomendar al final', () {
+      const prompt = '¿Se la recomendás a tus amigos?';
+      late _RecommendationsApi api;
+
+      Future<void> reachEnd(WidgetTester tester) async {
+        api = _RecommendationsApi();
+        await pumpPlayer(
+          tester,
+          recommendations: MovieRecommendationsProvider(api: api),
+        );
+        engine.position = const Duration(hours: 1, minutes: 56);
+        await tester.pump(const Duration(milliseconds: 700));
+      }
+
+      testWidgets('pregunta en los últimos minutos, una sola vez', (
+        tester,
+      ) async {
+        await reachEnd(tester);
+        expect(find.text(prompt), findsOneWidget);
+
+        await tester.pump(const Duration(seconds: 21));
+        expect(find.text(prompt), findsNothing);
+
+        await tester.pump(const Duration(seconds: 2));
+        expect(find.text(prompt), findsNothing);
+        await finish(tester);
+      });
+
+      testWidgets('un OK distraído cancela y no pausa', (tester) async {
+        await reachEnd(tester);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pump();
+
+        expect(find.text(prompt), findsNothing);
+        expect(api.sent, isEmpty);
+        expect(engine.count('pause'), 0);
+        await finish(tester);
+      });
+
+      testWidgets('pulgar arriba recomienda la película', (tester) async {
+        await reachEnd(tester);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pump();
+        await tester.pump();
+
+        expect(api.sent, ['p1']);
+        await tester.pump(const Duration(seconds: 5));
+        await finish(tester);
+      });
+
+      testWidgets('si se llegó saltando no pregunta', (tester) async {
+        await pumpPlayer(
+          tester,
+          recommendations: MovieRecommendationsProvider(
+            api: _RecommendationsApi(),
+          ),
+        );
+        for (var i = 0; i < 60; i++) {
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+        }
+        await tester.pump();
+        expect(find.text(prompt), findsNothing);
+        await finish(tester);
+      });
+    });
+
+    testWidgets('arranca con el audio recordado de esa película', (
+      tester,
+    ) async {
+      await pumpPlayer(
+        tester,
+        audioInfo: 'spa,spa,eng',
+        prefs: {'movie_audio_choices': '{"p1":"es:1"}'},
+      );
+
+      final args =
+          engine.calls.firstWhere((c) => c.method == 'setMedia').arguments
+              as Map;
+      expect(args['preferredAudioLanguage'], 'es');
+      expect(args['preferredAudioOccurrence'], 1);
+      expect(find.text('Español 2'), findsOneWidget);
+      await finish(tester);
+    });
+
+    testWidgets('elegir el otro español recarga con esa pista y la recuerda', (
+      tester,
+    ) async {
+      await pumpPlayer(tester, audioInfo: 'spa,spa,eng');
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.select);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.select);
+      await tester.pump();
+
+      final setMedias = engine.calls.where((c) => c.method == 'setMedia');
+      expect(setMedias, hasLength(2));
+      expect((setMedias.last.arguments as Map)['preferredAudioOccurrence'], 1);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('movie_audio_choices'), '{"p1":"es:1"}');
       await finish(tester);
     });
 
@@ -348,6 +509,118 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       expect(osdVisible(tester), isFalse);
       expect(find.byType(MoviePlayerScreen), findsOneWidget);
+      await finish(tester);
+    });
+
+    Future<void> press(WidgetTester tester, LogicalKeyboardKey key) async {
+      await tester.sendKeyEvent(key);
+      await tester.pump();
+    }
+
+    Map<dynamic, dynamic> lastSetMedia() =>
+        engine.calls.lastWhere((c) => c.method == 'setMedia').arguments as Map;
+
+    testWidgets('el subtítulo se cambia en la película y retoma ahí', (
+      tester,
+    ) async {
+      await pumpPlayer(tester);
+
+      await press(tester, LogicalKeyboardKey.arrowDown);
+      await press(tester, LogicalKeyboardKey.enter);
+      expect(find.text('Apagados'), findsOneWidget);
+      expect(find.text('Inglés'), findsOneWidget);
+
+      await press(tester, LogicalKeyboardKey.arrowDown);
+      await press(tester, LogicalKeyboardKey.arrowDown);
+      await press(tester, LogicalKeyboardKey.enter);
+
+      expect(engine.count('setMedia'), 2);
+      expect(lastSetMedia()['subtitleUrl'], 'http://subs.example.com/es.srt');
+      expect(find.text('Apagados'), findsNothing);
+      expect(
+        lastSetMedia()['startPositionMs'],
+        const Duration(minutes: 1).inMilliseconds,
+      );
+      engine.startPlaying();
+      await tester.pump();
+      expect(engine.seeks, isEmpty);
+      await finish(tester);
+    });
+
+    testWidgets('elegir lo que ya está no recarga', (tester) async {
+      await pumpPlayer(tester);
+      await press(tester, LogicalKeyboardKey.arrowDown);
+      await press(tester, LogicalKeyboardKey.enter);
+      await press(tester, LogicalKeyboardKey.enter);
+      expect(engine.count('setMedia'), 1);
+      await finish(tester);
+    });
+
+    testWidgets('el audio se cambia en la película sin tocar el ajuste', (
+      tester,
+    ) async {
+      await pumpPlayer(tester, audioInfo: 'spa,spa,eng');
+
+      await press(tester, LogicalKeyboardKey.arrowDown);
+      await press(tester, LogicalKeyboardKey.enter);
+      // Español 1, Español 2, Inglés.
+      await press(tester, LogicalKeyboardKey.arrowDown);
+      await press(tester, LogicalKeyboardKey.arrowDown);
+      await press(tester, LogicalKeyboardKey.enter);
+
+      expect(lastSetMedia()['preferredAudioLanguage'], 'en');
+      final context = tester.element(find.byType(MoviePlayerScreen));
+      expect(
+        context.read<TvSettingsProvider>().movieAudioLanguage,
+        MovieAudioLanguage.spanish,
+      );
+      await finish(tester);
+    });
+
+    testWidgets('el tamaño se aplica al instante y queda guardado', (
+      tester,
+    ) async {
+      await pumpPlayer(tester, prefs: {'movie_subtitle_language': 'spanish'});
+      engine.events.add({'event': 'cues', 'value': 'Hola'});
+      await tester.pump();
+      double size() => tester.widget<Text>(find.text('Hola')).style!.fontSize!;
+      expect(size(), MovieSubtitleSize.medium.fontSize);
+
+      await press(tester, LogicalKeyboardKey.arrowDown);
+      await press(tester, LogicalKeyboardKey.arrowRight);
+      await press(tester, LogicalKeyboardKey.enter);
+      await press(tester, LogicalKeyboardKey.arrowDown);
+      await press(tester, LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(size(), MovieSubtitleSize.large.fontSize);
+      expect(engine.count('setMedia'), 1);
+      expect(
+        (await SharedPreferences.getInstance()).getString(
+          'movie_subtitle_size',
+        ),
+        'large',
+      );
+      await finish(tester);
+    });
+
+    testWidgets('atrás sale del menú y de las píldoras sin irse', (
+      tester,
+    ) async {
+      await pumpPlayer(tester);
+      await press(tester, LogicalKeyboardKey.arrowDown);
+      await press(tester, LogicalKeyboardKey.enter);
+
+      await press(tester, LogicalKeyboardKey.escape);
+      expect(find.text('Apagados'), findsNothing);
+      await press(tester, LogicalKeyboardKey.escape);
+      await tester.pump();
+      expect(find.byType(MoviePlayerScreen), findsOneWidget);
+      expect(osdVisible(tester), isTrue);
+
+      // Volvió a la barra: las flechas buscan otra vez.
+      await press(tester, LogicalKeyboardKey.arrowRight);
+      expect(find.text('+0:10'), findsOneWidget);
       await finish(tester);
     });
 
@@ -459,10 +732,16 @@ void main() {
       expect(find.text('No se pudo reproducir'), findsNothing);
       expect(engine.count('setMedia'), 2);
 
-      // Al volver a arrancar, retoma en el minuto 1.
+      // El video arranca directo en el minuto 1, sin pasar por el principio
+      // (el proxy de Titan daría 404).
+      final reload = engine.calls.lastWhere((c) => c.method == 'setMedia');
+      expect(
+        (reload.arguments as Map)['startPositionMs'],
+        const Duration(minutes: 1).inMilliseconds,
+      );
       engine.startPlaying();
       await tester.pump();
-      expect(engine.seeks, [const Duration(minutes: 1).inMilliseconds]);
+      expect(engine.seeks, isEmpty);
       await finish(tester);
     });
 
@@ -634,7 +913,11 @@ void main() {
       await tester.pump();
 
       // Vuelve al minuto 1 (antes del salto), no al 1:10 que falló.
-      expect(engine.seeks.last, const Duration(minutes: 1).inMilliseconds);
+      final reload = engine.calls.lastWhere((c) => c.method == 'setMedia');
+      expect(
+        (reload.arguments as Map)['startPositionMs'],
+        const Duration(minutes: 1).inMilliseconds,
+      );
       await finish(tester);
     });
   });

@@ -3,12 +3,12 @@ import 'dart:math' as math;
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/services/voice_audio_service.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/dialogs/tv_dialog.dart';
+import 'package:moai3/widgets/tv_common/moai_count_badge.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
+import 'package:moai3/widgets/tv_common/moai_status_tag.dart';
 import 'package:moai3/theme/moai_icons.dart';
 
 part 'tv_voice_test/tv_voice_test_views.dart';
@@ -227,12 +227,29 @@ class _TvVoiceTestDialogState extends State<TvVoiceTestDialog>
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
+    // Como el paso del PIN: el estado en una etiqueta a la derecha.
+    final Widget? statusTag = _isRecording
+        ? MoaiStatusTag(
+            label: LocaleKeys.mic_test_tag_recording.tr().toUpperCase(),
+            color: MoaiStatusTag.liveColor,
+            large: true,
+          )
+        : (_recordedPath != null && _recordedBytes > 1024)
+        ? MoaiStatusTag(
+            label: LocaleKeys.mic_test_tag_ready.tr().toUpperCase(),
+            color: MoaiStatusTag.soonColor,
+            large: true,
+          )
+        : null;
+
     return TvDialog(
-      width: 580,
-      icon: MoaiIcons.micSettings,
-      iconColor: _isRecording ? scheme.error : scheme.primary,
+      width: 500,
+      icon: MoaiIcons.mic,
+      // En reposo, el acento (lo pone [TvDialog]); grabando, rojo.
+      iconColor: _isRecording ? MoaiStatusTag.liveColor : null,
       title: LocaleKeys.mic_test_title.tr(),
       subtitle: LocaleKeys.mic_test_subtitle.tr(),
+      trailingHeader: statusTag,
       content: _isLoading
           ? const Padding(
               padding: EdgeInsets.symmetric(vertical: 36),

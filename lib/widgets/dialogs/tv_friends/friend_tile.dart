@@ -1,250 +1,165 @@
 part of '../tv_friends_dialog.dart';
 
+/// Un amigo en el panel Amigos, como en la tarjeta del Inicio: avatar con
+/// el punto de estado, el nombre y el canal que mira, y a la derecha el logo
+/// de ese canal si está en la lista propia. Si mira lo mismo que yo va
+/// teñido del acento con "Con vos"; desconectado, apagado.
+///
+/// OK: mirar juntos (ir a su canal). OK mantenido: eliminarlo. Las
+/// repeticiones de un OK que ya venía apretado (el que abrió el panel desde
+/// el micrófono) no hacen nada: lo resuelve [TvPressDetector].
 class _FriendTile extends StatefulWidget {
   final FriendInfo friend;
   final FocusNode focusNode;
+  final bool withMe;
+  final String? logoUrl;
   final VoidCallback onKeyUp;
   final VoidCallback onKeyDown;
   final VoidCallback onKeyRightAcross;
+  final VoidCallback onWatch;
   final VoidCallback onDelete;
 
   const _FriendTile({
     super.key,
     required this.friend,
     required this.focusNode,
+    required this.withMe,
+    required this.logoUrl,
     required this.onKeyUp,
     required this.onKeyDown,
     required this.onKeyRightAcross,
+    required this.onWatch,
     required this.onDelete,
   });
+
+  /// Alto de la ficha; la lista suma el espacio entre fichas.
+  static const double height = 60;
 
   @override
   State<_FriendTile> createState() => _FriendTileState();
 }
 
 class _FriendTileState extends State<_FriendTile> {
-  @override
-  void initState() {
-    super.initState();
-    widget.focusNode.addListener(_onFocus);
-  }
-
-  @override
-  void didUpdateWidget(covariant _FriendTile oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.focusNode != widget.focusNode) {
-      oldWidget.focusNode.removeListener(_onFocus);
-      widget.focusNode.addListener(_onFocus);
-    }
-  }
-
-  @override
-  void dispose() {
-    widget.focusNode.removeListener(_onFocus);
-    super.dispose();
-  }
-
-  void _onFocus() {
-    if (mounted) setState(() {});
-  }
+  late bool _focused = widget.focusNode.hasFocus;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final isFocused = widget.focusNode.hasFocus;
+    final friend = widget.friend;
+    final online = friend.isOnline;
+    final logoUrl = widget.logoUrl;
 
-    final hasNickname = widget.friend.nickname != null &&
-        widget.friend.nickname!.trim().isNotEmpty;
-    final displayName =
-        hasNickname ? widget.friend.nickname! : widget.friend.userCode;
+    final status = !online
+        ? LocaleKeys.friends_status_offline.tr()
+        : friend.displayChannelName ?? LocaleKeys.home_friends_no_channel.tr();
 
-    return Container(
-      height: 58,
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Focus(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: TvPressDetector(
         focusNode: widget.focusNode,
-        onKeyEvent: (node, event) {
-          if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
-            return KeyEventResult.ignored;
-          }
-          final key = event.logicalKey;
-          if (key == LogicalKeyboardKey.arrowUp) {
-            widget.onKeyUp();
-            return KeyEventResult.handled;
-          }
-          if (key == LogicalKeyboardKey.arrowDown) {
-            widget.onKeyDown();
-            return KeyEventResult.handled;
-          }
-          if (key == LogicalKeyboardKey.arrowRight) {
-            widget.onKeyRightAcross();
-            return KeyEventResult.handled;
-          }
-          if (TvKeyHandler.isActionKey(key)) {
-            // Sólo un OK nuevo: las repeticiones de un OK que se mantuvo
-            // para abrir el panel (micrófono de Miremos juntos) no borran.
-            if (event is KeyDownEvent) widget.onDelete();
-            return KeyEventResult.handled;
-          }
-          return KeyEventResult.ignored;
-        },
+        onFocusChange: (f) => setState(() => _focused = f),
+        onPress: widget.onWatch,
+        onLongPress: widget.onDelete,
+        onUp: widget.onKeyUp,
+        onDown: widget.onKeyDown,
+        onRight: TvPressDetector.consuming(widget.onKeyRightAcross),
         child: GestureDetector(
-          onTap: widget.onDelete,
-          // Ficha de cristal como TvTile: el foco es el borde del acento.
+          onTap: widget.onWatch,
+          onLongPress: widget.onDelete,
           child: MoaiGlass(
             borderRadius: 14,
             elevated: false,
             solid: true,
-            focused: isFocused,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            focused: _focused,
+            tint: widget.withMe ? scheme.primary : null,
+            padding: const EdgeInsets.fromLTRB(10, 7, 10, 7),
             child: Row(
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(7),
-                  child: Icon(
-                    MoaiIcons.person,
-                    size: MoaiIconSizes.md,
-                    color: scheme.primary.withValues(
-                      alpha: isFocused ? 1 : 0.75,
-                    ),
-                  ),
+                FriendAvatar(
+                  userCode: friend.userCode,
+                  online: online,
+                  size: 40,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        displayName,
+                        friend.displayName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: MoaiText.body(
                           context,
-                          color: scheme.onSurface,
-                          fontSize: 13,
+                          color: online
+                              ? scheme.onSurface
+                              : scheme.onSurfaceVariant,
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 3),
                       Row(
                         children: [
-                          Text(
-                            widget.friend.userCode,
-                            style: MoaiText.body(
-                              context,
-                              color: scheme.onSurfaceVariant,
-                              fontSize: 10.5,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 5,
-                              vertical: 1,
-                            ),
-                            decoration: moaiGlassChipDecoration(
-                              scheme,
-                              radius: 6,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 5,
-                                  height: 5,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: widget.friend.isOnline
-                                        ? Colors.greenAccent.shade400
-                                        : scheme.outlineVariant,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  widget.friend.isOnline
-                                      ? LocaleKeys.friends_status_online.tr()
-                                      : LocaleKeys.friends_status_offline.tr(),
-                                  style: MoaiText.body(
-                                    context,
-                                    color: widget.friend.isOnline
-                                        ? scheme.onSurface
-                                        : scheme.onSurfaceVariant,
-                                    fontSize: 8.5,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (widget.friend.displayChannelName != null) ...[
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 5,
-                                  vertical: 1,
-                                ),
-                                decoration: moaiGlassChipDecoration(
-                                  scheme,
-                                  radius: 6,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      MoaiIcons.tv,
-                                      size: MoaiIconSizes.xs,
-                                      color: scheme.primary,
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Flexible(
-                                      child: Text(
-                                        widget.friend.displayChannelName!,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: MoaiText.body(
-                                          context,
-                                          color: scheme.onSurface,
-                                          fontSize: 8.5,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                          if (widget.withMe) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 1,
+                              ),
+                              decoration: moaiGlassChipDecoration(
+                                scheme,
+                                highlighted: true,
+                              ),
+                              child: Text(
+                                LocaleKeys.home_friends_with_you.tr(),
+                                style: MoaiText.body(
+                                  context,
+                                  color: scheme.onSurface,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.4,
                                 ),
                               ),
                             ),
+                            const SizedBox(width: 6),
                           ],
+                          Flexible(
+                            child: Text(
+                              status,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: MoaiText.body(
+                                context,
+                                color: scheme.onSurfaceVariant,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 6),
-                // Borrar: OK sobre la fila elimina, así que con foco se pone
-                // rojo para avisarlo.
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 120),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
-                    vertical: 5,
+                // El logo del canal: lo que se va a ver con OK.
+                if (online && logoUrl != null && logoUrl.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 48,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: TvListCardLeadingLogo(
+                      logoUrl: logoUrl,
+                      width: 48,
+                      height: 34,
+                    ),
                   ),
-                  decoration: isFocused
-                      ? BoxDecoration(
-                          color: scheme.error.withValues(alpha: 0.16),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: scheme.error.withValues(alpha: 0.5),
-                          ),
-                        )
-                      : moaiGlassChipDecoration(scheme, radius: 8),
-                  child: Icon(
-                    MoaiIcons.delete,
-                    size: MoaiIconSizes.sm,
-                    color: isFocused ? scheme.error : scheme.onSurfaceVariant,
-                  ),
-                ),
+                ],
               ],
             ),
           ),

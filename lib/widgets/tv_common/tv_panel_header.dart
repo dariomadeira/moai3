@@ -17,6 +17,15 @@ class TvPanelHeader extends StatelessWidget {
   final VoidCallback? onBack;
   final VoidCallback? onBackKeyDown;
 
+  /// Colores propios del título y el subtítulo (p. ej. el saludo del Inicio);
+  /// sin ellos, los del tema.
+  final Color? titleColor;
+  final Color? subtitleColor;
+
+  /// Degradado del título (p. ej. el de la hora del Inicio); gana a
+  /// [titleColor].
+  final ShaderCallback? titleShader;
+
   const TvPanelHeader({
     super.key,
     required this.title,
@@ -26,9 +35,32 @@ class TvPanelHeader extends StatelessWidget {
     this.backFocusNode,
     this.onBack,
     this.onBackKeyDown,
+    this.titleColor,
+    this.subtitleColor,
+    this.titleShader,
   });
 
   bool get _showsBack => backFocusNode != null && onBack != null;
+
+  Widget _title(BuildContext context, ColorScheme scheme) {
+    final text = Text(
+      title,
+      style: MoaiText.display(
+        context,
+        color: titleShader != null
+            ? Colors.white
+            : (titleColor ?? scheme.onSurface),
+        fontSize: 18,
+      ),
+    );
+    if (titleShader == null) return text;
+    // La Column alinea a la izquierda: el degradado toma el ancho del texto.
+    return ShaderMask(
+      blendMode: BlendMode.srcIn,
+      shaderCallback: titleShader!,
+      child: text,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,20 +69,13 @@ class TvPanelHeader extends StatelessWidget {
     final titles = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: MoaiText.display(
-            context,
-            color: scheme.onSurface,
-            fontSize: 18,
-          ),
-        ),
+        _title(context, scheme),
         const SizedBox(height: 2),
         Text(
           subtitle,
           style: MoaiText.body(
             context,
-            color: scheme.onSurfaceVariant,
+            color: subtitleColor ?? scheme.onSurfaceVariant,
             fontSize: 13,
             height: 1.2,
           ),

@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/constants.dart';
 import '../models/movie_models.dart';
+import '../models/series_models.dart';
 import 'moiamov_catalog_store.dart';
 import 'moiamov_crypto.dart';
 import 'titan_ranger_service.dart';
@@ -191,6 +192,8 @@ class MoiamovApiService {
   }
 
   /// POST cifrado reutilizable (inyecta headers oficiales y cifra el body).
+  /// [timeout] es para el pedido entero (antes era por etapa: abrir, enviar
+  /// y leer sumaban hasta el triple con la red muda).
   Future<String?> _postEncrypted(
     HttpClient client,
     String url,
@@ -198,11 +201,13 @@ class MoiamovApiService {
     Duration timeout,
   ) async {
     try {
-      final req = await client.postUrl(Uri.parse(url)).timeout(timeout);
-      _setCommonHeaders(req);
-      req.write(encryptPayload(payload));
-      final resp = await req.close().timeout(timeout);
-      final body = await resp.transform(utf8.decoder).join().timeout(timeout);
+      final (resp, body) = await () async {
+        final req = await client.postUrl(Uri.parse(url));
+        _setCommonHeaders(req);
+        req.write(encryptPayload(payload));
+        final resp = await req.close();
+        return (resp, await resp.transform(utf8.decoder).join());
+      }().timeout(timeout);
       if (resp.statusCode != 200) {
         _portalRejections++;
         logLine('⚠️ HTTP ${resp.statusCode} en $url');
@@ -442,11 +447,25 @@ class MoiamovApiService {
   /// VPN. Si el portal la rechazó explícitamente, es false.
   bool lastSessionNetworkFailure = false;
 
+  /// La última sesión la rechazó el portal por la región o la IP de salida
+  /// (`portal100024`): con esa salida no hay nada que hacer.
+  bool lastSessionRegionRejected = false;
+
+  /// Servidor del portal que dio la última sesión: se prueba primero en la
+  /// próxima y lo usa la descarga del catálogo.
+  String? _sessionHost;
+  static const String _sessionHostKey = 'moiamov_session_host';
+
+  /// Tiempo máximo para pasar al siguiente servidor del portal: con la red
+  /// muda no tiene sentido recorrerlos todos.
+  static const Duration _sessionBudget = Duration(seconds: 20);
+
   Future<bool> activateDeviceSession({
     String? serverUrl,
     Duration timeout = const Duration(seconds: 8),
   }) async {
     final rejectionsBefore = _portalRejections;
+    lastSessionRegionRejected = false;
     final ok = await _activateDeviceSession(
       serverUrl: serverUrl,
       timeout: timeout,
@@ -455,10 +474,30 @@ class MoiamovApiService {
     return ok;
   }
 
+  Future<String?> _savedSessionHost() async {
+    if (_sessionHost != null) return _sessionHost;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return _sessionHost = prefs.getString(_sessionHostKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _rememberSessionHost(String baseUrl) {
+    if (_sessionHost == baseUrl) return;
+    _sessionHost = baseUrl;
+    SharedPreferences.getInstance()
+        .then((prefs) => prefs.setString(_sessionHostKey, baseUrl))
+        .catchError((_) => false);
+  }
+
   Future<bool> _activateDeviceSession({
     String? serverUrl,
     required Duration timeout,
   }) async {
+    final started = DateTime.now();
+    final lastGood = serverUrl == null ? await _savedSessionHost() : null;
     final fp = await _deviceFingerprint();
     logLine(
       'Dispositivo: androidId=${fp['androidId']} brand=${fp['brand']} device=${fp['device']}',
@@ -469,14 +508,20 @@ class MoiamovApiService {
         : (fp['wifiMac'] ?? deviceMac);
 
     final candidateHosts = <String>{
+      ?lastGood,
       serverUrl ?? defaultBaseUrl,
       'https://ftmrmy.jdfey0cd.com',
       'https://fuxok.nguvmqhpk.com',
-    }.toList();
+    }.map(_cleanUrl).toSet().toList();
 
     for (final host in candidateHosts) {
       if (_syncCancelled) return false;
-      final baseUrl = _cleanUrl(host);
+      if (host != candidateHosts.first &&
+          DateTime.now().difference(started) > _sessionBudget) {
+        logLine('Sesión: se agotó el tiempo; no se prueban más servidores.');
+        break;
+      }
+      final baseUrl = host;
       final ioClient = HttpClient()
         ..badCertificateCallback = _acceptPortalCert
         ..connectionTimeout = timeout;
@@ -537,6 +582,7 @@ class MoiamovApiService {
         final em = actDecoded['errorMessage']?.toString() ?? '';
         if (rc == 'portal100024' || em.contains('黑名单') || em.contains('区域')) {
           _portalRejections++;
+          lastSessionRegionRejected = true;
           logLine(
             '🚫 La salida de red fue rechazada. Reintentá con otro nodo.',
           );
@@ -544,6 +590,7 @@ class MoiamovApiService {
           return false;
         }
         if (_applyActiveResult(actDecoded)) {
+          _rememberSessionHost(baseUrl);
           return true;
         }
         _portalRejections++;
@@ -576,14 +623,15 @@ class MoiamovApiService {
     String? portalCode,
     Duration timeout = const Duration(seconds: 10),
   }) async {
-    serverUrl ??= defaultBaseUrl;
+    serverUrl ??= _sessionHost ?? defaultBaseUrl;
     final sectionLabel = _sectionLabel(section);
 
     // 1. Descarga en vivo por API directa
     final candidateHosts = <String>{
       serverUrl,
+      defaultBaseUrl,
       'https://ftmrmy.jdfey0cd.com',
-    }.toList();
+    }.map(_cleanUrl).toSet().toList();
 
     final candidateCodes = <String>[section];
 
@@ -630,9 +678,13 @@ class MoiamovApiService {
 
           final response = await request.close().timeout(timeout);
           // Los bytes tal cual: pasarlos a texto también va en el otro hilo.
+          // [timeout] corta si deja de llegar (no por lo que tarda en total:
+          // por una VPN lenta el catálogo entero puede tardar más), con un
+          // tope por si llega a cuentagotas.
           final body = await response
+              .timeout(timeout)
               .fold(BytesBuilder(copy: false), (b, chunk) => b..add(chunk))
-              .timeout(timeout);
+              .timeout(_catalogBodyCap);
 
           if (response.statusCode != 200) {
             logLine('⚠️ HTTP ${response.statusCode} ($host / $code)');
@@ -721,6 +773,9 @@ class MoiamovApiService {
     return _emptyCatalog(sectionLabel);
   }
 
+  /// Tope para bajar una sección mientras siga llegando.
+  static const Duration _catalogBodyCap = Duration(seconds: 90);
+
   /// El catálogo guardado en disco.
   late final MoiamovCatalogStore _store = MoiamovCatalogStore(logLine);
 
@@ -772,47 +827,42 @@ class MoiamovApiService {
       timeout,
     );
     if (body == null) return null;
-    try {
-      final decoded = jsonDecode(body);
-      if (decoded is! Map<String, dynamic>) return null;
-      if (decoded['returnCode']?.toString() != '0') {
-        logLine(
-          'searchByName rechazado: ${decoded['returnCode']} (${decoded['errorMessage']})',
-        );
-        return null;
-      }
-      final data = _decodeData(decoded['data']);
-      if (data is! Map) return const MovieSearchPage(items: [], total: 0);
-      final items = <MovieItem>[
-        for (final group in (data['searchItemList'] as List?) ?? const [])
-          if (group is Map)
-            for (final raw in (group['itemList'] as List?) ?? const [])
-              if (raw is Map<String, dynamic>) _searchItem(raw),
-      ];
-      final total = int.tryParse('${data['totalSize']}') ?? items.length;
-      return MovieSearchPage(items: items, total: total);
-    } catch (e) {
-      logLine('⚠️ searchByName: respuesta inválida: $e');
-      return null;
-    }
+    return _readReply(body, 'searchByName', _searchPageFrom);
   }
 
-  /// Películas de una categoría del catálogo, paginadas (`v3/getShelveData`,
-  /// SPEC-45 §8). `columnType` va `"2"`: con `"movie"` el servidor contesta
-  /// bien pero vacío. La página 1 empieza con las mismas películas que la
-  /// fila del catálogo. `null` si no hay sesión o el pedido falla.
+  static MovieSearchPage _searchPageFrom(Object? data, String untitled) {
+    if (data is! Map) return const MovieSearchPage(items: [], total: 0);
+    final items = <MovieItem>[
+      for (final group in (data['searchItemList'] as List?) ?? const [])
+        if (group is Map)
+          for (final raw in (group['itemList'] as List?) ?? const [])
+            if (raw is Map<String, dynamic>) _searchItem(raw, untitled),
+    ];
+    final total = int.tryParse('${data['totalSize']}') ?? items.length;
+    return MovieSearchPage(items: items, total: total);
+  }
+
+  /// Lo de una categoría del catálogo, paginado (`v3/getShelveData`,
+  /// SPEC-45 §8): películas o series, sin adelantos; quien lo usa se queda
+  /// con lo suyo ([MovieItem.isMovie] / [MovieItem.isSeries]). `columnType`
+  /// va `"2"`: con `"movie"` el servidor contesta bien pero vacío. La página 1
+  /// empieza con las mismas que la fila del catálogo. Una página corta (menos
+  /// de [pageSize]) es la última. `null` si no hay sesión o el pedido falla.
   Future<List<MovieItem>?> fetchShelf(
     int columnId, {
     int page = 1,
     required int pageSize,
     Duration timeout = const Duration(seconds: 6),
-  }) async {
-    final data = await _shelfData(columnId, page, pageSize, timeout);
-    if (data == null) return null;
+  }) => _shelfData(columnId, page, pageSize, timeout, _shelfMoviesFrom);
+
+  static List<MovieItem>? _shelfMoviesFrom(Object? data, String untitled) {
+    if (data is! Map) return null;
     return [
       for (final raw in (data['assetList'] as List?) ?? const [])
         if (raw is Map<String, dynamic>)
-          if (_searchItem(raw) case final movie when movie.isMovie) movie,
+          if (_searchItem(raw, untitled) case final item
+              when !item.isCatalogTrailer && !item.isTrailer)
+            item,
     ];
   }
 
@@ -821,17 +871,62 @@ class MoiamovApiService {
   Future<int?> fetchShelfTotal(
     int columnId, {
     Duration timeout = const Duration(seconds: 6),
+  }) => _shelfData(columnId, 1, 1, timeout, _shelfTotalFrom);
+
+  static int? _shelfTotalFrom(Object? data, String untitled) =>
+      data is Map ? int.tryParse('${data['assetListTotalSize'] ?? ''}') : null;
+
+  /// Detalle de una temporada de una serie (`v4/getItemData`): la ficha, las
+  /// otras temporadas y los capítulos. Va con `type: "0"` y `sortType: "0"`:
+  /// con "1" (el de la app oficial), "2" o "teleplay" el portal contesta
+  /// "节目不存在" (no existe). `null` si no hay sesión o falla.
+  Future<SeriesSeasonDetail?> fetchSeriesSeason(
+    String contentId, {
+    Duration timeout = const Duration(seconds: 8),
   }) async {
-    final data = await _shelfData(columnId, 1, 1, timeout);
-    return int.tryParse('${data?['assetListTotalSize'] ?? ''}');
+    if (_currentUserToken.isEmpty) return null;
+    const type = '0';
+    const sortType = '0';
+    final body = await _postEncrypted(
+      _vodClient,
+      '${_cleanUrl(defaultBaseUrl)}/api/portalCore/v4/getItemData',
+      {
+        'userToken': _currentUserToken,
+        'userId': _currentUserId,
+        'portalCode': _currentPortalCode,
+        'contentId': contentId,
+        'type': type,
+        'sortType': sortType,
+        'language': 'es',
+        'macAddr': _deviceMac,
+      },
+      timeout,
+    );
+    if (body == null) return null;
+    return _readReply(body, 'getItemData $contentId', _seriesSeasonFrom);
   }
 
-  /// `data` descifrada de `v3/getShelveData`; `null` si no hay sesión o falla.
-  Future<Map?> _shelfData(
+  static SeriesSeasonDetail? _seriesSeasonFrom(Object? data, String untitled) {
+    final asset = data is Map ? data['assetData'] : null;
+    if (asset is! Map<String, dynamic>) return null;
+    return SeriesSeasonDetail.fromAsset(asset, _searchItem(asset, untitled));
+  }
+
+  /// [_readReply] de un `getItemData`, con una clave de prueba.
+  @visibleForTesting
+  static Future<SeriesSeasonDetail?> debugReadSeriesSeason(
+    String body, {
+    required String key,
+  }) => _readReply(body, 'getItemData', _seriesSeasonFrom, key: key);
+
+  /// Lo que arma [build] con la `data` de `v3/getShelveData`; `null` si no hay
+  /// sesión o falla.
+  Future<T?> _shelfData<T>(
     int columnId,
     int page,
     int pageSize,
     Duration timeout,
+    T? Function(Object? data, String untitled) build,
   ) async {
     if (_currentUserToken.isEmpty || columnId <= 0) return null;
     final body = await _postEncrypted(
@@ -851,28 +946,83 @@ class MoiamovApiService {
       timeout,
     );
     if (body == null) return null;
+    return _readReply(body, 'getShelveData $columnId', build);
+  }
+
+  /// Lee una respuesta del portal en otro hilo: el 3DES es lento y, con
+  /// decenas de pedidos al cargar Películas, trababa la pantalla. [build] debe
+  /// ser una función estática y pura, y lo que arma vuelve a este hilo.
+  /// `null` si el portal la rechazó o no se pudo leer.
+  static Future<T?> _readReply<T>(
+    String body,
+    String label,
+    T? Function(Object? data, String untitled) build, {
+    String? key,
+  }) async {
+    final portal = key ?? portalKey;
+    // Allá no hay traducciones.
+    final untitled = LocaleKeys.movies_untitled.tr();
     try {
-      final decoded = jsonDecode(body);
-      if (decoded is! Map<String, dynamic>) return null;
-      if (decoded['returnCode']?.toString() != '0') {
-        logLine(
-          'getShelveData $columnId rechazado: ${decoded['returnCode']} (${decoded['errorMessage']})',
-        );
-        return null;
+      final reply = await Isolate.run(
+        () => _parseReply<T>(body, portal, untitled, build),
+      );
+      if (reply.rejection case final rejection?) {
+        logLine('$label rechazado: $rejection');
       }
-      final data = _decodeData(decoded['data']);
-      return data is Map ? data : null;
+      if (reply.decryptError case final error?) {
+        logLine('⚠️ No se pudo descifrar data del server: $error');
+      }
+      return reply.value;
     } catch (e) {
-      logLine('⚠️ getShelveData $columnId: respuesta inválida: $e');
+      logLine('⚠️ $label: respuesta inválida: $e');
       return null;
     }
   }
 
+  static _PortalReply<T> _parseReply<T>(
+    String body,
+    String key,
+    String untitled,
+    T? Function(Object? data, String untitled) build,
+  ) {
+    final decoded = jsonDecode(body);
+    if (decoded is! Map<String, dynamic>) return _PortalReply<T>();
+    if (decoded['returnCode']?.toString() != '0') {
+      return _PortalReply<T>(
+        rejection: '${decoded['returnCode']} (${decoded['errorMessage']})',
+      );
+    }
+    Object? data = decoded['data'];
+    String? decryptError;
+    if (data is String && data.trim().isNotEmpty) {
+      try {
+        data = jsonDecode(MoiamovCrypto.decrypt(data.trim(), key));
+      } catch (e) {
+        data = null;
+        decryptError = '$e';
+      }
+    }
+    return _PortalReply<T>(
+      value: build(data, untitled),
+      decryptError: decryptError,
+    );
+  }
+
+  /// [_readReply] de una página de `getShelveData`, con una clave de prueba.
+  @visibleForTesting
+  static Future<List<MovieItem>?> debugReadShelf(
+    String body, {
+    required String key,
+  }) => _readReply(body, 'getShelveData', _shelfMoviesFrom, key: key);
+
   /// Los resultados traen el estreno (`releaseTime`), que el catálogo no.
-  static MovieItem _searchItem(Map<String, dynamic> raw) {
+  static MovieItem _searchItem(Map<String, dynamic> raw, String untitled) {
     final released = raw['releaseTime']?.toString() ?? '';
     final year = RegExp(r'\b(19|20)\d\d\b').firstMatch(released)?.group(0);
-    return MovieItem.fromJson(year == null ? raw : {...raw, 'year': year});
+    return MovieItem.fromJson(
+      year == null ? raw : {...raw, 'year': year},
+      untitled: untitled,
+    );
   }
 
   CatalogResult _emptyCatalog(String sectionLabel) {
@@ -1379,4 +1529,18 @@ class MoiamovApiService {
       },
     );
   }
+}
+
+/// Una respuesta del portal leída en otro hilo ([MoiamovApiService]): los
+/// avisos se escriben al volver.
+class _PortalReply<T> {
+  const _PortalReply({this.value, this.rejection, this.decryptError});
+
+  final T? value;
+
+  /// El portal la rechazó: su código y mensaje.
+  final String? rejection;
+
+  /// No se pudo descifrar `data`.
+  final String? decryptError;
 }

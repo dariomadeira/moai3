@@ -41,10 +41,12 @@ extension _GeneralPluginsLayout on _GeneralPluginsScreenState {
                         builder: (context, constraints) {
                           const windowSize = 5;
                           final availableH = constraints.maxHeight;
-                          final itemExtent =
-                              (availableH / windowSize).floorToDouble();
-                          final tileMinHeight =
-                              (itemExtent - 6.0).clamp(0.0, double.infinity);
+                          final itemExtent = (availableH / windowSize)
+                              .floorToDouble();
+                          final tileMinHeight = (itemExtent - 6.0).clamp(
+                            0.0,
+                            double.infinity,
+                          );
 
                           return SingleChildScrollView(
                             child: Padding(
@@ -52,7 +54,9 @@ extension _GeneralPluginsLayout on _GeneralPluginsScreenState {
                               child: _InstalledPluginTile(
                                 title: LocaleKeys.plugins_arcade_name.tr(),
                                 subtitle: LocaleKeys.plugins_arcade_desc.tr(
-                                  namedArgs: {'abi': ArcadePluginService.getDeviceAbi()},
+                                  namedArgs: {
+                                    'abi': ArcadePluginService.getDeviceAbi(),
+                                  },
                                 ),
                                 minHeight: tileMinHeight,
                                 updateFocus: _installedUpdateFocus,
@@ -95,7 +99,8 @@ extension _GeneralPluginsLayout on _GeneralPluginsScreenState {
                   builder: (context, constraints) {
                     const windowSize = 5;
                     final availableH = constraints.maxHeight;
-                    final itemExtent = (availableH / windowSize).floorToDouble();
+                    final itemExtent = (availableH / windowSize)
+                        .floorToDouble();
 
                     return SizedBox(
                       height: availableH,
@@ -111,67 +116,76 @@ extension _GeneralPluginsLayout on _GeneralPluginsScreenState {
                           _selectedAvailableIndex = idx;
                         },
                         onFocusUpFromFirst: _backFocusNode.requestFocus,
-                        itemBuilder: (
-                          context,
-                          item,
-                          focusNode,
-                          local,
-                          global,
-                          onKeyUp,
-                          onKeyDown,
-                        ) {
-                          final isItemInstalled = item.isArcade && isInstalled;
-                          final isItemDownloading =
-                              item.isArcade && _arcadePlugin.isDownloading;
+                        itemBuilder:
+                            (
+                              context,
+                              item,
+                              focusNode,
+                              local,
+                              global,
+                              onKeyUp,
+                              onKeyDown,
+                            ) {
+                              final isItemInstalled =
+                                  item.isArcade && isInstalled;
+                              final isItemDownloading =
+                                  item.isArcade && _arcadePlugin.isDownloading;
 
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 3),
-                            child: TvTile(
-                              focusNode: focusNode,
-                              minHeight: 0,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                              label: item.name,
-                              description: item.description,
-                              icon: MoaiIcons.tvViewerPillPlugin,
-                              onPressed: () {
-                                if (item.isArcade) {
-                                  if (!isItemInstalled && !isItemDownloading) {
-                                    _installArcade();
-                                  }
-                                }
-                              },
-                              onKeyLeft: () {
-                                if (isInstalled) {
-                                  _installedRemoveFocus.requestFocus();
-                                } else {
-                                  _emptyFocusNode.requestFocus();
-                                }
-                              },
-                              onKeyUp: onKeyUp,
-                              onKeyDown: onKeyDown,
-                              trailingBuilder: (context, isFocused) =>
-                                  TvInstallPill(
-                                isInstalled: isItemInstalled,
-                                isFocused: isFocused,
-                                downloadProgress: isItemDownloading
-                                    ? _arcadePlugin.downloadProgress
-                                    : null,
-                                installLabel: LocaleKeys.common_install.tr(),
-                                installedLabel: LocaleKeys.common_installed.tr(),
-                                onPressed: () {
-                                  if (item.isArcade) {
-                                    if (!isItemInstalled && !isItemDownloading) {
-                                      _installArcade();
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 3,
+                                ),
+                                child: TvTile(
+                                  focusNode: focusNode,
+                                  minHeight: 0,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 10,
+                                  ),
+                                  label: item.name,
+                                  description: item.description,
+                                  icon: MoaiIcons.plugin,
+                                  onPressed: () {
+                                    if (item.isArcade) {
+                                      if (!isItemInstalled &&
+                                          !isItemDownloading) {
+                                        _installArcade();
+                                      }
                                     }
-                                  }
-                                },
-                              ),
-                            ),
-                          );
-                        },
+                                  },
+                                  onKeyLeft: () {
+                                    if (isInstalled) {
+                                      _installedRemoveFocus.requestFocus();
+                                    } else {
+                                      _emptyFocusNode.requestFocus();
+                                    }
+                                  },
+                                  onKeyUp: onKeyUp,
+                                  onKeyDown: onKeyDown,
+                                  trailingBuilder: (context, isFocused) =>
+                                      TvInstallPill(
+                                        isInstalled: isItemInstalled,
+                                        isFocused: isFocused,
+                                        downloadProgress: isItemDownloading
+                                            ? _arcadePlugin.downloadProgress
+                                            : null,
+                                        installLabel: LocaleKeys.common_install
+                                            .tr(),
+                                        installedLabel: LocaleKeys
+                                            .common_installed
+                                            .tr(),
+                                        onPressed: () {
+                                          if (item.isArcade) {
+                                            if (!isItemInstalled &&
+                                                !isItemDownloading) {
+                                              _installArcade();
+                                            }
+                                          }
+                                        },
+                                      ),
+                                ),
+                              );
+                            },
                       ),
                     );
                   },

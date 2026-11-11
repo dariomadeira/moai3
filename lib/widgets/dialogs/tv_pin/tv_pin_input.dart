@@ -173,7 +173,8 @@ extension _TvPinDialogInput on _TvPinDialogState {
       return KeyEventResult.handled;
     }
 
-    if (key == LogicalKeyboardKey.backspace || key == LogicalKeyboardKey.delete) {
+    if (key == LogicalKeyboardKey.backspace ||
+        key == LogicalKeyboardKey.delete) {
       _onBackspace();
       return KeyEventResult.handled;
     }

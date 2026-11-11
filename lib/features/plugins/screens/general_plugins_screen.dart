@@ -3,6 +3,7 @@ import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/services/arcade_plugin_service.dart';
@@ -81,8 +82,10 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
     unawaited(_arcadePlugin.refresh());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+        // Al botón de actualizar, no al de borrar: borrar no pide
+        // confirmación y un OK al entrar desinstalaba el motor.
         if (_arcadePlugin.isInstalled) {
-          _installedRemoveFocus.requestFocus();
+          _installedUpdateFocus.requestFocus();
         } else {
           _focusAvailableList();
         }
@@ -122,7 +125,7 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
     if (_arcadePlugin.isDownloading || _arcadePlugin.isInstalled) return;
     await _arcadePlugin.installPlugin();
     if (mounted && _arcadePlugin.isInstalled) {
-      _installedRemoveFocus.requestFocus();
+      _installedUpdateFocus.requestFocus();
     }
   }
 
@@ -167,14 +170,14 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                           focusNode: _backFocusNode,
                           onKeyRight: () {
                             if (isInstalled) {
-                              _installedRemoveFocus.requestFocus();
+                              _installedUpdateFocus.requestFocus();
                             } else {
                               _focusAvailableList();
                             }
                           },
                           onKeyDown: () {
                             if (isInstalled) {
-                              _installedRemoveFocus.requestFocus();
+                              _installedUpdateFocus.requestFocus();
                             } else {
                               _focusAvailableList();
                             }
@@ -196,42 +199,6 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                         ],
                         icons: const [MoaiIcons.tvViewerPillPlugin],
                         onPanelTap: (_) {},
-                        tabBuilder: (index, isExpanded) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 14, top: 14),
-                            child: Column(
-                              children: [
-                                const Spacer(),
-                                RotatedBox(
-                                  quarterTurns: 3,
-                                  child: Text(
-                                    LocaleKeys.settings_general_plugins_title
-                                        .tr(),
-                                    maxLines: 1,
-                                    softWrap: false,
-                                    overflow: TextOverflow.fade,
-                                    style: MoaiText.display(
-                                      context,
-                                      color: scheme.onSurface.withValues(
-                                        alpha: 0.7,
-                                      ),
-                                      fontSize: 12,
-                                      letterSpacing: 1.0,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Icon(
-                                  MoaiIcons.tvViewerPillPlugin,
-                                  size: MoaiIconSizes.md,
-                                  color: scheme.onSurfaceVariant.withValues(
-                                    alpha: 0.85,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
                         buildExpandedContent: (index, title) {
                           return Container(
                             padding: const EdgeInsets.all(10),
@@ -248,14 +215,17 @@ class _GeneralPluginsScreenState extends State<GeneralPluginsScreen> {
                                             .plugins_admin_subtitle
                                             .tr(),
                                         padding: EdgeInsets.zero,
+                                        titleShader: HomeClock.timeShader,
                                       ),
                                     ),
                                     if (totalInstalledCount > 0) ...[
                                       const SizedBox(width: 12),
                                       TvMetaPill(
-                                        icon: MoaiIcons.tvViewerPillPlugin,
+                                        icon: MoaiIcons.plugin,
                                         label: LocaleKeys.plugins_count_single
                                             .tr(namedArgs: {'count': '1'}),
+                                        // Gris, como el total de canales.
+                                        tint: TvMetaPill.countTint,
                                       ),
                                     ],
                                   ],

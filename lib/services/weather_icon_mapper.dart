@@ -1,13 +1,14 @@
-/// Mapeador de códigos de condiciones meteorológicas de WeatherAPI a URLs CDN de Meteocons Lottie.
+/// Mapeador de códigos de condiciones meteorológicas de WeatherAPI a los
+/// íconos Lottie de Meteocons que trae la app (ya recoloreados por
+/// `tool/build_weather_icons.dart`: no se bajan ni se procesan al arrancar).
 class WeatherIconMapper {
-  static const String _cdnBase =
-      'https://cdn.jsdelivr.net/npm/@meteocons/lottie@0.1.0/fill';
+  static const String _cdnBase = 'assets/lottie/weather';
 
-  /// Retorna la URL CDN de Meteocons para la condición y momento del día dados.
+  /// El ícono (asset) de Meteocons para la condición y momento del día dados.
   ///
   /// [code]: Código numérico de WeatherAPI (ej: 1000 = Despejado).
   /// [isDay]: true si es de día, false si es de noche.
-  static String getLottieUrl({int? code, bool isDay = true}) {
+  static String getLottieAsset({int? code, bool isDay = true}) {
     if (code == null) {
       return isDay ? '$_cdnBase/clear-day.json' : '$_cdnBase/clear-night.json';
     }
@@ -15,7 +16,9 @@ class WeatherIconMapper {
     switch (code) {
       // Despejado / Soleado
       case 1000:
-        return isDay ? '$_cdnBase/clear-day.json' : '$_cdnBase/clear-night.json';
+        return isDay
+            ? '$_cdnBase/clear-day.json'
+            : '$_cdnBase/clear-night.json';
 
       // Parcialmente nublado
       case 1003:
@@ -116,7 +119,9 @@ class WeatherIconMapper {
             : '$_cdnBase/thunderstorms-night-snow.json';
 
       default:
-        return isDay ? '$_cdnBase/clear-day.json' : '$_cdnBase/clear-night.json';
+        return isDay
+            ? '$_cdnBase/clear-day.json'
+            : '$_cdnBase/clear-night.json';
     }
   }
 }
