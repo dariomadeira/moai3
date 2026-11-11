@@ -2,11 +2,18 @@ part of '../home_dashboard_area.dart';
 
 /// Cada tarjeta del Inicio: cuál va, cómo se arma y sus acciones.
 extension _HomeDashboardItems on HomeDashboardAreaState {
-  /// Dónde está la tarjeta con el foco en [items]; si ya no está (o todavía
-  /// no se eligió ninguna), la primera.
+  /// Dónde está la tarjeta con el foco en [items]; si ya no está, la que
+  /// quedó en su lugar (antes volvía a la primera y parecía que el Inicio se
+  /// recargaba); sin ninguna elegida, la primera.
   int _selectedIndexIn(List<_HomeWidget> items) {
+    if (items.isEmpty) return 0;
     final index = _selected == null ? -1 : items.indexOf(_selected!);
-    return index < 0 ? 0 : index;
+    if (index >= 0) return index;
+    if (_selected == null) return 0;
+    final pos = _selectedPos.clamp(0, items.length - 1);
+    // El clima no se enfoca: la de abajo (o la de arriba si es la última).
+    if (items[pos] != _HomeWidget.weather) return pos;
+    return pos + 1 < items.length ? pos + 1 : (pos - 1).clamp(0, pos);
   }
 
   /// Cada tarjeta con su manejo de teclas.

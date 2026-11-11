@@ -109,6 +109,25 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
   /// ejemplo cuando cargan los adelantos, el foco sigue en la misma).
   _HomeWidget? _selected;
 
+  /// Su lugar: si la tarjeta se va (se vació "Seguir", se desmarcaron todas)
+  /// el foco queda en la que ocupa ese lugar, no vuelve arriba de todo.
+  int _selectedPos = 0;
+
+  /// Las tarjetas del último armado, para volver a poner el foco.
+  List<_HomeWidget> _lastItems = const [];
+
+  /// Después de una confirmación (quitar, borrar, desmarcar) el cartel se
+  /// cierra y la lista cambia: el foco vuelve a la lista, en el lugar de la
+  /// tarjeta (o la que quedó en su lugar), en vez de perderse.
+  @override
+  void _restoreListFocus() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !(ModalRoute.of(context)?.isCurrent ?? true)) return;
+      if (_lastItems.isEmpty) return;
+      _listKey.currentState?.ensureVisible(_selectedIndexIn(_lastItems));
+    });
+  }
+
   /// Películas de la tarjeta destacada: las primeras de "Estrenos de
   /// Cartelera".
   static const int _heroCount = 6;
@@ -406,12 +425,12 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     final seriesReady =
         !seriesVisible ||
         HomeHeroRotation.series.isLoaded &&
+            // Sólo la primera carga: si después se vuelve a cargar, la fila
+            // no se va (si no, todo el Inicio se corría dos lugares).
             context.select(
               (FeaturedMoviesProvider? p) =>
-                  (p?.loadedOnceFor(FeaturedMoviesProvider.sectionSeries) ??
-                      true) &&
-                  !(p?.isLoadingFor(FeaturedMoviesProvider.sectionSeries) ??
-                      false),
+                  p?.loadedOnceFor(FeaturedMoviesProvider.sectionSeries) ??
+                  true,
             );
     // La tarjeta de series a la derecha de la destacada.
     _updateHeroSeries(
@@ -455,6 +474,7 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
       seriesVisible: seriesVisible,
       hasTrailers: showTrailers && trailers.isNotEmpty,
     );
+    _lastItems = items;
 
     return TvAccordionRowPreview(
       panelCount: 1,
@@ -550,8 +570,10 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
                                 // OK abre Gestionar amigos.
                                 canFocus: (item) => item != _HomeWidget.weather,
                                 initialGlobalIndex: _selectedIndexIn(items),
-                                onFocusedGlobalIndex: (idx) =>
-                                    _selected = items[idx],
+                                onFocusedGlobalIndex: (idx) {
+                                  _selected = items[idx];
+                                  _selectedPos = idx;
+                                },
                                 itemBuilder:
                                     (
                                       context,

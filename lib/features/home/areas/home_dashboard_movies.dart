@@ -4,6 +4,9 @@ part of 'home_dashboard_area.dart';
 /// "Adelantos"): su estado, abrir y retomar películas y las confirmaciones.
 /// Las reglas (qué sale de dónde) son de [MovieLibrary].
 mixin _HomeMovieCards on HomeAreaState<HomeDashboardArea> {
+  /// Vuelve a poner el foco en la lista del Inicio (lo implementa el área).
+  void _restoreListFocus();
+
   /// Elegido en "Interesantes" (←/→): una película, o
   /// [HomeWatchlistBigCard.clearAllIndex] para el botón "Quitar todas".
   int _watchlistIndex = 0;
@@ -254,6 +257,8 @@ mixin _HomeMovieCards on HomeAreaState<HomeDashboardArea> {
       ),
     );
     cancelFocus.dispose();
+    // Al cerrarse el cartel, el foco vuelve a la lista en su lugar.
+    _restoreListFocus();
     okFocus.dispose();
     return result == true;
   }
@@ -291,6 +296,8 @@ mixin _HomeMovieCards on HomeAreaState<HomeDashboardArea> {
       ),
     );
     cancelFocus.dispose();
+    // Al cerrarse el cartel, el foco vuelve a la lista en su lugar.
+    _restoreListFocus();
     removeFocus.dispose();
     if (confirmed == true) {
       await MovieWatchlistService.instance.remove(movie.contentId);
@@ -328,6 +335,8 @@ mixin _HomeMovieCards on HomeAreaState<HomeDashboardArea> {
       ),
     );
     cancelFocus.dispose();
+    // Al cerrarse el cartel, el foco vuelve a la lista en su lugar.
+    _restoreListFocus();
     clearFocus.dispose();
     if (confirmed == true) {
       await MovieWatchlistService.instance.clear();
