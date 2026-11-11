@@ -55,14 +55,17 @@ Todas las decisiones de diseño, contratos de plugins, modelos de datos y flujos
 - [SPEC-41: Estilos de Foco TV y Audio D-Pad (SoundPool)](features/tv_focus_styles_and_dpad_audio.md)  
   *Relleno primary vs borde en canales; clicks UI con SoundPool y mute por preferencia.*
 - [SPEC-42: Inicio (tablero de tarjetas)](features/home_dashboard.md)  
-  *Reloj, logo en el rail, tarjetas Clima/Eventos/Descuentos/Seguir viendo/Interesantes/Adelantos/Arcade: orden, colores y condiciones.*
+  *Saludo, logo y reloj; tarjetas Destacada/Clima/Eventos/Seguir (películas y series)/Recomendadas (películas y series)/Descuentos/Amigos/Solicitudes/Marcadas (películas y series)/Adelantos/Arcade: orden, páginas, colores y condiciones.*
 - [SPEC-43: Descuentos (MODO)](features/discounts.md)  
   *Sección del rail: bancos y billeteras, Mis comercios, rubros (súper, mayoristas, farmacias, combustible) y provincia; API pública de MODO con caché diario, semana de hoy a +6 y detalle. Tarjeta resumen en el Inicio.*
 - [SPEC-44: Biblioteca de películas y reproducción](features/movie_library_and_playback.md)  
-  *Zonas de progreso, Interesantes → Seguir viendo → vista, Titan Ranger, audio/subtítulos globales, catálogo en isolate e imágenes.*
-- [SPEC-45: Buscador de películas](features/movie_search.md)
-- [SPEC-51: Recomendaciones de películas entre amigos](features/movie_recommendations.md)  
-  *Segundo panel "Buscar" en Películas; búsqueda en el servidor (`searchByName`) con limpieza, paginado, recientes y respaldo en el catálogo guardado.*
+  *Zonas de progreso, Marcadas → Seguir → vista, Titan Ranger, audio/subtítulos globales, atrás por el pop del sistema, borrar lo visto, catálogo en isolate e imágenes.*
+- [SPEC-45: Buscador de películas](features/movie_search.md)  
+  *Segundo panel "Buscar" en Películas (y en Series); búsqueda en el servidor (`searchByName`) con limpieza, paginado, recientes y respaldo en el catálogo guardado.*
+- [SPEC-46: Series](features/series.md)  
+  *Detalle (temporadas repetidas, una por número), reproducción de capítulos con paso automático al siguiente y a la próxima temporada, vistos (número verde en píldora), OK mantenido para marcar, "Seguir series", "Marcadas" de series y borrar lo visto.*
+- [SPEC-51: Recomendaciones entre amigos (películas y series)](features/movie_recommendations.md)  
+  *👍/👎 en el detalle y al final (película o cada temporada), tablas `movie_recommendations` y `series_recommendations` en Supabase, tarjetas "Recomendadas" en el Inicio ("Hasta T3" en series).*
 
 ### 5. Verificación y Calidad
 - [SPEC-40: Matriz de Criterios de Aceptación (Baseline v3.0.14 + xumovies)](verification/baseline_acceptance_matrix.md)  

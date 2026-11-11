@@ -9,10 +9,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Una película recomendada y quiénes la recomendaron.
 class FriendRecommendation {
-  const FriendRecommendation({required this.movie, required this.names});
+  const FriendRecommendation({
+    required this.movie,
+    required this.names,
+    this.seasonReached,
+  });
 
   final MovieItem movie;
   final List<String> names;
+
+  /// En una serie: hasta qué temporada llegó quien la recomendó (el más
+  /// reciente).
+  final int? seasonReached;
 }
 
 /// Agrupa [rows] (la más nueva primero) por película, sin las de [hidden].
@@ -37,6 +45,7 @@ List<FriendRecommendation> groupRecommendations(
       byMovie[contentId] = FriendRecommendation(
         movie: MovieItem.fromJson(json),
         names: [name],
+        seasonReached: json['seasonReached'] as int?,
       );
     }
   }
@@ -53,10 +62,13 @@ class MovieRecommendationsProvider extends ChangeNotifier {
   MovieRecommendationsProvider({
     MovieRecommendationsApi? api,
     Future<bool> Function(String contentId)? isWatched,
+    String storageKey = 'movie_recommendations_state',
   }) : _api = api ?? MovieRecommendationsApi(),
-       _isWatched = isWatched ?? _watchedInProgress;
+       _isWatched = isWatched ?? _watchedInProgress,
+       _key = storageKey;
 
-  static const String _key = 'movie_recommendations_state';
+  /// Dónde se guarda en este TV (las series, aparte).
+  final String _key;
   static const int _maxRemembered = 500;
   static const Duration _minRefreshInterval = Duration(minutes: 2);
 
@@ -65,6 +77,10 @@ class MovieRecommendationsProvider extends ChangeNotifier {
 
   final Map<String, String> _votes = {};
   final Set<String> _dismissed = {};
+
+  /// Series: las temporadas en las que ya se preguntó al terminar
+  /// ("serie#2"), para no repetir el cartel.
+  final Set<String> _asked = {};
   final Set<String> _watched = {};
 
   /// 👍 que todavía no llegaron a Supabase.
@@ -97,6 +113,17 @@ class MovieRecommendationsProvider extends ChangeNotifier {
   /// Todavía no se votó: el cartel del final puede preguntar.
   bool shouldAsk(String contentId) => voteOf(contentId) == null;
 
+  /// Series: al terminar la temporada [season] se pregunta una sola vez
+  /// (aunque ya se haya votado otra), si hay con quién compartir.
+  bool shouldAskSeason(String contentId, int season) =>
+      canRecommend && !_asked.contains('$contentId#$season');
+
+  Future<void> markAskedSeason(String contentId, int season) async {
+    await ensureLoaded();
+    _asked.add('$contentId#$season');
+    await _save();
+  }
+
   Future<void> ensureLoaded() => _loading ??= _load();
 
   Future<void> _load() async {
@@ -113,6 +140,7 @@ class MovieRecommendationsProvider extends ChangeNotifier {
       _pendingRemovals.addAll(
         ((json['removals'] as List?) ?? const []).cast<String>(),
       );
+      _asked.addAll(((json['asked'] as List?) ?? const []).cast<String>());
     } catch (e) {
       debugPrint('[MovieRecommendations] No se pudo leer: $e');
     }
@@ -126,6 +154,9 @@ class MovieRecommendationsProvider extends ChangeNotifier {
     while (_dismissed.length > _maxRemembered) {
       _dismissed.remove(_dismissed.first);
     }
+    while (_asked.length > _maxRemembered) {
+      _asked.remove(_asked.first);
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(
@@ -135,6 +166,7 @@ class MovieRecommendationsProvider extends ChangeNotifier {
           'dismissed': _dismissed.toList(),
           'pending': _pending,
           'removals': _pendingRemovals.toList(),
+          'asked': _asked.toList(),
         }),
       );
     } catch (e) {
@@ -211,7 +243,7 @@ class MovieRecommendationsProvider extends ChangeNotifier {
         _pendingRemovals.remove(contentId);
       }
       for (final entry in _pending.entries.toList()) {
-        await _api.recommend(_deviceId, MovieItem.fromJson(entry.value));
+        await _api.recommendJson(_deviceId, entry.value);
         _pending.remove(entry.key);
       }
     } catch (e) {
@@ -230,11 +262,22 @@ class MovieRecommendationsProvider extends ChangeNotifier {
   }
 
   /// Botones del detalle: apretar el voto actual lo quita.
-  Future<void> toggleVote(MovieItem movie, MovieVote vote) =>
-      setVote(movie, voteOf(movie.contentId) == vote ? null : vote);
+  Future<void> toggleVote(
+    MovieItem movie,
+    MovieVote vote, {
+    Map<String, dynamic>? extra,
+  }) => voteOf(movie.contentId) == vote
+      ? setVote(movie, null)
+      : setVote(movie, vote, extra: extra);
 
-  /// Sólo 👍 sale del TV: entrar en él publica y dejarlo borra.
-  Future<void> setVote(MovieItem movie, MovieVote? vote) async {
+  /// Sólo 👍 sale del TV: entrar en él publica y dejarlo borra. [extra] va
+  /// con lo publicado (series: la temporada a la que se llegó); un 👍
+  /// repetido con otro [extra] lo vuelve a publicar.
+  Future<void> setVote(
+    MovieItem movie,
+    MovieVote? vote, {
+    Map<String, dynamic>? extra,
+  }) async {
     await ensureLoaded();
     final contentId = movie.contentId;
     final wasUp = voteOf(contentId) == MovieVote.up;
@@ -244,9 +287,9 @@ class MovieRecommendationsProvider extends ChangeNotifier {
     } else {
       _votes[contentId] = vote.name;
     }
-    if (isUp && !wasUp) {
+    if (isUp && (!wasUp || extra != null)) {
       _pendingRemovals.remove(contentId);
-      _pending[contentId] = movie.toJson();
+      _pending[contentId] = {...movie.toJson(), ...?extra};
     } else if (wasUp && !isUp) {
       // Si nunca llegó a publicarse, no hay nada que borrar.
       if (_pending.remove(contentId) == null) {

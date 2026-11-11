@@ -1,8 +1,8 @@
 # SPEC-30: Motor de Navegación y Foco para Android TV (D-Pad)
 
-> **Estado**: Congelado (Baseline v3.0.11)  
+> **Estado**: Congelado (Baseline v3.0.11), con agregados del 2026-11-11 (§2.1.2, §2.3)  
 > **Área**: Experiencia de Usuario / Android TV  
-> **Archivos de Referencia**: `lib/focus/focus_scroll_sync.dart`, `lib/focus/tv_key_handler.dart`, `lib/focus/tv_layout_constants.dart`
+> **Archivos de Referencia**: `lib/focus/focus_scroll_sync.dart`, `lib/focus/tv_key_handler.dart`, `lib/focus/tv_layout_constants.dart`, `lib/focus/opening_focus_guard.dart`
 
 ---
 
@@ -33,6 +33,10 @@ Foco y teclas de los ítems de lista (`TvIconListCard`, `ChannelGridTile`, `NewC
 - ←/→: las repeticiones se bloquean; el callback devuelve si consumió la tecla.
 - ↑/↓: se consumen solo si hay callback, incluidas las repeticiones.
 - Al perder el foco con OK apretado se cancela la pulsación pendiente.
+- El detalle de series repite estas reglas a mano en sus filas (temporadas y capítulos): OK corto al soltar, mantener 800 ms para marcar como visto, y un KeyUp sin su KeyDown (el del OK que abrió la pantalla) se ignora (SPEC-46 §3.1).
+
+### 2.1.2. `OpeningFocusGuard` (2026-11-11)
+`lib/focus/opening_focus_guard.dart`. Al abrir una pantalla deja el foco en un nodo (`target`) **hasta la primera tecla apretada**. En el TV la pantalla no deja enfocar nada adentro mientras se abre y, al terminar, le da el foco a su grupo (`FocusScope`) o a lo primero que encuentra: en los detalles quedaba en Atrás y la primera tecla se iba ahí. La guardia escucha los cambios de foco (`FocusManager`) y devuelve el foco a `target` en el cuadro siguiente; con la primera tecla apretada (`HardwareKeyboard`, sólo KeyDown y con la pantalla adelante) se apaga. Tope de 240 reintentos seguidos. La usan el detalle de películas (botón principal) y el de series (capítulos). El primer intento (reintentar durante la animación y cortar si el foco caía en Atrás) fallaba porque tomaba el foco que movía el sistema como si fuera de la persona.
 
 ### 2.2. `TvKeyHandler`
 Normaliza la captura de eventos de hardware procedentes de controles remotos IR/Bluetooth y gamepads:
@@ -57,6 +61,9 @@ Teclas de acción reconocidas:
 - `LogicalKeyboardKey.select` (código estándar de Android TV Remote DPad Center)
 - `LogicalKeyboardKey.gameButtonA`
 - `LogicalKeyboardKey.space`
+
+### 2.3. Atrás del control y pop del sistema
+En el TV, si la app **no** atiende la tecla "atrás" (`LogicalKeyboardKey.goBack`), al soltarla Android manda el pop del sistema (`popRoute` → `Navigator.maybePop`). Si una pantalla se cierra al **apretar** la tecla, el pop que llega al soltarla cierra también la de abajo. Regla: no cerrar pantallas desde la tecla `goBack`; dejar que llegue el pop y manejarlo con `PopScope(canPop: false, onPopInvokedWithResult: …)` cuando la pantalla tiene que decidir (cerrar un menú antes de salir, guardar progreso). Lo aplican el reproductor de películas y series (SPEC-44 §2.3) y la hoja de texto (`tv_text_input_sheet.dart`).
 
 ---
 

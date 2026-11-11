@@ -16,7 +16,9 @@ import 'package:moai3/widgets/feedback/moai_snackbar.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/services/movie_audio_choices.dart';
 import 'package:moai3/services/movie_library.dart';
+import 'package:moai3/services/series_recommendations_api.dart';
 import 'package:moai3/state/movie_recommendations_provider.dart';
+import 'package:moai3/state/series_recommendations_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -675,7 +677,16 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
                     Positioned(
                       top: 72,
                       right: 40,
-                      child: MovieRecommendPrompt(selected: _recommendAnswer!),
+                      child: MovieRecommendPrompt(
+                        selected: _recommendAnswer!,
+                        prompt: switch (widget.series) {
+                          final series? =>
+                            LocaleKeys.series_recommend_prompt.tr(
+                              namedArgs: {'season': '${series.seasonNumber}'},
+                            ),
+                          null => null,
+                        },
+                      ),
                     ),
 
                   // Subtítulo: abajo; con la interfaz visible, sobre los controles.

@@ -11,6 +11,11 @@ import 'package:moai3/models/series_models.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/series_continue_service.dart';
 import 'package:moai3/services/series_watch_service.dart';
+import 'package:moai3/services/movie_recommendations_api.dart';
+import 'package:moai3/services/series_recommendations_api.dart';
+import 'package:moai3/services/series_watchlist_service.dart';
+import 'package:moai3/state/movie_recommendations_provider.dart';
+import 'package:moai3/state/series_recommendations_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -147,6 +152,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       prefs = await AppPreferences.init();
       requested = [];
+      SeriesWatchlistService.instance.resetForTest();
     });
 
     Future<SeriesDetailScreenState> pump(
@@ -609,7 +615,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 900));
       await tester.sendKeyUpEvent(LogicalKeyboardKey.enter);
       // Lo guardado se lee de nuevo: dejar que terminen las esperas.
-      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      for (var i = 0; i < 3; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 20)),
+        );
+        await tester.pump();
+      }
       await tester.pumpAndSettle();
     }
 
@@ -789,6 +800,90 @@ void main() {
       );
     });
 
+    testWidgets('Marcar: ↑ desde las temporadas; marca y desmarca la serie', (
+      tester,
+    ) async {
+      SeriesWatchlistService.instance.resetForTest();
+      await pump(tester, episodes: const {'s1': 4, 's2': 6, 's3': 9});
+      expect(find.text('Marcar'), findsOneWidget);
+      await key(tester, LogicalKeyboardKey.arrowUp);
+      await key(tester, LogicalKeyboardKey.arrowUp);
+      expect(
+        FocusManager.instance.primaryFocus?.debugLabel,
+        'series_detail_watchlist',
+      );
+      await key(tester, LogicalKeyboardKey.enter);
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pumpAndSettle();
+      expect(find.text('Desmarcar'), findsOneWidget);
+      final watchlist = SeriesWatchlistService.instance;
+      expect(watchlist.items.single.name, 'Caballos lentos');
+      // Se reconoce por cualquier temporada.
+      expect(watchlist.contains(['s3']), isTrue);
+
+      await key(tester, LogicalKeyboardKey.enter);
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pumpAndSettle();
+      expect(find.text('Marcar'), findsOneWidget);
+      expect(watchlist.items, isEmpty);
+      // ↓ vuelve a las temporadas.
+      await key(tester, LogicalKeyboardKey.arrowDown);
+      expect(
+        FocusManager.instance.primaryFocus?.debugLabel,
+        'series_detail_seasons',
+      );
+    });
+
+    testWidgets('con amigos: 👍 al lado de Marcar recomienda la serie', (
+      tester,
+    ) async {
+      useSpanishTranslations();
+      tester.view.physicalSize = const Size(960, 540);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      final api = _SeriesVotesApi();
+      final recommendations = SeriesRecommendationsProvider(
+        api: api,
+        isWatched: (_) async => false,
+      );
+      recommendations.setFriends(deviceId: 'yo', friends: const {'ana': 'Ana'});
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (_) => TvSettingsProvider(prefs)),
+            ChangeNotifierProvider.value(value: recommendations),
+          ],
+          child: MaterialApp(
+            home: SeriesDetailScreen(
+              series: MovieItem(contentId: 's2', name: 'Caballos lentos T2'),
+              fetchSeason: (id) async => detail(
+                asset(id: id, season: int.parse(id.substring(1)), episodes: 4),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // ↑ temporadas, ↑ Marcar, → 👍.
+      await key(tester, LogicalKeyboardKey.arrowUp);
+      await key(tester, LogicalKeyboardKey.arrowUp);
+      await key(tester, LogicalKeyboardKey.arrowRight);
+      expect(
+        FocusManager.instance.primaryFocus?.debugLabel,
+        'series_detail_vote_up',
+      );
+      await key(tester, LogicalKeyboardKey.enter);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)),
+      );
+      await tester.pump();
+      // La serie (su T1, la misma en todos los TV), sin nada visto: la T2.
+      expect(api.sent.single['contentId'], 's1');
+      expect(api.sent.single['name'], 'Caballos lentos');
+      expect(api.sent.single[SeriesRecommendationsApi.seasonKey], 2);
+      expect(recommendations.voteOf('s1'), MovieVote.up);
+    });
+
     testWidgets('← desde la primera columna va a Atrás', (tester) async {
       await pump(tester);
       await key(tester, LogicalKeyboardKey.arrowLeft);
@@ -796,4 +891,18 @@ void main() {
       expect(focused, 'series_detail_back');
     });
   });
+}
+
+class _SeriesVotesApi extends MovieRecommendationsApi {
+  final sent = <Map<String, dynamic>>[];
+
+  @override
+  Future<List<Map<String, dynamic>>> fetch(List<String> friendIds) async =>
+      const [];
+
+  @override
+  Future<void> recommendJson(
+    String deviceId,
+    Map<String, dynamic> json,
+  ) async => sent.add(json);
 }

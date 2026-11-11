@@ -52,8 +52,11 @@ MoAI 3 implementa un mecanismo de protección para canales y contenidos cataloga
 
 ## 3. Motor de Temas y Color Dinámico (M3 Expressive)
 
-1. **Modo Oscuro / Claro**:
-   - Clave: `'dark_mode'`. Predeterminado en `true` (Dark Mode TV).
+1. **Modo Oscuro / Claro** (rediseño de cristal, 2026-11-10/11):
+   - Clave: `'dark_mode_v2'`. Predeterminado en `false`: la app arranca en **claro**. La clave vieja `'dark_mode'` (que valía `true`) ya no se lee.
+   - Interruptor en **Ajustes › Generales**, visible también en release.
+   - Tema: `lib/theme/moai_theme.dart` (`MoaiTheme.light/dark`); los colores que cambian por modo están en `lib/theme/moai_palette.dart` (`MoaiPalette`, `ThemeExtension`; incluye `watched`, el verde de lo visto en series). Estilo oscuro: vidrio ahumado sobre fondo oscuro con color (`assets/images/background_dark.webp`). En oscuro el acento se aclara 20 %.
+   - Guardas: capturas de referencia de los dos modos (`test/goldens/theme_golden_test.dart`) y el test de colores fijos (`test/hardcoded_colors_test.dart`).
 2. **Color de Semilla (Accent Seed)**:
    - Selección de paleta M3 a partir de un índice predefinido de semillas tonales (`MoaiAccentColors`).
    - Clave: `'accent_color_index'`.

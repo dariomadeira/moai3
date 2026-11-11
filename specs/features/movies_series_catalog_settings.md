@@ -50,7 +50,17 @@ Formalizar:
 | 4 | Generales |
 | 5 | Acerca de |
 
-El panel 1 tiene una sola fila: **Frecuencia de actualización** (con la fecha del catálogo en el título).
+El panel 1 tiene estas filas (2026-11-11):
+
+| Fila | Qué hace |
+| :--- | :--- |
+| Idioma del audio | Audio preferido de películas y series (SPEC-44 §2.2) |
+| Subtítulos | Apagados o idioma |
+| Tamaño de subtítulos | |
+| Adelantos en el Inicio | Muestra u oculta la tarjeta (SPEC-42 §3.5) |
+| **Frecuencia de actualización** | Con la fecha del catálogo en la descripción |
+| **Borrar películas vistas** | Confirma (Cancelar / Borrar, rojo) y borra lo visto y por dónde iba cada película; Marcadas no cambia (SPEC-44 §2.4) |
+| **Borrar series vistas** | Confirma y borra capítulos vistos, puntos de retomar y "Seguir series"; Marcadas no cambia (SPEC-46 §8) |
 
 ---
 

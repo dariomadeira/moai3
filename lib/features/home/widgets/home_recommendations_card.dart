@@ -14,11 +14,16 @@ class HomeRecommendationsCard extends StatelessWidget {
     required this.items,
     required this.selectedIndex,
     this.isFocused = false,
+    this.series = false,
   });
 
   final List<FriendRecommendation> items;
   final int selectedIndex;
   final bool isFocused;
+
+  /// La de series: "Series" arriba, su ícono y, sobre cada una, hasta qué
+  /// temporada llegó quien la recomendó ("Hasta T3").
+  final bool series;
 
   /// [selectedIndex] del botón "Borrar todas".
   static const int clearAllIndex = HomeMovieBigCard.actionIndex;
@@ -45,6 +50,17 @@ class HomeRecommendationsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return HomeMovieBigCard(
       icon: MoaiIcons.vodRecommend,
+      svgIcon: series ? MoaiIcons.seriesSvg : null,
+      sectionLabel: series ? LocaleKeys.home_rail_series_title.tr() : null,
+      badges: series
+          ? {
+              for (final item in items)
+                if (item.seasonReached case final season?)
+                  item.movie.contentId: LocaleKeys
+                      .home_series_recommendations_until
+                      .tr(namedArgs: {'season': '$season'}),
+            }
+          : const {},
       color: color,
       title: LocaleKeys.home_recommendations_title.tr(),
       countLabel: _line,

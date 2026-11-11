@@ -437,6 +437,10 @@ abstract class  LocaleKeys {
   static const home_series_continue_remove_desc = 'home_series_continue_remove_desc';
   static const home_series_continue_remove_title = 'home_series_continue_remove_title';
   static const home_series_continue_title = 'home_series_continue_title';
+  static const home_series_recommendations_until = 'home_series_recommendations_until';
+  static const home_series_watchlist_clear_desc = 'home_series_watchlist_clear_desc';
+  static const home_series_watchlist_remove_desc = 'home_series_watchlist_remove_desc';
+  static const home_series_watchlist_remove_title = 'home_series_watchlist_remove_title';
   static const home_tab_explore = 'home_tab_explore';
   static const home_tab_groups = 'home_tab_groups';
   static const home_tab_search = 'home_tab_search';
@@ -720,6 +724,7 @@ abstract class  LocaleKeys {
   static const series_episodes_one = 'series_episodes_one';
   static const series_next_episode = 'series_next_episode';
   static const series_next_season = 'series_next_season';
+  static const series_recommend_prompt = 'series_recommend_prompt';
   static const series_seasons_count = 'series_seasons_count';
   static const series_seasons_label = 'series_seasons_label';
   static const settings_about_channels_loaded = 'settings_about_channels_loaded';

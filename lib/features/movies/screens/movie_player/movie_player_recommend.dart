@@ -3,8 +3,11 @@ part of '../movie_player_screen.dart';
 /// ¿La recomendarías?: cuándo se pregunta, sus teclas y la respuesta.
 extension _MoviePlayerRecommend on _MoviePlayerScreenState {
   void _maybeAskRecommendation() {
-    // Las series no (para más adelante).
-    if (_recommendSettled || !widget.saveProgress || widget.series != null) {
+    if (_recommendSettled || !widget.saveProgress) return;
+    // Series: sólo en el último capítulo de cada temporada.
+    final series = widget.series;
+    if (series != null && !series.isLastOfSeason) {
+      _recommendSettled = true;
       return;
     }
     final remaining = _totalDuration - _currentPosition;
@@ -23,11 +26,23 @@ extension _MoviePlayerRecommend on _MoviePlayerScreenState {
       return;
     }
     _recommendSettled = true;
-    final recommendations = context.read<MovieRecommendationsProvider?>();
-    if (recommendations == null ||
-        !recommendations.canRecommend ||
-        !recommendations.shouldAsk(widget.movie.contentId)) {
-      return;
+    if (series != null) {
+      // Una vez por temporada, aunque ya se haya votado otra.
+      final recommendations = context.read<SeriesRecommendationsProvider?>();
+      if (recommendations == null ||
+          !recommendations.shouldAskSeason(
+            series.recommendationKey,
+            series.seasonNumber,
+          )) {
+        return;
+      }
+    } else {
+      final recommendations = context.read<MovieRecommendationsProvider?>();
+      if (recommendations == null ||
+          !recommendations.canRecommend ||
+          !recommendations.shouldAsk(widget.movie.contentId)) {
+        return;
+      }
     }
     // Arranca en Cancelar: un OK distraído no recomienda.
     _update(() => _recommendAnswer = MovieRecommendAnswer.cancel);
@@ -64,6 +79,8 @@ extension _MoviePlayerRecommend on _MoviePlayerScreenState {
 
   void _applyRecommendAnswer(MovieRecommendAnswer answer) {
     _closeRecommendPrompt();
+    final series = widget.series;
+    if (series != null) return _applySeriesAnswer(series, answer);
     final recommendations = context.read<MovieRecommendationsProvider?>();
     if (recommendations == null) return;
     switch (answer) {
@@ -78,6 +95,37 @@ extension _MoviePlayerRecommend on _MoviePlayerScreenState {
         unawaited(recommendations.setVote(widget.movie, MovieVote.down));
       case MovieRecommendAnswer.cancel:
         break;
+    }
+  }
+
+  /// Series: el voto es de la serie y el 👍 lleva la temporada que se
+  /// terminó ("hasta T3"); 👎 saca la recomendación. Cancelar vuelve a
+  /// preguntar la próxima vez que se termine esta temporada.
+  void _applySeriesAnswer(SeriesPlaylist series, MovieRecommendAnswer answer) {
+    final recommendations = context.read<SeriesRecommendationsProvider?>();
+    if (recommendations == null || answer == MovieRecommendAnswer.cancel) {
+      return;
+    }
+    final up = answer == MovieRecommendAnswer.yes;
+    unawaited(
+      recommendations.setVote(
+        series.recommendationItem,
+        up ? MovieVote.up : MovieVote.down,
+        extra: {SeriesRecommendationsApi.seasonKey: series.seasonNumber},
+      ),
+    );
+    unawaited(
+      recommendations.markAskedSeason(
+        series.recommendationKey,
+        series.seasonNumber,
+      ),
+    );
+    if (up) {
+      MoaiSnackBar.show(
+        context,
+        message: LocaleKeys.movies_recommend_sent.tr(),
+        icon: MoaiIcons.vodRecommend,
+      );
     }
   }
 }

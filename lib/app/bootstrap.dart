@@ -28,6 +28,7 @@ import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/channel_provider.dart';
 import 'package:moai3/state/debug_log_controller.dart';
 import 'package:moai3/state/movie_recommendations_provider.dart';
+import 'package:moai3/state/series_recommendations_provider.dart';
 import 'package:moai3/state/favorites_provider.dart';
 import 'package:moai3/state/featured_movies_provider.dart';
 import 'package:moai3/state/home_trailers_provider.dart';
@@ -63,6 +64,7 @@ class AppDependencies {
     required this.featuredMovies,
     required this.homeTrailers,
     required this.recommendations,
+    required this.seriesRecommendations,
     required this.playbackStats,
     required this.debugLog,
     required this.identity,
@@ -85,6 +87,7 @@ class AppDependencies {
   final FeaturedMoviesProvider featuredMovies;
   final HomeTrailersProvider homeTrailers;
   final MovieRecommendationsProvider recommendations;
+  final SeriesRecommendationsProvider seriesRecommendations;
   final PlaybackStatsController playbackStats;
   final DebugLogController debugLog;
   final DeviceIdentityService identity;
@@ -111,6 +114,7 @@ class AppDependencies {
     ChangeNotifierProvider.value(value: watchParty),
     ChangeNotifierProvider.value(value: voiceCoordinator),
     ChangeNotifierProvider.value(value: recommendations),
+    ChangeNotifierProvider.value(value: seriesRecommendations),
     ChangeNotifierProvider<ArcadeNetplayService>.value(
       value: ArcadeNetplayService.instance,
     ),
@@ -187,14 +191,18 @@ abstract final class AppBootstrap {
 
     // No depende de qué pantalla esté abierta.
     final recommendations = MovieRecommendationsProvider();
-    void syncRecommendationFriends() => recommendations.setFriends(
-      deviceId: watchParty.deviceId,
-      friends: {
+    final seriesRecommendations = SeriesRecommendationsProvider();
+    void syncRecommendationFriends() {
+      final friends = {
         if (watchParty.enabled)
           for (final friend in watchParty.mutualFriends)
             friend.deviceId: friend.displayName,
-      },
-    );
+      };
+      for (final provider in [recommendations, seriesRecommendations]) {
+        provider.setFriends(deviceId: watchParty.deviceId, friends: friends);
+      }
+    }
+
     watchParty.addListener(syncRecommendationFriends);
     syncRecommendationFriends();
 
@@ -219,6 +227,7 @@ abstract final class AppBootstrap {
       featuredMovies: featuredMovies,
       homeTrailers: homeTrailers,
       recommendations: recommendations,
+      seriesRecommendations: seriesRecommendations,
       playbackStats: playbackStats,
       debugLog: debugLog,
       identity: identity,

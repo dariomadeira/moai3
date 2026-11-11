@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/features/home/widgets/home_series_continue_card.dart';
 import 'package:moai3/models/series_models.dart';
+import 'package:moai3/services/series_watchlist_service.dart';
 import 'package:moai3/services/series_continue_service.dart';
 import 'package:moai3/services/series_watch_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -47,6 +48,7 @@ void main() {
   setUp(() {
     useSpanishTranslations();
     SharedPreferences.setMockInitialValues({});
+    SeriesWatchlistService.instance.resetForTest();
   });
 
   test('una por serie, la última vista primero, hasta el tope', () async {

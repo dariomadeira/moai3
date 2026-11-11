@@ -56,6 +56,15 @@ Verificado en Chromecast con Google TV (2026-10-23): arranque, TV (Explorar, vol
 
 **2026-10-30: suite en verde, 467 OK / 0 fallan.** Tras `24f5fab`, 7 tests fallaban sin que el código estuviera roto: la familia HugeIcons usa el mismo glifo para una pestaña elegida o no (los tests ahora reconocen la pestaña elegida por su título), Destacados y Series están ocultas en el rail a propósito (los tests recorren TV → Películas → Agenda) y la fila "Bancos y billeteras" se mudó a la configuración de Descuentos (se borraron sus 2 claves de `es.json`).
 
+**2026-11-10/11: limpieza profunda (commit `d1e521c`, rama `cristal`).** Pedido del usuario: limpiar, reutilizar, dividir responsabilidades y ahorrar memoria y CPU sin cambiar el diseño.
+- Assets sin uso borrados (fuentes, fondos de prueba, fondos de eventos) y dependencias sin uso (`dynamic_color`, `intl`): APK `armeabi-v7a` 35,2 → 26,7 MB. Guarda nueva: `test/unused_assets_test.dart` (falla si un asset declarado no se usa).
+- Código muerto; el cristal es el único estilo (se borró `MoaiGlassScope`).
+- Piezas reutilizables: `TvGroupListPanel`, `TvGlassIconPill`, `MovieDetailShell` (marco de los detalles de película y serie), `TvInfoRow`.
+- Archivos grandes partidos en `part`s y extensiones (`movie_player/`, `moiamov/`, `home/areas/dashboard/`, `home/areas/movies/`, `loading/`, `tv_friends/`).
+- `context.select` en vez de `watch` donde sólo se usa un dato; `imageCache.clear()` al pasar a segundo plano.
+- Decidido no hacer: títulos con degradado (ShaderMask) y unificar los botones circulares.
+- Medido en el Chromecast: RAM (~150–200 MB PSS según cuánto pasó desde el arranque; la memoria gráfica baja sola a los ~6 min) y CPU quieta (0–3 %) sin cambios apreciables. La RAM oscila ±30 MB sola: comparar siempre en las mismas condiciones y con la mediana de varias muestras.
+
 Hallazgos que aparecieron al ejecutar (no estaban en el análisis original):
 - **Agenda con partidos inventados**: `CalendarProvider.generateMockFixturesForWeek` mezclaba ~20 partidos falsos por semana con los reales (y podían disparar avisos "en vivo" falsos). Borrado junto con sus 31 claves (decisión del usuario).
 - **`sessionType` guardaba texto traducido** y `estimatedDuration` comparaba contra "práctica"/"qualy": ahora guarda claves estables (`f1_type_*`, `calendar_session_match`) y se traduce solo al mostrar.

@@ -33,6 +33,11 @@ class MovieRecommendationsApi {
     }, onConflict: 'recommender_device_id,content_id');
   }
 
+  /// Lo que manda el proveedor (lo guardado como pendiente): la película.
+  /// Las series lo reemplazan para mandar también la temporada.
+  Future<void> recommendJson(String deviceId, Map<String, dynamic> json) =>
+      recommend(deviceId, MovieItem.fromJson(json));
+
   Future<void> remove(String deviceId, String contentId) async {
     await _client
         .from(_table)

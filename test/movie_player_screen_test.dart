@@ -11,10 +11,13 @@ import 'package:moai3/features/movies/widgets/movie_player_osd.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/models/series_models.dart';
 import 'package:moai3/platform/platform_channels.dart';
+import 'package:moai3/services/series_watchlist_service.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/movie_progress_service.dart';
 import 'package:moai3/services/movie_recommendations_api.dart';
+import 'package:moai3/services/series_recommendations_api.dart';
 import 'package:moai3/state/movie_recommendations_provider.dart';
+import 'package:moai3/state/series_recommendations_provider.dart';
 import 'package:moai3/services/movie_watchlist_service.dart';
 import 'package:moai3/services/series_watch_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
@@ -89,6 +92,21 @@ class _FakeEngine {
     events.add({'event': 'playing', 'value': true});
     events.add({'event': 'firstFrame'});
   }
+}
+
+/// Como la tabla de series: lo publicado con su temporada.
+class _SeriesRecommendationsApi extends MovieRecommendationsApi {
+  final sent = <Map<String, dynamic>>[];
+
+  @override
+  Future<List<Map<String, dynamic>>> fetch(List<String> friendIds) async =>
+      const [];
+
+  @override
+  Future<void> recommendJson(
+    String deviceId,
+    Map<String, dynamic> json,
+  ) async => sent.add(json);
 }
 
 class _RecommendationsApi extends MovieRecommendationsApi {
@@ -877,6 +895,13 @@ void main() {
     });
 
     group('capítulos de una serie', () {
+      Widget wrapRecommendations(
+        SeriesRecommendationsProvider? recommendations,
+        Widget app,
+      ) => recommendations == null
+          ? app
+          : ChangeNotifierProvider.value(value: recommendations, child: app);
+
       SeriesPlaylist playlist({required int episodes, bool failNext = false}) =>
           SeriesPlaylist(
             seasons: const [SeriesSeason(contentId: 's1', number: 1)],
@@ -901,32 +926,40 @@ void main() {
                   ),
           );
 
-      Future<void> pushEpisode(WidgetTester tester, SeriesPlaylist p) async {
+      Future<void> pushEpisode(
+        WidgetTester tester,
+        SeriesPlaylist p, {
+        SeriesRecommendationsProvider? recommendations,
+      }) async {
         SharedPreferences.setMockInitialValues({});
+        SeriesWatchlistService.instance.resetForTest();
         useSpanishTranslations();
         tester.view.physicalSize = const Size(1920, 1080);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(() => tester.view.resetPhysicalSize());
         engine = _FakeEngine()..install(tester);
         await tester.pumpWidget(
-          MaterialApp(
-            home: Builder(
-              builder: (context) => Scaffold(
-                body: TextButton(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => MoviePlayerScreen(
-                        movie: p.item,
-                        stream: const ResolvedPlayStream(
-                          streamUrl: 'https://example.com/v.m3u8',
-                          quality: '1080P HD',
-                          audioInfo: 'esp',
+          wrapRecommendations(
+            recommendations,
+            MaterialApp(
+              home: Builder(
+                builder: (context) => Scaffold(
+                  body: TextButton(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => MoviePlayerScreen(
+                          movie: p.item,
+                          stream: const ResolvedPlayStream(
+                            streamUrl: 'https://example.com/v.m3u8',
+                            quality: '1080P HD',
+                            audioInfo: 'esp',
+                          ),
+                          series: p,
                         ),
-                        series: p,
                       ),
                     ),
+                    child: const Text('detalle'),
                   ),
-                  child: const Text('detalle'),
                 ),
               ),
             ),
@@ -990,6 +1023,57 @@ void main() {
         expect(find.text('detalle'), findsOneWidget);
         await expectLater(p.done, completes);
         await tester.pump(const Duration(seconds: 5));
+      });
+
+      group('recomendar al terminar la temporada', () {
+        const prompt = 'Terminaste la T1. ¿Se la recomendás a tus amigos?';
+        late _SeriesRecommendationsApi api;
+
+        Future<void> reachEnd(
+          WidgetTester tester, {
+          required int episodes,
+        }) async {
+          api = _SeriesRecommendationsApi();
+          final recommendations = SeriesRecommendationsProvider(
+            api: api,
+            isWatched: (_) async => false,
+          );
+          final p = playlist(episodes: episodes);
+          await pushEpisode(tester, p, recommendations: recommendations);
+          recommendations.setFriends(
+            deviceId: 'yo',
+            friends: const {'ana': 'Ana'},
+          );
+          await tester.pump();
+          engine.position = const Duration(hours: 1, minutes: 56);
+          await tester.pump(const Duration(milliseconds: 700));
+        }
+
+        testWidgets('último capítulo: pregunta y Sí recomienda la serie', (
+          tester,
+        ) async {
+          await reachEnd(tester, episodes: 1);
+          expect(find.text(prompt), findsOneWidget);
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+          await tester.pump();
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+          await tester.pump();
+          await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+          await tester.pump();
+          await tester.pump();
+          expect(api.sent.single['contentId'], 's1');
+          expect(api.sent.single[SeriesRecommendationsApi.seasonKey], 1);
+          await tester.pump(const Duration(seconds: 5));
+          await tester.pumpWidget(const SizedBox());
+          await tester.pump(const Duration(seconds: 5));
+        });
+
+        testWidgets('a mitad de temporada no pregunta', (tester) async {
+          await reachEnd(tester, episodes: 2);
+          expect(find.text(prompt), findsNothing);
+          await tester.pumpWidget(const SizedBox());
+          await tester.pump(const Duration(seconds: 5));
+        });
       });
 
       testWidgets('atrás sale de la serie', (tester) async {

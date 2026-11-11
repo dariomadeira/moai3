@@ -19,13 +19,19 @@ import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/services/movie_image_cache.dart';
 import 'package:moai3/services/series_continue_service.dart';
 import 'package:moai3/services/series_watch_service.dart';
+import 'package:moai3/services/series_recommendations_api.dart';
+import 'package:moai3/services/series_watchlist_service.dart';
+import 'package:moai3/state/movie_recommendations_provider.dart';
+import 'package:moai3/state/series_recommendations_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_palette.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/tv_common/moai_svg_icon.dart';
 import 'package:moai3/widgets/tv_common/tv_press_detector.dart';
+import 'package:moai3/widgets/tv_common/tv_m3.dart';
 import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
+import 'package:provider/provider.dart';
 
 /// Detalle de una serie: la ficha como la de una película, la lista de
 /// temporadas (si hay más de una) y los capítulos de la elegida, como
@@ -66,6 +72,13 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
   final FocusNode _backFocus = FocusNode(debugLabel: 'series_detail_back');
   final FocusNode _seasonsFocus = FocusNode(
     debugLabel: 'series_detail_seasons',
+  );
+  final FocusNode _voteUpFocus = FocusNode(debugLabel: 'series_detail_vote_up');
+  final FocusNode _voteDownFocus = FocusNode(
+    debugLabel: 'series_detail_vote_down',
+  );
+  final FocusNode _watchlistFocus = FocusNode(
+    debugLabel: 'series_detail_watchlist',
   );
   final FocusNode _episodesFocus = FocusNode(
     debugLabel: 'series_detail_episodes',
@@ -153,6 +166,15 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
     super.initState();
     unawaited(_load(_seasonId));
     _openingFocus.start();
+    SeriesWatchlistService.instance.addListener(_onWatchlistChanged);
+    unawaited(SeriesWatchlistService.instance.ensureLoaded());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        unawaited(
+          context.read<SeriesRecommendationsProvider?>()?.ensureLoaded(),
+        );
+      }
+    });
     for (final node in [_seasonsFocus, _episodesFocus]) {
       node.addListener(_onFocusChange);
     }
@@ -163,6 +185,10 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
     _seasonTimer?.cancel();
     _okTimer?.cancel();
     _openingFocus.stop();
+    SeriesWatchlistService.instance.removeListener(_onWatchlistChanged);
+    _watchlistFocus.dispose();
+    _voteUpFocus.dispose();
+    _voteDownFocus.dispose();
     _backFocus.dispose();
     _seasonsFocus.dispose();
     _episodesFocus.dispose();
@@ -311,7 +337,7 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
     if (_hasSeasonRow) {
       _seasonsFocus.requestFocus();
     } else {
-      _backFocus.requestFocus();
+      _watchlistFocus.requestFocus();
     }
   }
 
@@ -380,7 +406,8 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.arrowUp) {
-      _backFocus.requestFocus();
+      // Arriba, a la derecha: Marcar.
+      _watchlistFocus.requestFocus();
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -517,6 +544,7 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
         startEpisodeIndex: _episode,
         fetchSeason: widget.fetchSeason,
         resolveStream: widget.resolveEpisode,
+        recommendationKey: _recommendationKey,
         onStarted: () {
           if (mounted) setState(() => _loadingEpisode = null);
         },
@@ -582,7 +610,15 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
                   ),
                 )
               else
-                const Spacer(flex: 5),
+                // Sin la vista previa: abajo a la derecha, Marcar (como en
+                // películas, para verla después).
+                Expanded(
+                  flex: 5,
+                  child: Align(
+                    alignment: Alignment.bottomRight,
+                    child: _watchlistButton(),
+                  ),
+                ),
             ],
           ),
         ),
@@ -595,6 +631,141 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
         _rowLabel(LocaleKeys.series_episodes_label.tr()),
         _episodeGrid(context, scheme),
       ],
+    );
+  }
+
+  /// Todas las temporadas conocidas de la serie (también las versiones
+  /// repetidas): la marca se reconoce por cualquiera.
+  Set<String> get _allSeasonIds => {
+    for (final s in _allSeasons) s.contentId,
+    _seasonId,
+    widget.series.contentId,
+  };
+
+  /// La serie está en "Series marcadas".
+  bool get _marked => SeriesWatchlistService.instance.contains(_allSeasonIds);
+
+  void _onWatchlistChanged() {
+    if (mounted) setState(() {});
+  }
+
+  /// Marcar / Desmarcar y, con amigos, 👍 / 👎 (como en películas): la
+  /// serie (no la temporada) va a "Series marcadas" del Inicio, que la abre
+  /// en la primera temporada; el 👍 se comparte con los amigos.
+  Widget _watchlistButton() {
+    final marked = _marked;
+    final recommendations = context.watch<SeriesRecommendationsProvider?>();
+    final canRecommend = recommendations?.canRecommend ?? false;
+    final vote = recommendations?.voteOf(_recommendationKey);
+    Widget voteButton(MovieVote value) {
+      final up = value == MovieVote.up;
+      return TvFocusButton(
+        focusNode: up ? _voteUpFocus : _voteDownFocus,
+        label: '',
+        icon: up ? MoaiIcons.vodRecommend : MoaiIcons.vodNotRecommend,
+        variant: vote == value
+            ? TvButtonVariant.secondary
+            : TvButtonVariant.surface,
+        height: 38,
+        fontSize: 13,
+        radius: 20,
+        onPressed: () => unawaited(_toggleVote(value)),
+        onArrowLeft: up
+            ? _watchlistFocus.requestFocus
+            : _voteUpFocus.requestFocus,
+        onArrowRight: up ? _voteDownFocus.requestFocus : null,
+        onArrowUp: _backFocus.requestFocus,
+        onArrowDown: _focusTop,
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TvFocusButton(
+          focusNode: _watchlistFocus,
+          label: marked
+              ? LocaleKeys.movies_watchlist_added.tr()
+              : LocaleKeys.movies_watchlist_add.tr(),
+          icon: marked ? MoaiIcons.vodWatchlistRemove : MoaiIcons.vodWatchlist,
+          variant: marked ? TvButtonVariant.tonal : TvButtonVariant.surface,
+          height: 38,
+          fontSize: 13,
+          radius: 20,
+          onPressed: () => unawaited(_toggleWatchlist()),
+          onArrowLeft: _backFocus.requestFocus,
+          onArrowRight: canRecommend ? _voteUpFocus.requestFocus : null,
+          onArrowUp: _backFocus.requestFocus,
+          onArrowDown: _focusTop,
+        ),
+        if (canRecommend) ...[
+          const SizedBox(width: 10),
+          voteButton(MovieVote.up),
+          const SizedBox(width: 10),
+          voteButton(MovieVote.down),
+        ],
+      ],
+    );
+  }
+
+  /// La serie para recomendar: la misma en todos los TV
+  /// ([SeriesSeasonDetail.recommendationKey]).
+  String get _recommendationKey =>
+      SeriesSeasonDetail.recommendationKey(_allSeasons, _seasonId);
+
+  /// La serie como película, para recomendarla (se abre en la primera
+  /// temporada).
+  MovieItem get _recommendationItem {
+    final key = _recommendationKey;
+    final info = _details[key]?.info ?? _info;
+    return MovieItem(
+      contentId: key,
+      name: SeriesSeasonDetail.seriesTitle(info.name),
+      poster: info.poster,
+      backdrop: info.backdrop,
+      backdrops: info.backdrops,
+      year: info.year,
+      score: info.score,
+      programType: 'teleplay',
+    );
+  }
+
+  /// Hasta qué temporada se vio: la de número más alto con algún capítulo
+  /// visto; si ninguna, la que se está mirando.
+  int get _seasonReached {
+    var reached = 0;
+    for (final season in _seasons) {
+      final seen = _watch[season.contentId]?.watched.isNotEmpty ?? false;
+      if (seen && season.number > reached) reached = season.number;
+    }
+    if (reached > 0) return reached;
+    return _seasonIndex >= 0 ? _seasons[_seasonIndex].number : 1;
+  }
+
+  Future<void> _toggleVote(MovieVote vote) async {
+    final recommendations = context.read<SeriesRecommendationsProvider?>();
+    await recommendations?.toggleVote(
+      _recommendationItem,
+      vote,
+      extra: {SeriesRecommendationsApi.seasonKey: _seasonReached},
+    );
+  }
+
+  Future<void> _toggleWatchlist() async {
+    final first = _seasons.firstOrNull;
+    final info = _details[first?.contentId]?.info ?? _info;
+    await SeriesWatchlistService.instance.toggle(
+      MovieItem(
+        contentId: first?.contentId ?? _seasonId,
+        name: SeriesSeasonDetail.seriesTitle(info.name),
+        poster: info.poster,
+        backdrop: info.backdrop,
+        backdrops: info.backdrops,
+        year: info.year,
+        score: info.score,
+        programType: 'teleplay',
+      ),
+      _allSeasonIds,
     );
   }
 

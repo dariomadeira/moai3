@@ -3,7 +3,7 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)](https://flutter.dev)
 [![Android TV](https://img.shields.io/badge/Platform-Android%20TV-3DDC84?logo=android)](https://developer.android.com/tv)
 [![Architecture](https://img.shields.io/badge/Model-SSD%20(Spec--Driven)-blueviolet)](#documentación-y-especificaciones)
-[![Version](https://img.shields.io/badge/Version-3.0.14-success)](#)
+[![Version](https://img.shields.io/badge/Version-3.0.41-success)](#)
 
 **MoAI 3** es una aplicación moderna y de alto rendimiento diseñada específicamente para **Android TV**, construida con Flutter en la capa de presentación y Kotlin en el host nativo. Emplea el modelo de desarrollo **SSD (Spec-Driven Development)** y un motor modular de **plugins dinámicos (.dex)** cargados en tiempo de ejecución.
 
@@ -22,6 +22,13 @@
 - **Ciclo de Vida Determinista**: Eventos en vivo prioritarios (`live`), próximos (`upcoming`) y finalizados atenuados (`finished` no-op) libres de caracteres emoji.
 - **Modal de Sintonización Directa**: Al seleccionar un partido, detecta automáticamente mediante `CalendarChannelMatcher` los canales activos instalados capaces de transmitirlo y permite sintonizarlos al instante en dos columnas.
 - **Notificaciones Flotantes**: Snackbars persistentes configurables al comenzar eventos suscritos.
+
+### 🎬 Películas y Series
+- **Catálogo** con grilla sin repetidas, "Ver todas" y buscador (SPEC-44/45).
+- **Series**: detalle con temporadas (una por número aunque el servidor traiga versiones repetidas) y capítulos; el capítulo pasa solo al siguiente y a la próxima temporada; lo visto se marca solo a 3 minutos del final o manteniendo OK (SPEC-46).
+- **Inicio**: tarjetas "Seguir", "Marcadas" y "Recomendadas" de películas y de series.
+- **Recomendaciones entre amigos** con 👍/👎, en el detalle y al terminar una película o cada temporada (Supabase, SPEC-51).
+- **Modo claro y oscuro** de cristal, elegible en Ajustes › Generales (SPEC-21).
 
 ### 🔌 Motor Modular de Plugins (.dex)
 - **Carga Dinámica en Runtime**: Soporte para fuentes externas compiladas en DexClassLoader sin necesidad de recompilar la aplicación principal.
@@ -84,6 +91,10 @@ MoAI 3 se rige bajo la metodología **Spec-Driven Development**. Toda decisión 
 - [SPEC-39: Catálogo Películas/Series y sync Moiamov](specs/features/movies_series_catalog_settings.md)
 - [SPEC-40: Matriz de Criterios de Aceptación](specs/verification/baseline_acceptance_matrix.md)
 - [SPEC-41: Foco TV y audio D-Pad](specs/features/tv_focus_styles_and_dpad_audio.md)
+- [SPEC-42: Inicio (tablero de tarjetas)](specs/features/home_dashboard.md)
+- [SPEC-44: Biblioteca de películas y reproducción](specs/features/movie_library_and_playback.md)
+- [SPEC-46: Series](specs/features/series.md)
+- [SPEC-51: Recomendaciones entre amigos](specs/features/movie_recommendations.md)
 - Índice completo: [`specs/README.md`](specs/README.md)
 
 ---
@@ -94,8 +105,8 @@ Para ejecutar el análisis estático y la suite completa de pruebas:
 
 ```bash
 # Análisis estático de código Dart
-dart analyze
+flutter analyze
 
-# Ejecutar los 136 tests automatizados
+# Ejecutar la suite de tests (801 al 2026-11-11)
 flutter test
 ```

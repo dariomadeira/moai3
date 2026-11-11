@@ -105,6 +105,25 @@ extension _HomeDashboardItems on HomeDashboardAreaState {
             isFocused: focused,
           ),
         );
+      case _HomeWidget.seriesRecommendations:
+        return _MovieListItem(
+          focusNode: focusNode,
+          movies: [for (final item in _seriesRecommendations) item.movie],
+          initialIndex: _seriesRecommendationIndex,
+          onIndexChanged: (i) => _seriesRecommendationIndex = i,
+          onKeyLeft: widget.onExitLeft,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+          onOpen: _openSeriesDetail,
+          onRemove: _confirmDismissSeriesRecommendation,
+          onClearAll: _confirmDismissAllSeriesRecommendations,
+          buildCard: (selected, focused) => HomeRecommendationsCard(
+            items: _seriesRecommendations,
+            selectedIndex: selected,
+            isFocused: focused,
+            series: true,
+          ),
+        );
       case _HomeWidget.watchlistBig:
         final movies = MovieWatchlistService.instance.movies;
         return _MovieListItem(
@@ -120,6 +139,25 @@ extension _HomeDashboardItems on HomeDashboardAreaState {
           onClearAll: _confirmClearWatchlist,
           buildCard: (selected, focused) => HomeWatchlistBigCard(
             movies: movies,
+            selectedIndex: selected,
+            isFocused: focused,
+          ),
+        );
+      case _HomeWidget.seriesWatchlist:
+        final series = SeriesWatchlistService.instance.items;
+        return _MovieListItem(
+          focusNode: focusNode,
+          movies: series,
+          initialIndex: _seriesWatchlistIndex,
+          onIndexChanged: (i) => _seriesWatchlistIndex = i,
+          onKeyLeft: widget.onExitLeft,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+          onOpen: _openSeriesDetail,
+          onRemove: _confirmUnmarkSeries,
+          onClearAll: _confirmClearMarkedSeries,
+          buildCard: (selected, focused) => HomeSeriesWatchlistCard(
+            series: series,
             selectedIndex: selected,
             isFocused: focused,
           ),

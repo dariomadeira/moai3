@@ -86,4 +86,85 @@ mixin _HomeSeriesCards on HomeAreaState<HomeDashboardArea>, _HomeMovieCards {
     _seriesContinueIndex = 0;
     await _loadSeriesContinue();
   }
+
+  /// Elegido en "Marcadas" de series: una serie, o
+  /// [HomeSeriesWatchlistCard.clearAllIndex] para "Desmarcar todas".
+  int _seriesWatchlistIndex = 0;
+
+  void _onSeriesWatchlistChanged() {
+    if (mounted) setState(() {});
+  }
+
+  /// OK en una serie marcada o recomendada: su detalle. Al volver, lo que
+  /// cambió (empezada: sale de Marcadas y pasa a "Seguir series"; votada:
+  /// sale de Recomendadas).
+  Future<void> _openSeriesDetail(MovieItem series) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => SeriesDetailScreen(series: series)),
+    );
+    _refreshRecommendations();
+    await _loadSeriesContinue();
+  }
+
+  /// Mantener OK en una serie marcada: confirma y la desmarca.
+  Future<void> _confirmUnmarkSeries(MovieItem series) async {
+    final watchlist = SeriesWatchlistService.instance;
+    final entry = watchlist.entries
+        .where((e) => e.item.contentId == series.contentId)
+        .firstOrNull;
+    if (entry == null) return;
+    final confirmed = await _confirm(
+      icon: MoaiIcons.vodWatchlistRemove,
+      title: LocaleKeys.home_series_watchlist_remove_title.tr(),
+      subtitle: LocaleKeys.home_series_watchlist_remove_desc.tr(
+        namedArgs: {'name': series.name},
+      ),
+      confirmLabel: LocaleKeys.home_watchlist_remove.tr(),
+    );
+    if (confirmed) await watchlist.remove(entry.seasonIds);
+  }
+
+  /// "Desmarcar todas": confirma y vacía la lista.
+  Future<void> _confirmClearMarkedSeries() async {
+    final confirmed = await _confirm(
+      icon: MoaiIcons.vodWatchlistRemove,
+      title: LocaleKeys.home_watchlist_clear_title.tr(),
+      subtitle: LocaleKeys.home_series_watchlist_clear_desc.tr(),
+      confirmLabel: LocaleKeys.home_watchlist_remove_all.tr(),
+    );
+    if (!confirmed) return;
+    await SeriesWatchlistService.instance.clear();
+    _seriesWatchlistIndex = 0;
+  }
+
+  /// "Recomendadas" de series: lo elegido y lo que recomendaron los amigos.
+  int _seriesRecommendationIndex = 0;
+  List<FriendRecommendation> _seriesRecommendations = const [];
+
+  /// Mantener OK sobre una serie recomendada: sale sólo de este TV.
+  Future<void> _confirmDismissSeriesRecommendation(MovieItem series) async {
+    final recommendations = context.read<SeriesRecommendationsProvider>();
+    final confirmed = await _confirm(
+      icon: MoaiIcons.delete,
+      title: LocaleKeys.home_recommendations_remove_title.tr(),
+      subtitle: LocaleKeys.home_recommendations_remove_desc.tr(
+        namedArgs: {'name': series.name},
+      ),
+      confirmLabel: LocaleKeys.home_recommendations_remove.tr(),
+    );
+    if (confirmed) await recommendations.dismiss(series.contentId);
+  }
+
+  Future<void> _confirmDismissAllSeriesRecommendations() async {
+    final recommendations = context.read<SeriesRecommendationsProvider>();
+    final confirmed = await _confirm(
+      icon: MoaiIcons.delete,
+      title: LocaleKeys.home_recommendations_clear_title.tr(),
+      subtitle: LocaleKeys.home_recommendations_clear_desc.tr(),
+      confirmLabel: LocaleKeys.home_recommendations_clear.tr(),
+    );
+    if (!confirmed) return;
+    await recommendations.dismissAll();
+    _seriesRecommendationIndex = 0;
+  }
 }

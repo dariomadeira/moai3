@@ -38,7 +38,9 @@ class SeriesPlaylist {
     Future<SeriesSeasonDetail?> Function(String contentId)? fetchSeason,
     EpisodeStreamResolver? resolveStream,
     this.onStarted,
-  }) : _details = {...details},
+    String? recommendationKey,
+  }) : _givenRecommendationKey = recommendationKey,
+       _details = {...details},
        _seasonId = startSeasonId,
        _episodeIndex = startEpisodeIndex,
        _fetchSeason =
@@ -81,6 +83,37 @@ class SeriesPlaylist {
   /// El capítulo de ahora como película, para el reproductor.
   MovieItem get item =>
       episodeItem(_detail.info, _numberOf(_seasonId), episode);
+
+  /// La serie para recomendar (la misma en todos los TV; la calcula el
+  /// detalle, que conoce todas las versiones de las temporadas).
+  final String? _givenRecommendationKey;
+
+  String get recommendationKey =>
+      _givenRecommendationKey ??
+      SeriesSeasonDetail.recommendationKey(seasons, _seasonId);
+
+  /// El número de la temporada de ahora.
+  int get seasonNumber => _numberOf(_seasonId);
+
+  /// Es el último capítulo de su temporada: al terminarlo se pregunta si
+  /// recomendar la serie.
+  bool get isLastOfSeason => _episodeIndex == _detail.episodes.length - 1;
+
+  /// La serie como película, para recomendarla.
+  MovieItem get recommendationItem {
+    final key = recommendationKey;
+    final info = _details[key]?.info ?? _detail.info;
+    return MovieItem(
+      contentId: key,
+      name: SeriesSeasonDetail.seriesTitle(info.name),
+      poster: info.poster,
+      backdrop: info.backdrop,
+      backdrops: info.backdrops,
+      year: info.year,
+      score: info.score,
+      programType: 'teleplay',
+    );
+  }
 
   /// Pide el video del capítulo de ahora.
   Future<ResolvedPlayStream?> resolveCurrent() =>

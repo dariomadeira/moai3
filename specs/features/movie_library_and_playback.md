@@ -50,13 +50,22 @@ Una película está en **un solo lugar**. `MovieLibrary` es la única puerta: el
 
 ### 2.1 Titan Ranger
 - `TitanVodPreparer`: SetEnv → SetEntries → PrepareProgram como la app oficial; devuelve la URL del proxy local (`127.0.0.1/vod/0/<media>.m3u8`).
-- `TitanPlaybackBridge`: le avisa a Ranger posición, pausa, reanudación y saltos (`beforeSeek`) y **detiene el programa al salir** (`endProgram`, instancia 0). Antes los programas nunca se detenían.
+- `TitanPlaybackBridge`: le avisa a Ranger posición, pausa, reanudación y saltos (`beforeSeek`) y **detiene el programa al salir** (`endProgram`, instancia 0). Antes los programas nunca se detenían. `close()` corre **una sola vez** y después el puente no avisa nada más: "end" va a la instancia, no al programa, y repetido cortaba el capítulo siguiente de una serie (SPEC-46 §4).
 - El detalle de la película precalienta Titan al abrirse.
 
 ### 2.2 Audio y subtítulos
 - Ajustes globales "Idioma del audio" y "Subtítulos" (apagados o idioma), en vez de elegir en cada película.
 - `TsAudioSwapDataSource` (Android): en los TS de Titan hay varios audios del mismo tipo y ExoPlayer toma el de PID más bajo; se intercambia paquete por paquete el PID del idioma pedido con el primero (y las etiquetas de la PMT, recalculando el CRC).
 - Las dos pistas "spa" (latino / España) no se pueden distinguir: la PMT sólo trae el código de idioma. El menú Audio las muestra como "Español 1" y "Español 2", el filtro elige la pedida por su orden de PID y `MovieAudioChoices` recuerda la elección de cada película.
+
+### 2.3 Atrás, foco y retomar (2026-11-11)
+- **Atrás** en el reproductor: la tecla "atrás" del control **no** se atiende en el teclado; al soltarla Android manda el pop del sistema y lo atiende `PopScope(canPop: false)` (`_onSystemBack`: cierra el cartel o el menú abiertos, esconde la interfaz o sale). Antes la tecla cerraba el reproductor al apretarla y el pop que llegaba al soltarla cerraba también el detalle. Esc/retroceso de teclado siguen por teclado (con una ventana de 800 ms para no contar dos veces). SPEC-30 §2.3.
+- **Foco al abrir el detalle**: en el botón principal hasta la primera tecla (`OpeningFocusGuard`, SPEC-30 §2.1.2).
+- El cartel "¿Cómo querés verla?" (retomar / desde el principio) es `askResume` en `movie_playback.dart`, compartido con las series.
+- El reproductor también reproduce capítulos de series (`MoviePlayerScreen(series:)`, SPEC-46 §4).
+
+### 2.4 Borrar lo visto
+**Ajustes › Películas y series › Borrar películas vistas** (confirmación Cancelar / Borrar): `MovieProgressService.clearAll` borra todo el progreso y las vistas (Seguir queda vacío). Marcadas no cambia.
 
 ## 3. Catálogo y memoria
 
@@ -83,5 +92,7 @@ Una película está en **un solo lugar**. `MovieLibrary` es la única puerta: el
 - Empezar una película de Interesantes y pasar los 3 min la mueve a Seguir viendo.
 - Mantener OK en Seguir viendo y confirmar la marca como vista y la saca de ambas listas.
 - Al salir del reproductor, Ranger detiene el programa.
+- Una sola "atrás" desde el reproductor (con la interfaz oculta) vuelve al detalle, no a la grilla.
+- En la interfaz la lista "Interesantes" se llama **Marcadas** (botón "Marcar" / "Desmarcar"); el código conserva `MovieWatchlistService`.
 - La carga del catálogo no congela la animación de la pantalla de carga.
 - Tests: `movie_library_test`, `movie_progress_service_test`, `movie_player_screen_test`, `titan_playback_bridge_test`, `moiamov_crypto_test`, `moiamov_catalog_parse_test`, `moiamov_quality_test`, `image_decode_test`, `new_release_ranker_test`, `featured_movies_trailers_test`, `movie_metadata_service_test`, `home_movies_area_test`, `movie_detail_screen_test`.

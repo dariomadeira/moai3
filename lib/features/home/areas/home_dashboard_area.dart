@@ -22,6 +22,7 @@ import 'package:moai3/features/home/widgets/home_friends_card.dart';
 import 'package:moai3/features/home/widgets/home_movie_big_card.dart';
 import 'package:moai3/features/home/widgets/home_recommendations_card.dart';
 import 'package:moai3/features/home/widgets/home_series_continue_card.dart';
+import 'package:moai3/features/home/widgets/home_series_watchlist_card.dart';
 import 'package:moai3/features/home/widgets/home_trailers_card.dart';
 import 'package:moai3/features/home/widgets/home_weather_card.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
@@ -41,11 +42,13 @@ import 'package:moai3/services/movie_library.dart';
 import 'package:moai3/services/movie_progress_service.dart';
 import 'package:moai3/services/movie_watchlist_service.dart';
 import 'package:moai3/services/series_continue_service.dart';
+import 'package:moai3/services/series_watchlist_service.dart';
 import 'package:moai3/services/tmdb_trending_service.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/featured_movies_provider.dart';
 import 'package:moai3/state/home_trailers_provider.dart';
 import 'package:moai3/state/movie_recommendations_provider.dart';
+import 'package:moai3/state/series_recommendations_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/state/watch_party_provider.dart';
 import 'package:moai3/state/weather_provider.dart';
@@ -132,7 +135,9 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     _HomeWidget.continueWatching ||
     _HomeWidget.seriesContinue ||
     _HomeWidget.recommendations ||
-    _HomeWidget.watchlistBig => 2,
+    _HomeWidget.seriesRecommendations ||
+    _HomeWidget.watchlistBig ||
+    _HomeWidget.seriesWatchlist => 2,
     _ => 1,
   };
 
@@ -147,6 +152,8 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     unawaited(_loadContinue());
     unawaited(_loadSeriesContinue());
     SeriesContinueService.changes.addListener(_onSeriesChanged);
+    SeriesWatchlistService.instance.addListener(_onSeriesWatchlistChanged);
+    unawaited(SeriesWatchlistService.instance.ensureLoaded());
     if (!HomeHeroRotation.isLoaded) {
       unawaited(
         HomeHeroRotation.load().then((_) {
@@ -194,6 +201,9 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
         _HomeWidget.seriesContinue,
       if (moviesVisible && _recommendations.isNotEmpty)
         _HomeWidget.recommendations,
+      // Lo que recomendaron los amigos, de series.
+      if (seriesVisible && _seriesRecommendations.isNotEmpty)
+        _HomeWidget.seriesRecommendations,
       _HomeWidget.discounts,
       // Amigos conectados y su canal: sólo con Miremos Juntos activado.
       if (watchPartyEnabled) _HomeWidget.friends,
@@ -201,6 +211,9 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
       if (watchPartyEnabled && hasFriendRequests) _HomeWidget.friendRequests,
       if (moviesVisible && MovieWatchlistService.instance.movies.isNotEmpty)
         _HomeWidget.watchlistBig,
+      // "Marcadas" de series: con Series en el rail y alguna marcada.
+      if (seriesVisible && SeriesWatchlistService.instance.items.isNotEmpty)
+        _HomeWidget.seriesWatchlist,
       if (hasTrailers) _HomeWidget.trailers,
       if (ArcadePluginService.instance.isInstalled &&
           widget.romManager.activeRom != null)
@@ -301,6 +314,7 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     widget.romManager.removeListener(_onArcadeChanged);
     MovieWatchlistService.instance.removeListener(_onWatchlistChanged);
     SeriesContinueService.changes.removeListener(_onSeriesChanged);
+    SeriesWatchlistService.instance.removeListener(_onSeriesWatchlistChanged);
     _hourTimer?.cancel();
     _arcadeAction.dispose();
     _panelFocusNode.dispose();
@@ -365,6 +379,10 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     if (showTrailers) _ensureTrailersLoaded();
     _recommendations = context.select(
       (MovieRecommendationsProvider? r) =>
+          r?.items ?? const <FriendRecommendation>[],
+    );
+    _seriesRecommendations = context.select(
+      (SeriesRecommendationsProvider? r) =>
           r?.items ?? const <FriendRecommendation>[],
     );
     final items = _visibleWidgets(
@@ -602,10 +620,12 @@ enum _HomeWidget {
   continueWatching,
   seriesContinue,
   recommendations,
+  seriesRecommendations,
   discounts,
   friends,
   friendRequests,
   watchlistBig,
+  seriesWatchlist,
   trailers,
   arcade,
 }

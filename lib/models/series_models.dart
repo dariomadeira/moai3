@@ -73,6 +73,20 @@ class SeriesSeasonDetail {
     return best.values.toList()..sort((a, b) => a.number.compareTo(b.number));
   }
 
+  /// La serie para recomendar entre amigos: el mismo `contentId` en todos
+  /// los TV, se entre por la temporada que se entre. Es la primera
+  /// temporada y, si tiene dos versiones, la de `contentId` menor (sin
+  /// depender de cuál se considere más completa). Sin lista, [fallback].
+  static String recommendationKey(List<SeriesSeason> all, String fallback) {
+    if (all.isEmpty) return fallback;
+    final first = all.map((s) => s.number).reduce((a, b) => a < b ? a : b);
+    final ids = [
+      for (final s in all)
+        if (s.number == first) s.contentId,
+    ]..sort();
+    return ids.first;
+  }
+
   /// Los `contentId` de las temporadas cuyo número aparece más de una vez.
   static List<String> duplicated(List<SeriesSeason> all) {
     final byNumber = <int, List<String>>{};

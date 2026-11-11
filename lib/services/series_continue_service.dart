@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import 'package:moai3/models/series_models.dart';
 import 'package:moai3/services/series_watch_service.dart';
+import 'package:moai3/services/series_watchlist_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Un capítulo de una serie: temporada (su `contentId` y número) y su lugar
@@ -186,8 +187,13 @@ class SeriesContinueService {
     }
   }
 
-  /// Anota (o actualiza) la serie de [entry] como la última vista.
+  /// Anota (o actualiza) la serie de [entry] como la última vista. Como en
+  /// películas, una serie empezada sale de "Series marcadas".
   static Future<void> record(SeriesContinueEntry entry) async {
+    await SeriesWatchlistService.instance.remove({
+      for (final s in entry.seasons) s.contentId,
+      entry.current.seasonId,
+    });
     final list = [
       entry,
       for (final e in await entries())

@@ -73,6 +73,7 @@ mixin _HomeMovieCards on HomeAreaState<HomeDashboardArea> {
   void _refreshRecommendations() {
     if (!mounted) return;
     unawaited(context.read<MovieRecommendationsProvider?>()?.refresh());
+    unawaited(context.read<SeriesRecommendationsProvider?>()?.refresh());
   }
 
   /// Mantener OK sobre una recomendación: sale sólo de este TV.

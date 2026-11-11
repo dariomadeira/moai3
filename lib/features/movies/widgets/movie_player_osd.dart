@@ -261,9 +261,13 @@ enum MovieRecommendAnswer { yes, no, cancel }
 /// Cartel de los últimos minutos (SPEC-51): chico, en una esquina y sin
 /// pausar. [selected] es la respuesta elegida con ←/→.
 class MovieRecommendPrompt extends StatelessWidget {
-  const MovieRecommendPrompt({super.key, required this.selected});
+  const MovieRecommendPrompt({super.key, required this.selected, this.prompt});
 
   final MovieRecommendAnswer selected;
+
+  /// La pregunta; por defecto la de películas (las series dicen la
+  /// temporada que se terminó).
+  final String? prompt;
 
   @override
   Widget build(BuildContext context) {
@@ -303,7 +307,7 @@ class MovieRecommendPrompt extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Text(
-            LocaleKeys.movies_recommend_prompt.tr(),
+            prompt ?? LocaleKeys.movies_recommend_prompt.tr(),
             style: MoaiText.body(context, fontSize: 13, color: Colors.white),
           ),
           const SizedBox(height: 10),
