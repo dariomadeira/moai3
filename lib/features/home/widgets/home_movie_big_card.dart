@@ -34,10 +34,23 @@ class HomeMovieBigCard extends StatelessWidget {
     this.isFocused = false,
     this.watched = const {},
     this.loadingId,
+    this.svgIcon,
+    this.sectionLabel,
+    this.badges = const {},
   });
 
   /// Ícono del encabezado y su color (el de la tarjeta).
   final IconData icon;
+
+  /// Ícono SVG en lugar de [icon] (Series).
+  final String? svgIcon;
+
+  /// Arriba del título; por defecto "Películas".
+  final String? sectionLabel;
+
+  /// Etiqueta sobre la imagen de cada una (por `contentId`), p. ej. el
+  /// capítulo en "Seguir series".
+  final Map<String, String> badges;
   final Color color;
   final String title;
 
@@ -80,6 +93,8 @@ class HomeMovieBigCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: _Header(
               icon: icon,
+              svgIcon: svgIcon,
+              sectionLabel: sectionLabel,
               color: color,
               title: title,
               countLabel: countLabel,
@@ -99,6 +114,7 @@ class HomeMovieBigCard extends StatelessWidget {
               selectedIndex: isFocused ? selectedIndex : -1,
               watched: watched,
               loadingId: loadingId,
+              badges: badges,
             ),
           ),
         ],
@@ -116,11 +132,13 @@ class _Posters extends StatelessWidget {
     required this.selectedIndex,
     required this.watched,
     this.loadingId,
+    this.badges = const {},
   });
 
   final List<MovieItem> movies;
   final Map<String, double> watched;
   final String? loadingId;
+  final Map<String, String> badges;
 
   /// Película elegida; fuera de la lista (sin foco o en el botón), ninguna.
   final int selectedIndex;
@@ -184,6 +202,7 @@ class _Posters extends StatelessWidget {
                             wide: true,
                             progress: watched[movies[i].contentId],
                             isLoading: movies[i].contentId == loadingId,
+                            badge: badges[movies[i].contentId],
                             // OK y el toque los maneja el Inicio.
                             onTap: () {},
                           ),
@@ -217,9 +236,13 @@ class _Header extends StatelessWidget {
     required this.actionLabel,
     required this.showAction,
     required this.actionFocused,
+    this.svgIcon,
+    this.sectionLabel,
   });
 
   final IconData icon;
+  final String? svgIcon;
+  final String? sectionLabel;
   final Color color;
   final String title;
   final String countLabel;
@@ -235,8 +258,9 @@ class _Header extends StatelessWidget {
       children: [
         const Spacer(),
         HomeCardSummary(
-          label: LocaleKeys.home_rail_movies_title.tr(),
+          label: sectionLabel ?? LocaleKeys.home_rail_movies_title.tr(),
           icon: icon,
+          svgIcon: svgIcon,
           color: color,
           title: title,
           line: countLabel,

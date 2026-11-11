@@ -4,15 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/features/movies/widgets/movie_detail_parts.dart';
+import 'package:moai3/focus/opening_focus_guard.dart';
 import 'package:moai3/features/movies/widgets/movie_detail_shell.dart';
 import 'package:moai3/features/movies/widgets/tv_movie_genre_chip.dart';
 import 'package:moai3/features/movies/widgets/tv_movie_hero_card.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/widgets/dialogs/tv_dialog.dart';
 import 'package:moai3/widgets/tv_common/tv_m3.dart';
 import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
-import 'package:moai3/features/movies/movie_player_format.dart';
 import 'package:moai3/features/movies/movie_playback.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/services/movie_metadata_service.dart';
@@ -94,12 +93,15 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
       _loadProgress();
       _loadWatchlist();
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _heroFocusNode.requestFocus();
-      }
-    });
+    _openingFocus.start();
   }
+
+  /// Al abrir, el foco en la ficha hasta la primera tecla
+  /// ([OpeningFocusGuard]: en el TV se iba a Atrás).
+  late final OpeningFocusGuard _openingFocus = OpeningFocusGuard(
+    target: _heroFocusNode,
+    isActive: () => mounted && (ModalRoute.of(context)?.isCurrent ?? true),
+  );
 
   Future<void> _loadWatchlist() async {
     final watchlist = MovieWatchlistService.instance;
@@ -147,49 +149,9 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     _watchlistFocusNode.dispose();
     _voteUpFocusNode.dispose();
     _voteDownFocusNode.dispose();
+    _openingFocus.stop();
     _heroFocusNode.dispose();
     super.dispose();
-  }
-
-  /// Con algo visto (en progreso), pregunta si retomar o empezar de nuevo.
-  /// `null`: canceló (atrás).
-  Future<bool?> _askResume(MovieWatchProgress progress) {
-    final fromStartFocus = FocusNode(debugLabel: 'resume_from_start');
-    final resumeFocus = FocusNode(debugLabel: 'resume_resume');
-    return showTvGeneralDialog<bool>(
-      context: context,
-      barrierLabel: 'ResumeOrRestart',
-      builder: (dialogContext) => TvDialog(
-        icon: MoaiIcons.vodResume,
-        title: LocaleKeys.movies_resume_dialog_title.tr(),
-        subtitle: LocaleKeys.movies_resume_dialog_desc.tr(
-          namedArgs: {
-            'time': formatPlayerTime(
-              Duration(seconds: progress.positionSeconds),
-            ),
-          },
-        ),
-        actions: [
-          TvDialogButton(
-            label: LocaleKeys.movies_resume_from_start.tr(),
-            focusNode: fromStartFocus,
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            onKeyRight: resumeFocus.requestFocus,
-          ),
-          TvDialogButton(
-            label: LocaleKeys.movies_resume.tr(),
-            variant: TvDialogButtonVariant.primary,
-            focusNode: resumeFocus,
-            autofocus: true,
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            onKeyLeft: fromStartFocus.requestFocus,
-          ),
-        ],
-      ),
-    ).whenComplete(() {
-      fromStartFocus.dispose();
-      resumeFocus.dispose();
-    });
   }
 
   Future<void> _onPlayPressed() async {
@@ -200,7 +162,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     int? startAt;
     final progress = _watchProgress;
     if (progress != null && progress.canResume) {
-      final resume = await _askResume(progress);
+      final resume = await askResume(context, progress.positionSeconds);
       if (resume == null || !mounted) return;
       startAt = resume ? progress.positionSeconds : null;
     }

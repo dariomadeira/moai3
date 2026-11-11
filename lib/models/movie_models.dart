@@ -682,17 +682,42 @@ class VodPlayInfo {
   final List<VodQualityOption> qualities;
   final List<VodSubtitleOption> subtitles;
 
+  /// Del capítulo leído (en una película, el único): su número y su
+  /// `programContentId`.
+  final int? episodeNumber;
+  final String programContentId;
+
+  /// Cuántos capítulos trajo la respuesta.
+  final int episodeCount;
+
   const VodPlayInfo({
     required this.name,
     required this.qualities,
     required this.subtitles,
+    this.episodeNumber,
+    this.programContentId = '',
+    this.episodeCount = 0,
   });
 
-  factory VodPlayInfo.fromJson(Map<String, dynamic> json) {
-    final epList = json['episodeList'] as List? ?? [];
-    final ep0 = epList.isNotEmpty && epList.first is Map<String, dynamic>
-        ? epList.first as Map<String, dynamic>
-        : <String, dynamic>{};
+  /// Con [episodeNumber] lee ese capítulo de `episodeList` (si no está, el
+  /// primero).
+  factory VodPlayInfo.fromJson(
+    Map<String, dynamic> json, {
+    int? episodeNumber,
+  }) {
+    final epList = (json['episodeList'] as List? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .toList();
+    final ep0 =
+        epList
+            .where(
+              (e) =>
+                  episodeNumber != null &&
+                  '${e['episodeNumber']}' == '$episodeNumber',
+            )
+            .firstOrNull ??
+        epList.firstOrNull ??
+        <String, dynamic>{};
 
     final rawQualities = (ep0['totalMovieList'] as List? ?? [])
         .whereType<Map<String, dynamic>>()
@@ -710,6 +735,9 @@ class VodPlayInfo {
       name: json['name']?.toString() ?? '',
       qualities: rawQualities,
       subtitles: rawSubtitles,
+      episodeNumber: int.tryParse('${ep0['episodeNumber'] ?? ''}'),
+      programContentId: ep0['programContentId']?.toString() ?? '',
+      episodeCount: epList.length,
     );
   }
 }

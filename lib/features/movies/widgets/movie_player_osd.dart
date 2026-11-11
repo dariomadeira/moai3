@@ -607,10 +607,12 @@ class MoviePlayerSubtitle extends StatelessWidget {
 
 /// Chip central de estado: cargando (con indicador) o en pausa.
 class MoviePlayerStatusChip extends StatelessWidget {
-  const MoviePlayerStatusChip.loading({super.key}) : paused = false;
-  const MoviePlayerStatusChip.paused({super.key}) : paused = true;
+  /// [label] reemplaza al "Cargando…" (p. ej. "Siguiente: Capítulo 6").
+  const MoviePlayerStatusChip.loading({super.key, this.label}) : paused = false;
+  const MoviePlayerStatusChip.paused({super.key}) : paused = true, label = null;
 
   final bool paused;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
@@ -645,7 +647,7 @@ class MoviePlayerStatusChip extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            LocaleKeys.movies_loading_video.tr(),
+            label ?? LocaleKeys.movies_loading_video.tr(),
             style: MoaiText.body(
               context,
               fontSize: 13,

@@ -1,10 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:moai3/features/home/widgets/home_series_continue_card.dart';
 import 'package:moai3/features/movies/screens/series_detail_screen.dart';
+import 'package:moai3/features/movies/series_playlist.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/models/series_models.dart';
 import 'package:moai3/services/app_preferences_service.dart';
+import 'package:moai3/services/series_continue_service.dart';
+import 'package:moai3/services/series_watch_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -57,6 +63,58 @@ SeriesSeasonDetail detail(Map<String, dynamic> raw) =>
     )!;
 
 void main() {
+  group('temporadas repetidas', () {
+    SeriesSeasonDetail version(
+      String id, {
+      String audio = '',
+      String subs = '',
+      String? description,
+    }) => SeriesSeasonDetail(
+      info: MovieItem(contentId: id, name: id, description: description),
+      seasons: const [],
+      episodes: const [],
+      audioInfo: audio,
+      subsInfo: subs,
+    );
+
+    test('la más completa: idiomas, subtítulos y sinopsis', () {
+      expect(version('a', audio: 'und', subs: 'null').completeness, 0);
+      expect(
+        version(
+          'b',
+          audio: 'por,eng,spa',
+          subs: 'pt,es,en',
+          description: 'Bob…',
+        ).completeness,
+        7,
+      );
+    });
+
+    test('una por número; mientras no se conocen, la primera', () {
+      const all = [
+        SeriesSeason(contentId: 'paralela1', number: 1),
+        SeriesSeason(contentId: 'oficial1', number: 1),
+        SeriesSeason(contentId: 's2', number: 2),
+      ];
+      expect(SeriesSeasonDetail.duplicated(all), ['paralela1', 'oficial1']);
+      expect(
+        [for (final s in SeriesSeasonDetail.bestSeasons(all, {})) s.contentId],
+        ['paralela1', 's2'],
+      );
+      final details = {
+        'paralela1': version('paralela1', audio: 'und'),
+        'oficial1': version('oficial1', audio: 'eng,spa', subs: 'es'),
+      };
+      expect(
+        [
+          for (final s in SeriesSeasonDetail.bestSeasons(all, details))
+            s.contentId,
+        ],
+        ['oficial1', 's2'],
+      );
+    });
+  });
+
   group('SeriesSeasonDetail', () {
     test('temporadas y capítulos, ordenados por número', () {
       final d = detail(asset(id: 's2', season: 2, episodes: 6));
@@ -97,6 +155,7 @@ void main() {
       Map<String, int> episodes = const {'s1': 30, 's2': 6, 's3': 9},
       Set<String> failing = const {},
       String open = 's1',
+      EpisodeStreamResolver? resolveEpisode,
     }) async {
       useSpanishTranslations();
       // El TV: 960×540 puntos.
@@ -131,6 +190,7 @@ void main() {
                 programType: 'teleplay',
               ),
               fetchSeason: fetch,
+              resolveEpisode: resolveEpisode,
             ),
           ),
         ),
@@ -250,15 +310,92 @@ void main() {
       expect(dots(tester)!.active, 12);
     });
 
-    testWidgets('con una sola temporada no hay lista', (tester) async {
+    testWidgets('dos versiones de la temporada 1: queda una, la completa', (
+      tester,
+    ) async {
+      useSpanishTranslations();
+      tester.view.physicalSize = const Size(960, 540);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      // Como Bob's Burgers: "p1" es la carga paralela (sin idiomas) y "s1"
+      // la oficial; las dos se listan con el número 1.
+      Map<String, dynamic> raw(String id, int season, String audio) => {
+        ...asset(id: id, season: season, episodes: 3, seasons: 2),
+        'audioInfo': audio,
+        'sameSeasonSeriesList': [
+          {'contentId': 'p1', 'seasonNumber': 1},
+          {'contentId': 's1', 'seasonNumber': 1},
+          {'contentId': 's2', 'seasonNumber': 2},
+        ],
+      };
+      final versions = {
+        'p1': raw('p1', 1, 'und'),
+        's1': raw('s1', 1, 'por,eng,spa'),
+        's2': raw('s2', 2, 'spa'),
+      };
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChangeNotifierProvider(
+            create: (_) => TvSettingsProvider(prefs),
+            child: SeriesDetailScreen(
+              // Se abre la paralela (p. ej. desde el buscador).
+              series: MovieItem(contentId: 'p1', name: 'Bobs Burgers 1'),
+              fetchSeason: (id) async {
+                requested.add(id);
+                return detail(versions[id]!);
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final state = tester.state<SeriesDetailScreenState>(
+        find.byType(SeriesDetailScreen),
+      );
+      expect(requested, containsAll(['p1', 's1']));
+      expect(season(1), findsOneWidget);
+      expect(season(2), findsOneWidget);
+      expect(state.debugSeasonId, 's1');
+    });
+
+    testWidgets('con una sola temporada está su fila (para marcarla), sin '
+        '"N temporadas"', (tester) async {
       await pump(tester, seasons: 1);
-      expect(season(1), findsNothing);
-      expect(find.text('Temporadas'), findsNothing);
+      expect(season(1), findsOneWidget);
+      expect(find.text('Temporadas'), findsOneWidget);
       expect(find.text('Capítulos'), findsOneWidget);
-      // Sólo los puntos de los capítulos.
-      expect(dots(tester, 'seasons'), isNull);
-      expect(dots(tester), isNotNull);
       expect(find.textContaining('temporadas'), findsNothing);
+      // ↑ desde los capítulos va a la temporada.
+      await key(tester, LogicalKeyboardKey.arrowUp);
+      expect(
+        FocusManager.instance.primaryFocus?.debugLabel,
+        'series_detail_seasons',
+      );
+    });
+
+    testWidgets('si el portal no lista temporadas, está la abierta', (
+      tester,
+    ) async {
+      useSpanishTranslations();
+      tester.view.physicalSize = const Size(960, 540);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChangeNotifierProvider(
+            create: (_) => TvSettingsProvider(prefs),
+            child: SeriesDetailScreen(
+              series: MovieItem(contentId: 's1', name: 'Caballos lentos T1'),
+              fetchSeason: (id) async => detail({
+                ...asset(id: id, season: 1, episodes: 3),
+                'sameSeasonSeriesList': const [],
+              }),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(season(1), findsOneWidget);
     });
 
     testWidgets('←/→ recorren la fila y la corren para los dos lados', (
@@ -424,6 +561,232 @@ void main() {
       await tester.pumpAndSettle();
       expect(requested, ['s1', 's1']);
       expect(find.text('30 capítulos'), findsOneWidget);
+    });
+
+    testWidgets('check en los capítulos vistos y en la temporada completa', (
+      tester,
+    ) async {
+      // s1: vistos el 1 y el 3; s2: los 6, completa.
+      await SeriesWatchService.recordProgress(
+        seasonId: 's1',
+        episodeId: 's1-e1',
+        episodeCount: 30,
+        position: const Duration(minutes: 50),
+        total: const Duration(minutes: 50),
+      );
+      await SeriesWatchService.recordProgress(
+        seasonId: 's1',
+        episodeId: 's1-e3',
+        episodeCount: 30,
+        position: const Duration(minutes: 50),
+        total: const Duration(minutes: 50),
+      );
+      for (var n = 1; n <= 6; n++) {
+        await SeriesWatchService.recordProgress(
+          seasonId: 's2',
+          episodeId: 's2-e$n',
+          episodeCount: 6,
+          position: const Duration(minutes: 50),
+          total: const Duration(minutes: 50),
+        );
+      }
+      await pump(tester);
+      Finder check(Finder of) => find.descendant(
+        of: of,
+        matching: find.byKey(const ValueKey('watched')),
+      );
+      expect(check(episode(1)), findsOneWidget);
+      expect(check(episode(2)), findsNothing);
+      expect(check(episode(3)), findsOneWidget);
+      expect(check(season(1)), findsNothing);
+      expect(check(season(2)), findsOneWidget);
+      expect(check(season(3)), findsNothing);
+    });
+
+    /// OK mantenido (más que [TvTiming.longPress]).
+    Future<void> holdOk(WidgetTester tester) async {
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.enter);
+      await tester.pump(const Duration(milliseconds: 900));
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.enter);
+      // Lo guardado se lee de nuevo: dejar que terminen las esperas.
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pumpAndSettle();
+    }
+
+    Finder check(Finder of) => find.descendant(
+      of: of,
+      matching: find.byKey(const ValueKey('watched')),
+    );
+
+    testWidgets('OK mantenido en un capítulo lo marca y lo desmarca, sin '
+        'reproducirlo', (tester) async {
+      var resolved = 0;
+      await pump(
+        tester,
+        resolveEpisode: (_, _, _) async {
+          resolved++;
+          return null;
+        },
+      );
+      await key(tester, LogicalKeyboardKey.arrowRight);
+      await holdOk(tester);
+      expect(check(episode(2)), findsOneWidget);
+      expect(check(episode(1)), findsNothing);
+      expect((await SeriesWatchService.season('s1')).watched, {'s1-e2'});
+
+      await holdOk(tester);
+      expect(check(episode(2)), findsNothing);
+      expect((await SeriesWatchService.season('s1')).watched, isEmpty);
+      expect(resolved, 0);
+    });
+
+    testWidgets('OK mantenido en la temporada marca todos; otra vez, los '
+        'desmarca', (tester) async {
+      await pump(tester, episodes: const {'s1': 4, 's2': 6, 's3': 9});
+      await key(tester, LogicalKeyboardKey.arrowUp);
+      expect(
+        FocusManager.instance.primaryFocus?.debugLabel,
+        'series_detail_seasons',
+      );
+      await holdOk(tester);
+      expect(check(season(1)), findsOneWidget);
+      for (var n = 1; n <= 4; n++) {
+        expect(check(episode(n)), findsOneWidget);
+      }
+      // Sigue en las temporadas: el OK mantenido no baja a los capítulos.
+      expect(
+        FocusManager.instance.primaryFocus?.debugLabel,
+        'series_detail_seasons',
+      );
+
+      await holdOk(tester);
+      expect(check(season(1)), findsNothing);
+      expect(check(episode(1)), findsNothing);
+    });
+
+    group('marcar a mano anota la serie en Seguir series', () {
+      Future<String?> badge(WidgetTester tester) async {
+        final items = await tester.runAsync(SeriesContinueService.items);
+        if (items == null || items.isEmpty) return null;
+        return HomeSeriesContinueCard.badgeOf(items.single);
+      }
+
+      testWidgets('un capítulo: sigue el próximo', (tester) async {
+        await pump(tester);
+        for (var i = 0; i < 2; i++) {
+          await key(tester, LogicalKeyboardKey.arrowRight);
+        }
+        await holdOk(tester);
+        expect(await badge(tester), 'Sigue: T1 · Cap. 4');
+      });
+
+      testWidgets('marcar uno anterior no vuelve atrás', (tester) async {
+        await pump(tester);
+        for (var i = 0; i < 4; i++) {
+          await key(tester, LogicalKeyboardKey.arrowRight);
+        }
+        await holdOk(tester);
+        for (var i = 0; i < 3; i++) {
+          await key(tester, LogicalKeyboardKey.arrowLeft);
+        }
+        await holdOk(tester);
+        expect(await badge(tester), 'Sigue: T1 · Cap. 6');
+      });
+
+      testWidgets('la temporada: sigue la próxima', (tester) async {
+        await pump(tester, episodes: const {'s1': 4, 's2': 6, 's3': 9});
+        await key(tester, LogicalKeyboardKey.arrowUp);
+        await holdOk(tester);
+        expect(await badge(tester), 'Sigue: T2 · Cap. 1');
+      });
+
+      testWidgets('desmarcar no anota', (tester) async {
+        await pump(tester);
+        await holdOk(tester);
+        await tester.runAsync(SeriesContinueService.clear);
+        await holdOk(tester);
+        expect(await badge(tester), isNull);
+      });
+    });
+
+    testWidgets('OK en un capítulo: ruedita en vez del número mientras pide '
+        'el video', (tester) async {
+      final stream = Completer<ResolvedPlayStream?>();
+      await pump(tester, resolveEpisode: (_, _, _) => stream.future);
+      await key(tester, LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(
+        find.descendant(
+          of: episode(1),
+          matching: find.byKey(const ValueKey('episode_loading')),
+        ),
+        findsOneWidget,
+      );
+      // No se pudo: vuelve el número.
+      stream.complete(null);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 5));
+      expect(find.byKey(const ValueKey('episode_loading')), findsNothing);
+      expect(
+        find.descendant(of: episode(1), matching: find.text('1')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('al abrir, si el sistema manda el foco a Atrás, vuelve a los '
+        'capítulos; después de la primera tecla, no', (tester) async {
+      await pump(tester);
+      final back = FocusManager.instance.rootScope.descendants.firstWhere(
+        (n) => n.debugLabel == 'series_detail_back',
+      );
+      // Como hace la pantalla al terminar de abrirse en el TV.
+      back.requestFocus();
+      await tester.pump();
+      await tester.pump();
+      expect(
+        FocusManager.instance.primaryFocus?.debugLabel,
+        'series_detail_episodes',
+      );
+      // Ya tocó una tecla: ir a Atrás es suyo.
+      await key(tester, LogicalKeyboardKey.arrowLeft);
+      expect(
+        FocusManager.instance.primaryFocus?.debugLabel,
+        'series_detail_back',
+      );
+    });
+
+    testWidgets('abierto desde Seguir series: elegido el capítulo pedido', (
+      tester,
+    ) async {
+      useSpanishTranslations();
+      tester.view.physicalSize = const Size(960, 540);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChangeNotifierProvider(
+            create: (_) => TvSettingsProvider(prefs),
+            child: SeriesDetailScreen(
+              series: MovieItem(contentId: 's2', name: 'Caballos lentos T2'),
+              fetchSeason: (id) async => detail(
+                asset(id: id, season: int.parse(id.substring(1)), episodes: 8),
+              ),
+              initialEpisodeId: 's2-e6',
+              initialEpisodeNumber: 6,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final state = tester.state<SeriesDetailScreenState>(
+        find.byType(SeriesDetailScreen),
+      );
+      expect(state.debugSeasonId, 's2');
+      expect(state.debugEpisodeIndex, 5);
+      expect(
+        FocusManager.instance.primaryFocus?.debugLabel,
+        'series_detail_episodes',
+      );
     });
 
     testWidgets('← desde la primera columna va a Atrás', (tester) async {

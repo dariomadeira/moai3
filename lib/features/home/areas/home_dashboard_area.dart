@@ -21,6 +21,7 @@ import 'package:moai3/features/home/widgets/home_friend_requests_card.dart';
 import 'package:moai3/features/home/widgets/home_friends_card.dart';
 import 'package:moai3/features/home/widgets/home_movie_big_card.dart';
 import 'package:moai3/features/home/widgets/home_recommendations_card.dart';
+import 'package:moai3/features/home/widgets/home_series_continue_card.dart';
 import 'package:moai3/features/home/widgets/home_trailers_card.dart';
 import 'package:moai3/features/home/widgets/home_weather_card.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
@@ -29,6 +30,7 @@ import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/features/movies/movie_playback.dart';
 import 'package:moai3/features/movies/screens/movie_detail_screen.dart';
+import 'package:moai3/features/movies/screens/series_detail_screen.dart';
 import 'package:moai3/features/movies/widgets/movie_hero_card.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/models/movie_models.dart';
@@ -38,6 +40,7 @@ import 'package:moai3/services/home_hero_rotation.dart';
 import 'package:moai3/services/movie_library.dart';
 import 'package:moai3/services/movie_progress_service.dart';
 import 'package:moai3/services/movie_watchlist_service.dart';
+import 'package:moai3/services/series_continue_service.dart';
 import 'package:moai3/services/tmdb_trending_service.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/featured_movies_provider.dart';
@@ -55,6 +58,7 @@ import 'package:moai3/widgets/tv_common/tv_press_detector.dart';
 import 'package:provider/provider.dart';
 
 part 'home_dashboard_movies.dart';
+part 'home_dashboard_series.dart';
 
 part 'dashboard/home_dashboard_items.dart';
 
@@ -90,7 +94,7 @@ class HomeDashboardArea extends StatefulWidget {
 }
 
 class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
-    with _HomeMovieCards {
+    with _HomeMovieCards, _HomeSeriesCards {
   late final _focus = FocusRequester(isMounted: () => mounted);
   final FocusNode _panelFocusNode = FocusNode(
     debugLabel: 'home_dashboard_panel',
@@ -126,6 +130,7 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
   static int _spanOf(_HomeWidget item) => switch (item) {
     _HomeWidget.hero ||
     _HomeWidget.continueWatching ||
+    _HomeWidget.seriesContinue ||
     _HomeWidget.recommendations ||
     _HomeWidget.watchlistBig => 2,
     _ => 1,
@@ -140,6 +145,8 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     widget.romManager.addListener(_onArcadeChanged);
     MovieWatchlistService.instance.addListener(_onWatchlistChanged);
     unawaited(_loadContinue());
+    unawaited(_loadSeriesContinue());
+    SeriesContinueService.changes.addListener(_onSeriesChanged);
     if (!HomeHeroRotation.isLoaded) {
       unawaited(
         HomeHeroRotation.load().then((_) {
@@ -170,6 +177,7 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
   List<_HomeWidget> _visibleWidgets({
     required bool hasHero,
     required bool moviesVisible,
+    required bool seriesVisible,
     required bool hasTrailers,
     required bool hasEventsToday,
     required bool watchPartyEnabled,
@@ -181,6 +189,9 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
       // Sin nada por ver hoy (en curso o por empezar), no ocupa lugar.
       if (hasEventsToday) _HomeWidget.events,
       if (moviesVisible && _continue.isNotEmpty) _HomeWidget.continueWatching,
+      // "Seguir series": con Series en el rail y alguna empezada.
+      if (seriesVisible && _seriesContinue.isNotEmpty)
+        _HomeWidget.seriesContinue,
       if (moviesVisible && _recommendations.isNotEmpty)
         _HomeWidget.recommendations,
       _HomeWidget.discounts,
@@ -289,6 +300,7 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     ArcadePluginService.instance.removeListener(_onArcadeChanged);
     widget.romManager.removeListener(_onArcadeChanged);
     MovieWatchlistService.instance.removeListener(_onWatchlistChanged);
+    SeriesContinueService.changes.removeListener(_onSeriesChanged);
     _hourTimer?.cancel();
     _arcadeAction.dispose();
     _panelFocusNode.dispose();
@@ -330,6 +342,10 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
       (FeaturedMoviesProvider? p) =>
           p?.isSectionAvailable(FeaturedMoviesProvider.sectionMovies) ?? false,
     );
+    final seriesVisible = context.select(
+      (FeaturedMoviesProvider? p) =>
+          p?.isSectionAvailable(FeaturedMoviesProvider.sectionSeries) ?? false,
+    );
     // La fila "Estrenos de Cartelera" (de TMDb), si Películas ya cargó.
     final trending = context.select(
       (FeaturedMoviesProvider? p) => p
@@ -357,6 +373,7 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
       watchPartyEnabled: watchPartyEnabled,
       hasFriendRequests: hasFriendRequests,
       moviesVisible: moviesVisible,
+      seriesVisible: seriesVisible,
       hasTrailers: showTrailers && trailers.isNotEmpty,
     );
 
@@ -583,6 +600,7 @@ enum _HomeWidget {
   weather,
   events,
   continueWatching,
+  seriesContinue,
   recommendations,
   discounts,
   friends,

@@ -5,35 +5,58 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/features/home/widgets/home_row_window.dart';
+import 'package:moai3/features/movies/movie_playback.dart';
+import 'package:moai3/features/movies/series_playlist.dart';
 import 'package:moai3/features/movies/widgets/movie_detail_parts.dart';
 import 'package:moai3/features/movies/widgets/movie_detail_shell.dart';
 import 'package:moai3/features/movies/widgets/tv_movie_genre_chip.dart';
+import 'package:moai3/focus/opening_focus_guard.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/models/series_models.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/services/movie_image_cache.dart';
+import 'package:moai3/services/series_continue_service.dart';
+import 'package:moai3/services/series_watch_service.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/theme/moai_palette.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/tv_common/moai_svg_icon.dart';
+import 'package:moai3/widgets/tv_common/tv_press_detector.dart';
 import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 
 /// Detalle de una serie: la ficha como la de una película, la lista de
 /// temporadas (si hay más de una) y los capítulos de la elegida, como
-/// cuadrados con su número. Todavía no reproduce ni marca nada.
+/// cuadrados con su número. OK en un capítulo lo reproduce.
 ///
 /// En el portal cada temporada es un ítem propio ([series] es la que se
 /// abrió); el detalle de cada una se pide al elegirla.
 class SeriesDetailScreen extends StatefulWidget {
-  const SeriesDetailScreen({super.key, required this.series, this.fetchSeason});
+  const SeriesDetailScreen({
+    super.key,
+    required this.series,
+    this.fetchSeason,
+    this.resolveEpisode,
+    this.initialEpisodeId,
+    this.initialEpisodeNumber,
+  });
 
   final MovieItem series;
+
+  /// El capítulo elegido al abrir ("Seguir series" del Inicio): por su
+  /// `contentId` o, si no está, por su número. Sin ellos, el primero.
+  final String? initialEpisodeId;
+  final int? initialEpisodeNumber;
 
   /// Pide el detalle de una temporada; por defecto
   /// [MoiamovApiService.fetchSeriesSeason]. Los tests lo reemplazan.
   final Future<SeriesSeasonDetail?> Function(String contentId)? fetchSeason;
+
+  /// Pide el video de un capítulo; por defecto
+  /// [MoiamovApiService.resolveEpisodeStream]. Los tests lo reemplazan.
+  final EpisodeStreamResolver? resolveEpisode;
 
   @override
   State<SeriesDetailScreen> createState() => SeriesDetailScreenState();
@@ -72,12 +95,33 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
   final Set<String> _failed = {};
   final Set<String> _loading = {};
 
-  /// Las temporadas de la serie: llegan con el primer detalle.
-  List<SeriesSeason> _seasons = const [];
+  /// Las temporadas como las lista el portal (llegan con el primer detalle);
+  /// puede repetir un número con dos versiones.
+  List<SeriesSeason> _allSeasons = const [];
+
+  /// Las que se muestran: una por número, la versión más completa
+  /// ([SeriesSeasonDetail.bestSeasons]).
+  /// Si el portal no lista temporadas (serie de una sola), la abierta.
+  List<SeriesSeason> get _seasons {
+    if (_allSeasons.isEmpty) {
+      final detail = _detail;
+      if (detail == null) return const [];
+      return [
+        SeriesSeason(
+          contentId: _seasonId,
+          number: SeriesSeasonDetail.seasonNumber(detail.info) ?? 1,
+        ),
+      ];
+    }
+    return SeriesSeasonDetail.bestSeasons(_allSeasons, _details);
+  }
 
   /// La temporada que se ve (su `contentId`).
   late String _seasonId = widget.series.contentId;
   int _episode = 0;
+
+  /// Lo visto de cada temporada (los checks), por `contentId`.
+  final Map<String, SeriesSeasonWatch> _watch = {};
 
   Timer? _seasonTimer;
 
@@ -95,7 +139,12 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
 
   int get _seasonIndex => _seasons.indexWhere((s) => s.contentId == _seasonId);
 
+  /// La píldora "N temporadas" de la ficha: sólo con más de una.
   bool get _hasSeasonList => _seasons.length > 1;
+
+  /// La fila de temporadas: aun con una sola, para poder marcarla entera
+  /// como vista (OK mantenido).
+  bool get _hasSeasonRow => _seasons.isNotEmpty;
 
   List<SeriesEpisode> get _episodes => _detail?.episodes ?? const [];
 
@@ -103,7 +152,7 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
   void initState() {
     super.initState();
     unawaited(_load(_seasonId));
-    _focusEpisodesWhenBuilt();
+    _openingFocus.start();
     for (final node in [_seasonsFocus, _episodesFocus]) {
       node.addListener(_onFocusChange);
     }
@@ -112,31 +161,24 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
   @override
   void dispose() {
     _seasonTimer?.cancel();
+    _okTimer?.cancel();
+    _openingFocus.stop();
     _backFocus.dispose();
     _seasonsFocus.dispose();
     _episodesFocus.dispose();
     super.dispose();
   }
 
-  /// Al abrir, el foco en los capítulos. El panel no deja enfocar nada
-  /// adentro hasta terminar de abrirse: se reintenta cuadro a cuadro (como
-  /// mucho [_focusAttempts]).
-  void _focusEpisodesWhenBuilt([int attempt = 0]) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _episodesFocus.hasFocus) return;
-      // Ya lo movió el usuario.
-      if (_backFocus.hasFocus || _seasonsFocus.hasFocus) return;
-      _episodesFocus.requestFocus();
-      if (attempt < _focusAttempts) {
-        _focusEpisodesWhenBuilt(attempt + 1);
-        WidgetsBinding.instance.scheduleFrame();
-      }
-    });
-  }
-
-  static const int _focusAttempts = 60;
+  /// Al abrir, el foco en los capítulos hasta la primera tecla
+  /// ([OpeningFocusGuard]: en el TV se iba a Atrás).
+  late final OpeningFocusGuard _openingFocus = OpeningFocusGuard(
+    target: _episodesFocus,
+    isActive: () => mounted && (ModalRoute.of(context)?.isCurrent ?? true),
+  );
 
   void _onFocusChange() {
+    // Un OK a medio mantener no sigue en otra fila.
+    _cancelOk();
     if (mounted) setState(() {});
   }
 
@@ -160,24 +202,91 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
         return;
       }
       _details[contentId] = detail;
-      if (_seasons.isEmpty || detail.seasons.length > _seasons.length) {
-        _seasons = detail.seasons;
+      if (_allSeasons.isEmpty || detail.seasons.length > _allSeasons.length) {
+        _allSeasons = detail.seasons;
       }
-      if (contentId != _seasonId) return;
-      _info = detail.info;
-      // A veces la que se abrió no está en la lista con su `contentId`: se
-      // la reconoce por el número del nombre ("T13", "S13"), así queda
-      // marcada y no se vuelve a pedir.
-      if (_seasonIndex < 0) {
-        final number = SeriesSeasonDetail.seasonNumber(detail.info);
-        final same = _seasons.where((s) => s.number == number).firstOrNull;
-        if (same != null) {
-          _details[same.contentId] = detail;
-          _seasonId = same.contentId;
+      unawaited(
+        SeriesWatchService.rememberEpisodeCount(
+          contentId,
+          detail.episodes.length,
+        ).then((_) => _loadWatch()),
+      );
+      if (contentId == _seasonId) {
+        _info = detail.info;
+        // A veces la que se abrió no está en la lista con su `contentId`:
+        // se la reconoce por el número del nombre ("T13", "S13"), así queda
+        // marcada y no se vuelve a pedir.
+        if (!_allSeasons.any((s) => s.contentId == _seasonId)) {
+          final number = SeriesSeasonDetail.seasonNumber(detail.info);
+          final same = _seasons.where((s) => s.number == number).firstOrNull;
+          if (same != null) {
+            _details[same.contentId] = detail;
+            _seasonId = same.contentId;
+          }
         }
       }
+      _followBestSeason();
+      _applyInitialEpisode();
     });
+    // Las temporadas repetidas: se piden todas sus versiones para quedarse
+    // con la más completa.
+    for (final id in SeriesSeasonDetail.duplicated(_allSeasons)) {
+      if (!_details.containsKey(id)) unawaited(_load(id));
+    }
   }
+
+  /// Ya se eligió el capítulo de [SeriesDetailScreen.initialEpisodeId].
+  bool _initialApplied = false;
+
+  /// Al llegar los capítulos de la temporada abierta, elige el pedido (por
+  /// `contentId` o número); una sola vez, después manda la persona.
+  void _applyInitialEpisode() {
+    if (_initialApplied) return;
+    final episodes = _detail?.episodes;
+    if (episodes == null) return;
+    _initialApplied = true;
+    final id = widget.initialEpisodeId;
+    final number = widget.initialEpisodeNumber;
+    var index = id == null || id.isEmpty
+        ? -1
+        : episodes.indexWhere((e) => e.contentId == id);
+    if (index < 0 && number != null) {
+      index = episodes.indexWhere((e) => e.number == number);
+    }
+    if (index >= 0) _episode = index;
+  }
+
+  /// Si la temporada que se ve quedó como la versión descartada de una
+  /// repetida, pasa a la elegida (con sus capítulos desde el primero).
+  void _followBestSeason() {
+    if (_seasonIndex >= 0) return;
+    final number = _allSeasons
+        .where((s) => s.contentId == _seasonId)
+        .firstOrNull
+        ?.number;
+    if (number == null) return;
+    final best = _seasons.where((s) => s.number == number).firstOrNull;
+    final detail = best == null ? null : _details[best.contentId];
+    if (best == null || detail == null) return;
+    _seasonId = best.contentId;
+    _info = detail.info;
+    // La misma temporada en otra versión: el mismo capítulo (si está).
+    _episode = detail.episodes.isEmpty
+        ? 0
+        : _episode.clamp(0, detail.episodes.length - 1);
+  }
+
+  /// Lee lo visto de todas las temporadas conocidas.
+  Future<void> _loadWatch() async {
+    final ids = {for (final s in _seasons) s.contentId, _seasonId};
+    final loaded = {
+      for (final id in ids) id: await SeriesWatchService.season(id),
+    };
+    if (mounted) setState(() => _watch.addAll(loaded));
+  }
+
+  bool _episodeWatched(SeriesEpisode episode) =>
+      _watch[_seasonId]?.watched.contains(episode.contentId) ?? false;
 
   /// Pasa a otra temporada: la ficha y los capítulos son de ésa (se pide
   /// después de [seasonLoadDelay] si no está).
@@ -199,14 +308,54 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
   void _focusEpisodes() => _episodesFocus.requestFocus();
 
   void _focusTop() {
-    if (_hasSeasonList) {
+    if (_hasSeasonRow) {
       _seasonsFocus.requestFocus();
     } else {
       _backFocus.requestFocus();
     }
   }
 
+  /// OK en una fila: corto, al soltar ([onPress]); mantenido
+  /// [TvTiming.longPress], [onLongPress] (y el corto no).
+  Timer? _okTimer;
+  bool _okDown = false;
+  bool _okLong = false;
+
+  KeyEventResult _onOk(
+    KeyEvent event, {
+    required VoidCallback onPress,
+    required VoidCallback onLongPress,
+  }) {
+    if (event is KeyDownEvent) {
+      _okDown = true;
+      _okLong = false;
+      _okTimer?.cancel();
+      _okTimer = Timer(TvTiming.longPress, () {
+        _okLong = true;
+        onLongPress();
+      });
+    } else if (event is KeyUpEvent && _okDown) {
+      // Sin [_okDown]: es el OK que abrió el detalle, se ignora.
+      _okTimer?.cancel();
+      _okDown = false;
+      if (!_okLong) onPress();
+    }
+    return KeyEventResult.handled;
+  }
+
+  void _cancelOk() {
+    _okTimer?.cancel();
+    _okDown = false;
+  }
+
   KeyEventResult _onSeasonsKey(FocusNode node, KeyEvent event) {
+    if (TvKeyHandler.isActionKey(event.logicalKey)) {
+      return _onOk(
+        event,
+        onPress: _focusEpisodes,
+        onLongPress: () => unawaited(_toggleSeasonWatched()),
+      );
+    }
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return KeyEventResult.ignored;
     }
@@ -234,14 +383,22 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
       _backFocus.requestFocus();
       return KeyEventResult.handled;
     }
-    if (TvKeyHandler.isActionKey(key)) {
-      _focusEpisodes();
-      return KeyEventResult.handled;
-    }
     return KeyEventResult.ignored;
   }
 
   KeyEventResult _onEpisodesKey(FocusNode node, KeyEvent event) {
+    if (TvKeyHandler.isActionKey(event.logicalKey)) {
+      // Si los capítulos no cargaron, OK vuelve a pedirlos.
+      if (_failed.contains(_seasonId)) {
+        if (event is KeyDownEvent) unawaited(_load(_seasonId));
+        return KeyEventResult.handled;
+      }
+      return _onOk(
+        event,
+        onPress: () => unawaited(_playEpisode()),
+        onLongPress: () => unawaited(_toggleEpisodeWatched()),
+      );
+    }
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return KeyEventResult.ignored;
     }
@@ -266,13 +423,122 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.arrowDown) return KeyEventResult.handled;
-    if (TvKeyHandler.isActionKey(key)) {
-      // Ver un capítulo todavía no; si los capítulos no cargaron, OK
-      // vuelve a pedirlos.
-      if (_failed.contains(_seasonId)) unawaited(_load(_seasonId));
-      return KeyEventResult.handled;
-    }
     return KeyEventResult.ignored;
+  }
+
+  /// OK mantenido en un capítulo: lo marca como visto, o le saca la marca.
+  Future<void> _toggleEpisodeWatched() async {
+    final episodes = _episodes;
+    if (_episode >= episodes.length) return;
+    final episode = episodes[_episode];
+    final watched = !_episodeWatched(episode);
+    await SeriesWatchService.setWatched(
+      seasonId: _seasonId,
+      episodeIds: [episode.contentId],
+      watched: watched,
+      episodeCount: episodes.length,
+    );
+    if (watched) {
+      // El más avanzado de los vistos: marcar el 2 después del 5 no vuelve
+      // la tarjeta atrás.
+      final seen = (await SeriesWatchService.season(_seasonId)).watched;
+      final last = episodes.lastIndexWhere((e) => seen.contains(e.contentId));
+      await _rememberInContinue(_seasonId, last < 0 ? _episode : last);
+    }
+    await _loadWatch();
+  }
+
+  /// Marcado a mano como visto: la serie entra (o sigue) en "Seguir
+  /// series" del Inicio, con el capítulo [episodeIndex] de [seasonId] como
+  /// el último visto (la tarjeta muestra el siguiente).
+  Future<void> _rememberInContinue(String seasonId, int episodeIndex) async {
+    final playlist = SeriesPlaylist(
+      seasons: _seasons,
+      details: _details,
+      startSeasonId: seasonId,
+      startEpisodeIndex: episodeIndex,
+    );
+    await SeriesContinueService.record(playlist.continueEntry(Duration.zero));
+  }
+
+  /// OK mantenido en una temporada: marca todos sus capítulos como vistos;
+  /// si ya estaban todos, les saca la marca.
+  Future<void> _toggleSeasonWatched() async {
+    final seasonId = _seasonId;
+    if (!_details.containsKey(seasonId)) {
+      _seasonTimer?.cancel();
+      await _load(seasonId);
+    }
+    final episodes = _details[seasonId]?.episodes;
+    if (episodes == null || episodes.isEmpty) return;
+    final watched = !(_watch[seasonId]?.complete ?? false);
+    await SeriesWatchService.setWatched(
+      seasonId: seasonId,
+      episodeIds: [for (final e in episodes) e.contentId],
+      watched: watched,
+      episodeCount: episodes.length,
+    );
+    // Vista entera: en "Seguir series", lo que sigue es la próxima.
+    if (watched) await _rememberInContinue(seasonId, episodes.length - 1);
+    await _loadWatch();
+  }
+
+  bool _starting = false;
+
+  /// El capítulo que se está pidiendo: su número se cambia por una ruedita
+  /// hasta que abre el reproductor.
+  int? _loadingEpisode;
+
+  /// OK en un capítulo: lo reproduce (si quedó a la mitad, pregunta si
+  /// retomar) y sigue con los siguientes. Al volver, queda elegido el último
+  /// que se vio.
+  Future<void> _playEpisode() async {
+    final detail = _detail;
+    if (_starting || detail == null || _episode >= detail.episodes.length) {
+      return;
+    }
+    _starting = true;
+    try {
+      int? startAt;
+      final resume = await SeriesWatchService.resumeAt(
+        detail.episodes[_episode].contentId,
+      );
+      if (!mounted) return;
+      if (resume != null) {
+        final answer = await askResume(context, resume.inSeconds);
+        if (answer == null || !mounted) return;
+        if (answer) startAt = resume.inSeconds;
+      }
+      setState(() => _loadingEpisode = _episode);
+      final playlist = SeriesPlaylist(
+        seasons: _seasons,
+        details: _details,
+        startSeasonId: _seasonId,
+        startEpisodeIndex: _episode,
+        fetchSeason: widget.fetchSeason,
+        resolveStream: widget.resolveEpisode,
+        onStarted: () {
+          if (mounted) setState(() => _loadingEpisode = null);
+        },
+      );
+      await playEpisode(context, playlist, startAt: startAt);
+      if (!mounted) return;
+      setState(() {
+        _loadingEpisode = null;
+        _details.addAll(playlist.details);
+        if (playlist.seasonId != _seasonId) {
+          _seasonId = playlist.seasonId;
+          _info = _details[_seasonId]!.info;
+        }
+        _episode = playlist.episodeIndex;
+      });
+      await _loadWatch();
+    } finally {
+      _starting = false;
+      if (mounted && _loadingEpisode != null) {
+        setState(() => _loadingEpisode = null);
+      }
+    }
   }
 
   @override
@@ -320,7 +586,7 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
             ],
           ),
         ),
-        if (_hasSeasonList) ...[
+        if (_hasSeasonRow) ...[
           const SizedBox(height: 14),
           _rowLabel(LocaleKeys.series_seasons_label.tr()),
           _seasonList(),
@@ -590,6 +856,7 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
           label: '${_seasons[i].number}',
           current: i == current,
           focused: focused && i == current,
+          watched: _watch[_seasons[i].contentId]?.complete ?? false,
           onTap: () {
             _seasonsFocus.requestFocus();
             _selectSeason(i);
@@ -637,6 +904,8 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
           number: episodes[i].number,
           selected: focused && i == _episode,
           current: i == _episode,
+          watched: _episodeWatched(episodes[i]),
+          loading: i == _loadingEpisode,
           onTap: () {
             _episodesFocus.requestFocus();
             _selectEpisode(i);
@@ -652,9 +921,36 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
   }
 }
 
+/// El número de lo visto: más grande, más grueso y en el verde del modo
+/// ([MoaiPalette.watched]). Sobre el acento sólido, en [onPrimary] (el
+/// verde no se lee ahí), igual de grande y grueso.
+TextStyle _numberStyle(
+  BuildContext context, {
+  required double size,
+  required bool current,
+  required bool watched,
+  Color? onSolid,
+}) {
+  final scheme = Theme.of(context).colorScheme;
+  return MoaiText.display(
+    context,
+    fontSize: watched ? size + 4 : size,
+    fontWeight: watched
+        ? FontWeight.w900
+        : current
+        ? FontWeight.w800
+        : FontWeight.w600,
+    color:
+        onSolid ??
+        (watched ? MoaiPalette.of(context).watched : scheme.onSurface),
+  );
+}
+
 /// Una temporada, del mismo cristal que los capítulos ([_EpisodeTile]): con
 /// el foco en la fila, la que se ve lleva sólo el borde del foco; sin él,
-/// queda sólida en el acento para que se sepa cuál es.
+/// queda sólida en el acento para que se sepa cuál es. Completa (todos sus
+/// capítulos vistos), en forma de píldora y con el número más grande, más
+/// grueso y verde.
 class _SeasonPill extends StatelessWidget {
   const _SeasonPill({
     super.key,
@@ -662,6 +958,7 @@ class _SeasonPill extends StatelessWidget {
     required this.label,
     required this.current,
     required this.focused,
+    required this.watched,
     required this.onTap,
   });
 
@@ -669,51 +966,61 @@ class _SeasonPill extends StatelessWidget {
   final String label;
   final bool current;
   final bool focused;
+
+  /// Todos sus capítulos vistos.
+  final bool watched;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final solid = current && !focused;
+    // Vista: forma de píldora (bordes redondos del todo).
+    final radius = watched ? SeriesDetailScreenState.seasonHeight / 2 : 10.0;
     final text = Text(
       label,
       maxLines: 1,
-      style: MoaiText.display(
+      style: _numberStyle(
         context,
-        fontSize: 15,
-        fontWeight: current ? FontWeight.w800 : FontWeight.w600,
-        color: solid ? scheme.onPrimary : scheme.onSurface,
+        size: 15,
+        current: current,
+        watched: watched,
+        onSolid: solid ? scheme.onPrimary : null,
       ),
     );
     return GestureDetector(
       onTap: onTap,
-      child: solid
-          ? Container(
-              width: width,
-              height: SeriesDetailScreenState.seasonHeight,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: scheme.primary,
-                borderRadius: BorderRadius.circular(10),
+      child: KeyedSubtree(
+        key: ValueKey(watched ? 'watched' : 'unwatched'),
+        child: solid
+            ? Container(
+                width: width,
+                height: SeriesDetailScreenState.seasonHeight,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: scheme.primary,
+                  borderRadius: BorderRadius.circular(radius),
+                ),
+                child: text,
+              )
+            : MoaiGlass(
+                width: width,
+                height: SeriesDetailScreenState.seasonHeight,
+                borderRadius: radius,
+                elevated: false,
+                solid: true,
+                focused: focused,
+                alignment: Alignment.center,
+                child: text,
               ),
-              child: text,
-            )
-          : MoaiGlass(
-              width: width,
-              height: SeriesDetailScreenState.seasonHeight,
-              borderRadius: 10,
-              elevated: false,
-              solid: true,
-              focused: focused,
-              alignment: Alignment.center,
-              child: text,
-            ),
+      ),
     );
   }
 }
 
 /// Un capítulo: recuadro de cristal con su número; elegido, con el borde
-/// del foco.
+/// del foco; visto, en forma de píldora y con el número más grande, más
+/// grueso y verde.
 class _EpisodeTile extends StatelessWidget {
   const _EpisodeTile({
     super.key,
@@ -721,7 +1028,9 @@ class _EpisodeTile extends StatelessWidget {
     required this.number,
     required this.selected,
     required this.current,
+    required this.watched,
     required this.onTap,
+    this.loading = false,
   });
 
   final double width;
@@ -730,6 +1039,12 @@ class _EpisodeTile extends StatelessWidget {
 
   /// El elegido aunque el foco esté en otro lado: el número más marcado.
   final bool current;
+
+  /// Visto.
+  final bool watched;
+
+  /// Se está pidiendo su video: una ruedita en vez del número.
+  final bool loading;
   final VoidCallback onTap;
 
   @override
@@ -737,22 +1052,37 @@ class _EpisodeTile extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
-      child: MoaiGlass(
-        width: width,
-        height: SeriesDetailScreenState.episodeHeight,
-        borderRadius: 10,
-        elevated: false,
-        solid: true,
-        focused: selected,
-        alignment: Alignment.center,
-        child: Text(
-          '$number',
-          style: MoaiText.display(
-            context,
-            fontSize: 17,
-            fontWeight: current ? FontWeight.w800 : FontWeight.w600,
-            color: scheme.onSurface,
-          ),
+      child: KeyedSubtree(
+        key: ValueKey(watched ? 'watched' : 'unwatched'),
+        child: MoaiGlass(
+          width: width,
+          height: SeriesDetailScreenState.episodeHeight,
+          borderRadius: watched
+              ? SeriesDetailScreenState.episodeHeight / 2
+              : 10,
+          elevated: false,
+          solid: true,
+          focused: selected,
+          alignment: Alignment.center,
+          child: loading
+              ? SizedBox(
+                  key: const ValueKey('episode_loading'),
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                )
+              : Text(
+                  '$number',
+                  style: _numberStyle(
+                    context,
+                    size: 17,
+                    current: current,
+                    watched: watched,
+                  ),
+                ),
         ),
       ),
     );

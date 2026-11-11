@@ -36,6 +36,10 @@ class TvMovieCard extends StatefulWidget {
   /// Se está abriendo (Seguir viendo pide el video): muestra que carga.
   final bool isLoading;
 
+  /// Etiqueta arriba a la izquierda de la imagen (p. ej. "T2 · Cap. 5" en
+  /// Seguir series): pastilla sólida en el acento.
+  final String? badge;
+
   const TvMovieCard({
     super.key,
     required this.movie,
@@ -49,6 +53,7 @@ class TvMovieCard extends StatefulWidget {
     this.wide = false,
     this.progress,
     this.isLoading = false,
+    this.badge,
   });
 
   /// REDISEÑO (cristal): como los días de Descuentos, una tarjeta de
@@ -220,6 +225,34 @@ class _TvMovieCardState extends State<TvMovieCard> {
           )
         else
           placeholder,
+        if (widget.badge case final badge? when badge.isNotEmpty)
+          Positioned(
+            left: 6,
+            top: 6,
+            right: 6,
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Container(
+                key: const ValueKey('movie_card_badge'),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: scheme.primary,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  badge,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: MoaiText.body(
+                    context,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onPrimary,
+                  ),
+                ),
+              ),
+            ),
+          ),
         if ((widget.progress ?? 0) > 0)
           Positioned(
             left: 8,

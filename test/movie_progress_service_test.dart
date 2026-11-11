@@ -106,4 +106,20 @@ void main() {
     expect(await MovieProgressService.getProgress('v0'), isNull);
     expect(await MovieProgressService.getProgress('v1'), isNotNull);
   });
+
+  test('borrar todo: sin vistas ni progreso; lo demás queda', () async {
+    SharedPreferences.setMockInitialValues({'otra_cosa': 'x'});
+    await MovieProgressService.saveProgress(
+      contentId: 'a',
+      currentPosition: const Duration(minutes: 20),
+      totalDuration: const Duration(minutes: 100),
+    );
+    await MovieProgressService.markWatched('b');
+    await MovieProgressService.clearAll();
+    expect(await MovieProgressService.getProgress('a'), isNull);
+    expect(await MovieProgressService.getProgress('b'), isNull);
+    expect(await MovieProgressService.inProgress(), isEmpty);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('otra_cosa'), 'x');
+  });
 }

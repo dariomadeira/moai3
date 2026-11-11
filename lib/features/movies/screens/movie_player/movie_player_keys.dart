@@ -75,7 +75,7 @@ extension _MoviePlayerKeys on _MoviePlayerScreenState {
           if (widget.saveProgress) {
             unawaited(
               MovieAudioChoices.save(
-                widget.movie.contentId,
+                _audioChoiceKey,
                 code: option.code,
                 occurrence: option.occurrence,
               ),
@@ -106,6 +106,17 @@ extension _MoviePlayerKeys on _MoviePlayerScreenState {
   }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    // Atrás del control: no se atiende acá. Sin atender, al soltarla Android
+    // manda el pop del sistema, que es el que vale ([_onSystemBack]).
+    // Atenderla al apretar (y no al soltar) cerraba el reproductor y, con el
+    // pop que llegaba al soltar, también el detalle.
+    if (event.logicalKey == LogicalKeyboardKey.goBack) {
+      return KeyEventResult.ignored;
+    }
+    if (event is KeyDownEvent &&
+        _MoviePlayerScreenState._isBackKey(event.logicalKey)) {
+      _lastKeyBack = DateTime.now();
+    }
     if (_recommendAnswer != null) return _onRecommendKey(event);
     if (_openMenu != null) return _onMenuKey(event);
     if (_selectedMenu != null) return _onMenuBarKey(event);
@@ -154,5 +165,27 @@ extension _MoviePlayerKeys on _MoviePlayerScreenState {
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
+  }
+
+  /// El "atrás" del sistema: hace lo que haría la tecla. Si una tecla de
+  /// atrás de teclado (Esc) ya lo atendió recién, se ignora.
+  void _onSystemBack() {
+    final keyBack = _lastKeyBack;
+    if (keyBack != null &&
+        DateTime.now().difference(keyBack) <
+            _MoviePlayerScreenState._keyBackWindow) {
+      return;
+    }
+    if (_recommendAnswer != null) {
+      _closeRecommendPrompt();
+    } else if (_openMenu != null) {
+      _update(() => _openMenu = null);
+      _resetOsdTimer();
+    } else if (_selectedMenu != null) {
+      _update(() => _selectedMenu = null);
+      _resetOsdTimer();
+    } else {
+      _handleBack();
+    }
   }
 }

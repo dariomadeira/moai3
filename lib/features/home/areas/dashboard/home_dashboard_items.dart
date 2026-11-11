@@ -66,6 +66,27 @@ extension _HomeDashboardItems on HomeDashboardAreaState {
             loadingId: _resumingId,
           ),
         );
+      case _HomeWidget.seriesContinue:
+        return _MovieListItem(
+          focusNode: focusNode,
+          movies: [
+            for (final item in _seriesContinue)
+              HomeSeriesContinueCard.movieOf(item),
+          ],
+          initialIndex: _seriesContinueIndex,
+          onIndexChanged: (i) => _seriesContinueIndex = i,
+          onKeyLeft: widget.onExitLeft,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+          onOpen: _openSeries,
+          onRemove: _confirmRemoveSeries,
+          onClearAll: _confirmClearSeries,
+          buildCard: (selected, focused) => HomeSeriesContinueCard(
+            items: _seriesContinue,
+            selectedIndex: selected,
+            isFocused: focused,
+          ),
+        );
       case _HomeWidget.recommendations:
         return _MovieListItem(
           focusNode: focusNode,

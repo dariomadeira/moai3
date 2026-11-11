@@ -20,6 +20,6 @@ void main() {
     b.onResume();
     await b.beforeSeek(const Duration(minutes: 5));
     b.reset();
-    b.close();
+    await b.close();
   });
 }

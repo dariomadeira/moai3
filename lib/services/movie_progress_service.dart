@@ -139,6 +139,15 @@ class MovieProgressService {
     );
   }
 
+  /// Ajustes › Películas y series: borra todo lo visto y por dónde iba cada
+  /// película (con eso, "Seguir viendo" queda vacío). Interesantes no cambia.
+  static Future<void> clearAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    for (final key in prefs.getKeys().toList()) {
+      if (key.startsWith(_prefix)) await prefs.remove(key);
+    }
+  }
+
   /// La marca como vista aunque haya quedado a la mitad ("Seguir viendo").
   static Future<MovieWatchProgress> markWatched(String contentId) async {
     final previous = await getProgress(contentId);

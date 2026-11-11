@@ -6,14 +6,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:moai3/engine/engine_player_view.dart';
 import 'package:moai3/features/movies/movie_player_format.dart';
 import 'package:moai3/features/movies/screens/movie_player_screen.dart';
+import 'package:moai3/features/movies/series_playlist.dart';
 import 'package:moai3/features/movies/widgets/movie_player_osd.dart';
 import 'package:moai3/models/movie_models.dart';
+import 'package:moai3/models/series_models.dart';
 import 'package:moai3/platform/platform_channels.dart';
 import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/movie_progress_service.dart';
 import 'package:moai3/services/movie_recommendations_api.dart';
 import 'package:moai3/state/movie_recommendations_provider.dart';
 import 'package:moai3/services/movie_watchlist_service.dart';
+import 'package:moai3/services/series_watch_service.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -33,13 +36,19 @@ class _FakeEngine {
 
   int count(String method) => calls.where((c) => c.method == method).length;
 
+  /// Cada reproductor tiene su número, como en el aparato (los capítulos
+  /// abren uno nuevo); los avisos van al último.
+  int _handles = 0;
+  static const _maxHandles = 4;
+
   void install(WidgetTester tester) {
     final messenger = tester.binding.defaultBinaryMessenger;
     messenger.setMockMethodCallHandler(PlatformChannels.player, (call) async {
       calls.add(call);
       switch (call.method) {
         case 'create':
-          return {'handle': 1, 'textureId': 1};
+          _handles++;
+          return {'handle': _handles, 'textureId': _handles};
         case 'getPosition':
           return position.inMilliseconds;
         case 'getDuration':
@@ -53,17 +62,24 @@ class _FakeEngine {
       }
       return null;
     });
-    messenger.setMockStreamHandler(
-      PlatformChannels.playerEvents(1),
-      MockStreamHandler.inline(
-        onListen: (_, sink) {
-          events.stream.listen(sink.success);
-        },
-      ),
-    );
+    for (var handle = 1; handle <= _maxHandles; handle++) {
+      messenger.setMockStreamHandler(
+        PlatformChannels.playerEvents(handle),
+        MockStreamHandler.inline(
+          onListen: (_, sink) {
+            events.stream.where((_) => handle == _handles).listen(sink.success);
+          },
+        ),
+      );
+    }
     addTearDown(() {
       messenger.setMockMethodCallHandler(PlatformChannels.player, null);
-      messenger.setMockStreamHandler(PlatformChannels.playerEvents(1), null);
+      for (var handle = 1; handle <= _maxHandles; handle++) {
+        messenger.setMockStreamHandler(
+          PlatformChannels.playerEvents(handle),
+          null,
+        );
+      }
     });
   }
 
@@ -809,6 +825,184 @@ void main() {
         isTrue,
       );
       expect(MovieWatchlistService.instance.contains('p1'), isFalse);
+    });
+
+    group('atrás en el TV (tecla + pop del sistema)', () {
+      /// Lo que manda Android al apretar atrás: la tecla y, además, el pop
+      /// del sistema.
+      Future<void> back(WidgetTester tester, {bool key = true}) async {
+        if (key) {
+          await tester.sendKeyEvent(
+            LogicalKeyboardKey.goBack,
+            platform: 'web',
+            physicalKey: PhysicalKeyboardKey.browserBack,
+          );
+        }
+        await tester.binding.handlePopRoute();
+        await tester.pump();
+      }
+
+      testWidgets('cierra sólo el reproductor, no también el detalle', (
+        tester,
+      ) async {
+        SharedPreferences.setMockInitialValues({});
+        await pushPlayer(tester);
+        engine.startPlaying();
+        await tester.pump(const Duration(milliseconds: 700));
+        // La primera esconde la interfaz (sin cerrar nada).
+        await back(tester);
+        expect(find.byType(MoviePlayerScreen), findsOneWidget);
+        await tester.pump(const Duration(seconds: 1));
+        // La segunda cierra el reproductor y queda el detalle.
+        await back(tester);
+        await tester.pumpAndSettle();
+        expect(find.byType(MoviePlayerScreen), findsNothing);
+        expect(find.text('detalle'), findsOneWidget);
+      });
+
+      testWidgets('el pop del sistema solo hace lo mismo que la tecla', (
+        tester,
+      ) async {
+        SharedPreferences.setMockInitialValues({});
+        await pushPlayer(tester);
+        engine.startPlaying();
+        await tester.pump(const Duration(milliseconds: 700));
+        await back(tester, key: false);
+        expect(find.byType(MoviePlayerScreen), findsOneWidget);
+        await back(tester, key: false);
+        await tester.pumpAndSettle();
+        expect(find.byType(MoviePlayerScreen), findsNothing);
+        expect(find.text('detalle'), findsOneWidget);
+      });
+    });
+
+    group('capítulos de una serie', () {
+      SeriesPlaylist playlist({required int episodes, bool failNext = false}) =>
+          SeriesPlaylist(
+            seasons: const [SeriesSeason(contentId: 's1', number: 1)],
+            details: {
+              's1': SeriesSeasonDetail(
+                info: MovieItem(contentId: 's1', name: 'Dark T1'),
+                seasons: const [],
+                episodes: [
+                  for (var n = 1; n <= episodes; n++)
+                    SeriesEpisode(contentId: 'e$n', number: n),
+                ],
+              ),
+            },
+            startSeasonId: 's1',
+            startEpisodeIndex: 0,
+            resolveStream: (_, _, _) async => failNext
+                ? null
+                : const ResolvedPlayStream(
+                    streamUrl: 'https://example.com/v2.m3u8',
+                    quality: '1080P HD',
+                    audioInfo: 'esp',
+                  ),
+          );
+
+      Future<void> pushEpisode(WidgetTester tester, SeriesPlaylist p) async {
+        SharedPreferences.setMockInitialValues({});
+        useSpanishTranslations();
+        tester.view.physicalSize = const Size(1920, 1080);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() => tester.view.resetPhysicalSize());
+        engine = _FakeEngine()..install(tester);
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: TextButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => MoviePlayerScreen(
+                        movie: p.item,
+                        stream: const ResolvedPlayStream(
+                          streamUrl: 'https://example.com/v.m3u8',
+                          quality: '1080P HD',
+                          audioInfo: 'esp',
+                        ),
+                        series: p,
+                      ),
+                    ),
+                  ),
+                  child: const Text('detalle'),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('detalle'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        engine.startPlaying();
+        await tester.pump(const Duration(milliseconds: 700));
+      }
+
+      Future<void> end(WidgetTester tester) async {
+        engine.events.add({'event': 'state', 'value': 'ended'});
+        await tester.pump();
+        await tester.pump();
+      }
+
+      testWidgets('al terminar avisa y pasa al siguiente sin preguntar', (
+        tester,
+      ) async {
+        final p = playlist(episodes: 2);
+        await pushEpisode(tester, p);
+        expect(find.text('Dark · T1 · Capítulo 1'), findsOneWidget);
+
+        await end(tester);
+        expect(find.text('Siguiente: Capítulo 2'), findsOneWidget);
+        // El nuevo arranca cargando (la ruedita no para: sin pumpAndSettle).
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(find.byType(MoviePlayerScreen), findsOneWidget);
+        expect(find.text('Dark · T1 · Capítulo 2'), findsOneWidget);
+        // La serie sigue: el reproductor nuevo la tiene.
+        var closed = false;
+        unawaited(p.done.then((_) => closed = true));
+        await tester.pump();
+        expect(closed, isFalse);
+        // El primero quedó visto.
+        expect((await SeriesWatchService.season('s1')).watched, contains('e1'));
+        // No es una película: nada en "Seguir viendo" ni recomendaciones.
+        expect(await MovieProgressService.getProgress('e1'), isNull);
+
+        // El último vuelve al detalle.
+        engine.startPlaying();
+        await tester.pump(const Duration(milliseconds: 700));
+        await end(tester);
+        await tester.pumpAndSettle();
+        expect(find.byType(MoviePlayerScreen), findsNothing);
+        expect(find.text('detalle'), findsOneWidget);
+        await expectLater(p.done, completes);
+        expect((await SeriesWatchService.season('s1')).complete, isTrue);
+      });
+
+      testWidgets('si el siguiente no carga, avisa y vuelve', (tester) async {
+        final p = playlist(episodes: 2, failNext: true);
+        await pushEpisode(tester, p);
+        await end(tester);
+        await tester.pumpAndSettle();
+        expect(find.byType(MoviePlayerScreen), findsNothing);
+        expect(find.text('detalle'), findsOneWidget);
+        await expectLater(p.done, completes);
+        await tester.pump(const Duration(seconds: 5));
+      });
+
+      testWidgets('atrás sale de la serie', (tester) async {
+        final p = playlist(episodes: 2);
+        await pushEpisode(tester, p);
+        // La primera atrás esconde la interfaz; la segunda sale.
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(find.byType(MoviePlayerScreen), findsNothing);
+        await expectLater(p.done, completes);
+      });
     });
 
     testWidgets('pasados los 3 min sale de Interesantes; antes no', (

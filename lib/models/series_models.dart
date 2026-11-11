@@ -31,9 +31,59 @@ class SeriesSeasonDetail {
     required this.info,
     required this.seasons,
     required this.episodes,
+    this.audioInfo = '',
+    this.subsInfo = '',
   });
 
   final MovieItem info;
+
+  /// Audios y subtítulos de la temporada, como los manda el portal
+  /// ("por,eng,spa", "pt,es,en"; "und" o "null" si no dice).
+  final String audioInfo;
+  final String subsInfo;
+
+  /// Qué tan completa es esta versión: idiomas de audio y subtítulos, y
+  /// sinopsis. Sirve para elegir entre dos versiones de la misma temporada.
+  int get completeness {
+    int count(String info) => info
+        .split(',')
+        .map((c) => c.trim().toLowerCase())
+        .where((c) => c.isNotEmpty && c != 'und' && c != 'null')
+        .length;
+    final synopsis = (info.description ?? '').trim().isNotEmpty ? 1 : 0;
+    return count(audioInfo) + count(subsInfo) + synopsis;
+  }
+
+  /// Las temporadas sin repetir número. A veces el portal lista dos
+  /// versiones de la misma (en Bob's Burgers, la oficial con tres idiomas y
+  /// una carga paralela grabada de la TV, sin idiomas): queda la más completa
+  /// según [details]; mientras no se conocen, la primera.
+  static List<SeriesSeason> bestSeasons(
+    List<SeriesSeason> all,
+    Map<String, SeriesSeasonDetail> details,
+  ) {
+    int score(SeriesSeason s) => details[s.contentId]?.completeness ?? -1;
+    final best = <int, SeriesSeason>{};
+    for (final season in all) {
+      final current = best[season.number];
+      if (current == null || score(season) > score(current)) {
+        best[season.number] = season;
+      }
+    }
+    return best.values.toList()..sort((a, b) => a.number.compareTo(b.number));
+  }
+
+  /// Los `contentId` de las temporadas cuyo número aparece más de una vez.
+  static List<String> duplicated(List<SeriesSeason> all) {
+    final byNumber = <int, List<String>>{};
+    for (final s in all) {
+      (byNumber[s.number] ??= []).add(s.contentId);
+    }
+    return [
+      for (final ids in byNumber.values)
+        if (ids.length > 1) ...ids,
+    ];
+  }
 
   /// Ordenadas por número. Trae también ésta.
   final List<SeriesSeason> seasons;
@@ -65,7 +115,13 @@ class SeriesSeasonDetail {
               },
             ),
     ]..sort((a, b) => a.number.compareTo(b.number));
-    return SeriesSeasonDetail(info: info, seasons: seasons, episodes: episodes);
+    return SeriesSeasonDetail(
+      info: info,
+      seasons: seasons,
+      episodes: episodes,
+      audioInfo: asset['audioInfo']?.toString() ?? '',
+      subsInfo: asset['subsInfo']?.toString() ?? '',
+    );
   }
 
   static int? _int(Object? value) =>

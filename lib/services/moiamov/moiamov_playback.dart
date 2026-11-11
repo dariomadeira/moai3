@@ -3,10 +3,16 @@ part of '../moiamov_api_service.dart';
 /// La reproducción: calidades (v10), servidores (SLB) y la URL final.
 extension MoiamovPlayback on MoiamovApiService {
   /// Consulta las calidades, audios y subtítulos disponibles de una película (v10).
+  ///
+  /// En una serie: [seriesContentId], [episodeNumberList] y el
+  /// [episodeNumber] que se quiere leer de la respuesta.
   Future<VodPlayInfo?> startPlayVOD({
     required String contentId,
     String type = '1',
     int columnId = -1,
+    String seriesContentId = '',
+    List<int>? episodeNumberList,
+    int? episodeNumber,
     Duration timeout = const Duration(seconds: 10),
   }) async {
     final candidateHosts = <String>{
@@ -28,11 +34,11 @@ extension MoiamovPlayback on MoiamovApiService {
           'portalCode': _currentPortalCode,
           'columnId': columnId,
           'contentId': contentId,
-          'seriesContentId': '',
+          'seriesContentId': seriesContentId,
           'type': type,
           'startTime': 0,
           'authType': null,
-          'episodeNumberList': null,
+          'episodeNumberList': episodeNumberList,
         };
 
         MoiamovApiService.logLine('startPlayVOD ($contentId) → $baseUrl');
@@ -57,7 +63,10 @@ extension MoiamovPlayback on MoiamovApiService {
                 '📦 startPlayVOD data completa: ${jsonEncode(data)}',
               );
             }
-            final info = VodPlayInfo.fromJson(data);
+            final info = VodPlayInfo.fromJson(
+              data,
+              episodeNumber: episodeNumber,
+            );
             MoiamovApiService.logLine(
               '✅ startPlayVOD éxito: "${info.name}" (${info.qualities.length} calidades, ${info.subtitles.length} subs)',
             );
@@ -297,11 +306,17 @@ extension MoiamovPlayback on MoiamovApiService {
     return null;
   }
 
+  /// [fetchPlayInfo] reemplaza el `startPlayVOD` de la película (los
+  /// capítulos se piden distinto).
   Future<ResolvedPlayStream?> resolveMovieStream({
     required MovieItem movie,
     String preferredQuality = 'max',
     Duration timeout = const Duration(seconds: 14),
+    Future<VodPlayInfo?> Function()? fetchPlayInfo,
   }) async {
+    final fetch =
+        fetchPlayInfo ??
+        () => startPlayVOD(contentId: movie.contentId, timeout: timeout);
     lastResolutionError = null;
     MoiamovApiService.logLine(
       '🎬 Iniciando resolución de stream para: "${movie.name}" (ID: ${movie.contentId})',
@@ -349,10 +364,7 @@ extension MoiamovPlayback on MoiamovApiService {
     }
 
     // 1. startPlayVOD
-    var playInfo = await startPlayVOD(
-      contentId: movie.contentId,
-      timeout: timeout,
-    );
+    var playInfo = await fetch();
 
     // Si falló por sesión no inicializada o expirada, intentamos reactivar una sola vez
     if (playInfo == null || playInfo.qualities.isEmpty) {
@@ -362,12 +374,7 @@ extension MoiamovPlayback on MoiamovApiService {
       final activated = await activateDeviceSession(
         timeout: const Duration(seconds: 6),
       );
-      if (activated) {
-        playInfo = await startPlayVOD(
-          contentId: movie.contentId,
-          timeout: timeout,
-        );
-      }
+      if (activated) playInfo = await fetch();
     }
 
     if (playInfo == null || playInfo.qualities.isEmpty) {
@@ -486,4 +493,39 @@ extension MoiamovPlayback on MoiamovApiService {
       },
     );
   }
+
+  /// El video del capítulo [episode] de la temporada [season] ([item] es el
+  /// capítulo como película: nombre y contentId para el reproductor).
+  ///
+  /// Se pide con el `contentId` del capítulo y el de su temporada como
+  /// `seriesContentId` (probado en el TV el 2026-11-11: sólo con el
+  /// capítulo da "parámetros inválidos" y con la temporada, "no existe").
+  Future<ResolvedPlayStream?> resolveEpisodeStream({
+    required MovieItem season,
+    required SeriesEpisode episode,
+    required MovieItem item,
+    Duration timeout = const Duration(seconds: 14),
+  }) => resolveMovieStream(
+    movie: item,
+    timeout: timeout,
+    fetchPlayInfo: () async {
+      final info = await startPlayVOD(
+        contentId: episode.contentId,
+        seriesContentId: season.contentId,
+        episodeNumber: episode.number,
+        timeout: timeout,
+      );
+      // Que sea el capítulo pedido y no otro.
+      if (info != null &&
+          info.programContentId.isNotEmpty &&
+          info.programContentId != episode.contentId) {
+        MoiamovApiService.logLine(
+          '❌ startPlayVOD devolvió otro capítulo (${info.programContentId}, '
+          'pedido ${episode.contentId})',
+        );
+        return null;
+      }
+      return info;
+    },
+  );
 }

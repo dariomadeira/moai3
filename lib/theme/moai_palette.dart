@@ -24,6 +24,7 @@ class MoaiPalette extends ThemeExtension<MoaiPalette> {
     required this.inkSoft,
     required this.inkMuted,
     required this.inkIdle,
+    required this.watched,
   });
 
   /// Relleno de las piezas sólidas sobre el panel ([MoaiGlass] `solid`,
@@ -66,6 +67,10 @@ class MoaiPalette extends ThemeExtension<MoaiPalette> {
   /// Íconos del rail y pestañas de TV sin foco (era `0xFF1A1D24`).
   final Color inkIdle;
 
+  /// Número de un capítulo o temporada ya vistos (series): verde que se lee
+  /// sobre el cristal de cada modo.
+  final Color watched;
+
   static const MoaiPalette light = MoaiPalette(
     glassCard: Color(0x73FFFFFF), // blanco al 45 %
     glassChip: Color(0x99FFFFFF), // blanco al 60 %
@@ -92,6 +97,7 @@ class MoaiPalette extends ThemeExtension<MoaiPalette> {
     inkSoft: Color(0xFF2D3625),
     inkMuted: Color(0xFF3C4250),
     inkIdle: Color(0xFF1A1D24),
+    watched: Color(0xFF15803D),
   );
 
   static const MoaiPalette dark = MoaiPalette(
@@ -120,6 +126,7 @@ class MoaiPalette extends ThemeExtension<MoaiPalette> {
     inkSoft: Color(0xFFC9CED8),
     inkMuted: Color(0xFFB4BAC6),
     inkIdle: Color(0xFFE3E6EC),
+    watched: Color(0xFF4ADE80),
   );
 
   /// La del tema; sin tema de la app (algunos tests), la del claro.
@@ -146,6 +153,7 @@ class MoaiPalette extends ThemeExtension<MoaiPalette> {
     Color? inkSoft,
     Color? inkMuted,
     Color? inkIdle,
+    Color? watched,
   }) => MoaiPalette(
     glassCard: glassCard ?? this.glassCard,
     glassChip: glassChip ?? this.glassChip,
@@ -160,6 +168,7 @@ class MoaiPalette extends ThemeExtension<MoaiPalette> {
     inkSoft: inkSoft ?? this.inkSoft,
     inkMuted: inkMuted ?? this.inkMuted,
     inkIdle: inkIdle ?? this.inkIdle,
+    watched: watched ?? this.watched,
   );
 
   @override
@@ -183,6 +192,7 @@ class MoaiPalette extends ThemeExtension<MoaiPalette> {
       inkSoft: c(inkSoft, other.inkSoft),
       inkMuted: c(inkMuted, other.inkMuted),
       inkIdle: c(inkIdle, other.inkIdle),
+      watched: c(watched, other.watched),
     );
   }
 }

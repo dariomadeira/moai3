@@ -34,7 +34,7 @@ class TitanPlaybackBridge {
 
   /// Cada evento del motor: arranque, fin de un salto, final y error.
   void onEngineEvent(MoaiEngineEvent event) {
-    if (!active) return;
+    if (!active || _closed) return;
     final state = event.state;
     if (!_prepared &&
         (event.firstFrameRendered || state == MoaiEngineState.ready)) {
@@ -65,7 +65,7 @@ class TitanPlaybackBridge {
   /// Por dónde va y cuánto hay cargado por delante, para que baje lo que
   /// viene.
   void onPosition(Duration position, Duration buffered) {
-    if (!active || !_prepared) return;
+    if (!active || _closed || !_prepared) return;
     unawaited(
       TitanRangerService.playBuffer(
         progress: position,
@@ -75,18 +75,20 @@ class TitanPlaybackBridge {
   }
 
   void onPause() {
-    if (active) unawaited(TitanRangerService.playerOperation('pause'));
+    if (!active || _closed) return;
+    unawaited(TitanRangerService.playerOperation('pause'));
   }
 
   void onResume() {
-    if (active) unawaited(TitanRangerService.playerOperation('start'));
+    if (!active || _closed) return;
+    unawaited(TitanRangerService.playerOperation('start'));
   }
 
   /// Antes de saltar en el reproductor: Ranger salta primero y empieza a
   /// bajar desde [target] (antes, ese tramo da 404). Termina cuando Ranger
   /// respondió.
   Future<void> beforeSeek(Duration target) async {
-    if (!active) return;
+    if (!active || _closed) return;
     await TitanRangerService.seek(name: programName, moment: target);
     await TitanRangerService.playerOperation('seekTo');
     _seeking = true;
@@ -100,9 +102,15 @@ class TitanPlaybackBridge {
     _seeking = false;
   }
 
-  /// Se cerró el reproductor: avisa "end" y detiene el programa (si no,
-  /// Ranger sigue bajando la película en segundo plano).
-  void close() {
-    if (active) unawaited(TitanRangerService.endProgram(name: programName));
+  /// Se cerró el reproductor (o terminó el capítulo y viene el siguiente):
+  /// avisa "end" y detiene el programa (si no, Ranger sigue bajando la
+  /// película en segundo plano). Una sola vez: "end" va a la instancia de
+  /// Ranger, no al programa, y repetirlo cortaría el capítulo siguiente.
+  Future<void> close() async {
+    if (!active || _closed) return;
+    _closed = true;
+    await TitanRangerService.endProgram(name: programName);
   }
+
+  bool _closed = false;
 }

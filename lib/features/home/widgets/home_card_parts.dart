@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
+import 'package:moai3/widgets/tv_common/moai_svg_icon.dart';
 
 /// REDISEÑO: piezas comunes de las tarjetas del Inicio.
 
@@ -17,7 +18,11 @@ class HomeCardSummary extends StatelessWidget {
     required this.title,
     required this.line,
     this.highlightLine = false,
+    this.svgIcon,
   });
+
+  /// Ícono SVG en lugar de [icon] (p. ej. Series, que no está en la fuente).
+  final String? svgIcon;
 
   /// Ancho del resumen en todas las tarjetas: así los títulos y las
   /// divisiones quedan alineados de una tarjeta a otra.
@@ -55,7 +60,10 @@ class HomeCardSummary extends StatelessWidget {
         ),
         Row(
           children: [
-            Icon(icon, size: MoaiIconSizes.xl, color: color),
+            if (svgIcon case final svg?)
+              MoaiSvgIcon(svg, size: MoaiIconSizes.xl, color: color)
+            else
+              Icon(icon, size: MoaiIconSizes.xl, color: color),
             const SizedBox(width: 10),
             // Si no entra (otro idioma, "Seguir viendo"), se achica en vez
             // de cortarse.

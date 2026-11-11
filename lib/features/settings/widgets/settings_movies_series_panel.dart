@@ -9,6 +9,12 @@ import 'package:moai3/features/settings/widgets/settings_subtitle_size_row.dart'
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
+import 'package:moai3/services/movie_progress_service.dart';
+import 'package:moai3/services/series_continue_service.dart';
+import 'package:moai3/services/series_watch_service.dart';
+import 'package:moai3/widgets/dialogs/tv_dialog.dart';
+import 'package:moai3/widgets/feedback/moai_snackbar.dart';
+import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/widgets/lists/tv_windowed_list.dart';
 import 'package:moai3/widgets/tv_common/tv_panel_header.dart';
@@ -22,6 +28,8 @@ enum _SettingsMoviesSeriesItemType {
   subtitleSize,
   homeTrailers,
   catalogFrequency,
+  clearMovies,
+  clearSeries,
 }
 
 class SettingsMoviesSeriesPanel extends StatefulWidget {
@@ -255,6 +263,86 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
           onKeyUp: onKeyUp,
           onKeyDown: onKeyDown,
         );
+      case _SettingsMoviesSeriesItemType.clearMovies:
+      case _SettingsMoviesSeriesItemType.clearSeries:
+        final series = item == _SettingsMoviesSeriesItemType.clearSeries;
+        return TvTile(
+          focusNode: focusNode,
+          icon: MoaiIcons.delete,
+          label:
+              (series
+                      ? LocaleKeys.settings_movies_clear_series
+                      : LocaleKeys.settings_movies_clear_movies)
+                  .tr(),
+          description:
+              (series
+                      ? LocaleKeys.settings_movies_clear_series_desc
+                      : LocaleKeys.settings_movies_clear_movies_desc)
+                  .tr(),
+          onPressed: () => _confirmClear(series: series),
+          onKeyLeft: widget.onKeyLeft,
+          onKeyRight: widget.onKeyRight,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+        );
     }
+  }
+
+  /// Borrar lo visto de películas o de series: confirma (Cancelar arranca
+  /// con el foco), borra y avisa.
+  Future<void> _confirmClear({required bool series}) async {
+    final cancelFocus = FocusNode(debugLabel: 'clear_watched_cancel');
+    final clearFocus = FocusNode(debugLabel: 'clear_watched_confirm');
+    final confirmed = await showTvGeneralDialog<bool>(
+      context: context,
+      barrierLabel: 'ClearWatched',
+      builder: (dialogContext) => TvDialog(
+        icon: MoaiIcons.delete,
+        title:
+            (series
+                    ? LocaleKeys.settings_movies_clear_series_title
+                    : LocaleKeys.settings_movies_clear_movies_title)
+                .tr(),
+        subtitle:
+            (series
+                    ? LocaleKeys.settings_movies_clear_series_dialog
+                    : LocaleKeys.settings_movies_clear_movies_dialog)
+                .tr(),
+        actions: [
+          TvDialogButton(
+            label: LocaleKeys.common_cancel.tr(),
+            focusNode: cancelFocus,
+            autofocus: true,
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            onKeyRight: clearFocus.requestFocus,
+          ),
+          TvDialogButton(
+            label: LocaleKeys.settings_movies_clear_confirm.tr(),
+            variant: TvDialogButtonVariant.destructive,
+            focusNode: clearFocus,
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            onKeyLeft: cancelFocus.requestFocus,
+          ),
+        ],
+      ),
+    );
+    cancelFocus.dispose();
+    clearFocus.dispose();
+    if (confirmed != true) return;
+    if (series) {
+      await SeriesWatchService.clearAll();
+      await SeriesContinueService.clear();
+    } else {
+      await MovieProgressService.clearAll();
+    }
+    if (!mounted) return;
+    MoaiSnackBar.showSuccess(
+      context,
+      message:
+          (series
+                  ? LocaleKeys.settings_movies_clear_series_done
+                  : LocaleKeys.settings_movies_clear_movies_done)
+              .tr(),
+    );
   }
 }

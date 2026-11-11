@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:moai3/engine/engine_player_view.dart';
 import 'package:moai3/engine/moai_engine_player.dart';
 import 'package:moai3/features/movies/movie_player_format.dart';
+import 'package:moai3/features/movies/series_playlist.dart';
 import 'package:moai3/features/movies/titan_playback_bridge.dart';
 import 'package:moai3/features/movies/widgets/movie_player_osd.dart';
 import 'package:moai3/focus/tv_key_handler.dart';
@@ -39,12 +40,17 @@ class MoviePlayerScreen extends StatefulWidget {
   /// van sin progreso.
   final bool saveProgress;
 
+  /// Un capítulo de serie: lo visto se guarda en la serie, no pregunta si
+  /// recomendarla y al terminar pasa solo al siguiente ([SeriesPlaylist]).
+  final SeriesPlaylist? series;
+
   const MoviePlayerScreen({
     super.key,
     required this.movie,
     required this.stream,
     this.initialPositionSeconds,
     this.saveProgress = true,
+    this.series,
   });
 
   @override
@@ -222,6 +228,7 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
   @override
   void initState() {
     super.initState();
+    widget.series?.markStarted();
     final start = widget.initialPositionSeconds ?? 0;
     if (start > 0) _startAt = Duration(seconds: start);
     final settings = context.read<TvSettingsProvider?>();
@@ -296,11 +303,15 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
     programName: widget.movie.contentId,
   );
 
+  /// Dónde se guarda el audio elegido a mano: en una serie, para toda ella.
+  String get _audioChoiceKey =>
+      widget.series?.audioKey ?? widget.movie.contentId;
+
   /// Lo elegido otra vez en esta película manda sobre el ajuste general.
   Future<void> _restoreSavedAudio() async {
     if (_savedAudioChecked || !widget.saveProgress) return;
     _savedAudioChecked = true;
-    final saved = await MovieAudioChoices.read(widget.movie.contentId);
+    final saved = await MovieAudioChoices.read(_audioChoiceKey);
     if (saved == null) return;
     for (final option in _audioOptions) {
       if (option.code == saved.code && option.occurrence == saved.occurrence) {
@@ -505,13 +516,22 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
 
   /// Guarda por dónde va; las reglas (zonas, salir de Interesantes) son de
   /// [MovieLibrary].
-  Future<void> _saveProgress({Duration? at}) => MovieLibrary.recordProgress(
-    movie: widget.movie,
-    position: at ?? _currentPosition,
-    total: _totalDuration,
-  );
+  Future<void> _saveProgress({Duration? at}) =>
+      widget.series?.record(at ?? _currentPosition, _totalDuration) ??
+      MovieLibrary.recordProgress(
+        movie: widget.movie,
+        position: at ?? _currentPosition,
+        total: _totalDuration,
+      );
 
-  /// Terminó la película: queda vista y se vuelve al detalle.
+  /// Qué capítulo se está cargando al terminar éste ("Siguiente: …").
+  String? _nextLabel;
+
+  /// Lo reemplazó el reproductor del capítulo siguiente: la serie sigue.
+  bool _replaced = false;
+
+  /// Terminó: queda vista. Una película (o el último capítulo) vuelve al
+  /// detalle; un capítulo pasa al siguiente.
   Future<void> _onPlaybackEnded() async {
     if (_endHandled) return;
     _endHandled = true;
@@ -519,6 +539,41 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
       await _saveProgress(at: _totalDuration);
     }
     _progressSavedOnExit = true;
+    final series = widget.series;
+    final label = series?.nextLabel;
+    if (series != null && label != null && mounted) {
+      _osdTimer?.cancel();
+      _positionTimer?.cancel();
+      setState(() {
+        _nextLabel = label;
+        _showOsd = false;
+      });
+      // Ranger se cierra antes de preparar el siguiente: su "end" cortaría
+      // el capítulo nuevo.
+      await _titan.close();
+      final next = await series.next();
+      if (!mounted) return;
+      if (next != null) {
+        _replaced = true;
+        unawaited(
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => MoviePlayerScreen(
+                movie: next.movie,
+                stream: next.stream,
+                series: series,
+              ),
+            ),
+          ),
+        );
+        return;
+      }
+      MoaiSnackBar.showError(
+        context,
+        message: series.lastError ?? LocaleKeys.movies_error_play_start.tr(),
+        duration: const Duration(seconds: 4),
+      );
+    }
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -530,15 +585,21 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
     _scrubCommitTimer?.cancel();
     _focusNode.dispose();
     _position.dispose();
-    _titan.close();
+    unawaited(_titan.close());
 
     // Guardar progreso al desmontar (si no se guardó ya al salir)
     if (!_progressSavedOnExit && _canSaveProgress) unawaited(_saveProgress());
+    // Se cerró la serie (no pasó al capítulo siguiente).
+    if (!_replaced) widget.series?.close();
 
     _engine.removeListener(_onEngineEvent);
     _engine.dispose();
     super.dispose();
   }
+
+  /// Cuándo se atendió la última tecla atrás ([_onSystemBack]).
+  DateTime? _lastKeyBack;
+  static const _keyBackWindow = Duration(milliseconds: 800);
 
   static bool _isBackKey(LogicalKeyboardKey key) =>
       key == LogicalKeyboardKey.escape ||
@@ -561,125 +622,136 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
         ? LocaleKeys.movies_player_subtitle_sample.tr()
         : _subtitleText;
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Focus(
-        focusNode: _focusNode,
-        autofocus: true,
-        onKeyEvent: _onKey,
-        child: GestureDetector(
-          onTap: () {
-            _focusNode.requestFocus();
-            _resetOsdTimer();
-          },
-          child: MoviePlayerDarkTheme(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // 1. Motor de video nativo en relación de aspecto cinematográfica completa
-                // Franjas negras si la película no llena la pantalla (no el
-                // gris de la superficie del tema).
-                EnginePlayerView(
-                  controller: _engine,
-                  fit: BoxFit.contain,
-                  background: Colors.black,
-                ),
-
-                // 2. Centro: error, destino de la búsqueda, cargando o pausa.
-                Center(
-                  child: _hasError
-                      ? const MoviePlayerErrorPanel()
-                      : scrubTarget != null
-                      ? MoviePlayerScrubPreview(
-                          target: scrubTarget,
-                          from: _currentPosition,
-                        )
-                      : _isBuffering
-                      ? const MoviePlayerStatusChip.loading()
-                      : !_isPlaying
-                      ? const MoviePlayerStatusChip.paused()
-                      : const SizedBox.shrink(),
-                ),
-
-                if (_recommendAnswer != null)
-                  Positioned(
-                    top: 72,
-                    right: 40,
-                    child: MovieRecommendPrompt(selected: _recommendAnswer!),
+    // Sólo el reproductor decide cuándo cerrarse ([_handleBack]): el pop
+    // del sistema pasa por [_onSystemBack].
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _onSystemBack();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Focus(
+          focusNode: _focusNode,
+          autofocus: true,
+          onKeyEvent: _onKey,
+          child: GestureDetector(
+            onTap: () {
+              _focusNode.requestFocus();
+              _resetOsdTimer();
+            },
+            child: MoviePlayerDarkTheme(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // 1. Motor de video nativo en relación de aspecto cinematográfica completa
+                  // Franjas negras si la película no llena la pantalla (no el
+                  // gris de la superficie del tema).
+                  EnginePlayerView(
+                    controller: _engine,
+                    fit: BoxFit.contain,
+                    background: Colors.black,
                   ),
 
-                // Subtítulo: abajo; con la interfaz visible, sobre los controles.
-                if (subtitleText.isNotEmpty && !_hasError)
-                  AnimatedPositioned(
+                  // 2. Centro: error, destino de la búsqueda, cargando o pausa.
+                  Center(
+                    child: _nextLabel != null
+                        ? MoviePlayerStatusChip.loading(label: _nextLabel)
+                        : _hasError
+                        ? const MoviePlayerErrorPanel()
+                        : scrubTarget != null
+                        ? MoviePlayerScrubPreview(
+                            target: scrubTarget,
+                            from: _currentPosition,
+                          )
+                        : _isBuffering
+                        ? const MoviePlayerStatusChip.loading()
+                        : !_isPlaying
+                        ? const MoviePlayerStatusChip.paused()
+                        : const SizedBox.shrink(),
+                  ),
+
+                  if (_recommendAnswer != null)
+                    Positioned(
+                      top: 72,
+                      right: 40,
+                      child: MovieRecommendPrompt(selected: _recommendAnswer!),
+                    ),
+
+                  // Subtítulo: abajo; con la interfaz visible, sobre los controles.
+                  if (subtitleText.isNotEmpty && !_hasError)
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 240),
+                      curve: Curves.easeOutCubic,
+                      left: 120,
+                      right: 120,
+                      bottom: _showOsd ? 114 : 40,
+                      child: Center(
+                        child: MoviePlayerSubtitle(
+                          text: subtitleText,
+                          fontSize: subtitleFontSize,
+                        ),
+                      ),
+                    ),
+
+                  // 3. Interfaz: sin paneles, directo sobre un oscurecido suave
+                  // arriba y abajo.
+                  AnimatedOpacity(
+                    opacity: _showOsd && !_hasError ? 1.0 : 0.0,
                     duration: const Duration(milliseconds: 240),
-                    curve: Curves.easeOutCubic,
-                    left: 120,
-                    right: 120,
-                    bottom: _showOsd ? 114 : 40,
-                    child: Center(
-                      child: MoviePlayerSubtitle(
-                        text: subtitleText,
-                        fontSize: subtitleFontSize,
+                    child: IgnorePointer(
+                      ignoring: !_showOsd || _hasError,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          const _Vignette(top: true),
+                          const _Vignette(top: false),
+                          Positioned(
+                            top: 24,
+                            left: 40,
+                            right: 40,
+                            child: MoviePlayerTopBar(
+                              title: widget.movie.displayName,
+                              quality: qualityLabel(widget.stream.quality),
+                              audio: _audioLabel,
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 24,
+                            left: 40,
+                            right: 40,
+                            // Se repinta sola con la posición, sin el resto.
+                            child: RepaintBoundary(
+                              child: ValueListenableBuilder<Duration>(
+                                valueListenable: _position,
+                                builder: (context, position, _) =>
+                                    MoviePlayerBottomBar(
+                                      position: position,
+                                      duration: _totalDuration,
+                                      isPlaying: _isPlaying,
+                                      scrubTarget: scrubTarget,
+                                      menus: menus,
+                                      selectedMenu: selectedMenu,
+                                    ),
+                              ),
+                            ),
+                          ),
+                          if (_openMenu != null)
+                            Positioned(
+                              right: 40,
+                              bottom:
+                                  24 + MoviePlayerBottomBar.menuRowHeight + 8,
+                              child: MoviePlayerMenuPanel(
+                                options: _menuOptions,
+                                focused: _menuIndex,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
-
-                // 3. Interfaz: sin paneles, directo sobre un oscurecido suave
-                // arriba y abajo.
-                AnimatedOpacity(
-                  opacity: _showOsd && !_hasError ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 240),
-                  child: IgnorePointer(
-                    ignoring: !_showOsd || _hasError,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        const _Vignette(top: true),
-                        const _Vignette(top: false),
-                        Positioned(
-                          top: 24,
-                          left: 40,
-                          right: 40,
-                          child: MoviePlayerTopBar(
-                            title: widget.movie.displayName,
-                            quality: qualityLabel(widget.stream.quality),
-                            audio: _audioLabel,
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 24,
-                          left: 40,
-                          right: 40,
-                          // Se repinta sola con la posición, sin el resto.
-                          child: RepaintBoundary(
-                            child: ValueListenableBuilder<Duration>(
-                              valueListenable: _position,
-                              builder: (context, position, _) =>
-                                  MoviePlayerBottomBar(
-                                    position: position,
-                                    duration: _totalDuration,
-                                    isPlaying: _isPlaying,
-                                    scrubTarget: scrubTarget,
-                                    menus: menus,
-                                    selectedMenu: selectedMenu,
-                                  ),
-                            ),
-                          ),
-                        ),
-                        if (_openMenu != null)
-                          Positioned(
-                            right: 40,
-                            bottom: 24 + MoviePlayerBottomBar.menuRowHeight + 8,
-                            child: MoviePlayerMenuPanel(
-                              options: _menuOptions,
-                              focused: _menuIndex,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

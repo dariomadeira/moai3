@@ -3,7 +3,10 @@ part of '../movie_player_screen.dart';
 /// ¿La recomendarías?: cuándo se pregunta, sus teclas y la respuesta.
 extension _MoviePlayerRecommend on _MoviePlayerScreenState {
   void _maybeAskRecommendation() {
-    if (_recommendSettled || !widget.saveProgress) return;
+    // Las series no (para más adelante).
+    if (_recommendSettled || !widget.saveProgress || widget.series != null) {
+      return;
+    }
     final remaining = _totalDuration - _currentPosition;
     if (_totalDuration <= _MoviePlayerScreenState._recommendWindow ||
         remaining > _MoviePlayerScreenState._recommendWindow ||
