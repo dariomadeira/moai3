@@ -284,7 +284,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
         return TvTile(
           focusNode: focusNode,
           label: LocaleKeys.settings_about_channels_loaded.tr(),
-          icon: MoaiIcons.channelGuide,
+          icon: MoaiIcons.railTv,
           onKeyLeft: widget.onKeyLeft,
           onKeyUp: onKeyUp,
           onKeyDown: onKeyDown,
@@ -296,7 +296,7 @@ class SettingsAboutPanelState extends State<SettingsAboutPanel> {
         return TvTile(
           focusNode: focusNode,
           label: LocaleKeys.settings_about_movies.tr(),
-          icon: MoaiIcons.vodMovie,
+          icon: MoaiIcons.railMovies,
           onKeyLeft: widget.onKeyLeft,
           onKeyUp: onKeyUp,
           onKeyDown: onKeyDown,

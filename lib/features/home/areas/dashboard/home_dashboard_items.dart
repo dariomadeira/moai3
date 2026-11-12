@@ -65,12 +65,15 @@ extension _HomeDashboardItems on HomeDashboardAreaState {
           onOpen: _resumeMovie,
           onRemove: _confirmMarkWatched,
           onClearAll: _confirmMarkAllWatched,
-          buildCard: (selected, focused) => HomeContinueCard(
-            movies: _continue,
-            selectedIndex: selected,
-            isFocused: focused,
-            watched: _continueWatched,
-            loadingId: _resumingId,
+          buildCard: (selected, focused) => ValueListenableBuilder(
+            valueListenable: _resumingId,
+            builder: (context, loadingId, _) => HomeContinueCard(
+              movies: _continue,
+              selectedIndex: selected,
+              isFocused: focused,
+              watched: _continueWatched,
+              loadingId: loadingId,
+            ),
           ),
         );
       case _HomeWidget.seriesContinue:
@@ -132,42 +135,53 @@ extension _HomeDashboardItems on HomeDashboardAreaState {
           ),
         );
       case _HomeWidget.watchlistBig:
-        final movies = MovieWatchlistService.instance.movies;
-        return _MovieListItem(
-          focusNode: focusNode,
-          movies: movies,
-          initialIndex: _watchlistIndex,
-          onIndexChanged: (i) => _watchlistIndex = i,
-          onKeyLeft: widget.onExitLeft,
-          onKeyUp: onKeyUp,
-          onKeyDown: onKeyDown,
-          onOpen: _openMovie,
-          onRemove: _confirmRemoveFromWatchlist,
-          onClearAll: _confirmClearWatchlist,
-          buildCard: (selected, focused) => HomeWatchlistBigCard(
-            movies: movies,
-            selectedIndex: selected,
-            isFocused: focused,
-          ),
+        // Al quitar una, se redibuja sólo esta tarjeta.
+        return ListenableBuilder(
+          listenable: MovieWatchlistService.instance,
+          builder: (context, _) {
+            final movies = MovieWatchlistService.instance.movies;
+            return _MovieListItem(
+              focusNode: focusNode,
+              movies: movies,
+              initialIndex: _watchlistIndex,
+              onIndexChanged: (i) => _watchlistIndex = i,
+              onKeyLeft: widget.onExitLeft,
+              onKeyUp: onKeyUp,
+              onKeyDown: onKeyDown,
+              onOpen: _openMovie,
+              onRemove: _confirmRemoveFromWatchlist,
+              onClearAll: _confirmClearWatchlist,
+              buildCard: (selected, focused) => HomeWatchlistBigCard(
+                movies: movies,
+                selectedIndex: selected,
+                isFocused: focused,
+              ),
+            );
+          },
         );
       case _HomeWidget.seriesWatchlist:
-        final series = SeriesWatchlistService.instance.items;
-        return _MovieListItem(
-          focusNode: focusNode,
-          movies: series,
-          initialIndex: _seriesWatchlistIndex,
-          onIndexChanged: (i) => _seriesWatchlistIndex = i,
-          onKeyLeft: widget.onExitLeft,
-          onKeyUp: onKeyUp,
-          onKeyDown: onKeyDown,
-          onOpen: _openSeriesDetail,
-          onRemove: _confirmUnmarkSeries,
-          onClearAll: _confirmClearMarkedSeries,
-          buildCard: (selected, focused) => HomeSeriesWatchlistCard(
-            series: series,
-            selectedIndex: selected,
-            isFocused: focused,
-          ),
+        return ListenableBuilder(
+          listenable: SeriesWatchlistService.instance,
+          builder: (context, _) {
+            final series = SeriesWatchlistService.instance.items;
+            return _MovieListItem(
+              focusNode: focusNode,
+              movies: series,
+              initialIndex: _seriesWatchlistIndex,
+              onIndexChanged: (i) => _seriesWatchlistIndex = i,
+              onKeyLeft: widget.onExitLeft,
+              onKeyUp: onKeyUp,
+              onKeyDown: onKeyDown,
+              onOpen: _openSeriesDetail,
+              onRemove: _confirmUnmarkSeries,
+              onClearAll: _confirmClearMarkedSeries,
+              buildCard: (selected, focused) => HomeSeriesWatchlistCard(
+                series: series,
+                selectedIndex: selected,
+                isFocused: focused,
+              ),
+            );
+          },
         );
       case _HomeWidget.trailers:
         return _TrailersItem(
@@ -226,23 +240,28 @@ extension _HomeDashboardItems on HomeDashboardAreaState {
     );
   }
 
-  Widget _buildArcade(bool isFocused) {
-    final rom = widget.romManager.activeRom;
-    if (rom == null) return const SizedBox.shrink();
-    return ValueListenableBuilder(
-      valueListenable: _arcadeAction,
-      builder: (context, action, _) => HomeArcadeCard(
+  /// Al cambiar la ROM se redibuja sólo esta tarjeta.
+  Widget _buildArcade(bool isFocused) => ListenableBuilder(
+    listenable: Listenable.merge([
+      widget.romManager,
+      ArcadePluginService.instance,
+      _arcadeAction,
+    ]),
+    builder: (context, _) {
+      final rom = widget.romManager.activeRom;
+      if (rom == null) return const SizedBox.shrink();
+      return HomeArcadeCard(
         romName: widget.romManager.displayNameOf(rom),
         details: [
           rom.company,
           rom.year,
         ].where((s) => s.trim().isNotEmpty).join('  ·  '),
-        selectedAction: action,
+        selectedAction: _arcadeAction.value,
         isFocused: isFocused,
         canInvite: _canInvite,
-      ),
-    );
-  }
+      );
+    },
+  );
 
   bool _moveArcadeAction(int delta) {
     final next = _arcadeAction.value.index + delta;
@@ -279,8 +298,26 @@ extension _HomeDashboardItems on HomeDashboardAreaState {
     VoidCallback onKeyUp,
     VoidCallback onKeyDown,
   ) {
-    final events = _todayEvents(context.watch<CalendarProvider>());
+    // Con el context de la tarjeta: si cambian los eventos, se redibuja
+    // sólo ella (el Inicio entero, sólo si aparece o se va: hasEventsToday).
+    return Builder(
+      builder: (context) => _eventsItem(
+        context,
+        _todayEvents(context.watch<CalendarProvider>()),
+        focusNode,
+        onKeyUp,
+        onKeyDown,
+      ),
+    );
+  }
 
+  Widget _eventsItem(
+    BuildContext context,
+    List<CalendarEvent> events,
+    FocusNode focusNode,
+    VoidCallback onKeyUp,
+    VoidCallback onKeyDown,
+  ) {
     return _EventsItem(
       focusNode: focusNode,
       events: events,

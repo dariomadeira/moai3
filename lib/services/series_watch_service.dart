@@ -70,6 +70,22 @@ class SeriesWatchService {
     );
   }
 
+  /// Las temporadas con todos sus capítulos (los que se conocían) vistos.
+  static Future<List<String>> completedSeasonIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = <String>[];
+    for (final key in prefs.getKeys()) {
+      if (!key.startsWith(_seasonPrefix)) continue;
+      final id = key.substring(_seasonPrefix.length);
+      final watch = await season(id);
+      if (watch.episodeCount > 0 &&
+          watch.watched.length >= watch.episodeCount) {
+        ids.add(id);
+      }
+    }
+    return ids;
+  }
+
   /// Dónde retomar el capítulo; `null` si no hay (no empezado o visto).
   static Future<Duration?> resumeAt(String episodeId) async {
     final prefs = await SharedPreferences.getInstance();

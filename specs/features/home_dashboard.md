@@ -58,6 +58,15 @@ Las tarjetas son de cristal sólido (`MoaiGlass`); el color es el de su ícono.
 - → desde el último botón de la película pasa a la serie; ← desde la serie vuelve; ↑/↓ igual desde las dos.
 - **Rotación entre arranques** (`HomeHeroRotation.movies` y `.series`, claves `home_hero_last_movie` / `home_hero_last_series`): cada arranque empieza con el título que sigue al último visto (pasar con las flechas también lo recuerda). La tarjeta grande de arriba de Películas o Series arranca con el mismo que eligió el Inicio si está en su lista (`chosenIndex`); si no, con la primera.
 
+### 3.0.1 Estabilidad al cambiar las tarjetas (2026-11-11)
+Al quitar, desmarcar o vaciar algo, el Inicio no tiene que "recargarse" ni perder el lugar:
+- **Cada tarjeta se identifica por cuál es, no por su lugar** (`TvWindowedList.itemKey`): si aparece o se va otra, las demás conservan su widget, su estado y su nodo de foco (antes se recreaban todas las de abajo y las imágenes volvían a cargar). La columna de tarjetas tiene clave fija, así que tampoco se recrean cuando la lista pasa de varias páginas a una (desaparecen los puntos).
+- **El foco recuerda la tarjeta y su lugar**: si la tarjeta con foco se va, queda en la que ocupa ese lugar (nunca el clima), en su página. Tras cada cartel de confirmación vuelve a la lista.
+- **La destacada recuerda qué película y qué serie mostraba**: al bajar de página y volver, sigue en las mismas (no vuelve a la del arranque).
+- **Cada tarjeta escucha lo suyo**: Marcadas (películas y series), la fila destacada (botón Marcar), Arcade, eventos y el "cargando" de Seguir viendo se redibujan solos; el Inicio entero sólo cuando una tarjeta aparece o se va.
+- La fila destacada espera sólo la **primera** carga de Series (al recargar no se va).
+- Tests: `home_dashboard_area_test` (Inicio estable), `tv_windowed_list_test` (itemKey).
+
 ### 3.1 Clima
 Ícono animado (56) a la izquierda, temperatura (40), condición, máx/mín, sensación y lluvia; a la derecha la tira por hora. El lugar es `WeatherProvider.placeName`: con ubicación automática muestra la **región**, no el barrio que devuelve la geolocalización por IP (antes salía "Liberdade"). La ubicación automática sale de la IP (cae donde el proveedor tiene el nodo, no en el pueblo); para eso está la localidad elegida a mano. Su búsqueda usa **Open-Meteo** (`geocoding-api.open-meteo.com`, GeoNames, sin clave; Argentina primero), porque el buscador de WeatherAPI no tiene pueblos chicos (para "Quines" sólo daba el de España); si falla, cae al de WeatherAPI. El clima se sigue pidiendo a WeatherAPI, por coordenadas.
 

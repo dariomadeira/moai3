@@ -1,8 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 import 'package:moai3/features/home/widgets/home_clock.dart';
-import 'package:moai3/features/home/widgets/home_watchlist_big_card.dart';
 import 'package:moai3/features/movies/screens/movie_detail_screen.dart';
 import 'package:moai3/features/movies/screens/series_detail_screen.dart';
 import 'package:moai3/features/movies/widgets/movie_poster_grid.dart';
@@ -14,7 +12,6 @@ import 'package:moai3/state/featured_movies_provider.dart';
 import 'package:moai3/state/tv_settings_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
-import 'package:moai3/utils/moai_formats.dart';
 import 'package:moai3/widgets/buttons/tv_back_pill.dart';
 import 'package:moai3/widgets/cards/tv_empty_state_card.dart';
 import 'package:moai3/widgets/tv_common/moai_ambient_background.dart';
@@ -35,9 +32,7 @@ class MovieCategoryScreen extends StatefulWidget {
     required this.category,
     this.initial,
     this.fetchPage,
-    this.fetchTotal,
     this.series = false,
-    this.sectionColor = HomeWatchlistBigCard.color,
   });
 
   final CategoryColumn category;
@@ -46,9 +41,6 @@ class MovieCategoryScreen extends StatefulWidget {
   /// (y la pestaña lleva el ícono de Series).
   final bool series;
 
-  /// Color de la sección en el rail: el del contador.
-  final Color sectionColor;
-
   /// Lo que ya bajó la grilla de esta categoría
   /// ([FeaturedMoviesProvider.shelfSnapshot]): se muestra al instante y se
   /// sigue desde la página siguiente.
@@ -56,10 +48,6 @@ class MovieCategoryScreen extends StatefulWidget {
 
   /// Por defecto [MoiamovApiService.fetchShelf]; los tests lo reemplazan.
   final CategoryPageFetcher? fetchPage;
-
-  /// Cuántas tiene la categoría; por defecto
-  /// [MoiamovApiService.fetchShelfTotal]. Los tests lo reemplazan.
-  final Future<int?> Function()? fetchTotal;
 
   @override
   State<MovieCategoryScreen> createState() => MovieCategoryScreenState();
@@ -85,25 +73,6 @@ class MovieCategoryScreenState extends State<MovieCategoryScreen> {
   @visibleForTesting
   int get debugLoaded => _movies.length;
 
-  /// Total de la categoría para el título; `null` hasta que llega (o si
-  /// falla: el título queda sin número).
-  int? _total;
-
-  Future<void> _loadTotal() async {
-    try {
-      final total =
-          await (widget.fetchTotal?.call() ??
-              MoiamovApiService.instance.fetchShelfTotal(
-                widget.category.columnId,
-              ));
-      if (mounted && total != null && total > 0) {
-        setState(() => _total = total);
-      }
-    } catch (e) {
-      debugPrint('⚠️ [Categoría] Total de ${widget.category.columnName}: $e');
-    }
-  }
-
   late final CategoryPageFetcher _fetch =
       widget.fetchPage ??
       (page) => MoiamovApiService.instance.fetchShelf(
@@ -122,7 +91,6 @@ class MovieCategoryScreenState extends State<MovieCategoryScreen> {
       _ended = initial.ended;
     }
     if (_movies.isEmpty) _loadMore();
-    _loadTotal();
     WidgetsBinding.instance.addPostFrameCallback((_) => _focusContent());
   }
 
@@ -344,18 +312,6 @@ class MovieCategoryScreenState extends State<MovieCategoryScreen> {
                 ),
               ),
             ),
-            if (_total case final total?) ...[
-              const SizedBox(width: 10),
-              // Sólido, del color de la sección en el rail.
-              TvMetaPill(
-                label: MoaiFormats.thousands(total),
-                tint: widget.sectionColor,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 3,
-                ),
-              ),
-            ],
           ],
         ),
       ),

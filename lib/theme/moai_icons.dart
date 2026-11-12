@@ -706,9 +706,6 @@ abstract final class MoaiIcons {
   /// Instalación pendiente.
   static const installPending = HugeIcons.download01;
 
-  /// Acerca de: canales disponibles.
-  static const channelGuide = HugeIcons.tv01;
-
   /// Salir de la app.
   static const exitApp = HugeIcons.logout01;
 

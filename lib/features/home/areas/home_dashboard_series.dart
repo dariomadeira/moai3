@@ -11,6 +11,20 @@ mixin _HomeSeriesCards on HomeAreaState<HomeDashboardArea>, _HomeMovieCards {
   /// Las series que se están viendo, la última primero.
   List<SeriesContinueItem> _seriesContinue = const [];
 
+  /// Ya se buscaron capítulos nuevos en este arranque ([SeriesNews]).
+  bool _newsChecked = false;
+
+  /// Con Series cargado (ya hay sesión en el portal), una vez por arranque:
+  /// [SeriesNews.check] sólo pregunta si pasó un día. Lo que aparezca avisa
+  /// solo ([SeriesContinueService.changes]) y la tarjeta se relee.
+  void _checkSeriesNews() {
+    if (_newsChecked) return;
+    _newsChecked = true;
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => unawaited(SeriesNews.check()),
+    );
+  }
+
   Future<void> _loadSeriesContinue() async {
     final items = await SeriesContinueService.items();
     if (mounted) setState(() => _seriesContinue = items);
@@ -91,7 +105,14 @@ mixin _HomeSeriesCards on HomeAreaState<HomeDashboardArea>, _HomeMovieCards {
   /// [HomeSeriesWatchlistCard.clearAllIndex] para "Desmarcar todas".
   int _seriesWatchlistIndex = 0;
 
+  /// Como [_onWatchlistChanged]: el Inicio entero sólo si la tarjeta
+  /// aparece o se va.
+  bool _hadSeriesWatchlist = SeriesWatchlistService.instance.items.isNotEmpty;
+
   void _onSeriesWatchlistChanged() {
+    final has = SeriesWatchlistService.instance.items.isNotEmpty;
+    if (has == _hadSeriesWatchlist) return;
+    _hadSeriesWatchlist = has;
     if (mounted) setState(() {});
   }
 

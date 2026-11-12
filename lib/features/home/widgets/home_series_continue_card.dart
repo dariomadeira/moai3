@@ -39,17 +39,21 @@ class HomeSeriesContinueCard extends StatelessWidget {
     programType: 'teleplay',
   );
 
-  /// "T2 · Cap. 5" o "Sigue: T2 · Cap. 6".
+  /// "T2 · Cap. 5" o "Sigue: T2 · Cap. 6"; si apareció después de estar
+  /// al día, "Capítulo nuevo · T1 · Cap. 8" o "Temporada nueva · T2".
   static String badgeOf(SeriesContinueItem item) =>
-      (item.isNext
-              ? LocaleKeys.home_series_continue_next
-              : LocaleKeys.home_series_continue_episode)
-          .tr(
-            namedArgs: {
-              'season': '${item.episode.seasonNumber}',
-              'episode': '${item.episode.episodeNumber}',
-            },
-          );
+      (switch (item.isNext ? item.entry.news : null) {
+        SeriesContinueNews.episode =>
+          LocaleKeys.home_series_continue_new_episode,
+        SeriesContinueNews.season => LocaleKeys.home_series_continue_new_season,
+        null when item.isNext => LocaleKeys.home_series_continue_next,
+        null => LocaleKeys.home_series_continue_episode,
+      }).tr(
+        namedArgs: {
+          'season': '${item.episode.seasonNumber}',
+          'episode': '${item.episode.episodeNumber}',
+        },
+      );
 
   @override
   Widget build(BuildContext context) {

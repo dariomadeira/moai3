@@ -49,6 +49,9 @@ class SeriesEpisodeRef {
   }
 }
 
+/// Qué apareció de una serie que estaba al día (SPEC-46 §6.1).
+enum SeriesContinueNews { episode, season }
+
 /// Una serie que se está viendo ("Seguir series" del Inicio): el último
 /// capítulo que se vio, cuál sigue y lo necesario para mostrarla y volver a
 /// reproducirla sin el catálogo.
@@ -64,6 +67,12 @@ class SeriesContinueEntry {
     this.next,
     this.poster,
     this.backdrops = const [],
+    this.plannedEpisodes,
+    this.news,
+    this.imdbId,
+    this.continues,
+    this.tmdbCheckedAt,
+    this.seasonAirsAt,
   });
 
   /// La serie (el `contentId` de su primera temporada): una entrada por
@@ -87,6 +96,71 @@ class SeriesContinueEntry {
   /// Cuándo se vio (segundos desde 1970): la más reciente primero.
   final int updatedAt;
 
+  /// Cuántos capítulos va a tener la temporada de [current]
+  /// ([SeriesSeasonDetail.plannedEpisodes]).
+  final int? plannedEpisodes;
+
+  /// [next] es un capítulo o una temporada que apareció después de que se
+  /// quedó al día; `null` si es el que seguía nomás.
+  final SeriesContinueNews? news;
+
+  /// Id de IMDb de la serie ([SeriesSeasonDetail.imdbId]).
+  final String? imdbId;
+
+  /// Lo que dijo TMDb: la serie sigue (habrá más temporadas); `false` si
+  /// terminó; `null` si todavía no se preguntó.
+  final bool? continues;
+
+  /// Cuándo se le preguntó a TMDb (segundos desde 1970).
+  final int? tmdbCheckedAt;
+
+  /// Cuándo sale la próxima temporada, si TMDb ya la anunció (segundos
+  /// desde 1970): antes no se le pregunta al portal.
+  final int? seasonAirsAt;
+
+  /// Se vio el último capítulo subido y la temporada tiene más ("7 de 8").
+  bool get awaitingEpisode =>
+      next == null && (plannedEpisodes ?? 0) > current.episodeNumber;
+
+  /// Se vio toda la serie subida, pero puede venir otra temporada: con id
+  /// de IMDb y sin que TMDb diga que terminó.
+  bool get awaitingSeason =>
+      next == null && !awaitingEpisode && imdbId != null && continues != false;
+
+  /// Al día sin terminar: no se muestra; se espera lo que falta
+  /// ([SeriesContinueService.awaiting], SPEC-46 §6.1).
+  bool get awaiting => awaitingEpisode || awaitingSeason;
+
+  /// La misma, con lo que apareció ([next] y [news]) o, sin [next], sólo
+  /// con el total de capítulos al día.
+  SeriesContinueEntry withNews({
+    SeriesEpisodeRef? next,
+    SeriesContinueNews? news,
+    int? plannedEpisodes,
+    List<SeriesSeason>? seasons,
+    int? updatedAt,
+    bool? continues,
+    int? tmdbCheckedAt,
+    int? seasonAirsAt,
+  }) => SeriesContinueEntry(
+    seriesKey: seriesKey,
+    title: title,
+    poster: poster,
+    backdrops: backdrops,
+    seasons: seasons ?? this.seasons,
+    current: current,
+    next: next ?? this.next,
+    episodeCount: episodeCount,
+    totalSeconds: totalSeconds,
+    updatedAt: updatedAt ?? this.updatedAt,
+    plannedEpisodes: plannedEpisodes ?? this.plannedEpisodes,
+    news: news ?? this.news,
+    imdbId: imdbId,
+    continues: continues ?? this.continues,
+    tmdbCheckedAt: tmdbCheckedAt ?? this.tmdbCheckedAt,
+    seasonAirsAt: seasonAirsAt ?? this.seasonAirsAt,
+  );
+
   Map<String, dynamic> toJson() => {
     'seriesKey': seriesKey,
     'title': title,
@@ -100,6 +174,12 @@ class SeriesContinueEntry {
     'episodeCount': episodeCount,
     'totalSeconds': totalSeconds,
     'updatedAt': updatedAt,
+    'plannedEpisodes': plannedEpisodes,
+    'news': news?.name,
+    'imdbId': imdbId,
+    'continues': continues,
+    'tmdbCheckedAt': tmdbCheckedAt,
+    'seasonAirsAt': seasonAirsAt,
   };
 
   static SeriesContinueEntry? fromJson(Object? json) {
@@ -125,6 +205,14 @@ class SeriesContinueEntry {
       episodeCount: json['episodeCount'] as int? ?? 0,
       totalSeconds: json['totalSeconds'] as int? ?? 0,
       updatedAt: json['updatedAt'] as int? ?? 0,
+      plannedEpisodes: json['plannedEpisodes'] as int?,
+      news: SeriesContinueNews.values
+          .where((n) => n.name == json['news'])
+          .firstOrNull,
+      imdbId: json['imdbId'] as String?,
+      continues: json['continues'] as bool?,
+      tmdbCheckedAt: json['tmdbCheckedAt'] as int?,
+      seasonAirsAt: json['seasonAirsAt'] as int?,
     );
   }
 }
@@ -173,6 +261,34 @@ class SeriesContinueService {
   /// Cuántas series se recuerdan: las más viejas se olvidan.
   static const int maxSeries = 30;
 
+  /// Cuánto se espera lo que falta de una serie al día: después se olvida.
+  static const Duration awaitFor = Duration(days: 180);
+
+  /// Una temporada nueva que TMDb confirma tarda más (suele ser un año o
+  /// dos).
+  static const Duration awaitSeasonFor = Duration(days: 730);
+
+  static bool _expired(SeriesContinueEntry entry, DateTime now) =>
+      now.millisecondsSinceEpoch ~/ 1000 - entry.updatedAt >
+      (entry.continues == true ? awaitSeasonFor : awaitFor).inSeconds;
+
+  /// Las series al día que esperan un capítulo ([SeriesContinueEntry.
+  /// awaiting]) y no vencieron.
+  static Future<List<SeriesContinueEntry>> awaiting({DateTime? now}) async => [
+    for (final e in await entries())
+      if (e.awaiting && !_expired(e, now ?? DateTime.now())) e,
+  ];
+
+  /// Reemplaza la entrada de su serie (si todavía está: si se quitó a mano
+  /// mientras tanto, no vuelve).
+  static Future<void> replace(SeriesContinueEntry entry) async {
+    final list = await entries();
+    if (!list.any((e) => e.seriesKey == entry.seriesKey)) return;
+    await _write([
+      for (final e in list) e.seriesKey == entry.seriesKey ? entry : e,
+    ]);
+  }
+
   static Future<List<SeriesContinueEntry>> entries() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -214,8 +330,9 @@ class SeriesContinueService {
 
   /// Lo que muestra la tarjeta, según lo visto: el último capítulo si quedó
   /// a la mitad o, si se terminó (o se marcó como visto), el siguiente. Las
-  /// series terminadas no salen (y se olvidan).
-  static Future<List<SeriesContinueItem>> items() async {
+  /// series terminadas no salen (y se olvidan); las que esperan un capítulo
+  /// ([SeriesContinueEntry.awaiting]) no salen pero se recuerdan.
+  static Future<List<SeriesContinueItem>> items({DateTime? now}) async {
     final items = <SeriesContinueItem>[];
     final finished = <String>[];
     for (final entry in await entries()) {
@@ -234,7 +351,7 @@ class SeriesContinueService {
         items.add(
           SeriesContinueItem(entry: entry, episode: next, isNext: true),
         );
-      } else {
+      } else if (!entry.awaiting || _expired(entry, now ?? DateTime.now())) {
         finished.add(entry.seriesKey);
       }
     }

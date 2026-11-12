@@ -308,14 +308,15 @@ class MovieHeroCardState extends State<MovieHeroCard> {
                 // Filo fino encima del recorte: separa la foto del fondo
                 // ambiente y tapa el suavizado de las esquinas. Gris oscuro
                 // (2026-11-04; antes negro, que se veía duro); con color de
-                // fondo, ese color más claro.
+                // fondo, ese mismo color (2026-11-11: el más claro se veía
+                // como un marco).
                 child: DecoratedBox(
                   position: DecorationPosition.foreground,
                   decoration: BoxDecoration(
                     borderRadius: borderRadius,
                     border: Border.all(
                       color: widget.tintFromImage
-                          ? tintBorder(background)
+                          ? background
                           : const Color(0xFF4B5563),
                     ),
                   ),

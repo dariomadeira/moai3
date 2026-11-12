@@ -30,7 +30,7 @@ class TrailerPick {
 class TmdbTrailersService {
   /// [fetchJson] se reemplaza en los tests.
   TmdbTrailersService({TmdbJsonFetcher? fetchJson})
-    : _fetchJson = fetchJson ?? _httpFetch;
+    : _fetchJson = fetchJson ?? httpFetch;
 
   final TmdbJsonFetcher _fetchJson;
 
@@ -146,7 +146,8 @@ class TmdbTrailersService {
     return null;
   }
 
-  static Future<Map<String, dynamic>?> _httpFetch(
+  /// El pedido real a TMDb (también lo usa [TmdbSeriesService]).
+  static Future<Map<String, dynamic>?> httpFetch(
     String path,
     Map<String, String> query,
   ) async {
@@ -176,7 +177,7 @@ class TmdbTrailersService {
       final json = jsonDecode(body);
       return json is Map<String, dynamic> ? json : null;
     } catch (e) {
-      debugPrint('⚠️ [TMDB] Adelantos ($path): $e');
+      debugPrint('⚠️ [TMDB] $path: $e');
       return null;
     }
   }

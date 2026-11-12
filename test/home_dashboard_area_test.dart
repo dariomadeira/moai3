@@ -8,6 +8,7 @@ import 'package:moai3/features/games/services/arcade_rom_manager_service.dart';
 import 'package:moai3/features/home/areas/home_dashboard_area.dart';
 import 'package:moai3/features/home/widgets/home_continue_card.dart';
 import 'package:moai3/features/home/widgets/home_movie_strip.dart';
+import 'package:moai3/features/home/widgets/home_series_watchlist_card.dart';
 import 'package:moai3/features/home/widgets/home_trailers_card.dart';
 import 'package:moai3/features/home/widgets/home_watchlist_big_card.dart';
 import 'package:moai3/features/movies/screens/movie_detail_screen.dart';
@@ -19,6 +20,7 @@ import 'package:moai3/services/app_preferences_service.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/services/movie_progress_service.dart';
 import 'package:moai3/services/movie_watchlist_service.dart';
+import 'package:moai3/services/series_watchlist_service.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/state/featured_movies_provider.dart';
 import 'package:moai3/state/home_trailers_provider.dart';
@@ -614,6 +616,54 @@ void main() {
 
       expect(find.byType(HomeContinueCard), findsNothing);
     });
+  });
+
+  group('Inicio estable', () {
+    testWidgets(
+      'si se va una tarjeta de arriba, la de abajo no se vuelve a crear y '
+      'sigue con el foco',
+      (tester) async {
+        useSpanishTranslations();
+        SeriesWatchlistService.instance.resetForTest();
+        await addToWatchlist(['Coco']);
+        await SeriesWatchlistService.instance.toggle(
+          MovieItem(contentId: 's1', name: 'Dark', programType: 'series'),
+          ['s1'],
+        );
+        await pumpHome(
+          tester,
+          catalog: FeaturedMoviesProvider()
+            ..setAvailableSections({
+              FeaturedMoviesProvider.sectionMovies,
+              FeaturedMoviesProvider.sectionSeries,
+            }),
+        );
+
+        Finder detector() => find.ancestor(
+          of: find.byType(HomeSeriesWatchlistCard),
+          matching: find.byType(TvPressDetector),
+        );
+        bool focused() =>
+            detector().evaluate().isNotEmpty &&
+            tester
+                .widget<TvPressDetector>(detector())
+                .focusNode!
+                .hasPrimaryFocus;
+        for (var i = 0; i < 10 && !focused(); i++) {
+          await press(tester, LogicalKeyboardKey.arrowDown);
+        }
+        expect(focused(), isTrue);
+        final node = tester.widget<TvPressDetector>(detector()).focusNode!;
+        final before = tester.state(detector());
+
+        await MovieWatchlistService.instance.clear();
+        await tester.pumpAndSettle();
+
+        expect(find.byType(HomeWatchlistBigCard), findsNothing);
+        expect(identical(tester.state(detector()), before), isTrue);
+        expect(node.hasPrimaryFocus, isTrue);
+      },
+    );
   });
 
   group('HomeMovieStrip', () {

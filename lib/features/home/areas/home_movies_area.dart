@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:moai3/features/home/widgets/home_clock.dart';
-import 'package:moai3/features/home/widgets/home_watchlist_big_card.dart';
 import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -56,8 +55,6 @@ class HomeMoviesArea extends StatefulWidget {
   /// están en `hugeicons_plus` (Series).
   final String? accordionSvgIcon;
 
-  /// Color de la sección en el rail: el del contador de cada categoría.
-  final Color sectionColor;
   final String emptyMessage;
   final bool searchEnabled;
 
@@ -74,7 +71,6 @@ class HomeMoviesArea extends StatefulWidget {
     this.panelTitle = '',
     this.accordionIcon,
     this.accordionSvgIcon,
-    this.sectionColor = HomeWatchlistBigCard.color,
     this.emptyMessage = '',
     this.searchEnabled = false,
     this.promoBanner = false,
@@ -304,7 +300,6 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
           category: category,
           initial: provider.shelfSnapshot(category.columnId),
           series: widget.section == FeaturedMoviesProvider.sectionSeries,
-          sectionColor: widget.sectionColor,
         ),
       ),
     );

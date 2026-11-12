@@ -40,7 +40,6 @@ void main() {
     WidgetTester tester, {
     ({List<MovieItem> movies, int pages, bool ended})? initial,
     required CategoryPageFetcher fetchPage,
-    Future<int?> Function()? fetchTotal,
   }) async {
     useSpanishTranslations();
     tester.view.physicalSize = const Size(1920, 1080);
@@ -54,7 +53,6 @@ void main() {
             category: category,
             initial: initial,
             fetchPage: fetchPage,
-            fetchTotal: fetchTotal,
           ),
         ),
       ),
@@ -71,23 +69,11 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('el título muestra cuántas tiene la categoría', (tester) async {
+  testWidgets('el título no lleva contador', (tester) async {
     await pump(
       tester,
       initial: (movies: movies(1, 10), pages: 1, ended: true),
       fetchPage: (_) async => null,
-      fetchTotal: () async => 5942,
-    );
-    await tester.pump();
-    expect(find.text('5.942'), findsOneWidget);
-  });
-
-  testWidgets('sin total, el título queda sin número', (tester) async {
-    await pump(
-      tester,
-      initial: (movies: movies(1, 10), pages: 1, ended: true),
-      fetchPage: (_) async => null,
-      fetchTotal: () async => null,
     );
     await tester.pump();
     expect(find.byType(TvMetaPill), findsNothing);

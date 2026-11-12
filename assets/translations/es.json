@@ -428,6 +428,8 @@
   "home_series_continue_clear_title": "¿Quitar todas las series?",
   "home_series_continue_count": "{count} en curso",
   "home_series_continue_episode": "T{season} · Cap. {episode}",
+  "home_series_continue_new_episode": "Capítulo nuevo · T{season} · Cap. {episode}",
+  "home_series_continue_new_season": "Temporada nueva · T{season}",
   "home_series_continue_next": "Sigue: T{season} · Cap. {episode}",
   "home_series_continue_remove": "Quitar",
   "home_series_continue_remove_desc": "«{name}» sale de Seguir series. Lo que viste queda marcado.",

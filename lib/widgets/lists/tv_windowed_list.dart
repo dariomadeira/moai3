@@ -48,6 +48,12 @@ class TvWindowedList<T> extends StatefulWidget {
   /// Si es false, no toma el foco al montarse (el rail lo conserva hasta →).
   final bool focusOnMount;
 
+  /// Identidad de cada ítem. Sin esto, cada lugar se identifica por su
+  /// posición: si aparece o se va un ítem, los de abajo se vuelven a crear
+  /// (pierden su estado y sus imágenes recargan). Con esto, cada ítem
+  /// conserva su widget y su nodo de foco aunque cambie de lugar.
+  final Object Function(T item)? itemKey;
+
   /// Alto del lugar de cada flecha (arriba y abajo) con
   /// [TvScrollIndicator.arrows]: quien da el alto de la lista lo suma dos
   /// veces.
@@ -80,6 +86,7 @@ class TvWindowedList<T> extends StatefulWidget {
     this.onFocusDownFromLast,
     this.onFocusedGlobalIndex,
     this.focusOnMount = true,
+    this.itemKey,
   });
 
   /// Ordena [items] para [paged]: en el orden dado, pero sin dejar huecos.
@@ -278,9 +285,42 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
 
   FocusNode _nodeFor(int global) => _nodes[global];
 
+  /// La columna de ítems: va adentro de envoltorios que cambian (puntos sólo
+  /// con más de una página, recorte si no entra). Con clave fija se mueve
+  /// entera y los ítems no se vuelven a crear.
+  final GlobalKey _columnKey = GlobalKey();
+
+  /// Nodos por [TvWindowedList.itemKey]: siguen al ítem aunque cambie de
+  /// lugar.
+  final Map<Object, FocusNode> _keyedNodes = {};
+
   /// Un nodo por ítem, no por hueco visible. Si el nodo fuera del hueco,
   /// al correr la ventana el Switch reutiliza el estado de otro ajuste.
   void _syncNodes() {
+    final keyOf = widget.itemKey;
+    if (keyOf != null) {
+      final keys = [for (final item in widget.items) keyOf(item)];
+      final gone = [
+        for (final entry in _keyedNodes.entries)
+          if (!keys.contains(entry.key)) entry,
+      ];
+      for (final entry in gone) {
+        _keyedNodes.remove(entry.key);
+      }
+      _nodes = [
+        for (final key in keys)
+          _keyedNodes.putIfAbsent(key, () => FocusNode(debugLabel: 'win_$key')),
+      ];
+      // Después del cuadro: el widget del ítem que se fue todavía lo usa.
+      if (gone.isNotEmpty) {
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          for (final entry in gone) {
+            entry.value.dispose();
+          }
+        });
+      }
+      return;
+    }
     final needed = widget.items.length;
     if (_nodes.length > needed) {
       for (final node in _nodes.sublist(needed)) {
@@ -309,7 +349,11 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
   @override
   void didUpdateWidget(covariant TvWindowedList<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.items.length != widget.items.length) {
+    // Antes de sincronizar: si se va el ítem con foco, su nodo lo tenía.
+    final hadFocusBefore = _nodes.any((n) => n.hasFocus);
+    final keyed = widget.itemKey != null;
+    if (oldWidget.items.length != widget.items.length ||
+        keyed && !identical(oldWidget.items, widget.items)) {
       _syncNodes();
     }
     // Cambió cuántos entran (p. ej. el alto del panel): se vuelve a ubicar
@@ -336,7 +380,7 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
       final inWindow =
           target >= _windowStart && target < _windowStart + _visibleCount;
       if (!inWindow || oldWidget.items.length != widget.items.length) {
-        final hadFocus = _nodes.any((n) => n.hasFocus);
+        final hadFocus = hadFocusBefore || _nodes.any((n) => n.hasFocus);
         _placeWindowFor(target, preferAnchorSlot: target > 0);
         if (hadFocus) {
           SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -349,7 +393,8 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
 
   @override
   void dispose() {
-    for (final n in _nodes) {
+    // Con [TvWindowedList.itemKey], los de [_nodes] son los del mapa.
+    for (final n in widget.itemKey == null ? _nodes : _keyedNodes.values) {
       n.dispose();
     }
     super.dispose();
@@ -533,12 +578,17 @@ class TvWindowedListState<T> extends State<TvWindowedList<T>> {
         (arrows ? 2 * TvWindowedList.arrowAreaHeight : 0);
 
     final list = Column(
+      key: _columnKey,
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (var local = 0; local < count; local++)
           SizedBox(
-            key: ValueKey<int>(_windowStart + local),
+            key: widget.itemKey == null
+                ? ValueKey<int>(_windowStart + local)
+                : ValueKey<Object>(
+                    widget.itemKey!(widget.items[_windowStart + local]),
+                  ),
             height: widget.itemExtent * _span(_windowStart + local),
             child: widget.itemBuilder(
               context,

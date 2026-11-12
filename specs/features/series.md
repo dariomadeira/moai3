@@ -31,6 +31,7 @@ Las series del catálogo (sección **Series** del rail, mismo sistema que Pelíc
 ## 2. Datos del portal
 
 - Cada **temporada es un ítem propio** del catálogo ("Serie T2"). `v4/getItemData` con `type="0"`, `sortType="0"` (`fetchSeriesSeason`) devuelve la ficha, `sameSeasonSeriesList` (todas las temporadas: `contentId` + `seasonNumber`) y `simpleProgramList` (capítulos: `contentId`, `seriesNumber`). También `audioInfo` ("por,eng,spa") y `subsInfo` ("pt,es,en") de la temporada.
+- **Capítulos por salir** (visto 2026-11-11 con VisionQuest T1): `volumnCount` es cuántos capítulos **va a tener** la temporada ("8") y `updateCount` cuántos están subidos ("7"); se lee `volumnCount` (`SeriesSeasonDetail.plannedEpisodes`). `keyWords` trae el id de IMDb de la serie ("tt23112594", `SeriesSeasonDetail.imdbId`): **el mismo en todas las temporadas** (Derrota a Bobby Flay T7–T17: `tt3205302`), y **sólo en el detalle**: el catálogo (`getShelveData`) y la búsqueda no lo traen, así que no sirve para agrupar temporadas ni para cruzar con TMDb las filas de Películas. Las series del catálogo sí traen `volumnCount` y `updateCount`. Los capítulos traen `name` ("VisionQuest T1_1"), `quality` y `posterList` vacío: sin títulos ni imágenes reales. No hay ningún dato de temporadas por venir: la lista trae sólo las subidas.
 - **Temporadas repetidas**: el portal puede listar dos versiones del mismo número (Bob's Burgers: la oficial "Bob's Burgers T1", con tres idiomas y 1080p, y una carga paralela "Bobs Burgers 1", grabada de la TV, audio "und", sin subtítulos, 480p). El detalle pide la ficha de **todas** las versiones repetidas y muestra una por número: la más completa (`SeriesSeasonDetail.completeness` = idiomas de audio + subtítulos + sinopsis; `bestSeasons`). Mientras no se conocen, la primera. Si la abierta es la descartada, pasa a la elegida conservando el capítulo.
 - **Pedir un capítulo** (`resolveEpisodeStream`, probado en el TV): `v10/startPlayVOD` con el `contentId` del **capítulo** y `seriesContentId` = el de su **temporada**, `type "1"`. Sólo el capítulo da "参数异常"; la temporada da "节目不存在". Si la respuesta trae otro `programContentId`, se descarta. El resto (calidad, audio, Titan Ranger) es igual que en películas.
 
@@ -78,10 +79,27 @@ Las series del catálogo (sección **Series** del rail, mismo sistema que Pelíc
 
 - Una entrada por serie (`seriesKey` = `series:<contentId de la primera temporada>`), la más reciente primero, hasta 30. Guarda título, imagen, temporadas, el último capítulo visto (`current`) y el siguiente (`next`), en `series_continue_v1`.
 - Se anota cuando el reproductor guarda pasados los 3 min (`SeriesPlaylist.record`) y al **marcar a mano** como visto (capítulo: el más avanzado de los vistos de esa temporada; temporada entera: su último capítulo). Desmarcar no anota.
-- `items()`: si el último quedó a la mitad, ese capítulo con su barra ("T2 · Cap. 5"); si se terminó o se marcó, el siguiente ("Sigue: T2 · Cap. 6"). Visto el último de la serie: sale y se olvida.
+- `items()`: si el último quedó a la mitad, ese capítulo con su barra ("T2 · Cap. 5"); si se terminó o se marcó, el siguiente ("Sigue: T2 · Cap. 6"). Visto el último de la serie: sale y se olvida, **salvo** que la temporada tenga capítulos por salir (§6.1).
 - Tarjeta del Inicio (SPEC-42): OK abre el **detalle** en esa temporada con el foco en ese capítulo (no reproduce directo); mantener OK la quita (lo visto queda); "Quitar todas".
 - Anotarse en Seguir series saca a la serie de "Marcadas" (como películas: Interesantes → Seguir viendo).
 - Lo visto antes de 2026-11-11 no aparece hasta ver otro capítulo (antes no se guardaba de qué serie era cada capítulo).
+
+### 6.1 Capítulos y temporadas nuevas (2026-11-11, `SeriesNews`)
+
+- **Al día sin terminar**: si se vio el último capítulo subido y la temporada tiene más por salir (`plannedEpisodes` > el último visto; "7 de 8"), la entrada queda guardada (`awaiting`) pero **no se muestra**. Se espera hasta 180 días desde el último visto; después se olvida.
+- **Revisión**: una vez por día (`series_news_checked_at`), cuando el Inicio tiene Series cargado (ya hay sesión), se pide la temporada de cada serie que espera (un `getItemData` por serie). Si nadie contesta (sin sesión), se vuelve a probar en el próximo arranque.
+- **Si apareció algo**, vuelve a "Seguir series", **primera**, con el capítulo listo:
+  - el que sigue al último visto: **"Capítulo nuevo · T1 · Cap. 8"**;
+  - si no, una temporada nueva en la misma respuesta (`sameSeasonSeriesList`): su capítulo 1, **"Temporada nueva · T2"**.
+  - Al ver ese capítulo la entrada se reescribe y la etiqueta se va.
+- **Quitada a mano** (OK mantenido, "Quitar todas", "Borrar series vistas"): no vuelve (decisión del usuario).
+- **Temporadas nuevas (TMDb)**: vista toda la serie subida (última temporada completa), la entrada guarda el id de IMDb y espera (`awaitingSeason`). La revisión le pregunta a TMDb (`TmdbSeriesService`: `/find/{imdb}?external_source=imdb_id` y `/tv/{id}`, dos pedidos; se repite cada 30 días):
+  - **terminada o cancelada** y sin más temporadas que la vista: se olvida;
+  - **sigue** (en emisión, en producción, planeada) o tiene más temporadas que la vista: espera hasta **2 años**. Si TMDb anunció la próxima temporada (`next_episode_to_air`), no se le pregunta al portal antes de esa fecha (`seasonAirsAt`);
+  - TMDb no contesta o no la conoce: se le pregunta al portal una vez por día, como máximo 180 días.
+  - Cuando el portal la sube, vuelve con "Temporada nueva · T2".
+- **Rescate** (una vez, `series_news_rescued_v2`): las series que ya se habían olvidado por estar al día se buscan por las temporadas con todo visto (`SeriesWatchService.completedSeasonIds`, hasta 25) que no están en la lista; si la temporada es la última de la serie y le faltan capítulos o tiene id de IMDb, la serie entra esperando (TMDb decide después).
+- Tests: `series_news_test`.
 
 ## 7. "Marcadas" de series (`SeriesWatchlistService`)
 

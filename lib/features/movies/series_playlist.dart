@@ -220,6 +220,10 @@ class SeriesPlaylist {
       ),
       next: _nextRef(),
       episodeCount: _detail.episodes.length,
+      plannedEpisodes: _detail.plannedEpisodes,
+      imdbId:
+          _detail.imdbId ??
+          _details.values.map((d) => d.imdbId).nonNulls.firstOrNull,
       totalSeconds: total.inSeconds,
       updatedAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
     );

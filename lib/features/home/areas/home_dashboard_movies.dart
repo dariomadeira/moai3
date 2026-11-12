@@ -165,13 +165,14 @@ mixin _HomeMovieCards on HomeAreaState<HomeDashboardArea> {
   }
 
   /// Película de "Seguir viendo" que se está abriendo: mientras se pide el
-  /// video (unos segundos) muestra que carga y otro OK no abre otra.
-  String? _resumingId;
+  /// video (unos segundos) muestra que carga y otro OK no abre otra. Lo
+  /// escucha sólo su tarjeta: no redibuja todo el Inicio.
+  final ValueNotifier<String?> _resumingId = ValueNotifier(null);
 
   /// OK en "Seguir viendo": la retoma directo donde quedó (sin el detalle).
   Future<void> _resumeMovie(MovieItem movie) async {
-    if (_resumingId != null) return;
-    setState(() => _resumingId = movie.contentId);
+    if (_resumingId.value != null) return;
+    _resumingId.value = movie.contentId;
     try {
       final progress = await MovieProgressService.getProgress(movie.contentId);
       if (!mounted) return;
@@ -183,7 +184,7 @@ mixin _HomeMovieCards on HomeAreaState<HomeDashboardArea> {
             : null,
       );
     } finally {
-      if (mounted) setState(() => _resumingId = null);
+      if (mounted) _resumingId.value = null;
     }
     await _reloadProgress();
   }

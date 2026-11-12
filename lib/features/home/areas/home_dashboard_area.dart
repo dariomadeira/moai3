@@ -31,6 +31,7 @@ import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/features/movies/movie_playback.dart';
 import 'package:moai3/features/movies/movie_promo.dart';
+import 'package:moai3/features/movies/series_news.dart';
 import 'package:moai3/features/movies/screens/movie_detail_screen.dart';
 import 'package:moai3/features/movies/screens/series_detail_screen.dart';
 import 'package:moai3/features/movies/widgets/movie_hero_card.dart';
@@ -187,11 +188,28 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     );
   }
 
+  /// Marcadas cambió: su tarjeta y la destacada se redibujan solas
+  /// ([ListenableBuilder]); el Inicio entero sólo si la tarjeta aparece o
+  /// se va.
+  bool _hadWatchlist = MovieWatchlistService.instance.movies.isNotEmpty;
+
   void _onWatchlistChanged() {
+    final has = MovieWatchlistService.instance.movies.isNotEmpty;
+    if (has == _hadWatchlist) return;
+    _hadWatchlist = has;
     if (mounted) setState(() {});
   }
 
+  /// Arcade: igual, el Inicio entero sólo si la tarjeta aparece o se va.
+  bool get _hasArcade =>
+      ArcadePluginService.instance.isInstalled &&
+      widget.romManager.activeRom != null;
+  late bool _hadArcade = _hasArcade;
+
   void _onArcadeChanged() {
+    final has = _hasArcade;
+    if (has == _hadArcade) return;
+    _hadArcade = has;
     if (mounted) setState(() {});
   }
 
@@ -236,9 +254,7 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
       if (seriesVisible && SeriesWatchlistService.instance.items.isNotEmpty)
         _HomeWidget.seriesWatchlist,
       if (hasTrailers) _HomeWidget.trailers,
-      if (ArcadePluginService.instance.isInstalled &&
-          widget.romManager.activeRom != null)
-        _HomeWidget.arcade,
+      if (_hasArcade) _HomeWidget.arcade,
     ],
     pageSize: _windowSize,
     span: _spanOf,
@@ -278,6 +294,39 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     VoidCallback onKeyUp,
     VoidCallback onKeyDown,
   ) {
+    // Marcar cambia el botón: se redibuja sólo la fila.
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        MovieWatchlistService.instance,
+        SeriesWatchlistService.instance,
+      ]),
+      builder: (context, _) => _heroRow(movies, focusNode, onKeyUp, onKeyDown),
+    );
+  }
+
+  /// La película y la serie que se están mostrando: la fila sale de la
+  /// página al bajar y, al volver, sigue en las mismas (no en las del
+  /// arranque).
+  String? _heroMovieId;
+  String? _heroSeriesId;
+
+  int _heroIndex(
+    List<MovieItem> items,
+    String? current,
+    HomeHeroRotation rotation,
+  ) {
+    final index = current == null
+        ? -1
+        : items.indexWhere((m) => m.contentId == current);
+    return index >= 0 ? index : rotation.startIndex(items);
+  }
+
+  Widget _heroRow(
+    List<MovieItem> movies,
+    FocusNode focusNode,
+    VoidCallback onKeyUp,
+    VoidCallback onKeyDown,
+  ) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Row(
@@ -290,8 +339,15 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
                 movies: movies,
                 focusNode: focusNode,
                 tintFromImage: true,
-                initialIndex: HomeHeroRotation.movies.startIndex(movies),
-                onMovieChanged: HomeHeroRotation.movies.remember,
+                initialIndex: _heroIndex(
+                  movies,
+                  _heroMovieId,
+                  HomeHeroRotation.movies,
+                ),
+                onMovieChanged: (movie) {
+                  _heroMovieId = movie.contentId;
+                  HomeHeroRotation.movies.remember(movie);
+                },
                 onPlay: (movie) async {
                   await playMovie(context, movie);
                   await _reloadProgress();
@@ -321,10 +377,15 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
                       movies: _heroSeries,
                       focusNode: _seriesHeroFocus,
                       tintFromImage: true,
-                      initialIndex: HomeHeroRotation.series.startIndex(
+                      initialIndex: _heroIndex(
                         _heroSeries,
+                        _heroSeriesId,
+                        HomeHeroRotation.series,
                       ),
-                      onMovieChanged: HomeHeroRotation.series.remember,
+                      onMovieChanged: (series) {
+                        _heroSeriesId = series.contentId;
+                        HomeHeroRotation.series.remember(series);
+                      },
                       playLabel: LocaleKeys.series_open.tr(),
                       showMore: false,
                       onPlay: _openSeriesDetail,
@@ -375,6 +436,7 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     SeriesWatchlistService.instance.removeListener(_onSeriesWatchlistChanged);
     _hourTimer?.cancel();
     _arcadeAction.dispose();
+    _resumingId.dispose();
     _panelFocusNode.dispose();
     _seriesHeroFocus.dispose();
     super.dispose();
@@ -432,6 +494,7 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
                   p?.loadedOnceFor(FeaturedMoviesProvider.sectionSeries) ??
                   true,
             );
+    if (seriesVisible && seriesReady) _checkSeriesNews();
     // La tarjeta de series a la derecha de la destacada.
     _updateHeroSeries(
       context.select(
@@ -475,6 +538,11 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
       hasTrailers: showTrailers && trailers.isNotEmpty,
     );
     _lastItems = items;
+    // Si la tarjeta con foco cambió de lugar (apareció o se fue otra), su
+    // lugar nuevo: es el que se usa si después se va ella.
+    if (_selected case final selected? when items.contains(selected)) {
+      _selectedPos = items.indexOf(selected);
+    }
 
     return TvAccordionRowPreview(
       panelCount: 1,
@@ -569,6 +637,9 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
                                 // Amigos sin nadie conectado sí se enfoca:
                                 // OK abre Gestionar amigos.
                                 canFocus: (item) => item != _HomeWidget.weather,
+                                // Por tarjeta: al aparecer o irse otra, las
+                                // demás no se vuelven a crear.
+                                itemKey: (item) => item,
                                 initialGlobalIndex: _selectedIndexIn(items),
                                 onFocusedGlobalIndex: (idx) {
                                   _selected = items[idx];

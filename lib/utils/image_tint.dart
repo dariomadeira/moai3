@@ -43,12 +43,6 @@ Color tintFromRgba(Uint8List rgba, {double maxLightness = 0.2}) {
       .toColor();
 }
 
-/// Filo de una tarjeta con fondo [tint]: el mismo color, más claro.
-Color tintBorder(Color tint) {
-  final hsl = HSLColor.fromColor(tint);
-  return hsl.withLightness((hsl.lightness + 0.2).clamp(0.0, 0.45)).toColor();
-}
-
 /// Decodifica [image] chiquita y devuelve su [tintFromRgba]; `null` si no
 /// se pudo cargar.
 Future<Color?> imageTint(ImageProvider image) async {

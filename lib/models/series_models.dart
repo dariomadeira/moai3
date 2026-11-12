@@ -33,9 +33,24 @@ class SeriesSeasonDetail {
     required this.episodes,
     this.audioInfo = '',
     this.subsInfo = '',
+    this.plannedEpisodes,
+    this.imdbId,
   });
 
   final MovieItem info;
+
+  /// Id de IMDb de la serie ("tt23112594", en `keyWords`): el mismo en
+  /// todas las temporadas. Sólo viene en el detalle, no en el catálogo.
+  final String? imdbId;
+
+  /// Cuántos capítulos va a tener la temporada (`volumnCount`; los subidos
+  /// son [episodes]): VisionQuest T1 decía 8 con 7 subidos. `null` si no
+  /// dice.
+  final int? plannedEpisodes;
+
+  /// Faltan capítulos por subir después del [lastNumber] (el último que se
+  /// vio): la serie no terminó, se espera el siguiente.
+  bool expectsAfter(int lastNumber) => (plannedEpisodes ?? 0) > lastNumber;
 
   /// Audios y subtítulos de la temporada, como los manda el portal
   /// ("por,eng,spa", "pt,es,en"; "und" o "null" si no dice).
@@ -135,8 +150,15 @@ class SeriesSeasonDetail {
       episodes: episodes,
       audioInfo: asset['audioInfo']?.toString() ?? '',
       subsInfo: asset['subsInfo']?.toString() ?? '',
+      plannedEpisodes: switch (_int(asset['volumnCount'])) {
+        final n? when n > 0 => n,
+        _ => null,
+      },
+      imdbId: _imdb.firstMatch('${asset['keyWords'] ?? ''}')?.group(0),
     );
   }
+
+  static final RegExp _imdb = RegExp(r'tt\d+');
 
   static int? _int(Object? value) =>
       value is int ? value : int.tryParse('${value ?? ''}');

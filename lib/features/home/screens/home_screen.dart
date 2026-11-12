@@ -451,7 +451,6 @@ class _HomeScreenState extends State<HomeScreen> {
         panelTitle: LocaleKeys.movies_panel_series_title.tr(),
         accordionIcon: MoaiIcons.tvAccordionSeries,
         accordionSvgIcon: MoaiIcons.seriesSvg,
-        sectionColor: TvVerticalNavRail.seriesColor,
         emptyMessage: LocaleKeys.movies_empty_series.tr(),
         searchEnabled: true,
         promoBanner: true,

@@ -432,6 +432,8 @@ abstract class  LocaleKeys {
   static const home_series_continue_clear_title = 'home_series_continue_clear_title';
   static const home_series_continue_count = 'home_series_continue_count';
   static const home_series_continue_episode = 'home_series_continue_episode';
+  static const home_series_continue_new_episode = 'home_series_continue_new_episode';
+  static const home_series_continue_new_season = 'home_series_continue_new_season';
   static const home_series_continue_next = 'home_series_continue_next';
   static const home_series_continue_remove = 'home_series_continue_remove';
   static const home_series_continue_remove_desc = 'home_series_continue_remove_desc';

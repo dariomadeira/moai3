@@ -19,7 +19,7 @@ A diferencia de los dispositivos táctiles, la experiencia en Android TV depende
 ## 2. Componentes Clave del Motor de Foco
 
 ### 2.1. Listas virtuales y `FocusScrollSync`
-Las listas de países, categorías, canales y grupos usan `TvWindowedList` / `TvWindowedGrid`, que crean y descartan sus propios `FocusNode` solo para los ítems visibles. Los controllers (`ChannelBrowserController`, `GroupsBrowserController`) guardan únicamente datos y selección: no tienen un nodo por canal ni `ScrollController` (SPEC-50 §1.2).
+Las listas de países, categorías, canales y grupos usan `TvWindowedList` / `TvWindowedGrid`, que crean y descartan sus propios `FocusNode` solo para los ítems visibles. Los controllers (`ChannelBrowserController`, `GroupsBrowserController`) guardan únicamente datos y selección: no tienen un nodo por canal ni `ScrollController` (SPEC-50 §1.2). Con `itemKey`, `TvWindowedList` identifica cada ítem por su identidad y no por su lugar: al aparecer o irse un ítem, los demás conservan su estado y su `FocusNode` (lo usa el Inicio, SPEC-42 §3.0.1).
 
 `FocusScrollSync` queda para listas chicas de tamaño variable (alfabeto, favoritos del visor, resultados de búsqueda):
 

@@ -181,6 +181,51 @@ void main() {
     expect(find.text('Item 2'), findsOneWidget);
   });
 
+  testWidgets('con itemKey, si se va un ítem los demás no se recrean y el '
+      'foco sigue en el mismo', (tester) async {
+    Widget list(List<String> items) => MaterialApp(
+      home: Scaffold(
+        body: SizedBox(
+          width: 300,
+          height: 400,
+          child: TvWindowedList<String>(
+            items: items,
+            windowSize: 4,
+            itemExtent: 50,
+            itemKey: (item) => item,
+            initialGlobalIndex: items.indexOf('C'),
+            itemBuilder: (context, item, node, local, global, up, down) =>
+                Focus(
+                  focusNode: node,
+                  child: _Stamp(id: item),
+                ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpWidget(list(['A', 'B', 'C', 'D']));
+    await tester.pumpAndSettle();
+    final state = tester.state<TvWindowedListState<String>>(
+      find.byType(TvWindowedList<String>),
+    );
+    state.ensureVisible(2);
+    await tester.pumpAndSettle();
+    _StampState stampOf(String id) => tester.state<_StampState>(
+      find.byWidgetPredicate((w) => w is _Stamp && w.id == id),
+    );
+    final c = stampOf('C').stamp;
+    final d = stampOf('D').stamp;
+    final focused = FocusManager.instance.primaryFocus;
+    expect(focused?.debugLabel, 'win_C');
+
+    await tester.pumpWidget(list(['A', 'C', 'D']));
+    await tester.pumpAndSettle();
+
+    expect(stampOf('C').stamp, c);
+    expect(stampOf('D').stamp, d);
+    expect(FocusManager.instance.primaryFocus, same(focused));
+  });
+
   testWidgets('un ítem de 2 lugares mide el doble y se mueve con los demás', (
     tester,
   ) async {
