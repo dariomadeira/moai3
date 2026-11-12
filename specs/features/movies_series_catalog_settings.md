@@ -58,6 +58,7 @@ El panel 1 tiene estas filas (2026-11-11):
 | Subtítulos | Apagados o idioma |
 | Tamaño de subtítulos | |
 | Adelantos en el Inicio | Muestra u oculta la tarjeta (SPEC-42 §3.5) |
+| **Ocultar anime de series** (`HugeIcons.alphabetJapanese`) | Apagado por defecto. Saca de la grilla de Series las animadas de Japón, China y Corea; ver §3.1 |
 | **Frecuencia de actualización** | Con la fecha del catálogo en la descripción |
 | **Borrar películas vistas** (escoba, `HugeIcons.clean`) | Confirma (Cancelar / Borrar, rojo) y borra lo visto y por dónde iba cada película; Marcadas no cambia (SPEC-44 §2.4) |
 | **Borrar series vistas** (jabón, `HugeIcons.bodySoap`) | Confirma y borra capítulos vistos, puntos de retomar y "Seguir series"; Marcadas no cambia (SPEC-46 §8) |
@@ -69,10 +70,23 @@ El panel 1 tiene estas filas (2026-11-11):
 | Clave | Tipo | Default | API |
 | :--- | :--- | :--- | :--- |
 | `catalog_update_frequency` | `String` enum | `weekly` | `TvSettingsProvider.catalogUpdateFrequency` |
+| `series_hide_anime` | `bool` | `false` | `TvSettingsProvider.hideSeriesAnime` → `SeriesAnimeFilter.enabled` |
+| `series_origin_v1` | JSON título → país | — | `SeriesAnimeFilter` (país de cada serie animada) |
 | `moiamov_catalog_date` | ISO-8601 | — | `MoiamovApiService.lastSavedCatalogAt` / `saveCatalogDate` |
 | `moiamov_user_id`, `moiamov_user_token`, `moiamov_portal_code`, `moiamov_user_identity`, `moiamov_device_mac`, `moiamov_sn_field`, `moiamov_b29` | `String` | — | se guardan en cada login (`_applyActiveResult`) |
 
 > `skip_catalog_update_v2` («Actualizar catálogo al arrancar») **ya no existe**: solo queda la frecuencia.
+
+### 3.1 Ocultar anime de series (2026-11-12)
+El portal no tiene categoría de anime: viene mezclado, con el género "Animation", que también llevan series animadas occidentales. `SeriesAnimeFilter` (`lib/services/series_anime_filter.dart`):
+
+- Sólo mira **series** con género "Animation" o "Anime". "Anime" se oculta directo; las "Animation" se ocultan si su país (`SeriesSeasonDetail.originalCountry`, del detalle) es Japón, China o Corea.
+- El país se pide **una vez por serie** (todas sus temporadas, clave = título normalizado sin "T2"), de a una, y se guarda en `series_origin_v1`. Si no contesta, se vuelve a pedir la próxima vez.
+- Mientras no se sabe el país, la serie animada queda **oculta**: es mejor que falte un rato una serie que ver aparecer un anime.
+- `FeaturedMoviesProvider` vuelve a armar la grilla de Series (`categoriesFor`, `itemsFor`) sin las ocultas y sin las categorías que quedan vacías, y la guarda mientras no cambie nada (`SeriesAnimeFilter.version`). Al apagar el ajuste vuelve todo, sin descargar de nuevo.
+- Por ahora sólo filtra la grilla de Series: el buscador, "Ver todas" y el Inicio siguen igual.
+
+Test: `series_anime_filter_test`.
 
 ### `CatalogUpdateFrequency`
 | Valor | Descarga del catálogo al arrancar |

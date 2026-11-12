@@ -207,6 +207,7 @@ class _TvMovieCardState extends State<TvMovieCard> {
         ? movie.stageImages.first
         : movie.poster;
     final placeholder = _placeholder(scheme, emptyColor);
+    final starred = movie.isWellRated;
     final posterStack = Stack(
       fit: StackFit.expand,
       children: [
@@ -229,7 +230,8 @@ class _TvMovieCardState extends State<TvMovieCard> {
           Positioned(
             left: 6,
             top: 6,
-            right: 6,
+            // Sin pisar la estrella.
+            right: starred ? 34 : 6,
             child: Align(
               alignment: Alignment.topLeft,
               child: Container(
@@ -250,6 +252,28 @@ class _TvMovieCardState extends State<TvMovieCard> {
                     color: scheme.onPrimary,
                   ),
                 ),
+              ),
+            ),
+          ),
+        // Puntaje mayor a 7: la estrella, sin número. Sobre la foto, igual
+        // en claro y en oscuro.
+        if (starred)
+          Positioned(
+            top: 6,
+            right: 6,
+            child: Container(
+              key: const ValueKey('movie_card_star'),
+              width: 24,
+              height: 24,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                color: Color(0x99000000),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                MoaiIcons.vodRatingFilled,
+                size: MoaiIconSizes.xs,
+                color: Color(0xFFFBBF24),
               ),
             ),
           ),

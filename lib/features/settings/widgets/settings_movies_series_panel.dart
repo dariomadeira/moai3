@@ -27,6 +27,7 @@ enum _SettingsMoviesSeriesItemType {
   subtitleLanguage,
   subtitleSize,
   homeTrailers,
+  hideAnime,
   catalogFrequency,
   clearMovies,
   clearSeries,
@@ -241,6 +242,24 @@ class SettingsMoviesSeriesPanelState extends State<SettingsMoviesSeriesPanel> {
           value: show,
           onChanged: (value) {
             context.read<TvSettingsProvider>().setShowHomeTrailers(value);
+          },
+          onKeyLeft: widget.onKeyLeft,
+          onKeyRight: widget.onKeyRight,
+          onKeyUp: onKeyUp,
+          onKeyDown: onKeyDown,
+        );
+      case _SettingsMoviesSeriesItemType.hideAnime:
+        final hide = context.select(
+          (TvSettingsProvider s) => s.hideSeriesAnime,
+        );
+        return TvSettingsSwitchRow(
+          focusNode: focusNode,
+          icon: MoaiIcons.hideSeriesAnime,
+          label: LocaleKeys.settings_movies_hide_anime.tr(),
+          description: LocaleKeys.settings_movies_hide_anime_desc.tr(),
+          value: hide,
+          onChanged: (value) {
+            context.read<TvSettingsProvider>().setHideSeriesAnime(value);
           },
           onKeyLeft: widget.onKeyLeft,
           onKeyRight: widget.onKeyRight,

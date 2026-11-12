@@ -890,6 +890,10 @@ abstract final class MoaiIcons {
 
   /// Ajustes › Películas y series: borrar series vistas.
   static const clearWatchedSeries = HugeIcons.bodySoap;
+
+  /// Ajustes › Películas y series: ocultar anime de series.
+  static const hideSeriesAnime = HugeIcons.alphabetJapanese;
+
   /// Tarjeta: tráiler.
   static const vodTrailer = HugeIcons.video01;
 

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/services/movie_grid_catalog.dart';
+import 'package:moai3/services/series_anime_filter.dart';
 import 'package:moai3/utils/text_normalize.dart';
 import 'package:moai3/services/tmdb_trending_service.dart';
 
@@ -15,6 +16,16 @@ class _CatalogSectionState {
 
   /// "Lo mejor del año" (sólo Películas): la fila de arriba de la grilla.
   List<MovieItem> bestOfYear = const [];
+
+  /// Series: las categorías antes de armar la grilla y cuáles llevan "Ver
+  /// todas", para volver a armarla sin el anime ([SeriesAnimeFilter]).
+  List<CategoryColumn> raw = const [];
+  Set<int> serverColumns = const {};
+
+  /// La grilla sin el anime, guardada mientras no cambie nada.
+  List<CategoryColumn>? withoutAnime;
+  List<MovieItem>? itemsWithoutAnime;
+  Object? withoutAnimeFor;
   bool isLoading = false;
   String? errorMessage;
   String? errorDetail;
@@ -42,7 +53,70 @@ class FeaturedMoviesProvider extends ChangeNotifier {
              pageSize: shelfPageSize,
            )),
        _fetchShelfTotal =
-           fetchShelfTotal ?? MoiamovApiService.instance.fetchShelfTotal;
+           fetchShelfTotal ?? MoiamovApiService.instance.fetchShelfTotal {
+    SeriesAnimeFilter.instance.addListener(_onAnimeChanged);
+  }
+
+  @override
+  void dispose() {
+    SeriesAnimeFilter.instance.removeListener(_onAnimeChanged);
+    super.dispose();
+  }
+
+  /// Cambió el ajuste o se supo el país de alguna serie: la grilla se
+  /// vuelve a armar ([categoriesFor]) y se averigua lo que falte.
+  void _onAnimeChanged() {
+    notifyListeners();
+    _resolveAnime();
+  }
+
+  /// Las series animadas de las que no se sabe el país, de la grilla y de
+  /// las listas ya bajadas.
+  void _resolveAnime() {
+    final filter = SeriesAnimeFilter.instance;
+    final state = _sections[sectionSeries];
+    if (!filter.enabled || state == null || !state.loadedOnce) return;
+    unawaited(
+      filter.resolve([
+        for (final c in state.raw) ...c.movies,
+        for (final id in _seriesColumns) ...?_shelves[id],
+      ]),
+    );
+  }
+
+  /// La grilla de Series sin el anime: la misma armada sin repetidas, con
+  /// lo ya bajado; sin las categorías que quedan vacías.
+  List<CategoryColumn> _seriesWithoutAnime(_CatalogSectionState state) {
+    final filter = SeriesAnimeFilter.instance;
+    final key = (state.raw, filter.version, _shelfGeneration, _shelves.length);
+    if (state.withoutAnime case final cached?
+        when state.withoutAnimeFor == key) {
+      return cached;
+    }
+    List<MovieItem> keep(List<MovieItem> movies) =>
+        movies.where((m) => !filter.hides(m)).toList();
+    final grid = MovieGridCatalog.build(
+      [
+        for (final c in state.raw)
+          CategoryColumn(
+            columnId: c.columnId,
+            columnName: c.columnName,
+            hasMore: c.hasMore,
+            movies: keep(c.movies),
+          ),
+      ],
+      extras: {
+        for (final id in _seriesColumns)
+          if (_shelves[id] case final movies?) id: keep(movies),
+      },
+      withShowAll: state.serverColumns,
+    ).where((c) => c.movies.isNotEmpty).toList();
+    state
+      ..withoutAnime = grid
+      ..itemsWithoutAnime = keep(state.items)
+      ..withoutAnimeFor = key;
+    return grid;
+  }
 
   final Future<int?> Function(int columnId) _fetchShelfTotal;
 
@@ -317,15 +391,28 @@ class FeaturedMoviesProvider extends ChangeNotifier {
     if (section == sectionFeatured && !_sections.containsKey(section)) {
       return items;
     }
-    return _stateFor(section).items;
+    final state = _stateFor(section);
+    if (_hidesAnime(section, state)) {
+      _seriesWithoutAnime(state);
+      return state.itemsWithoutAnime!;
+    }
+    return state.items;
   }
 
   List<CategoryColumn> categoriesFor(String section) {
     if (section == sectionFeatured && !_sections.containsKey(section)) {
       return categories;
     }
-    return _stateFor(section).categories;
+    final state = _stateFor(section);
+    if (_hidesAnime(section, state)) return _seriesWithoutAnime(state);
+    return state.categories;
   }
+
+  /// "Ocultar anime de series" prendido y la grilla de Series armada.
+  bool _hidesAnime(String section, _CatalogSectionState state) =>
+      section == sectionSeries &&
+      SeriesAnimeFilter.instance.enabled &&
+      state.raw.isNotEmpty;
 
   List<MovieItem> bestOfYearFor(String section) =>
       _sections[section]?.bestOfYear ?? const [];
@@ -492,6 +579,9 @@ class FeaturedMoviesProvider extends ChangeNotifier {
         );
         state.bestOfYear = await bestOfYear;
       } else if (section == sectionSeries) {
+        state
+          ..raw = categories
+          ..serverColumns = serverColumns;
         // Sin las filas de TMDb (Estrenos, Mejor puntuadas): son de películas.
         categories = await _uniqueMovieGrid(
           categories,
@@ -504,6 +594,7 @@ class FeaturedMoviesProvider extends ChangeNotifier {
 
       state.categories = categories;
       state.loadedOnce = true;
+      if (section == sectionSeries) _resolveAnime();
     } catch (e) {
       state.errorMessage = LocaleKeys.movies_load_error;
       state.errorDetail = '$e';

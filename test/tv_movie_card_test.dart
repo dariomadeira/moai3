@@ -30,10 +30,20 @@ void main() {
         ),
       );
 
-  testWidgets('no lleva estrella y el nombre largo se corta', (tester) async {
+  testWidgets('con puntaje mayor a 7 lleva la estrella; si no, no', (
+    tester,
+  ) async {
     await tester.pumpWidget(card('8.5'));
-    expect(find.byKey(const ValueKey('movie_card_well_rated')), findsNothing);
-    expect(tester.takeException(), isNull);
+    expect(find.byKey(const ValueKey('movie_card_star')), findsOneWidget);
+    expect(tester.takeException(), isNull, reason: 'el nombre largo se corta');
+    for (final score in ['7.0', '6.2', null]) {
+      await tester.pumpWidget(card(score));
+      expect(
+        find.byKey(const ValueKey('movie_card_star')),
+        findsNothing,
+        reason: 'puntaje $score',
+      );
+    }
   });
 
   testWidgets('con progreso lleva la barra de lo visto; sin él, no', (

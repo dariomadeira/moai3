@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moai3/services/app_preferences_service.dart';
+import 'package:moai3/services/series_anime_filter.dart';
 
 /// Frecuencia con la que el arranque intenta sincronizar el catálogo Moiamov.
 enum CatalogUpdateFrequency {
@@ -104,6 +105,7 @@ class TvSettingsProvider extends ChangeNotifier {
   static const String _parentalPinKey = 'parental_pin';
   static const String _uiSoundsDisabledKey = 'ui_sounds_disabled';
   static const String _showHomeTrailersKey = 'home_show_trailers';
+  static const String _hideSeriesAnimeKey = 'series_hide_anime';
   static const String _catalogUpdateFrequencyKey = 'catalog_update_frequency';
   static const String _startupTvTabKey = 'startup_tv_tab';
   static const String _movieAudioLanguageKey = 'movie_audio_language';
@@ -121,6 +123,7 @@ class TvSettingsProvider extends ChangeNotifier {
   late bool _hasOverlapConfig;
   late bool _uiSoundsDisabled;
   late bool _showHomeTrailers;
+  late bool _hideSeriesAnime;
   late CatalogUpdateFrequency _catalogUpdateFrequency;
   late TvTab _startupTvTab;
   late MovieAudioLanguage _movieAudioLanguage;
@@ -149,6 +152,8 @@ class TvSettingsProvider extends ChangeNotifier {
       _showHomeTrailersKey,
       defaultValue: true,
     );
+    _hideSeriesAnime = _prefs.readPreferenceBool(_hideSeriesAnimeKey);
+    SeriesAnimeFilter.instance.enabled = _hideSeriesAnime;
     _catalogUpdateFrequency = CatalogUpdateFrequency.fromStorage(
       _prefs.readOptionalString(_catalogUpdateFrequencyKey),
     );
@@ -182,6 +187,10 @@ class TvSettingsProvider extends ChangeNotifier {
   /// La tarjeta "Adelantos" del Inicio (Ajustes › Películas y series). Se
   /// ve salvo que se apague.
   bool get showHomeTrailers => _showHomeTrailers;
+
+  /// "Ocultar anime de series" (Ajustes › Películas y series): la grilla de
+  /// Series sin el anime ([SeriesAnimeFilter]). Apagado salvo que se prenda.
+  bool get hideSeriesAnime => _hideSeriesAnime;
 
   /// Cada cuánto el arranque intenta sync cuando la actualización está activa.
   CatalogUpdateFrequency get catalogUpdateFrequency => _catalogUpdateFrequency;
@@ -269,6 +278,14 @@ class TvSettingsProvider extends ChangeNotifier {
     _showHomeTrailers = value;
     notifyListeners();
     await _prefs.saveBool(_showHomeTrailersKey, value);
+  }
+
+  Future<void> setHideSeriesAnime(bool value) async {
+    if (_hideSeriesAnime == value) return;
+    _hideSeriesAnime = value;
+    SeriesAnimeFilter.instance.enabled = value;
+    notifyListeners();
+    await _prefs.saveBool(_hideSeriesAnimeKey, value);
   }
 
   Future<void> setUiSoundsDisabled(bool value) async {

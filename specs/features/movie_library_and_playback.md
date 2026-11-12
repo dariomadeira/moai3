@@ -70,6 +70,9 @@ Una película está en **un solo lugar**. `MovieLibrary` es la única puerta: el
 ### 2.5 Banner de Películas
 El banner de arriba (`pickPromoMovies`) arranca con la película que eligió la destacada del Inicio si está en su lista (`HomeHeroRotation.movies.chosenIndex`); pasar con las flechas lo recuerda para el próximo arranque (SPEC-42 §3.0). La misma tarjeta (`MovieHeroCard`) acepta `playLabel` y `showMore` para usarse con series (SPEC-46 §7.1).
 
+### 2.6 Estrella en las tarjetas
+Las tarjetas de póster (`TvMovieCard`: grillas, filas, buscador, "Ver todas"; películas y series) con puntaje mayor a 7 (`MovieItem.isWellRated`) llevan arriba a la derecha un círculo oscuro con la estrella dorada (`MoaiIcons.vodRatingFilled`), sin número (2026-11-11, pedido del usuario; antes se había sacado). La etiqueta de arriba a la izquierda ("Hasta T3") no la pisa. Test: `tv_movie_card_test`.
+
 ## 3. Catálogo y memoria
 
 - Descifrado (3DES) y parseo del catálogo corren en **otro isolate** (`MoiamovCatalogStore.processDownload`, `load`). En el hilo principal congelaban la carga (≈100 ms en PC, segundos en el Chromecast). Dentro del isolate no hay `.env` ni traducciones: la clave se pasa como argumento y los textos con `CatalogStrings`.

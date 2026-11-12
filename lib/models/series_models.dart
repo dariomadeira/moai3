@@ -35,7 +35,12 @@ class SeriesSeasonDetail {
     this.subsInfo = '',
     this.plannedEpisodes,
     this.imdbId,
+    this.originalCountry,
   });
+
+  /// País de origen ("Japan", "United States of America"); sólo viene en el
+  /// detalle. `null` si no dice.
+  final String? originalCountry;
 
   final MovieItem info;
 
@@ -155,6 +160,10 @@ class SeriesSeasonDetail {
         _ => null,
       },
       imdbId: _imdb.firstMatch('${asset['keyWords'] ?? ''}')?.group(0),
+      originalCountry: switch (asset['originalCountry']?.toString().trim()) {
+        final c? when c.isNotEmpty => c,
+        _ => null,
+      },
     );
   }
 

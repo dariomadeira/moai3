@@ -810,6 +810,8 @@ abstract class  LocaleKeys {
   static const settings_movies_clear_series_dialog = 'settings_movies_clear_series_dialog';
   static const settings_movies_clear_series_done = 'settings_movies_clear_series_done';
   static const settings_movies_clear_series_title = 'settings_movies_clear_series_title';
+  static const settings_movies_hide_anime = 'settings_movies_hide_anime';
+  static const settings_movies_hide_anime_desc = 'settings_movies_hide_anime_desc';
   static const settings_movies_home_trailers = 'settings_movies_home_trailers';
   static const settings_movies_home_trailers_desc = 'settings_movies_home_trailers_desc';
   static const settings_movies_series_subtitle = 'settings_movies_series_subtitle';

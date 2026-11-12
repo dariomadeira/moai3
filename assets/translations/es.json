@@ -806,6 +806,8 @@
   "settings_movies_clear_series_dialog": "Se borran los capítulos vistos, por dónde ibas en cada uno y Seguir series. No se puede deshacer.",
   "settings_movies_clear_series_done": "Se borró el registro de series.",
   "settings_movies_clear_series_title": "¿Borrar las series vistas?",
+  "settings_movies_hide_anime": "Ocultar anime de series",
+  "settings_movies_hide_anime_desc": "Saca de Series las animadas de Japón, China y Corea.",
   "settings_movies_home_trailers": "Adelantos en el Inicio",
   "settings_movies_home_trailers_desc": "Muestra en el Inicio los trailers de los últimos estrenos (se ven en YouTube).",
   "settings_movies_series_subtitle": "Opciones del catálogo de novedades.",

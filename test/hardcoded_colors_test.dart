@@ -31,7 +31,7 @@ const Map<String, int> _allowed = {
   'lib/features/home/widgets/home_recommendations_card.dart': 1,
   'lib/features/home/widgets/home_trailers_card.dart': 1,
   'lib/features/home/widgets/home_watchlist_big_card.dart': 1,
-  'lib/features/home/widgets/tv_movie_card.dart': 4,
+  'lib/features/home/widgets/tv_movie_card.dart': 6,
   'lib/features/home/widgets/tv_vertical_nav_rail.dart': 3,
   'lib/features/loading/screens/loading_screen.dart': 1,
   'lib/features/movies/screens/movie_detail_screen.dart': 3,
