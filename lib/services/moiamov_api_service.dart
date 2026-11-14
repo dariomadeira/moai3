@@ -21,6 +21,21 @@ part 'moiamov/moiamov_session.dart';
 part 'moiamov/moiamov_catalog.dart';
 part 'moiamov/moiamov_playback.dart';
 
+/// Estado de la sesión guardada ([MoiamovSession.checkSavedSession]).
+enum SavedSessionStatus {
+  /// El portal la aceptó: no hace falta la VPN.
+  valid,
+
+  /// No hay ninguna guardada (primer arranque).
+  none,
+
+  /// El portal la rechazó: hay que iniciar sesión de nuevo.
+  expired,
+
+  /// El portal no contestó: no se sabe.
+  noAnswer,
+}
+
 /// Servicio de sincronización del catálogo de películas y series Moiamov
 /// con cifrado nativo Triple DES (3DES) y autenticación automática.
 class MoiamovApiService {
@@ -296,6 +311,9 @@ class MoiamovApiService {
   /// próxima y lo usa la descarga del catálogo.
   String? _sessionHost;
   static const String _sessionHostKey = 'moiamov_session_host';
+
+  /// Cuándo se hizo el último login (para saber cuánto dura una sesión).
+  static const String _sessionAtKey = 'moiamov_session_at';
 
   /// Tiempo máximo para pasar al siguiente servidor del portal: con la red
   /// muda no tiene sentido recorrerlos todos.

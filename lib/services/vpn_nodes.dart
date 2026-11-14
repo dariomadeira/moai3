@@ -231,6 +231,70 @@ class VpnEndpointStats {
   };
 }
 
+/// Por qué no sirvió un intento del arranque: de eso depende qué conviene
+/// probar después ([VpnAttemptQueue.failed]).
+enum VpnFailure {
+  /// El servidor contestó y rechazó la autenticación.
+  auth,
+
+  /// El túnel no subió: el puerto no contestó o el servidor está caído.
+  noAnswer,
+
+  /// El túnel subió pero el portal rechazó la región de esa salida.
+  region,
+
+  /// El túnel subió pero no se consiguió la sesión (la red no contestó o
+  /// el portal la rechazó por otra cosa).
+  session,
+}
+
+/// La cola de intentos de un arranque: todos los endpoints en el orden del
+/// ranking, sin tope de cantidad. Cada falla la reacomoda según su causa:
+///
+/// - [VpnFailure.auth]: el servidor contestó, así que sus otros puertos no
+///   cambian nada y se sacan; el mismo endpoint vuelve una vez más al final
+///   (el rechazo suele ser pasajero: servidor lleno).
+/// - [VpnFailure.noAnswer]: sus otros puertos pasan al final (quizá la red
+///   bloquea ése); a la [maxNoAnswerPerNode]ª vez se da el servidor por caído.
+/// - [VpnFailure.region]: el servidor se descarta (sale por la misma IP).
+/// - [VpnFailure.session]: sus otros puertos pasan al final.
+class VpnAttemptQueue {
+  VpnAttemptQueue(List<VpnEndpoint> ordered) : _queue = [...ordered];
+
+  /// Intentos sin respuesta con los que un servidor se da por caído.
+  static const int maxNoAnswerPerNode = 3;
+
+  final List<VpnEndpoint> _queue;
+  final Set<VpnEndpoint> _retried = {};
+  final Map<String, int> _noAnswer = {};
+
+  bool get isEmpty => _queue.isEmpty;
+  bool get isNotEmpty => _queue.isNotEmpty;
+
+  /// Los que quedan, en orden.
+  List<VpnEndpoint> get pending => List.unmodifiable(_queue);
+
+  VpnEndpoint next() => _queue.removeAt(0);
+
+  void failed(VpnEndpoint endpoint, VpnFailure failure) {
+    bool sibling(VpnEndpoint e) => e.node.id == endpoint.node.id;
+    final siblings = _queue.where(sibling).toList();
+    _queue.removeWhere(sibling);
+    switch (failure) {
+      case VpnFailure.auth:
+        if (_retried.add(endpoint)) _queue.add(endpoint);
+      case VpnFailure.noAnswer:
+        final count = (_noAnswer[endpoint.node.id] ?? 0) + 1;
+        _noAnswer[endpoint.node.id] = count;
+        if (count < maxNoAnswerPerNode) _queue.addAll(siblings);
+      case VpnFailure.region:
+        break;
+      case VpnFailure.session:
+        _queue.addAll(siblings);
+    }
+  }
+}
+
 /// Resultado de un intento, para anotarlo al final del arranque.
 typedef VpnAttemptResult = ({
   VpnEndpoint endpoint,
@@ -378,23 +442,6 @@ class VpnNodeRanking {
         ..insert(0, sticky);
     }
     return ordered;
-  }
-
-  /// Cómo seguir después de que [failed] no sirvió en este arranque.
-  ///
-  /// Sus hermanos (mismo servidor) pasan al final: si el servidor está caído
-  /// se pierde un solo intento. Con [dropNode] (el portal rechazó la salida
-  /// de ese servidor) se descartan.
-  static List<VpnEndpoint> afterFailure(
-    List<VpnEndpoint> remaining,
-    VpnEndpoint failed, {
-    bool dropNode = false,
-  }) {
-    bool sibling(VpnEndpoint e) => e.node.id == failed.node.id;
-    return [
-      ...remaining.where((e) => !sibling(e)),
-      if (!dropNode) ...remaining.where(sibling),
-    ];
   }
 
   /// Anota los resultados de un arranque.

@@ -284,6 +284,9 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
   List<MovieItem> _heroSeries = const [];
   List<CategoryColumn>? _heroSeriesSource;
 
+  /// Los pósters de al lado de la tarjeta grande, ya elegidos.
+  List<MovieItem> _heroSide = const [];
+
   /// Los pósters de al lado de la tarjeta grande.
   final FocusNode _heroSideFocus = FocusNode(debugLabel: 'home_hero_side');
   static const int _heroSideCount = 2;
@@ -336,23 +339,36 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     final leadRotation = seriesLead
         ? HomeHeroRotation.series
         : HomeHeroRotation.movies;
-    final List<MovieItem> big;
-    final List<MovieItem> side;
-    if (other.isEmpty) {
-      final count = lead.length > _heroSideCount ? _heroSideCount : 0;
-      big = lead.sublist(0, lead.length - count);
-      side = lead.sublist(lead.length - count);
-    } else {
-      big = lead;
-      // Desde el que le toca en este arranque: cada vez son otros.
-      final start =
-          (seriesLead ? HomeHeroRotation.movies : HomeHeroRotation.series)
-              .startIndex(other);
-      side = [
-        for (var i = 0; i < _heroSideCount && i < other.length; i++)
-          other[(start + i) % other.length],
-      ];
+    // Los pósters, una vez elegidos, no cambian mientras sigan en su
+    // lista: los catálogos se completan de a poco y, si se volvieran a
+    // elegir en cada pasada, cambiarían a la vista.
+    final sidePool = other.isEmpty ? lead : other;
+    final poolIds = {for (final m in sidePool) m.contentId};
+    final wanted = other.isEmpty
+        ? (lead.length > _heroSideCount ? _heroSideCount : 0)
+        : (other.length < _heroSideCount ? other.length : _heroSideCount);
+    if (_heroSide.length != wanted ||
+        !_heroSide.every((m) => poolIds.contains(m.contentId))) {
+      if (other.isEmpty) {
+        _heroSide = lead.sublist(lead.length - wanted);
+      } else {
+        // Desde el que le toca en este arranque: cada vez son otros.
+        final start =
+            (seriesLead ? HomeHeroRotation.movies : HomeHeroRotation.series)
+                .startIndex(other);
+        _heroSide = [
+          for (var i = 0; i < wanted; i++) other[(start + i) % other.length],
+        ];
+      }
     }
+    final side = _heroSide;
+    final sideIds = {for (final m in side) m.contentId};
+    final big = other.isEmpty
+        ? [
+            for (final m in lead)
+              if (!sideIds.contains(m.contentId)) m,
+          ]
+        : lead;
     return LayoutBuilder(
       builder: (context, constraints) {
         return Row(

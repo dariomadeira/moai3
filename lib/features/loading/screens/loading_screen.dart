@@ -98,8 +98,9 @@ class _LoadingScreenState extends State<LoadingScreen>
   bool _catalogCancelRequested = false;
   DateTime? _storedCatalogAt;
 
-  /// Intentos de VPN + login + descarga, cada uno con otro endpoint.
-  static const int _maxAttempts = 4;
+  /// Tope de tiempo de la ronda de VPN del arranque (no de intentos:
+  /// pasan todos los servidores).
+  static const Duration _vpnBudget = Duration(minutes: 3);
 
   static const List<String> _catalogSections = [
     FeaturedMoviesProvider.sectionMovies,

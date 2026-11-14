@@ -18,6 +18,11 @@ enum VpnConnectResult {
   /// El túnel no llegó a conectar.
   tunnelFailed,
 
+  /// El servidor contestó y rechazó la autenticación (`auth_failed`): la red
+  /// y el puerto andan, lo que no sirvió fue la cuenta o el servidor estaba
+  /// lleno. Probar otro puerto del mismo servidor no cambia nada.
+  authFailed,
+
   /// El usuario rechazó el permiso VPN del sistema.
   permissionDenied,
 
@@ -63,6 +68,9 @@ class VpnService {
   bool get isConnected => _currentStage == VPNStage.connected;
 
   bool _connectCancelled = false;
+
+  /// El intento en curso recibió `auth_failed` del servidor.
+  bool _authFailed = false;
 
   /// Resultado del diálogo de VPN de Android en esta sesión de proceso.
   /// `null` = aún no se pidió; evita reabrir el aviso al rotar nodos.
@@ -168,6 +176,7 @@ class VpnService {
     _engine = OpenVPN(
       onVpnStageChanged: (stage, raw) {
         debugPrint('🔒 [VPN Stage] $stage ($raw)');
+        if (raw.toLowerCase().contains('auth_failed')) _authFailed = true;
         _currentStage = stage;
         _stageController.add(stage);
       },
@@ -236,6 +245,7 @@ class VpnService {
     void Function(String message)? onStatusUpdate,
   }) async {
     _connectCancelled = false;
+    _authFailed = false;
     await initialize();
     if (_androidVpnPermissionGranted == false) {
       debugPrint('⚠️ [VPN] Permiso ya denegado en esta sesión.');
@@ -404,7 +414,11 @@ class VpnService {
       return VpnConnectResult.permissionDenied;
     }
     if (_connectCancelled) return VpnConnectResult.cancelled;
-    if (!connected) return VpnConnectResult.tunnelFailed;
+    if (!connected) {
+      return _authFailed
+          ? VpnConnectResult.authFailed
+          : VpnConnectResult.tunnelFailed;
+    }
     debugPrint(
       '🔒 [VPN] Túnel arriba en '
       '${DateTime.now().difference(connectCallAt).inMilliseconds}ms.',

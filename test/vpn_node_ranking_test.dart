@@ -172,18 +172,55 @@ void main() {
       expect(order, [b1194, a1194]);
     });
 
-    test('tras una falla, los del mismo servidor pasan al final', () {
-      final next = VpnNodeRanking.afterFailure([a80, a443, b1194, c443], a1194);
-      expect(next, [b1194, c443, a80, a443]);
+    test('la cola no tiene tope: sin fallas pasan todos en orden', () {
+      final queue = VpnAttemptQueue([a1194, a80, b1194, c443]);
+      final seen = <VpnEndpoint>[];
+      while (queue.isNotEmpty) {
+        seen.add(queue.next());
+      }
+      expect(seen, [a1194, a80, b1194, c443]);
+    });
+
+    test('sin respuesta: los otros puertos del servidor pasan al final', () {
+      final queue = VpnAttemptQueue([a1194, a80, a443, b1194, c443]);
+      queue.failed(queue.next(), VpnFailure.noAnswer);
+      expect(queue.pending, [b1194, c443, a80, a443]);
+    });
+
+    test('sin respuesta tres veces: el servidor se da por caído', () {
+      final queue = VpnAttemptQueue([a1194, a80, a443, b1194]);
+      queue.failed(queue.next(), VpnFailure.noAnswer); // a1194
+      expect(queue.pending, [b1194, a80, a443]);
+      queue.next(); // b1194 (anduvo o no, no importa acá)
+      queue.failed(queue.next(), VpnFailure.noAnswer); // a80
+      expect(queue.pending, [a443]);
+      queue.failed(queue.next(), VpnFailure.noAnswer); // a443: la tercera
+      expect(queue.isEmpty, isTrue);
+    });
+
+    test('autenticación rechazada: fuera sus otros puertos y un reintento '
+        'al final', () {
+      final queue = VpnAttemptQueue([a1194, a80, b1194, c443]);
+      queue.failed(queue.next(), VpnFailure.auth);
+      expect(queue.pending, [b1194, c443, a1194]);
+      // Los demás también pasan; el reintento es uno solo.
+      queue.failed(queue.next(), VpnFailure.auth); // b1194
+      queue.failed(queue.next(), VpnFailure.auth); // c443
+      expect(queue.pending, [a1194, b1194, c443]);
+      queue.failed(queue.next(), VpnFailure.auth); // a1194 otra vez
+      expect(queue.pending, [b1194, c443]);
     });
 
     test('si el portal rechaza la salida se descarta el servidor', () {
-      final next = VpnNodeRanking.afterFailure(
-        [a80, b1194, a443, c443],
-        a1194,
-        dropNode: true,
-      );
-      expect(next, [b1194, c443]);
+      final queue = VpnAttemptQueue([a1194, a80, b1194, a443, c443]);
+      queue.failed(queue.next(), VpnFailure.region);
+      expect(queue.pending, [b1194, c443]);
+    });
+
+    test('sin sesión: los otros puertos del servidor pasan al final', () {
+      final queue = VpnAttemptQueue([a1194, a80, b1194]);
+      queue.failed(queue.next(), VpnFailure.session);
+      expect(queue.pending, [b1194, a80]);
     });
 
     test('recordAll guarda el historial entre arranques', () async {

@@ -339,12 +339,32 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
     }
     // Una sola lista de destacadas: las primeras rotan en el banner (las
     // mismas que elige el Inicio) y las que siguen van de póster al lado.
-    const count = _bannerCount + _sideCount;
+    // Se piden de más por si los pósters ya elegidos hay que sacarlos.
+    const count = _bannerCount + 2 * _sideCount;
     final promo = _isSeries
         ? pickPromoSeries(_categories, count: count)
         : pickPromoMovies(_categories, count: count);
-    _banner = List.unmodifiable(promo.take(_bannerCount));
-    _side = List.unmodifiable(promo.skip(_bannerCount));
+    // Los pósters, una vez elegidos, no cambian mientras sigan en el
+    // catálogo: la sección se arma de a poco (las categorías se completan)
+    // y, si se volvieran a elegir en cada paso, cambiarían a la vista.
+    final inCatalog = {
+      for (final c in _categories)
+        for (final m in c.movies) m.contentId,
+    };
+    final keepSide =
+        _side.length == _sideCount &&
+        _side.every((m) => inCatalog.contains(m.contentId));
+    if (keepSide) {
+      final sideNames = {for (final m in _side) normalizeText(m.name)};
+      _banner = List.unmodifiable(
+        promo
+            .where((m) => !sideNames.contains(normalizeText(m.name)))
+            .take(_bannerCount),
+      );
+    } else {
+      _banner = List.unmodifiable(promo.take(_bannerCount));
+      _side = List.unmodifiable(promo.skip(_bannerCount).take(_sideCount));
+    }
     final onTop = [..._banner, ..._side];
     if (_isSeries) {
       // TMDb no tiene series: la fila sale del catálogo, como el banner.

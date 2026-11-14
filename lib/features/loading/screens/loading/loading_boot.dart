@@ -113,8 +113,9 @@ extension _LoadingBoot on _LoadingScreenState {
     }
   }
 
-  /// VPN + login en todo arranque y, si toca, descarga del catálogo
-  /// (SPEC-39 §4). No lanza: si algo falla, Destacados,
+  /// Sesión y, si toca, descarga del catálogo (SPEC-39 §4). Con la sesión
+  /// del último login todavía vigente no se usa la VPN; si no, túnel +
+  /// login ([_connectAndLogin]). No lanza: sin sesión, Destacados,
   /// Películas y Series quedan ocultas y se sigue al home.
   Future<void> _syncSessionAndCatalog(TvSettingsProvider tvSettings) async {
     final api = MoiamovApiService.instance;
@@ -141,164 +142,46 @@ extension _LoadingBoot on _LoadingScreenState {
       vpn.resetConnectCancellation();
       _catalogCancelRequested = false;
       final downloaded = <String>{};
+      bool catalogDone() =>
+          !needsUpdate ||
+          _catalogCancelRequested ||
+          downloaded.length == _LoadingScreenState._catalogSections.length;
 
-      // Endpoints (nodo + puerto) en el orden del ranking (SPEC-39 §4.1).
-      // Tras cada falla se reacomoda la cola: los del mismo servidor pasan
-      // al final. Los resultados se anotan al final.
-      final ranking = VpnNodeRanking();
-      var queue = await ranking.orderedEndpoints();
-      final total = queue.length < _LoadingScreenState._maxAttempts
-          ? queue.length
-          : _LoadingScreenState._maxAttempts;
-      final results = <VpnAttemptResult>[];
-      var anyTunnel = false;
-
-      Future<void> rotate(VpnEndpoint failed, {bool dropNode = false}) async {
-        queue = VpnNodeRanking.afterFailure(queue, failed, dropNode: dropNode);
-        _setStep(_BootStep.secure, LocaleKeys.loading_secure_retry);
-        await vpn.disconnect();
-        await _pause(const Duration(milliseconds: 500));
-      }
-
-      // El permiso VPN se pide dentro de connect (el plugin guarda la
-      // config, muestra el aviso del SO y al OK arranca el túnel). No usar
-      // requestPermissionAndroid aparte: devuelve false al mostrar el diálogo.
-      for (
-        var attempt = 1;
-        attempt <= total && queue.isNotEmpty && mounted;
-        attempt++
-      ) {
-        final endpoint = queue.removeAt(0);
-        final attemptStart = DateTime.now();
-        final detail = attempt > 1 ? _attemptDetail(attempt, total) : null;
-        _setStep(
-          _BootStep.secure,
-          LocaleKeys.loading_secure_connecting,
-          detail: detail,
-        );
-        MoiamovApiService.logLine('Intento $attempt/$total: $endpoint');
-
-        final connection = await vpn.connect(
-          endpoint,
-          onStatusUpdate: _setStatus,
-        );
-        if (connection == VpnConnectResult.permissionDenied) {
-          MoiamovApiService.logLine('Permiso VPN rechazado por el usuario.');
-          break;
-        }
-        if (connection == VpnConnectResult.cancelled) break;
-        if (connection != VpnConnectResult.connected) {
-          results.add((
-            endpoint: endpoint,
-            attempt: VpnAttempt.failure,
-            elapsed: null,
-          ));
-          MoiamovApiService.logLine('$endpoint: el túnel no conectó.');
-          await rotate(endpoint);
-          continue;
-        }
-        anyTunnel = true;
-
-        // Por dónde sale, sólo para el log: no frena el arranque (si la
-        // región no sirve, lo dice el portal al pedir la sesión).
-        final country = endpoint.node.country;
-        unawaited(
-          vpn
-              .checkExit(country: country)
-              .then(
-                (exit) => MoiamovApiService.logLine(
-                  'Salida $endpoint: ${vpn.lastExitIp} '
-                  '(${vpn.lastExitCountry}, esperado $country: ${exit.name})',
-                ),
-              ),
-        );
-
-        // Un respiro para que la interfaz tun0 tenga rutas y DNS.
-        _setStep(
-          _BootStep.secure,
-          LocaleKeys.loading_secure_verified,
-          detail: detail,
-        );
-        await _pause(const Duration(milliseconds: 1000));
-        _setStep(
-          _BootStep.session,
-          LocaleKeys.loading_session_init,
-          detail: detail,
-        );
-        MoiamovApiService.logLine(
-          'Solicitando sesión de dispositivo (sin credenciales)...',
-        );
-        var session = await api.ensureSession();
-        // Un corte de red apenas sube el túnel suele pasar solo: se
-        // reintenta una vez con el mismo endpoint antes de cambiarlo.
-        if (!session && api.lastSessionNetworkFailure && mounted) {
-          MoiamovApiService.logLine(
-            '$endpoint: la red no contestó; reintento con el mismo...',
-          );
-          await _pause(const Duration(milliseconds: 1500));
-          if (!_catalogCancelRequested) session = await api.ensureSession();
-        }
-        if (!session) {
-          final region = api.lastSessionRegionRejected;
-          results.add((
-            endpoint: endpoint,
-            // Sin respuesta de la red no es culpa del endpoint.
-            attempt: api.lastSessionNetworkFailure
-                ? VpnAttempt.transient
-                : VpnAttempt.failure,
-            elapsed: null,
-          ));
-          MoiamovApiService.logLine(
-            region
-                ? '$endpoint: el portal rechazó la salida; otro servidor...'
-                : api.lastSessionNetworkFailure
-                ? '$endpoint: la red sigue sin contestar; rotando...'
-                : '$endpoint: sesión rechazada; rotando...',
-          );
-          // Con la región rechazada, los otros puertos del mismo servidor
-          // salen por la misma IP: se descartan.
-          await rotate(endpoint, dropNode: region);
-          continue;
-        }
+      // Primero, sin VPN: si la sesión del último login sigue vigente no
+      // hace falta el túnel (sólo el login exige la región) y el catálogo
+      // baja igual. La VPN queda para el primer arranque y para cuando la
+      // sesión venció.
+      _setStep(_BootStep.session, LocaleKeys.loading_session_init);
+      final saved = await api.checkSavedSession();
+      if (saved == SavedSessionStatus.valid && mounted) {
         sessionOk = true;
-        final sessionTime = DateTime.now().difference(attemptStart);
-        MoiamovApiService.logLine(
-          '✅ Sesión de dispositivo obtenida (${sessionTime.inMilliseconds}ms).',
-        );
-        // El endpoint sirvió aunque después falle el catálogo: eso depende
-        // del servidor del portal, no de la VPN.
-        results.add((
-          endpoint: endpoint,
-          attempt: VpnAttempt.success,
-          elapsed: sessionTime,
-        ));
-
-        if (!needsUpdate) break;
-        await _downloadMissingSections(downloaded, showCancel: hasCatalog);
-        if (_catalogCancelRequested) break;
-        if (downloaded.length == _LoadingScreenState._catalogSections.length) {
-          break;
+        if (needsUpdate) {
+          await _downloadMissingSections(downloaded, showCancel: hasCatalog);
         }
-        MoiamovApiService.logLine(
-          'Faltan secciones (${downloaded.length}/${_LoadingScreenState._catalogSections.length}); '
-          'rotando...',
-        );
-        await rotate(endpoint);
+        if (!catalogDone()) {
+          MoiamovApiService.logLine(
+            'Faltan secciones (${downloaded.length}/${_LoadingScreenState._catalogSections.length}) '
+            'con la sesión guardada; se prueba con VPN...',
+          );
+        }
       }
 
-      // Si ningún túnel conectó, lo más probable es que no haya internet:
-      // no es culpa de los endpoints y no se anota.
-      if (anyTunnel) {
-        await ranking.recordAll(results);
-      } else if (results.isNotEmpty) {
-        MoiamovApiService.logLine(
-          'Ningún túnel conectó: el ranking no se modifica.',
+      var usedVpn = false;
+      if (!sessionOk || !catalogDone()) {
+        usedVpn = true;
+        await _connectAndLogin(
+          downloaded: downloaded,
+          needsUpdate: needsUpdate,
+          hasCatalog: hasCatalog,
+          onSession: () => sessionOk = true,
         );
       }
 
-      _setStep(_BootStep.ready, LocaleKeys.loading_secure_disconnecting);
-      await vpn.disconnect();
-      await _pause(const Duration(milliseconds: 300));
+      if (usedVpn) {
+        _setStep(_BootStep.ready, LocaleKeys.loading_secure_disconnecting);
+        await vpn.disconnect();
+        await _pause(const Duration(milliseconds: 300));
+      }
 
       // La fecha cambia solo con las 3 secciones: si falta alguna, el
       // próximo arranque vuelve a intentar.
@@ -331,6 +214,182 @@ extension _LoadingBoot on _LoadingScreenState {
     MoiamovApiService.logLine('Secciones disponibles: $available');
     if (mounted) {
       context.read<FeaturedMoviesProvider>().setAvailableSections(available);
+    }
+  }
+
+  /// Túnel + login, recorriendo todos los endpoints en el orden del ranking
+  /// (SPEC-39 §4.1) hasta conseguir la sesión y, si toca, el catálogo. No
+  /// hay tope de intentos: pasan todos los servidores, y cada falla
+  /// reacomoda la cola según su causa ([VpnAttemptQueue]). Sí hay un tope de
+  /// tiempo ([_LoadingScreenState._vpnBudget]): con la red muda cada intento
+  /// tarda 14 s. Los resultados se anotan en el ranking al final.
+  Future<void> _connectAndLogin({
+    required Set<String> downloaded,
+    required bool needsUpdate,
+    required bool hasCatalog,
+    required VoidCallback onSession,
+  }) async {
+    final api = MoiamovApiService.instance;
+    final vpn = VpnService.instance;
+    final ranking = VpnNodeRanking();
+    final queue = VpnAttemptQueue(await ranking.orderedEndpoints());
+    final results = <VpnAttemptResult>[];
+    final started = DateTime.now();
+    // Si algún servidor contestó (túnel arriba o autenticación rechazada)
+    // hay internet y las fallas son de los endpoints: se anotan.
+    var anyAnswer = false;
+
+    Future<void> rotate(VpnEndpoint failed, VpnFailure failure) async {
+      queue.failed(failed, failure);
+      _setStep(_BootStep.secure, LocaleKeys.loading_secure_retry);
+      await vpn.disconnect();
+      await _pause(const Duration(milliseconds: 500));
+    }
+
+    // El permiso VPN se pide dentro de connect (el plugin guarda la
+    // config, muestra el aviso del SO y al OK arranca el túnel). No usar
+    // requestPermissionAndroid aparte: devuelve false al mostrar el diálogo.
+    for (var attempt = 1; queue.isNotEmpty && mounted; attempt++) {
+      if (DateTime.now().difference(started) > _LoadingScreenState._vpnBudget) {
+        MoiamovApiService.logLine(
+          'Se agotó el tiempo de la VPN: quedan ${queue.pending.length} '
+          'endpoints sin probar.',
+        );
+        break;
+      }
+      final endpoint = queue.next();
+      final total = attempt + queue.pending.length;
+      final attemptStart = DateTime.now();
+      final detail = attempt > 1 ? _attemptDetail(attempt, total) : null;
+      _setStep(
+        _BootStep.secure,
+        LocaleKeys.loading_secure_connecting,
+        detail: detail,
+      );
+      MoiamovApiService.logLine('Intento $attempt/$total: $endpoint');
+
+      final connection = await vpn.connect(
+        endpoint,
+        onStatusUpdate: _setStatus,
+      );
+      if (connection == VpnConnectResult.permissionDenied) {
+        MoiamovApiService.logLine('Permiso VPN rechazado por el usuario.');
+        break;
+      }
+      if (connection == VpnConnectResult.cancelled) break;
+      if (connection != VpnConnectResult.connected) {
+        final auth = connection == VpnConnectResult.authFailed;
+        if (auth) anyAnswer = true;
+        results.add((
+          endpoint: endpoint,
+          attempt: VpnAttempt.failure,
+          elapsed: null,
+        ));
+        MoiamovApiService.logLine(
+          auth
+              ? '$endpoint: el servidor rechazó la autenticación.'
+              : '$endpoint: el túnel no conectó.',
+        );
+        await rotate(endpoint, auth ? VpnFailure.auth : VpnFailure.noAnswer);
+        continue;
+      }
+      anyAnswer = true;
+
+      // Por dónde sale, sólo para el log: no frena el arranque (si la
+      // región no sirve, lo dice el portal al pedir la sesión).
+      final country = endpoint.node.country;
+      unawaited(
+        vpn
+            .checkExit(country: country)
+            .then(
+              (exit) => MoiamovApiService.logLine(
+                'Salida $endpoint: ${vpn.lastExitIp} '
+                '(${vpn.lastExitCountry}, esperado $country: ${exit.name})',
+              ),
+            ),
+      );
+
+      // Un respiro para que la interfaz tun0 tenga rutas y DNS.
+      _setStep(
+        _BootStep.secure,
+        LocaleKeys.loading_secure_verified,
+        detail: detail,
+      );
+      await _pause(const Duration(milliseconds: 1000));
+      _setStep(
+        _BootStep.session,
+        LocaleKeys.loading_session_init,
+        detail: detail,
+      );
+      MoiamovApiService.logLine(
+        'Solicitando sesión de dispositivo (sin credenciales)...',
+      );
+      var session = await api.ensureSession();
+      // Un corte de red apenas sube el túnel suele pasar solo: se
+      // reintenta una vez con el mismo endpoint antes de cambiarlo.
+      if (!session && api.lastSessionNetworkFailure && mounted) {
+        MoiamovApiService.logLine(
+          '$endpoint: la red no contestó; reintento con el mismo...',
+        );
+        await _pause(const Duration(milliseconds: 1500));
+        if (!_catalogCancelRequested) session = await api.ensureSession();
+      }
+      if (!session) {
+        final region = api.lastSessionRegionRejected;
+        results.add((
+          endpoint: endpoint,
+          // Sin respuesta de la red no es culpa del endpoint.
+          attempt: api.lastSessionNetworkFailure
+              ? VpnAttempt.transient
+              : VpnAttempt.failure,
+          elapsed: null,
+        ));
+        MoiamovApiService.logLine(
+          region
+              ? '$endpoint: el portal rechazó la salida; otro servidor...'
+              : api.lastSessionNetworkFailure
+              ? '$endpoint: la red sigue sin contestar; rotando...'
+              : '$endpoint: sesión rechazada; rotando...',
+        );
+        // Con la región rechazada, los otros puertos del mismo servidor
+        // salen por la misma IP: se descartan.
+        await rotate(endpoint, region ? VpnFailure.region : VpnFailure.session);
+        continue;
+      }
+      onSession();
+      final sessionTime = DateTime.now().difference(attemptStart);
+      MoiamovApiService.logLine(
+        '✅ Sesión de dispositivo obtenida (${sessionTime.inMilliseconds}ms).',
+      );
+      // El endpoint sirvió aunque después falle el catálogo: eso depende
+      // del servidor del portal, no de la VPN.
+      results.add((
+        endpoint: endpoint,
+        attempt: VpnAttempt.success,
+        elapsed: sessionTime,
+      ));
+
+      if (!needsUpdate) break;
+      await _downloadMissingSections(downloaded, showCancel: hasCatalog);
+      if (_catalogCancelRequested) break;
+      if (downloaded.length == _LoadingScreenState._catalogSections.length) {
+        break;
+      }
+      MoiamovApiService.logLine(
+        'Faltan secciones (${downloaded.length}/${_LoadingScreenState._catalogSections.length}); '
+        'rotando...',
+      );
+      await rotate(endpoint, VpnFailure.session);
+    }
+
+    // Si nadie contestó, lo más probable es que no haya internet: no es
+    // culpa de los endpoints y no se anota.
+    if (anyAnswer) {
+      await ranking.recordAll(results);
+    } else if (results.isNotEmpty) {
+      MoiamovApiService.logLine(
+        'Ningún servidor contestó: el ranking no se modifica.',
+      );
     }
   }
 

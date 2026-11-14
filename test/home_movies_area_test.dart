@@ -68,6 +68,25 @@ class _FakeFeaturedMoviesProvider extends FeaturedMoviesProvider {
   Future<void> loadFeatured({bool force = false}) async {}
 }
 
+/// El catálogo se va completando: [setCategories] avisa como la carga real.
+class _GrowingProvider extends _FakeFeaturedMoviesProvider {
+  _GrowingProvider(super.first) : _now = first;
+
+  List<CategoryColumn> _now;
+
+  void setCategories(List<CategoryColumn> categories) {
+    _now = categories;
+    notifyListeners();
+  }
+
+  @override
+  List<CategoryColumn> categoriesFor(String section) => _now;
+
+  @override
+  List<MovieItem> itemsFor(String section) =>
+      _now.expand((c) => c.movies).toList();
+}
+
 void main() {
   setUpAll(loadRealFonts);
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -474,6 +493,74 @@ void main() {
       await tester.pumpAndSettle();
       expect(FocusManager.instance.primaryFocus?.debugLabel, 'movie_search');
     });
+
+    testWidgets(
+      'los pósters de al lado no cambian al completarse el catálogo',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        tester.view.physicalSize = const Size(1920, 1080);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(() => tester.view.reset());
+        MovieItem movie(String name, String score) => MovieItem(
+          contentId: name,
+          name: name,
+          backdrop: 'https://example.com/$name.jpg',
+          year: '${DateTime.now().year}',
+          score: score,
+        );
+        final first = CategoryColumn(
+          columnId: 1,
+          columnName: 'Nuevas',
+          movies: [for (var i = 0; i < 8; i++) movie('Nueva $i', '8.$i')],
+        );
+        final provider = _GrowingProvider([first]);
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ChangeNotifierProvider<FeaturedMoviesProvider>.value(
+                value: provider,
+                child: HomeMoviesArea(promoBanner: true, onExitLeft: () {}),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        // Las seis mejores al banner (8.7 … 8.2) y las dos que siguen al lado.
+        expect(find.widgetWithText(TvMovieCard, 'Nueva 1'), findsOneWidget);
+        expect(find.widgetWithText(TvMovieCard, 'Nueva 0'), findsOneWidget);
+
+        // Llega otra categoría con películas mejor puntuadas: el banner las
+        // toma, los pósters siguen siendo los mismos.
+        provider.setCategories([
+          first,
+          CategoryColumn(
+            columnId: 2,
+            columnName: 'Más',
+            movies: [for (var i = 0; i < 4; i++) movie('Mejor $i', '9.$i')],
+          ),
+        ]);
+        await tester.pumpAndSettle();
+        expect(find.widgetWithText(TvMovieCard, 'Nueva 1'), findsOneWidget);
+        expect(find.widgetWithText(TvMovieCard, 'Nueva 0'), findsOneWidget);
+        expect(
+          find
+                  .descendant(
+                    of: find.byType(MovieHeroCard),
+                    matching: find.textContaining('Nueva'),
+                  )
+                  .evaluate()
+                  .length +
+              find
+                  .descendant(
+                    of: find.byType(MovieHeroCard),
+                    matching: find.textContaining('Mejor'),
+                  )
+                  .evaluate()
+                  .length,
+          1,
+        );
+      },
+    );
 
     testWidgets(
       'página de arriba: banner, "Lo mejor del año" y ↓ a las categorías',

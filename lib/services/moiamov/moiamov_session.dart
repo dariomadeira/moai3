@@ -136,6 +136,10 @@ extension MoiamovSession on MoiamovApiService {
         prefs.setString('moiamov_device_mac', MoiamovApiService._deviceMac);
         prefs.setString('moiamov_sn_field', _currentSnField);
         prefs.setString('moiamov_b29', _currentB29);
+        prefs.setString(
+          MoiamovApiService._sessionAtKey,
+          DateTime.now().toIso8601String(),
+        );
       });
     } catch (_) {
       // La sesión ya quedó activa en memoria: si no se pudo guardar, el
@@ -185,6 +189,73 @@ extension MoiamovSession on MoiamovApiService {
     } catch (e) {
       MoiamovApiService.logLine('⚠️ Error al restaurar sesión: $e');
     }
+  }
+
+  /// ¿Sirve todavía la sesión guardada del último login? Sólo el login
+  /// (`v8/active`) exige salir por una región aceptada; con una sesión
+  /// vigente el resto del portal contesta sin VPN (medido el 2026-11-14).
+  /// Se pregunta con el pedido más liviano que la necesita: una búsqueda de
+  /// un solo resultado. Si la red no contesta se reintenta una vez.
+  Future<SavedSessionStatus> checkSavedSession({
+    Duration timeout = const Duration(seconds: 6),
+  }) async {
+    await restoreSessionFromStorage();
+    if (_currentUserToken.isEmpty) {
+      MoiamovApiService.logLine('Sesión guardada: no hay.');
+      return SavedSessionStatus.none;
+    }
+    var age = '';
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final at = DateTime.tryParse(
+        prefs.getString(MoiamovApiService._sessionAtKey) ?? '',
+      );
+      if (at != null) {
+        final elapsed = DateTime.now().difference(at);
+        age = ' (de hace ${elapsed.inHours} h ${elapsed.inMinutes % 60} min)';
+      }
+    } catch (_) {
+      // Sólo es para el log.
+    }
+    for (var round = 1; round <= 2; round++) {
+      if (_syncCancelled) break;
+      final body = await _postEncrypted(
+        _vodClient,
+        '${_cleanUrl(MoiamovApiService.defaultBaseUrl)}/api/portalCore/v3/searchByName',
+        {
+          'userToken': _currentUserToken,
+          'userId': _currentUserId,
+          'portalCode': _currentPortalCode,
+          'columnId': '-1',
+          'value': 'a',
+          'type': '1',
+          'pageSize': 1,
+          'pageNum': 1,
+          'filter': '',
+        },
+        timeout,
+      );
+      if (body != null) {
+        String code;
+        try {
+          final decoded = jsonDecode(body);
+          code = decoded is Map ? '${decoded['returnCode']}' : '?';
+        } catch (_) {
+          code = '?';
+        }
+        if (code == '0') {
+          MoiamovApiService.logLine('✅ Sesión guardada vigente$age.');
+          return SavedSessionStatus.valid;
+        }
+        MoiamovApiService.logLine(
+          'Sesión guardada rechazada$age: returnCode=$code.',
+        );
+        return SavedSessionStatus.expired;
+      }
+      if (round == 1) await Future<void>.delayed(const Duration(seconds: 1));
+    }
+    MoiamovApiService.logLine('Sesión guardada$age: el portal no contestó.');
+    return SavedSessionStatus.noAnswer;
   }
 
   Future<bool> activateDeviceSession({
