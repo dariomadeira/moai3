@@ -68,7 +68,7 @@ class _SquircleButton extends StatelessWidget {
                       context,
                       color: fg,
                       fontSize: 13.5,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   if (subtitle != null) ...[
@@ -80,7 +80,7 @@ class _SquircleButton extends StatelessWidget {
                         color: isPressed
                             ? Colors.white.withValues(alpha: 0.8)
                             : scheme.onSurfaceVariant,
-                        fontSize: 11,
+                        fontSize: MoaiText.sizeCaption,
                       ),
                     ),
                   ],

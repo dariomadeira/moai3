@@ -33,7 +33,7 @@ class MoaiCountBadge extends StatelessWidget {
         '$count',
         style: TextStyle(
           color: Colors.white,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w700,
           fontSize: size * 9 / 16,
           height: 1,
         ),

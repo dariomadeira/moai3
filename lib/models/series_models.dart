@@ -159,7 +159,7 @@ class SeriesSeasonDetail {
         final n? when n > 0 => n,
         _ => null,
       },
-      imdbId: _imdb.firstMatch('${asset['keyWords'] ?? ''}')?.group(0),
+      imdbId: imdbIdIn(asset['keyWords']),
       originalCountry: switch (asset['originalCountry']?.toString().trim()) {
         final c? when c.isNotEmpty => c,
         _ => null,
@@ -168,6 +168,10 @@ class SeriesSeasonDetail {
   }
 
   static final RegExp _imdb = RegExp(r'tt\d+');
+
+  /// El id de IMDb ("tt23112594") dentro de las `keyWords` del portal.
+  static String? imdbIdIn(Object? keyWords) =>
+      _imdb.firstMatch('${keyWords ?? ''}')?.group(0);
 
   static int? _int(Object? value) =>
       value is int ? value : int.tryParse('${value ?? ''}');

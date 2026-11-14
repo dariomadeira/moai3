@@ -153,7 +153,7 @@ class TvEmptyStateCard extends StatelessWidget {
               style: MoaiText.body(
                 context,
                 color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
-                fontSize: 11.5,
+                fontSize: MoaiText.sizeCaption,
                 fontWeight: FontWeight.w400,
               ),
             ),

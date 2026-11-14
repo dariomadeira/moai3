@@ -117,7 +117,7 @@ class _FriendTileState extends State<_FriendTile> {
                                 style: MoaiText.body(
                                   context,
                                   color: scheme.onSurface,
-                                  fontSize: 10,
+                                  fontSize: MoaiText.sizeCaption,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 0.4,
                                 ),

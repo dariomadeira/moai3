@@ -9,11 +9,13 @@ bool _loaded = false;
 /// TV. Llamar en `setUpAll`.
 Future<void> loadRealFonts() async {
   if (_loaded) return;
-  final bytes = File(
-    'assets/fonts/varela-round-v21-latin-regular.ttf',
-  ).readAsBytesSync();
-  await (FontLoader(
-    'VarelaRound',
-  )..addFont(Future.value(ByteData.sublistView(bytes)))).load();
+  final loader = FontLoader('Quicksand');
+  for (final weight in const ['regular', '500', '600', '700']) {
+    final bytes = File(
+      'assets/fonts/quicksand-v37-latin-$weight.ttf',
+    ).readAsBytesSync();
+    loader.addFont(Future.value(ByteData.sublistView(bytes)));
+  }
+  await loader.load();
   _loaded = true;
 }

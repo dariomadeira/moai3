@@ -1,5 +1,38 @@
 part of '../tv_pin_dialog.dart';
 
+/// Teclas de número de un teclado físico, en orden: la posición es el dígito.
+const _pinRowKeys = [
+  LogicalKeyboardKey.digit0,
+  LogicalKeyboardKey.digit1,
+  LogicalKeyboardKey.digit2,
+  LogicalKeyboardKey.digit3,
+  LogicalKeyboardKey.digit4,
+  LogicalKeyboardKey.digit5,
+  LogicalKeyboardKey.digit6,
+  LogicalKeyboardKey.digit7,
+  LogicalKeyboardKey.digit8,
+  LogicalKeyboardKey.digit9,
+];
+const _pinNumpadKeys = [
+  LogicalKeyboardKey.numpad0,
+  LogicalKeyboardKey.numpad1,
+  LogicalKeyboardKey.numpad2,
+  LogicalKeyboardKey.numpad3,
+  LogicalKeyboardKey.numpad4,
+  LogicalKeyboardKey.numpad5,
+  LogicalKeyboardKey.numpad6,
+  LogicalKeyboardKey.numpad7,
+  LogicalKeyboardKey.numpad8,
+  LogicalKeyboardKey.numpad9,
+];
+
+/// El dígito de [key] ("0" a "9"), o null si no es una tecla de número.
+String? _pinDigitOf(LogicalKeyboardKey key) {
+  var index = _pinRowKeys.indexOf(key);
+  if (index < 0) index = _pinNumpadKeys.indexOf(key);
+  return index < 0 ? null : '$index';
+}
+
 /// Ingreso de dígitos, validación por pasos y navegación D-pad del teclado.
 extension _TvPinDialogInput on _TvPinDialogState {
   void _triggerError(String message) {
@@ -132,44 +165,9 @@ extension _TvPinDialogInput on _TvPinDialogState {
     final key = event.logicalKey;
 
     // Números directos físicos
-    if (key == LogicalKeyboardKey.digit0 || key == LogicalKeyboardKey.numpad0) {
-      _onDigitEntered('0');
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.digit1 || key == LogicalKeyboardKey.numpad1) {
-      _onDigitEntered('1');
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.digit2 || key == LogicalKeyboardKey.numpad2) {
-      _onDigitEntered('2');
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.digit3 || key == LogicalKeyboardKey.numpad3) {
-      _onDigitEntered('3');
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.digit4 || key == LogicalKeyboardKey.numpad4) {
-      _onDigitEntered('4');
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.digit5 || key == LogicalKeyboardKey.numpad5) {
-      _onDigitEntered('5');
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.digit6 || key == LogicalKeyboardKey.numpad6) {
-      _onDigitEntered('6');
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.digit7 || key == LogicalKeyboardKey.numpad7) {
-      _onDigitEntered('7');
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.digit8 || key == LogicalKeyboardKey.numpad8) {
-      _onDigitEntered('8');
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.digit9 || key == LogicalKeyboardKey.numpad9) {
-      _onDigitEntered('9');
+    final digit = _pinDigitOf(key);
+    if (digit != null) {
+      _onDigitEntered(digit);
       return KeyEventResult.handled;
     }
 

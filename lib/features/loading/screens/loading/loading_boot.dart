@@ -99,7 +99,9 @@ extension _LoadingBoot on _LoadingScreenState {
       );
       try {
         await VpnService.instance.disconnect();
-      } catch (_) {}
+      } catch (e) {
+        MoiamovApiService.logLine('⚠️ No se pudo desconectar la VPN: $e');
+      }
       if (!mounted) return;
       _update(() {
         _isLoading = false;
@@ -320,7 +322,9 @@ extension _LoadingBoot on _LoadingScreenState {
       MoiamovApiService.logLine('⚠️ Error en VPN, login o catálogo: $e');
       try {
         await vpn.disconnect();
-      } catch (_) {}
+      } catch (e) {
+        MoiamovApiService.logLine('⚠️ No se pudo desconectar la VPN: $e');
+      }
     }
 
     final available = sessionOk ? await api.savedSections() : const <String>{};

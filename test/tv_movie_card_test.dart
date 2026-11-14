@@ -36,6 +36,13 @@ void main() {
     await tester.pumpWidget(card('8.5'));
     expect(find.byKey(const ValueKey('movie_card_star')), findsOneWidget);
     expect(tester.takeException(), isNull, reason: 'el nombre largo se corta');
+    // Abajo, al final del nombre: no tapa el póster.
+    final star = tester.getRect(find.byKey(const ValueKey('movie_card_star')));
+    final name = tester.getRect(find.textContaining('Una película'));
+    final cardRect = tester.getRect(find.byType(TvMovieCard));
+    expect(star.left, greaterThanOrEqualTo(name.right));
+    expect(star.top, greaterThan(cardRect.bottom - TvMovieCard.titleBarHeight));
+    expect(star.right, lessThanOrEqualTo(cardRect.right));
     for (final score in ['7.0', '6.2', null]) {
       await tester.pumpWidget(card(score));
       expect(

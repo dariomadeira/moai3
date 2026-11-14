@@ -217,35 +217,46 @@ class ArcadeEmulatorService {
         'frame': frame,
         'mask': mask,
       });
-    } on PlatformException catch (_) {}
+    } on PlatformException catch (_) {
+      // Va en cada cuadro del juego en red: una entrada perdida no se
+      // anota (llenaría el log) y la siguiente sigue.
+    }
   }
 
   /// Pausa la emulación.
   Future<void> pause() async {
     try {
       await _channel.invokeMethod('pause');
-    } on PlatformException catch (_) {}
+    } on PlatformException catch (e) {
+      debugPrint('[ArcadeEmulatorService] pause falló: $e');
+    }
   }
 
   /// Reanuda la emulación.
   Future<void> resume() async {
     try {
       await _channel.invokeMethod('resume');
-    } on PlatformException catch (_) {}
+    } on PlatformException catch (e) {
+      debugPrint('[ArcadeEmulatorService] resume falló: $e');
+    }
   }
 
   /// Reinicia el juego actual.
   Future<void> reset() async {
     try {
       await _channel.invokeMethod('reset');
-    } on PlatformException catch (_) {}
+    } on PlatformException catch (e) {
+      debugPrint('[ArcadeEmulatorService] reset falló: $e');
+    }
   }
 
   /// Detiene y libera recursos del emulador.
   Future<void> stop() async {
     try {
       await _channel.invokeMethod('stop');
-    } on PlatformException catch (_) {}
+    } on PlatformException catch (e) {
+      debugPrint('[ArcadeEmulatorService] stop falló: $e');
+    }
   }
 
   void dispose() {

@@ -267,7 +267,7 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
           style: MoaiText.body(
             context,
             fontSize: 12,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
             color: color,
           ),
         ),
@@ -352,12 +352,12 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
           Icon(icon, size: MoaiIconSizes.sm, color: fg),
           const SizedBox(width: 6),
           Transform.translate(
-            offset: Offset(0, MoaiText.opticalCenterShift(11.5)),
+            offset: Offset(0, MoaiText.opticalCenterShift(MoaiText.sizeCaption)),
             child: Text(
               label,
               style: MoaiText.body(
                 context,
-                fontSize: 11.5,
+                fontSize: MoaiText.sizeCaption,
                 fontWeight: FontWeight.w700,
                 color: fg,
               ),
@@ -393,7 +393,7 @@ extension _TvVoiceTestViews on _TvVoiceTestDialogState {
             overflow: TextOverflow.ellipsis,
             style: MoaiText.body(
               context,
-              fontSize: 11.5,
+              fontSize: MoaiText.sizeCaption,
               fontWeight: FontWeight.w500,
               color: scheme.onSurface,
             ),

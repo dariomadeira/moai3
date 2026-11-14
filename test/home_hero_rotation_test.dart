@@ -56,6 +56,22 @@ void main() {
     expect(rotation.chosenIndex([movie(8)]), 0);
   });
 
+  test('la tarjeta grande alterna: películas, series, películas…', () async {
+    final lead = HomeHeroLead.instance;
+    Future<bool> bootLead() async {
+      lead.debugReset();
+      await lead.load();
+      return lead.seriesLead;
+    }
+
+    expect(await bootLead(), isFalse, reason: 'la primera vez, películas');
+    expect(await bootLead(), isTrue);
+    expect(await bootLead(), isFalse);
+    // En el mismo arranque no cambia.
+    await lead.load();
+    expect(lead.seriesLead, isFalse);
+  });
+
   test('series rota aparte de películas', () async {
     final series = HomeHeroRotation.series;
     await boot();

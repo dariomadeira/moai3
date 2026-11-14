@@ -183,5 +183,33 @@ void main() {
 
       expect(enteredPin, equals('7890'));
     });
+
+    testWidgets('el teclado numérico también escribe el PIN', (tester) async {
+      String? enteredPin;
+
+      await tester.pumpWidget(
+        _wrap(
+          TvPinDialog(
+            onValidate: (pin) async {
+              enteredPin = pin;
+              return true;
+            },
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.numpad1);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.numpad5);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.numpad0);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.numpad9);
+      await tester.pumpAndSettle();
+
+      expect(enteredPin, equals('1509'));
+    });
   });
 }

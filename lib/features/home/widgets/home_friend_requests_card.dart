@@ -90,9 +90,31 @@ class _HomeFriendRequestsItemState extends State<HomeFriendRequestsItem> {
     );
   }
 
+  /// Lo que la tarjeta muestra de cada solicitud.
+  static bool _sameRequests(List<FriendInfo> a, List<FriendInfo> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].deviceId != b[i].deviceId ||
+          a[i].userCode != b[i].userCode ||
+          a[i].displayName != b[i].displayName ||
+          a[i].isOnline != b[i].isOnline) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // El provider avisa por cada cambio de los amigos (se conectan, cambian
+  // de canal): la tarjeta sólo se redibuja si cambiaron las solicitudes.
   @override
-  Widget build(BuildContext context) {
-    final requests = context.watch<WatchPartyProvider>().friendRequests;
+  Widget build(BuildContext context) =>
+      Selector<WatchPartyProvider, List<FriendInfo>>(
+        selector: (_, party) => party.friendRequests,
+        shouldRebuild: (before, after) => !_sameRequests(before, after),
+        builder: (context, requests, _) => _buildCard(requests),
+      );
+
+  Widget _buildCard(List<FriendInfo> requests) {
     if (_index >= requests.length) {
       _index = requests.isEmpty ? 0 : requests.length - 1;
     }

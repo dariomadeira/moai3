@@ -379,7 +379,7 @@ class _TvFriendsDialogState extends State<TvFriendsDialog> {
               overflow: TextOverflow.ellipsis,
               style: MoaiText.body(
                 context,
-                fontSize: 11.5,
+                fontSize: MoaiText.sizeCaption,
                 fontWeight: FontWeight.w500,
                 color: scheme.onSurface,
               ),

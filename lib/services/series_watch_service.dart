@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:moai3/services/series_continue_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -55,7 +56,10 @@ class SeriesWatchService {
           return SeriesSeasonWatch.fromJson(json);
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      // Guardado ilegible: como si no se hubiera visto nada.
+      debugPrint('[SeriesWatch] Temporada ilegible $seasonId: $e');
+    }
     return const SeriesSeasonWatch();
   }
 

@@ -169,7 +169,6 @@ class HomeDiscountsCard extends StatelessWidget {
               line: !hasBanks
                   ? LocaleKeys.discounts_choose_banks.tr()
                   : LocaleKeys.discounts_subtitle.tr(),
-              highlightLine: !hasBanks,
             ),
           ),
           const HomeCardDivider(margin: EdgeInsets.only(right: 12)),
@@ -265,8 +264,8 @@ class _DayColumn extends StatelessWidget {
             style: MoaiText.body(
               context,
               color: isToday ? scheme.primary : scheme.onSurfaceVariant,
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
+              fontSize: MoaiText.sizeCaption,
+              fontWeight: FontWeight.w700,
             ),
           ),
           Text(
@@ -285,7 +284,9 @@ class _DayColumn extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             // Más chica que el resto: en columnas angostas los rubros
-            // ("Combustible") entran enteros.
+            // ("Combustible") entran enteros. Queda por debajo
+            // del piso ([MoaiText.sizeDense]) a propósito: más grande, los
+            // nombres se cortan una letra antes.
             style: MoaiText.body(
               context,
               color: scheme.onSurface,

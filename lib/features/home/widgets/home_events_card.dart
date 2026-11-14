@@ -7,6 +7,7 @@ import 'package:moai3/l10n/locale_keys.g.dart';
 import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/state/calendar_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
+import 'package:moai3/theme/moai_sport_colors.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';
 import 'package:moai3/widgets/tv_common/moai_status_tag.dart';
@@ -182,10 +183,7 @@ class _EventTile extends StatelessWidget {
                 CalendarProvider.getSubscriptionIcon(event.subscriptionId),
                 size: MoaiIconSizes.md,
                 // REDISEÑO: el color del deporte, como en la Agenda.
-                color: CalendarProvider.getSubscriptionColor(
-                  event.subscriptionId,
-                  accent,
-                ),
+                color: MoaiSportColors.of(event.subscriptionId, accent),
               ),
               const SizedBox(width: 8),
               Text(
@@ -212,7 +210,7 @@ class _EventTile extends StatelessWidget {
                           style: MoaiText.body(
                             context,
                             color: scheme.onSurfaceVariant,
-                            fontSize: 11,
+                            fontSize: MoaiText.sizeCaption,
                             fontWeight: FontWeight.w500,
                           ),
                         ),

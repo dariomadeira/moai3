@@ -176,7 +176,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
                             ),
                             style: MoaiText.body(
                               context,
-                              fontSize: 11,
+                              fontSize: MoaiText.sizeCaption,
                               color: scheme.onSurfaceVariant,
                             ),
                           ),
@@ -196,7 +196,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
                         'v${u.source.version} → v${u.remoteVersion}',
                         style: MoaiText.body(
                           context,
-                          fontSize: 11,
+                          fontSize: MoaiText.sizeCaption,
                           fontWeight: FontWeight.bold,
                           color: scheme.primary,
                         ),
@@ -250,7 +250,7 @@ class _PluginUpdateDialogState extends State<PluginUpdateDialog> {
               LocaleKeys.plugin_update_updating_status.tr(),
               style: MoaiText.body(
                 context,
-                fontSize: 11,
+                fontSize: MoaiText.sizeCaption,
                 color: scheme.onSurfaceVariant,
               ),
             ),

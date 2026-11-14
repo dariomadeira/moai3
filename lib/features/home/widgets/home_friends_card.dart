@@ -376,7 +376,7 @@ class _FriendTile extends StatelessWidget {
                           style: MoaiText.body(
                             context,
                             color: scheme.onSurface,
-                            fontSize: 10,
+                            fontSize: MoaiText.sizeCaption,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.4,
                           ),

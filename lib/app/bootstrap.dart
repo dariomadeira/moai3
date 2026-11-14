@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemChrome, DeviceOrientation;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -126,6 +127,17 @@ class AppDependencies {
 
 /// Arranque de la app: configuración, servicios y providers.
 abstract final class AppBootstrap {
+  /// En release, `debugPrint` sigue escribiendo en logcat. Con `DEBUG_MODE`
+  /// apagado (lo publicado) se calla: nadie lo lee y cada línea cuesta en el
+  /// hilo de la interfaz. Con `DEBUG_MODE` prendido queda como está, para
+  /// diagnosticar en el TV. [release] sólo lo pasan los tests.
+  @visibleForTesting
+  static void silenceLogsIfPublished({bool release = kReleaseMode}) {
+    if (release && !AppConfig.debugMode) {
+      debugPrint = (String? message, {int? wrapWidth}) {};
+    }
+  }
+
   static Future<AppDependencies> run() async {
     HttpOverrides.global = BadCertHttpOverrides();
     WidgetsFlutterBinding.ensureInitialized();
@@ -138,6 +150,7 @@ abstract final class AppBootstrap {
       debugPrint('dotenv: no se pudo cargar .env ($e)\n$st');
     }
     await AppConfig.initialize();
+    silenceLogsIfPublished();
 
     // Independientes entre sí: en paralelo para acortar el arranque (SPEC-50 §6.2).
     final prefsFuture = AppPreferences.init();

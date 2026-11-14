@@ -73,7 +73,11 @@ class _DiscountsSettingsPanelState extends State<DiscountsSettingsPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final weather = context.watch<WeatherProvider?>();
+    // Sólo el nombre del lugar: el clima se actualiza solo cada tanto y eso
+    // no tiene por qué redibujar el panel.
+    final weatherPlace = context.select<WeatherProvider?, String>(
+      (weather) => weather?.locationDisplayName ?? '',
+    );
     return Focus(
       focusNode: widget.focusNode,
       onFocusChange: (f) {
@@ -171,8 +175,7 @@ class _DiscountsSettingsPanelState extends State<DiscountsSettingsPanel> {
                                                 : LocaleKeys
                                                       .discounts_merchants_none_desc
                                                       .tr(),
-                                          _Action.location =>
-                                            weather?.locationDisplayName ?? '',
+                                          _Action.location => weatherPlace,
                                         },
                                         onPressed: () => switch (action) {
                                           _Action.banks =>

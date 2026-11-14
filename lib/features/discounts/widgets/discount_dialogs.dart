@@ -351,7 +351,7 @@ class _TvDiscountDetailDialogState extends State<TvDiscountDetailDialog> {
                     MoaiFormats.weekdayShort(day),
                     style: MoaiText.body(
                       context,
-                      fontSize: 11.5,
+                      fontSize: MoaiText.sizeCaption,
                       fontWeight: FontWeight.w700,
                       color: on
                           ? Colors.white

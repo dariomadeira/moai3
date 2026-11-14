@@ -10,7 +10,6 @@ import 'package:moai3/features/home/areas/home_area.dart';
 import 'package:moai3/features/home/widgets/tv_accordion_row_preview.dart';
 import 'package:moai3/features/home/widgets/tv_movie_card.dart';
 import 'package:moai3/features/movies/controllers/movie_search_controller.dart';
-import 'package:moai3/features/movies/movie_playback.dart';
 import 'package:moai3/features/movies/movie_promo.dart';
 import 'package:moai3/features/movies/widgets/movie_hero_card.dart';
 import 'package:moai3/features/movies/widgets/movie_poster_grid.dart';
@@ -23,8 +22,6 @@ import 'package:moai3/focus/tv_key_handler.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/services/home_hero_rotation.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
-import 'package:moai3/services/movie_watchlist_service.dart';
-import 'package:moai3/services/series_watchlist_service.dart';
 import 'package:moai3/state/featured_movies_provider.dart';
 import 'package:moai3/theme/moai_icons.dart';
 import 'package:moai3/theme/moai_text.dart';
@@ -112,6 +109,7 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
   /// Geometría de la última construcción (ver build).
   double _headerHeight = 50.0;
   double _cardHeight = 0;
+  double _columnWidth = 0;
   double _columnGap = _gap;
 
   final FocusNode _gridFocus = FocusNode(debugLabel: 'movies_grid');
@@ -121,14 +119,30 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
   /// la grilla.
   final FocusNode _bannerFocus = FocusNode(debugLabel: 'movies_banner');
   List<MovieItem> _banner = const [];
+
+  /// Los pósters a la derecha del banner: las destacadas que siguen a las
+  /// del banner (no se repiten), en las dos últimas columnas de la grilla.
+  List<MovieItem> _side = const [];
   List<MovieItem> _best = const [];
   List<MovieItem> _bestSource = const [];
+
+  /// Películas que rota el banner y pósters a su derecha.
+  static const int _bannerCount = 6;
+  static const int _sideCount = 2;
+
+  /// Cada cuánto el banner pasa solo a la destacada siguiente.
+  static const Duration _bannerEvery = Duration(seconds: 10);
 
   /// En la página de arriba (banner y "Lo mejor del año"). Se entra por ella.
   bool _onTop = true;
 
   /// En la página de arriba: el banner y no la fila.
   bool _onBanner = true;
+
+  /// En la página de arriba: los pósters de al lado del banner (nunca junto
+  /// con [_onBanner]).
+  bool _onSide = false;
+  int _sideCol = 0;
   int _bestCol = 0;
 
   int _cat = 0;
@@ -164,6 +178,10 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
 
   @visibleForTesting
   int get debugBestIndex => _bestCol;
+
+  /// Póster elegido al lado del banner (-1: ninguno).
+  @visibleForTesting
+  int get debugSideIndex => _onTop && _onSide ? _sideCol : -1;
 
   void _openSearch() {
     if (!widget.searchEnabled) return;
@@ -316,18 +334,24 @@ class HomeMoviesAreaState extends HomeAreaState<HomeMoviesArea> {
   void _refreshTop(List<MovieItem> bestSource) {
     _bestSource = bestSource;
     if (!widget.promoBanner) {
-      _banner = _best = const [];
+      _banner = _side = _best = const [];
       return;
     }
-    _banner = _isSeries
-        ? pickPromoSeries(_categories)
-        : pickPromoMovies(_categories);
+    // Una sola lista de destacadas: las primeras rotan en el banner (las
+    // mismas que elige el Inicio) y las que siguen van de póster al lado.
+    const count = _bannerCount + _sideCount;
+    final promo = _isSeries
+        ? pickPromoSeries(_categories, count: count)
+        : pickPromoMovies(_categories, count: count);
+    _banner = List.unmodifiable(promo.take(_bannerCount));
+    _side = List.unmodifiable(promo.skip(_bannerCount));
+    final onTop = [..._banner, ..._side];
     if (_isSeries) {
       // TMDb no tiene series: la fila sale del catálogo, como el banner.
-      _best = pickBestSeries(_categories, count: _bestCount, exclude: _banner);
+      _best = pickBestSeries(_categories, count: _bestCount, exclude: onTop);
       return;
     }
-    final inBanner = {for (final m in _banner) normalizeText(m.name)};
+    final inBanner = {for (final m in onTop) normalizeText(m.name)};
     _best = List.unmodifiable(
       bestSource
           .where((m) => !inBanner.contains(normalizeText(m.name)))

@@ -88,7 +88,9 @@ class MoiamovApiService {
     for (final client in _liveClients.toList()) {
       try {
         client.close(force: true);
-      } catch (_) {}
+      } catch (_) {
+        // Se está cancelando: si ya estaba cerrado, no hay nada que hacer.
+      }
     }
   }
 
@@ -129,7 +131,9 @@ class MoiamovApiService {
     _liveClients.remove(client);
     try {
       client.close();
-    } catch (_) {}
+    } catch (_) {
+      // Ya no se usa: si el cierre falla, no hay nada que hacer.
+    }
   }
 
   /// Descifra cadenas o documentos cifrados con Triple DES (ECB + PKCS7).
@@ -333,6 +337,12 @@ class MoiamovApiService {
     final asset = data is Map ? data['assetData'] : null;
     if (asset is! Map<String, dynamic>) return null;
     return SeriesSeasonDetail.fromAsset(asset, _searchItem(asset, untitled));
+  }
+
+  static String? _imdbIdFrom(Object? data, String untitled) {
+    final asset = data is Map ? data['assetData'] : null;
+    if (asset is! Map) return null;
+    return SeriesSeasonDetail.imdbIdIn(asset['keyWords']);
   }
 
   /// Lo que arma [build] con la `data` de `v3/getShelveData`; `null` si no hay

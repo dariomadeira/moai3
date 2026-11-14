@@ -31,7 +31,9 @@ extension _HomeMoviesNavigation on HomeMoviesAreaState {
   /// Lleva la selección a un lugar válido si el catálogo cambió.
   void _clampSelection() {
     if (_banner.isEmpty) _onTop = false;
-    if (_best.isEmpty) _onBanner = true;
+    if (_side.isEmpty) _onSide = false;
+    _sideCol = _sideCol.clamp(0, _side.isEmpty ? 0 : _side.length - 1);
+    if (_best.isEmpty && !_onSide) _onBanner = true;
     _bestCol = _bestCol.clamp(0, _best.isEmpty ? 0 : _best.length - 1);
     if (_categories.isEmpty) {
       _cat = _row = _col = _firstRow = 0;
@@ -85,6 +87,7 @@ extension _HomeMoviesNavigation on HomeMoviesAreaState {
     if (cat != _cat || _onTop) _schedulePrecache();
     _update(() {
       _onTop = false;
+      _onSide = false;
       // Otra categoría: desde arriba entra por su principio y desde abajo,
       // por su final.
       if (cat != _cat) _firstRow = row == 0 ? 0 : row;
@@ -101,6 +104,7 @@ extension _HomeMoviesNavigation on HomeMoviesAreaState {
     _schedulePrecache();
     _update(() {
       _onTop = true;
+      _onSide = false;
       _onBanner = banner || _best.isEmpty;
       if (col != null) {
         _bestCol = col.clamp(0, _best.isEmpty ? 0 : _best.length - 1);
@@ -108,6 +112,21 @@ extension _HomeMoviesNavigation on HomeMoviesAreaState {
     });
     _focus.node(_onBanner ? _bannerFocus : _gridFocus);
   }
+
+  /// Al póster [col] de al lado del banner.
+  void _goSide(int col) {
+    _update(() {
+      _onTop = true;
+      _onBanner = false;
+      _onSide = true;
+      _sideCol = col.clamp(0, _side.length - 1);
+    });
+    _gridFocus.requestFocus();
+  }
+
+  /// Columna de la grilla del primer póster de al lado del banner.
+  int get _sideFirstColumn =>
+      HomeMoviesAreaState._crossAxisCount - _side.length;
 
   /// ↓ desde el banner: a la fila de abajo o, si no hay, a las categorías.
   void _leaveBanner() {
@@ -160,7 +179,9 @@ extension _HomeMoviesNavigation on HomeMoviesAreaState {
     }
     final key = event.logicalKey;
     final repeat = event is KeyRepeatEvent;
-    if (_onTop) return _onBestKey(key, repeat);
+    if (_onTop) {
+      return _onSide ? _onSideKey(key, repeat) : _onBestKey(key, repeat);
+    }
 
     if (key == LogicalKeyboardKey.arrowLeft) {
       if (repeat) return KeyEventResult.handled;
@@ -202,7 +223,46 @@ extension _HomeMoviesNavigation on HomeMoviesAreaState {
     return KeyEventResult.ignored;
   }
 
-  /// La fila "Lo mejor del año": ↑ al banner, ↓ a las categorías.
+  /// Los pósters de al lado del banner: ← vuelve al banner, → desde el
+  /// último va a Buscar, ↓ baja a la fila en su misma columna.
+  KeyEventResult _onSideKey(LogicalKeyboardKey key, bool repeat) {
+    if (key == LogicalKeyboardKey.arrowLeft) {
+      if (repeat) return KeyEventResult.handled;
+      if (_sideCol > 0) {
+        _update(() => _sideCol--);
+      } else {
+        _goTop(banner: true);
+      }
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.arrowRight) {
+      if (repeat) return KeyEventResult.handled;
+      if (_sideCol < _side.length - 1) {
+        _update(() => _sideCol++);
+      } else {
+        _openSearch();
+      }
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.arrowUp) return KeyEventResult.handled;
+    if (key == LogicalKeyboardKey.arrowDown) {
+      final col = _sideFirstColumn + _sideCol;
+      if (_best.isEmpty) {
+        _goToCategories(col);
+      } else {
+        _goTop(banner: false, col: col);
+      }
+      return KeyEventResult.handled;
+    }
+    if (!repeat && TvKeyHandler.isActionKey(key)) {
+      _onMovieTap(_side[_sideCol]);
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  /// La fila "Lo mejor del año": ↑ al banner o al póster de arriba, ↓ a las
+  /// categorías.
   KeyEventResult _onBestKey(LogicalKeyboardKey key, bool repeat) {
     if (key == LogicalKeyboardKey.arrowLeft) {
       if (repeat) return KeyEventResult.handled;
@@ -223,7 +283,12 @@ extension _HomeMoviesNavigation on HomeMoviesAreaState {
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.arrowUp) {
-      if (!repeat) _goTop(banner: true);
+      if (repeat) return KeyEventResult.handled;
+      if (_side.isNotEmpty && _bestCol >= _sideFirstColumn) {
+        _goSide(_bestCol - _sideFirstColumn);
+      } else {
+        _goTop(banner: true);
+      }
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.arrowDown) {

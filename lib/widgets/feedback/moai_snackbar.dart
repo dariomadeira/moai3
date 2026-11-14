@@ -292,7 +292,7 @@ class _MoaiSnackBarBodyState extends State<_MoaiSnackBarBody> {
                         textContext,
                         color: scheme.onPrimary,
                         fontSize: 12,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),

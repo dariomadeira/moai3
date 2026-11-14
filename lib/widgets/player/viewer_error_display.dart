@@ -52,7 +52,7 @@ class ViewerErrorDisplay extends StatelessWidget {
                   style: MoaiText.body(
                     context,
                     color: const Color(0xCCFFFFFF),
-                    fontSize: 11,
+                    fontSize: MoaiText.sizeCaption,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

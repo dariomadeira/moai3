@@ -119,7 +119,7 @@ class _Current extends StatelessWidget {
     final small = MoaiText.body(
       context,
       color: muted,
-      fontSize: 11.5,
+      fontSize: MoaiText.sizeCaption,
       fontWeight: FontWeight.w500,
     );
 
@@ -212,7 +212,7 @@ class _HourlyStrip extends StatelessWidget {
               context,
               color: i == 0 ? scheme.onSurface : scheme.onSurfaceVariant,
               fontSize: 12.5,
-              fontWeight: i == 0 ? FontWeight.w800 : FontWeight.w600,
+              fontWeight: i == 0 ? FontWeight.w700 : FontWeight.w600,
             ),
           ),
         ),
@@ -250,8 +250,8 @@ class _HourlyStrip extends StatelessWidget {
             style: MoaiText.body(
               context,
               color: i == 0 ? scheme.primary : scheme.onSurfaceVariant,
-              fontSize: 11.5,
-              fontWeight: i == 0 ? FontWeight.w800 : FontWeight.w500,
+              fontSize: MoaiText.sizeCaption,
+              fontWeight: i == 0 ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
         ),

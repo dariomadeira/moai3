@@ -13,7 +13,7 @@ class ChannelSourceTag extends StatelessWidget {
   /// El nombre corto, ya en mayúsculas.
   final String tag;
 
-  static const double _fontSize = 10.5;
+  static const double _fontSize = MoaiText.sizeDense;
 
   /// Colores de las etiquetas de fuente: cada fuente toma siempre el mismo
   /// (según su id), así "AR" y "DADDY" se distinguen de un vistazo.

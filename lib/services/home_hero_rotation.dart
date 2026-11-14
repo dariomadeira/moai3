@@ -2,6 +2,46 @@ import 'package:flutter/foundation.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Qué va en la tarjeta grande de la fila destacada del Inicio: un arranque
+/// las películas (con dos series de póster al lado) y el siguiente las
+/// series (con dos películas). Se elige una vez por arranque.
+class HomeHeroLead {
+  HomeHeroLead._();
+
+  static final HomeHeroLead instance = HomeHeroLead._();
+
+  static const String _key = 'home_hero_lead_series';
+
+  bool _loaded = false;
+  bool _seriesLead = false;
+
+  bool get isLoaded => _loaded;
+
+  /// En este arranque la tarjeta grande es de series. Antes de [load], no.
+  bool get seriesLead => _seriesLead;
+
+  /// Como un arranque nuevo.
+  @visibleForTesting
+  void debugReset() {
+    _loaded = false;
+    _seriesLead = false;
+  }
+
+  /// Lee qué fue la vez anterior, elige lo otro (la primera vez, películas)
+  /// y lo guarda.
+  Future<void> load() async {
+    if (_loaded) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _seriesLead = !(prefs.getBool(_key) ?? true);
+      await prefs.setBool(_key, _seriesLead);
+    } catch (e) {
+      debugPrint('[HomeHeroLead] No se pudo leer o guardar: $e');
+    }
+    _loaded = true;
+  }
+}
+
 /// Con qué título empieza una tarjeta destacada: la del Inicio elige el que
 /// sigue al último que se vio la vez anterior, así cada arranque muestra
 /// otro (y recorre todos). Se elige una vez por arranque: volver al Inicio

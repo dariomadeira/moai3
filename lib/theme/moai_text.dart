@@ -5,24 +5,34 @@ extension MoaiThemeContext on BuildContext {
 }
 
 /// Tipografía Moai, local en `assets/fonts`.
-/// REDISEÑO (2026-10-30): Varela Round para todo, elegida por el usuario
-/// entre las redondeadas libres (Cera Round, la de hugeicons.com, es paga).
-/// Tiene un solo peso: títulos y negritas las sintetiza Flutter.
+/// Quicksand para todo (2026-11-13), elegida por el usuario: redondeada como
+/// Varela Round, la anterior, pero con pesos reales de 400 a 700, así las
+/// negritas ya no las sintetiza Flutter. Lo que pide 800 o 900 cae en el 700.
 abstract final class MoaiText {
-  static const String bodyFamily = 'VarelaRound';
+  static const String bodyFamily = 'Quicksand';
 
   /// Títulos chicos (paneles, diálogos).
-  static const String displayFamily = 'VarelaRound';
+  static const String displayFamily = 'Quicksand';
 
   /// Títulos grandes: saludo y reloj del Inicio, títulos de tarjetas,
   /// pantallas y categorías. Hoy la misma familia que el resto.
-  static const String headlineFamily = 'VarelaRound';
+  static const String headlineFamily = 'Quicksand';
 
-  /// Cuánto bajar un texto para que se vea centrado junto a un ícono.
-  /// Varela Round dibuja números y mayúsculas por encima del centro de su
-  /// caja (medido: 0,035 em en "7.7" y "2022", 0,05 em con minúsculas); el
-  /// ícono sí va centrado, así que sin esto el texto queda alto.
-  static double opticalCenterShift(double fontSize) => fontSize * 0.04;
+  /// Cuánto correr un texto (positivo = hacia abajo) para que se vea
+  /// centrado junto a un ícono. Quicksand dibuja números y mayúsculas por
+  /// debajo del centro de su caja (medido en el archivo: 0,02 a 0,03 em en
+  /// "7", "2" y "A", igual en los cuatro pesos); el ícono sí va centrado,
+  /// así que sin esto el texto queda bajo.
+  static double opticalCenterShift(double fontSize) => fontSize * -0.025;
+
+  /// Piso de lectura en el TV: la app dibuja sobre 960×540 puntos y se mira
+  /// a unos 3 m. Ningún texto que haya que leer va por debajo de esto.
+  static const double sizeCaption = 12;
+
+  /// Sólo donde [sizeCaption] no entra: las fichas de las grillas de 7
+  /// columnas (semana de Agenda y de Descuentos) y el nombre bajo el logo
+  /// de un canal. Con 12 los nombres largos pasan a tres renglones.
+  static const double sizeDense = 11;
 
   /// Desde este tamaño un título va con [headlineFamily].
   static const double headlineMinSize = 20;

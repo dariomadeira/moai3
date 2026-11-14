@@ -34,6 +34,7 @@ import 'package:moai3/features/movies/movie_promo.dart';
 import 'package:moai3/features/movies/series_news.dart';
 import 'package:moai3/features/movies/screens/movie_detail_screen.dart';
 import 'package:moai3/features/movies/screens/series_detail_screen.dart';
+import 'package:moai3/features/home/widgets/home_hero_side_posters.dart';
 import 'package:moai3/features/movies/widgets/movie_hero_card.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/models/movie_models.dart';
@@ -183,6 +184,13 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
         }),
       );
     }
+    if (!HomeHeroLead.instance.isLoaded) {
+      unawaited(
+        HomeHeroLead.instance.load().then((_) {
+          if (mounted) setState(() {});
+        }),
+      );
+    }
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _refreshRecommendations(),
     );
@@ -271,11 +279,17 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     });
   }
 
-  /// Las series de la tarjeta de la derecha ([pickPromoSeries]); se vuelven
-  /// a elegir sólo si cambia el catálogo de Series.
+  /// Las series de la fila destacada ([pickPromoSeries]); se vuelven a
+  /// elegir sólo si cambia el catálogo de Series.
   List<MovieItem> _heroSeries = const [];
   List<CategoryColumn>? _heroSeriesSource;
-  final FocusNode _seriesHeroFocus = FocusNode(debugLabel: 'home_series_hero');
+
+  /// Los pósters de al lado de la tarjeta grande.
+  final FocusNode _heroSideFocus = FocusNode(debugLabel: 'home_hero_side');
+  static const int _heroSideCount = 2;
+
+  /// Cada cuánto la tarjeta grande pasa sola al título siguiente.
+  static const Duration _heroEvery = Duration(seconds: 10);
 
   void _updateHeroSeries(List<CategoryColumn>? categories) {
     if (identical(categories, _heroSeriesSource)) return;
@@ -283,32 +297,9 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     _heroSeries = categories == null ? const [] : pickPromoSeries(categories);
   }
 
-  /// REDISEÑO: la fila destacada, un ítem de la lista que ocupa dos lugares:
-  /// la tarjeta de la película a la mitad del ancho (a 2/3 quedaba muy
-  /// estirada) y, en la otra mitad, la de series (las mejores del catálogo,
-  /// como el banner de Series; sin series, un recuadro vacío). → desde la de
-  /// películas pasa a la de series y ← vuelve.
-  Widget _buildHero(
-    List<MovieItem> movies,
-    FocusNode focusNode,
-    VoidCallback onKeyUp,
-    VoidCallback onKeyDown,
-  ) {
-    // Marcar cambia el botón: se redibuja sólo la fila.
-    return ListenableBuilder(
-      listenable: Listenable.merge([
-        MovieWatchlistService.instance,
-        SeriesWatchlistService.instance,
-      ]),
-      builder: (context, _) => _heroRow(movies, focusNode, onKeyUp, onKeyDown),
-    );
-  }
-
-  /// La película y la serie que se están mostrando: la fila sale de la
-  /// página al bajar y, al volver, sigue en las mismas (no en las del
-  /// arranque).
-  String? _heroMovieId;
-  String? _heroSeriesId;
+  /// El título que muestra la tarjeta grande: la fila sale de la página al
+  /// bajar y, al volver, sigue en el mismo (no en el del arranque).
+  String? _heroBigId;
 
   int _heroIndex(
     List<MovieItem> items,
@@ -321,85 +312,90 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     return index >= 0 ? index : rotation.startIndex(items);
   }
 
-  Widget _heroRow(
+  void _openHero(MovieItem item) =>
+      item.isSeries ? _openSeriesDetail(item) : _openMovie(item);
+
+  /// REDISEÑO (2026-11-14): la fila destacada, un ítem de la lista que ocupa
+  /// dos lugares, como la página de arriba de Películas: una tarjeta grande
+  /// que pasa sola de un título a otro y, a su derecha, dos pósters. Un
+  /// arranque la grande es de películas y los pósters de series, y el
+  /// siguiente al revés ([HomeHeroLead]). Con un solo catálogo (sin Series
+  /// en el rail o sin series para mostrar), todo sale de él: los dos últimos
+  /// títulos van de póster y el resto en la grande. → desde la grande pasa a
+  /// los pósters y ← vuelve; OK abre el detalle.
+  Widget _buildHero(
     List<MovieItem> movies,
     FocusNode focusNode,
     VoidCallback onKeyUp,
     VoidCallback onKeyDown,
   ) {
+    final seriesLead =
+        HomeHeroLead.instance.seriesLead && _heroSeries.isNotEmpty;
+    final lead = seriesLead ? _heroSeries : movies;
+    final other = seriesLead ? movies : _heroSeries;
+    final leadRotation = seriesLead
+        ? HomeHeroRotation.series
+        : HomeHeroRotation.movies;
+    final List<MovieItem> big;
+    final List<MovieItem> side;
+    if (other.isEmpty) {
+      final count = lead.length > _heroSideCount ? _heroSideCount : 0;
+      big = lead.sublist(0, lead.length - count);
+      side = lead.sublist(lead.length - count);
+    } else {
+      big = lead;
+      // Desde el que le toca en este arranque: cada vez son otros.
+      final start =
+          (seriesLead ? HomeHeroRotation.movies : HomeHeroRotation.series)
+              .startIndex(other);
+      side = [
+        for (var i = 0; i < _heroSideCount && i < other.length; i++)
+          other[(start + i) % other.length],
+      ];
+    }
     return LayoutBuilder(
       builder: (context, constraints) {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
-              // Mitad menos la mitad del espacio entre los dos.
-              width: (constraints.maxWidth - 16) / 2,
+            Expanded(
               child: MovieHeroCard(
-                movies: movies,
+                movies: big,
                 focusNode: focusNode,
+                wideImage: true,
                 tintFromImage: true,
-                initialIndex: _heroIndex(
-                  movies,
-                  _heroMovieId,
-                  HomeHeroRotation.movies,
-                ),
-                onMovieChanged: (movie) {
-                  _heroMovieId = movie.contentId;
-                  HomeHeroRotation.movies.remember(movie);
+                elevated: false,
+                showActions: false,
+                glassFrame: true,
+                crossFade: true,
+                autoAdvance: _heroEvery,
+                initialIndex: _heroIndex(big, _heroBigId, leadRotation),
+                onMovieChanged: (item) {
+                  _heroBigId = item.contentId;
+                  leadRotation.remember(item);
                 },
-                onPlay: (movie) async {
-                  await playMovie(context, movie);
-                  await _reloadProgress();
-                },
-                onOpen: _openMovie,
-                onToggleInteresting: MovieWatchlistService.instance.toggle,
-                isInteresting: (movie) =>
-                    MovieWatchlistService.instance.contains(movie.contentId),
+                onOpen: _openHero,
                 onExitLeft: widget.onExitLeft,
-                onExitRight: _heroSeries.isEmpty
-                    ? null
-                    : _seriesHeroFocus.requestFocus,
+                onExitRight: side.isEmpty ? null : _heroSideFocus.requestFocus,
                 onExitUp: onKeyUp,
                 onExitDown: onKeyDown,
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _heroSeries.isEmpty
-                  ? const MoaiGlass(
-                      borderRadius: 16,
-                      solid: true,
-                      elevated: false,
-                      child: SizedBox.expand(),
-                    )
-                  : MovieHeroCard(
-                      movies: _heroSeries,
-                      focusNode: _seriesHeroFocus,
-                      tintFromImage: true,
-                      initialIndex: _heroIndex(
-                        _heroSeries,
-                        _heroSeriesId,
-                        HomeHeroRotation.series,
-                      ),
-                      onMovieChanged: (series) {
-                        _heroSeriesId = series.contentId;
-                        HomeHeroRotation.series.remember(series);
-                      },
-                      playLabel: LocaleKeys.series_open.tr(),
-                      showMore: false,
-                      onPlay: _openSeriesDetail,
-                      onOpen: _openSeriesDetail,
-                      onToggleInteresting: (series) => SeriesWatchlistService
-                          .instance
-                          .toggle(series, [series.contentId]),
-                      isInteresting: (series) => SeriesWatchlistService.instance
-                          .contains([series.contentId]),
-                      onExitLeft: focusNode.requestFocus,
-                      onExitUp: onKeyUp,
-                      onExitDown: onKeyDown,
-                    ),
-            ),
+            if (side.isNotEmpty)
+              SizedBox(
+                width: HomeHeroSidePosters.widthFor(
+                  side.length,
+                  constraints.maxHeight,
+                ),
+                child: HomeHeroSidePosters(
+                  items: side,
+                  focusNode: _heroSideFocus,
+                  onOpen: _openHero,
+                  onExitLeft: focusNode.requestFocus,
+                  onExitUp: onKeyUp,
+                  onExitDown: onKeyDown,
+                ),
+              ),
           ],
         );
       },
@@ -438,7 +434,7 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     _arcadeAction.dispose();
     _resumingId.dispose();
     _panelFocusNode.dispose();
-    _seriesHeroFocus.dispose();
+    _heroSideFocus.dispose();
     super.dispose();
   }
 
@@ -512,7 +508,10 @@ class HomeDashboardAreaState extends HomeAreaState<HomeDashboardArea>
     );
     // Sin saber todavía cuál vio la vez anterior, la destacada espera (si
     // no, empezaría por la primera y saltaría).
-    final heroMovies = moviesVisible && HomeHeroRotation.movies.isLoaded
+    final heroMovies =
+        moviesVisible &&
+            HomeHeroRotation.movies.isLoaded &&
+            HomeHeroLead.instance.isLoaded
         ? (trending?.movies.take(_heroCount).toList() ?? const <MovieItem>[])
         : const <MovieItem>[];
     final trailers = context.select(

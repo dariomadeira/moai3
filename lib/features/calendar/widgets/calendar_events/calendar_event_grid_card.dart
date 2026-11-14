@@ -35,10 +35,7 @@ class _CalendarEventGridCard extends StatelessWidget {
     final fgColor = dimmed
         ? subtitleColor.withValues(alpha: 0.55)
         : subtitleColor;
-    final sportColor = CalendarProvider.getSubscriptionColor(
-      event.subscriptionId,
-      scheme.primary,
-    );
+    final sportColor = MoaiSportColors.of(event.subscriptionId, scheme.primary);
     final iconColor = dimmed ? sportColor.withValues(alpha: 0.55) : sportColor;
 
     // El tag "En vivo" del Inicio, con un color para FIN y otro para PRÓX.
@@ -92,8 +89,7 @@ class _CalendarEventGridCard extends StatelessWidget {
                         event.formattedTime,
                         style: MoaiText.display(
                           context,
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w800,
+                          fontSize: MoaiText.sizeCaption,
                           color: fgColor,
                         ),
                       ),
@@ -113,10 +109,10 @@ class _CalendarEventGridCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: MoaiText.body(
                     context,
-                    fontSize: 9.5,
+                    fontSize: MoaiText.sizeDense,
                     fontWeight: FontWeight.w700,
                     color: fgColor,
-                    height: 1.25,
+                    height: 1.2,
                   ),
                 ),
               ),

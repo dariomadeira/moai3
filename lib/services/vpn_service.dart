@@ -83,7 +83,9 @@ class VpnService {
         _connectCancelled = true;
         try {
           _engine?.disconnect();
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('⚠️ [VPN] No se pudo cortar tras el rechazo: $e');
+        }
       }
       return null;
     });
@@ -108,7 +110,9 @@ class VpnService {
     _connectCancelled = true;
     try {
       _engine?.disconnect();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('⚠️ [VPN] No se pudo cortar el intento: $e');
+    }
   }
 
   /// Limpia cancelaciones previas antes de un nuevo intento de sync.

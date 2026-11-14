@@ -89,7 +89,6 @@ class MovieDetailTitle extends StatelessWidget {
         context,
         color: Colors.white,
         fontSize: 22,
-        fontWeight: FontWeight.w800,
         height: 1.15,
       ),
     );

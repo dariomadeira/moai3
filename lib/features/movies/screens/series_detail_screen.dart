@@ -17,6 +17,7 @@ import 'package:moai3/models/movie_models.dart';
 import 'package:moai3/models/series_models.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/services/movie_image_cache.dart';
+import 'package:moai3/services/movie_synopsis_service.dart';
 import 'package:moai3/services/series_continue_service.dart';
 import 'package:moai3/services/series_watch_service.dart';
 import 'package:moai3/services/series_recommendations_api.dart';
@@ -44,6 +45,7 @@ class SeriesDetailScreen extends StatefulWidget {
     super.key,
     required this.series,
     this.fetchSeason,
+    this.resolveSynopsis,
     this.resolveEpisode,
     this.initialEpisodeId,
     this.initialEpisodeNumber,
@@ -59,6 +61,12 @@ class SeriesDetailScreen extends StatefulWidget {
   /// Pide el detalle de una temporada; por defecto
   /// [MoiamovApiService.fetchSeriesSeason]. Los tests lo reemplazan.
   final Future<SeriesSeasonDetail?> Function(String contentId)? fetchSeason;
+
+  /// La sinopsis en español de TMDb (por el id de IMDb de la serie) cuando
+  /// la del catálogo falta o está en inglés; por defecto
+  /// [MovieSynopsisService.byImdbId]. Los tests lo reemplazan.
+  final Future<String?> Function(String imdbId, {bool allowEnglish})?
+  resolveSynopsis;
 
   /// Pide el video de un capítulo; por defecto
   /// [MoiamovApiService.resolveEpisodeStream]. Los tests lo reemplazan.
@@ -149,6 +157,45 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
   /// La ficha: la de la temporada elegida; mientras carga, la última que
   /// se vio (o la del catálogo), así no salta.
   late MovieItem _info = widget.series;
+
+  /// La sinopsis de TMDb de la serie; se usa en las temporadas cuya
+  /// sinopsis del catálogo no sirve. Se pide una sola vez.
+  String? _tmdbSynopsis;
+  bool _synopsisRequested = false;
+
+  /// Si la sinopsis de la temporada que se ve falta o está en inglés y ya
+  /// se sabe el id de IMDb de la serie (llega con el detalle), la pide.
+  void _maybeLoadSynopsis() {
+    if (_synopsisRequested) return;
+    final description = _info.description;
+    if (!MovieSynopsisService.needsLookup(description)) return;
+    final imdbId = _details.values.map((d) => d.imdbId).nonNulls.firstOrNull;
+    if (imdbId == null) return;
+    _synopsisRequested = true;
+    final resolver =
+        widget.resolveSynopsis ?? MovieSynopsisService.instance.byImdbId;
+    unawaited(
+      resolver(
+        imdbId,
+        allowEnglish: MovieSynopsisService.isMissing(description),
+      ).then<void>(
+        (synopsis) {
+          if (mounted && synopsis != null && synopsis.isNotEmpty) {
+            setState(() => _tmdbSynopsis = synopsis);
+          }
+        },
+        onError: (Object e) {
+          debugPrint('⚠️ [Sinopsis] serie $imdbId: $e');
+        },
+      ),
+    );
+  }
+
+  /// La sinopsis a mostrar de [info]: la suya o, si no sirve, la de TMDb.
+  String? _synopsisOf(MovieItem info) =>
+      MovieSynopsisService.needsLookup(info.description)
+      ? (_tmdbSynopsis ?? info.description)
+      : info.description;
 
   int get _seasonIndex => _seasons.indexWhere((s) => s.contentId == _seasonId);
 
@@ -254,6 +301,7 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
       _followBestSeason();
       _applyInitialEpisode();
     });
+    _maybeLoadSynopsis();
     // Las temporadas repetidas: se piden todas sus versiones para quedarse
     // con la más completa.
     for (final id in SeriesSeasonDetail.duplicated(_allSeasons)) {
@@ -323,6 +371,7 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
       _episode = 0;
       if (_details[season.contentId] case final detail?) _info = detail.info;
     });
+    _maybeLoadSynopsis();
     _seasonTimer?.cancel();
     if (!_details.containsKey(season.contentId)) {
       _seasonTimer = Timer(seasonLoadDelay, () => _load(season.contentId));
@@ -876,7 +925,7 @@ class SeriesDetailScreenState extends State<SeriesDetailScreen> {
           ),
           const SizedBox(height: 8),
         ],
-        Expanded(child: MovieSynopsisBlock(description: info.description)),
+        Expanded(child: MovieSynopsisBlock(description: _synopsisOf(info))),
       ],
     );
   }
@@ -1109,7 +1158,7 @@ TextStyle _numberStyle(
     fontWeight: watched
         ? FontWeight.w900
         : current
-        ? FontWeight.w800
+        ? FontWeight.w700
         : FontWeight.w600,
     color:
         onSolid ??

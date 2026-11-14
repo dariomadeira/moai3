@@ -1,5 +1,6 @@
 import 'package:moai3/platform/platform_channels.dart';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 /// Servicio puente con la biblioteca nativa libranger-jni.so (Titan Ranger).
@@ -131,7 +132,9 @@ class TitanRangerService {
             'moment': moment.inMilliseconds,
           })
           .timeout(const Duration(seconds: 10));
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[Ranger] seek falló: $e');
+    }
   }
 
   /// Avisa a Ranger una operación del reproductor ("start", "pause",
@@ -150,7 +153,9 @@ class TitanRangerService {
         'operation': operation,
         'data': data,
       });
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[Ranger] playerOperation($operation) falló: $e');
+    }
   }
 
   /// Avisa a Ranger un evento del reproductor ("onPrepared",
@@ -171,7 +176,9 @@ class TitanRangerService {
         'extra': extra,
         'data': data,
       });
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[Ranger] playerEvent($event) falló: $e');
+    }
   }
 
   /// Le cuenta a Ranger por dónde va la reproducción y cuánto hay cargado por
@@ -188,7 +195,10 @@ class TitanRangerService {
         'progress': progress.inMilliseconds,
         'buffer': buffer.inMilliseconds,
       });
-    } catch (_) {}
+    } catch (_) {
+      // Se manda en cada vuelta del reproductor: un aviso perdido no se
+      // anota (llenaría el log) y el siguiente lo reemplaza.
+    }
   }
 
   /// Detiene el programa [name] (el que se pasó a [prepareProgram]): Ranger
@@ -203,7 +213,9 @@ class TitanRangerService {
         'instanceId': instanceId,
         'name': name,
       });
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[Ranger] stopProgram falló: $e');
+    }
   }
 
   /// Se cerró el reproductor: como la app oficial, avisa "end" y detiene el

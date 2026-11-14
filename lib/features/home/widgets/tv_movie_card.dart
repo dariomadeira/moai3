@@ -230,8 +230,7 @@ class _TvMovieCardState extends State<TvMovieCard> {
           Positioned(
             left: 6,
             top: 6,
-            // Sin pisar la estrella.
-            right: starred ? 34 : 6,
+            right: 6,
             child: Align(
               alignment: Alignment.topLeft,
               child: Container(
@@ -247,33 +246,11 @@ class _TvMovieCardState extends State<TvMovieCard> {
                   overflow: TextOverflow.ellipsis,
                   style: MoaiText.body(
                     context,
-                    fontSize: 11,
+                    fontSize: MoaiText.sizeCaption,
                     fontWeight: FontWeight.w700,
                     color: scheme.onPrimary,
                   ),
                 ),
-              ),
-            ),
-          ),
-        // Puntaje mayor a 7: la estrella, sin número. Sobre la foto, igual
-        // en claro y en oscuro.
-        if (starred)
-          Positioned(
-            top: 6,
-            right: 6,
-            child: Container(
-              key: const ValueKey('movie_card_star'),
-              width: 24,
-              height: 24,
-              alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                color: Color(0x99000000),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                MoaiIcons.vodRatingFilled,
-                size: MoaiIconSizes.xs,
-                color: Color(0xFFFBBF24),
               ),
             ),
           ),
@@ -330,6 +307,22 @@ class _TvMovieCardState extends State<TvMovieCard> {
                     ),
                   ),
                 ),
+                // Puntaje mayor a 7: la estrella, sin número, al final del
+                // nombre (2026-11-14: sobre el póster tapaba la imagen).
+                if (starred)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 5),
+                    child: Icon(
+                      MoaiIcons.vodRatingFilled,
+                      key: const ValueKey('movie_card_star'),
+                      size: MoaiIconSizes.xs,
+                      // Los ámbar del puntaje en el detalle: sobre el
+                      // cristal claro, el oscuro.
+                      color: scheme.brightness == Brightness.dark
+                          ? const Color(0xFFFBBF24)
+                          : const Color(0xFFD97706),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -450,7 +443,7 @@ class TvShowAllCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: MoaiText.body(
                     context,
-                    fontSize: 11.5,
+                    fontSize: MoaiText.sizeCaption,
                     fontWeight: FontWeight.w700,
                     color: isSelected ? scheme.primary : scheme.onSurface,
                   ),

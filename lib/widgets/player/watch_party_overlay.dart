@@ -368,7 +368,7 @@ class _WatchPartyOverlayState extends State<WatchPartyOverlay> {
                   '0:${remainingSeconds.toString().padLeft(2, '0')}',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 10,
+                    fontSize: MoaiText.sizeCaption,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

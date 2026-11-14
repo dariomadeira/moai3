@@ -384,7 +384,7 @@ class _TvPinDialogState extends State<TvPinDialog>
                             overflow: TextOverflow.ellipsis,
                             style: MoaiText.body(
                               context,
-                              fontSize: 11.5,
+                              fontSize: MoaiText.sizeCaption,
                               color: scheme.error,
                             ),
                           ),

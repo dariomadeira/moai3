@@ -103,9 +103,16 @@ flutter:
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package
 
-  # Tipografía local: Varela Round en toda la interfaz. Un solo peso: las
-  # negritas las sintetiza Flutter.
+  # Tipografía local: Quicksand en toda la interfaz, con sus pesos reales
+  # (400 a 700). Lo que pide 800 o 900 cae en el 700.
   fonts:
-    - family: VarelaRound
+    - family: Quicksand
       fonts:
-        - asset: assets/fonts/varela-round-v21-latin-regular.ttf
+        - asset: assets/fonts/quicksand-v37-latin-regular.ttf
+          weight: 400
+        - asset: assets/fonts/quicksand-v37-latin-500.ttf
+          weight: 500
+        - asset: assets/fonts/quicksand-v37-latin-600.ttf
+          weight: 600
+        - asset: assets/fonts/quicksand-v37-latin-700.ttf
+          weight: 700

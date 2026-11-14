@@ -29,6 +29,7 @@ extension _HomeMoviesView on HomeMoviesAreaState {
       colWidth = TvMovieCard.widthForHeight(cardHeight);
     }
     _cardHeight = cardHeight;
+    _columnWidth = colWidth;
     _columnGap =
         (net - HomeMoviesAreaState._crossAxisCount * colWidth) /
         (HomeMoviesAreaState._crossAxisCount - 1);
@@ -117,7 +118,39 @@ extension _HomeMoviesView on HomeMoviesAreaState {
       children: [
         // Arriba, el mismo margen que a los costados.
         const SizedBox(height: HomeMoviesAreaState._horizontalPadding),
-        Expanded(child: _buildBanner()),
+        Expanded(
+          child: _side.isEmpty
+              ? _buildBanner()
+              // El banner en las tres primeras columnas de la grilla y un
+              // póster en cada una de las otras dos, del alto del banner.
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: _buildBanner()),
+                    for (var c = 0; c < _side.length; c++) ...[
+                      SizedBox(width: _columnGap),
+                      SizedBox(
+                        width: _columnWidth,
+                        child: _buildTile(
+                          _side[c],
+                          'side_$c',
+                          gridFocused && _onSide && _sideCol == c,
+                          () {
+                            _update(() {
+                              _onTop = true;
+                              _onBanner = false;
+                              _onSide = true;
+                              _sideCol = c;
+                            });
+                            _gridFocus.requestFocus();
+                            _onMovieTap(_side[c]);
+                          },
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+        ),
         if (_best.isNotEmpty) ...[
           const SizedBox(height: 8),
           SizedBox(
@@ -132,7 +165,9 @@ extension _HomeMoviesView on HomeMoviesAreaState {
           ),
           SizedBox(
             height: _cardHeight,
-            child: _buildBestRow(gridFocused && !_onBanner ? _bestCol : -1),
+            child: _buildBestRow(
+              gridFocused && !_onBanner && !_onSide ? _bestCol : -1,
+            ),
           ),
         ],
         SizedBox(height: bottom),
@@ -178,42 +213,32 @@ extension _HomeMoviesView on HomeMoviesAreaState {
     );
   }
 
-  /// La tarjeta destacada del Inicio a todo el ancho, con la foto a la
-  /// derecha. ← sale al rail, → desde la última flecha va a Buscar, ↓ baja a
-  /// la fila; arriba no hay nada.
+  /// La tarjeta destacada, con la foto a la derecha. ← sale al rail, → va a
+  /// los pósters de al lado (sin ellos, a Buscar), ↓ baja a la fila; arriba
+  /// no hay nada.
   Widget _buildBanner() {
-    final watchlist = MovieWatchlistService.instance;
-    // Series: "Ver serie" abre el detalle (no se sabe qué capítulo) y Marcar
-    // va a las series marcadas (SPEC-46 §7).
-    final series = SeriesWatchlistService.instance;
-    return ListenableBuilder(
-      listenable: Listenable.merge([watchlist, series]),
-      builder: (context, _) => MovieHeroCard(
-        movies: _banner,
-        focusNode: _bannerFocus,
-        wideImage: true,
-        tintFromImage: true,
-        elevated: false,
-        playLabel: _isSeries ? LocaleKeys.series_open.tr() : null,
-        showMore: !_isSeries,
-        // Arranca con la que eligió el Inicio (si está acá) y recuerda la
-        // que se elija con las flechas.
-        initialIndex: _rotation.chosenIndex(_banner),
-        onMovieChanged: _rotation.remember,
-        onPlay: (movie) =>
-            _isSeries ? _onMovieTap(movie) : playMovie(context, movie),
-        onOpen: _onMovieTap,
-        onToggleInteresting: (movie) => _isSeries
-            ? series.toggle(movie, [movie.contentId])
-            : watchlist.toggle(movie),
-        isInteresting: (movie) => _isSeries
-            ? series.contains([movie.contentId])
-            : watchlist.contains(movie.contentId),
-        onExitLeft: widget.onExitLeft,
-        onExitRight: _openSearch,
-        onExitUp: () {},
-        onExitDown: _leaveBanner,
-      ),
+    // Una tarjeta más de la grilla (2026-11-14): marco de cristal, sin
+    // botones, OK abre el detalle y las destacadas pasan solas.
+    return MovieHeroCard(
+      movies: _banner,
+      focusNode: _bannerFocus,
+      wideImage: true,
+      tintFromImage: true,
+      elevated: false,
+      showActions: false,
+      glassFrame: true,
+      crossFade: true,
+      // Con Buscar abierto no pasa.
+      autoAdvance: _panel == 0 ? HomeMoviesAreaState._bannerEvery : null,
+      // Arranca con la que eligió el Inicio (si está acá) y recuerda por
+      // cuál va: al volver de las categorías sigue en la misma.
+      initialIndex: _rotation.chosenIndex(_banner),
+      onMovieChanged: _rotation.remember,
+      onOpen: _onMovieTap,
+      onExitLeft: widget.onExitLeft,
+      onExitRight: _side.isEmpty ? _openSearch : () => _goSide(0),
+      onExitUp: () {},
+      onExitDown: _leaveBanner,
     );
   }
 
@@ -261,6 +286,7 @@ extension _HomeMoviesView on HomeMoviesAreaState {
                     _update(() {
                       _onTop = true;
                       _onBanner = false;
+                      _onSide = false;
                       _bestCol = c;
                     });
                     _gridFocus.requestFocus();

@@ -420,12 +420,56 @@ void main() {
       await tester.pumpAndSettle();
       expect(key.currentState!.debugOnBanner, isTrue);
 
-      // → desde la última flecha del banner va a Buscar.
-      for (var i = 0; i < 4; i++) {
-        await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
-        await tester.pumpAndSettle();
-      }
+      // Al lado del banner, las dos destacadas que siguen a las seis que
+      // rota (8.9 … 8.4): no se repiten.
+      final state = key.currentState!;
+      expect(find.widgetWithText(TvMovieCard, 'Nueva 3'), findsOneWidget);
+      expect(find.widgetWithText(TvMovieCard, 'Nueva 2'), findsOneWidget);
+      expect(find.widgetWithText(TvMovieCard, 'Nueva 9'), findsNothing);
+      expect(
+        tester.getTopLeft(find.byType(MovieHeroCard)).dx,
+        lessThan(
+          tester.getTopLeft(find.widgetWithText(TvMovieCard, 'Nueva 3')).dx,
+        ),
+      );
+
+      // El banner no tiene botones: → va a los pósters y, desde el último,
+      // a Buscar.
+      expect(find.byKey(const ValueKey('movie_hero_play')), findsNothing);
+      expect(find.byKey(const ValueKey('movie_hero_next')), findsNothing);
+      expect(state.debugSideIndex, -1);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+      expect(FocusManager.instance.primaryFocus?.debugLabel, 'movies_grid');
+      expect(state.debugSideIndex, 0);
+      expect(state.debugOnBanner, isFalse);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+      expect(state.debugSideIndex, 1);
+
+      // ← vuelve por los pósters al banner.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pumpAndSettle();
+      expect(state.debugOnBanner, isTrue);
       expect(FocusManager.instance.primaryFocus?.debugLabel, 'movies_banner');
+
+      // Cada 10 s pasa sola a la destacada siguiente.
+      await tester.pump(const Duration(seconds: 10));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byType(MovieHeroCard),
+          matching: find.text('Nueva 8'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+      expect(state.debugSideIndex, 1);
+
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
       await tester.pumpAndSettle();
       expect(FocusManager.instance.primaryFocus?.debugLabel, 'movie_search');
@@ -536,6 +580,25 @@ void main() {
         await tester.pumpAndSettle();
         expect(state.debugOnBanner, isTrue);
         expect(FocusManager.instance.primaryFocus?.debugLabel, 'movies_banner');
+
+        // Desde la última columna de la fila, ↑ va al póster de arriba y ↓
+        // vuelve a esa columna.
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        for (var i = 0; i < 4; i++) {
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+        }
+        await tester.pumpAndSettle();
+        expect(state.debugBestIndex, 4);
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+        await tester.pumpAndSettle();
+        expect(state.debugSideIndex, 1);
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+        await tester.pumpAndSettle();
+        expect(state.debugSideIndex, 0);
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+        expect(state.debugSideIndex, -1);
+        expect(state.debugBestIndex, 3);
       },
     );
 

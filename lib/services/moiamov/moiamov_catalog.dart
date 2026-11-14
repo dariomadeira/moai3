@@ -287,6 +287,38 @@ extension MoiamovCatalog on MoiamovApiService {
     );
   }
 
+  /// El id de IMDb de una película ("tt1601913"), que el portal manda en
+  /// `keyWords` de su detalle (`v4/getItemData`). Las películas van con
+  /// `type: "1"`: con "0" (el de las series) el portal contesta "剧集不存在".
+  /// `null` si no hay sesión, falla o no lo trae.
+  Future<String?> fetchMovieImdbId(
+    String contentId, {
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
+    if (_currentUserToken.isEmpty) return null;
+    final body = await _postEncrypted(
+      _vodClient,
+      '${_cleanUrl(MoiamovApiService.defaultBaseUrl)}/api/portalCore/v4/getItemData',
+      {
+        'userToken': _currentUserToken,
+        'userId': _currentUserId,
+        'portalCode': _currentPortalCode,
+        'contentId': contentId,
+        'type': '1',
+        'sortType': '0',
+        'language': 'es',
+        'macAddr': MoiamovApiService._deviceMac,
+      },
+      timeout,
+    );
+    if (body == null) return null;
+    return MoiamovApiService._readReply(
+      body,
+      'getItemData $contentId',
+      MoiamovApiService._imdbIdFrom,
+    );
+  }
+
   CatalogResult _emptyCatalog(String sectionLabel) {
     return CatalogResult(
       categories: [],

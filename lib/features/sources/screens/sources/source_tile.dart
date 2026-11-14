@@ -98,7 +98,7 @@ class _SourceTileState extends State<_SourceTile> {
                   color: isFocused
                       ? scheme.onPrimary
                       : scheme.onPrimaryContainer,
-                  fontSize: 10,
+                  fontSize: MoaiText.sizeCaption,
                   fontWeight: FontWeight.bold,
                 ),
               ),

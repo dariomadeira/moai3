@@ -10,6 +10,7 @@ import 'package:moai3/models/calendar_event.dart';
 import 'package:moai3/models/channel.dart';
 import 'package:moai3/services/calendar/argentina_time.dart';
 import 'package:moai3/state/calendar_provider.dart';
+import 'package:moai3/theme/moai_sport_colors.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/widgets/tv_common/tv_tile.dart';
 import 'package:moai3/widgets/tv_common/moai_glass.dart';

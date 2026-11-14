@@ -137,7 +137,10 @@ extension MoiamovSession on MoiamovApiService {
         prefs.setString('moiamov_sn_field', _currentSnField);
         prefs.setString('moiamov_b29', _currentB29);
       });
-    } catch (_) {}
+    } catch (_) {
+      // La sesión ya quedó activa en memoria: si no se pudo guardar, el
+      // próximo arranque la pide de nuevo.
+    }
     return true;
   }
 

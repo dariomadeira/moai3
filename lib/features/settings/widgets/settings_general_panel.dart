@@ -201,12 +201,16 @@ class SettingsGeneralPanelState extends State<SettingsGeneralPanel> {
           onKeyDown: onKeyDown,
         );
       case _SettingsGeneralItemType.weatherLocation:
-        final weather = context.watch<WeatherProvider>();
+        // Sólo el nombre del lugar: el clima se actualiza solo cada tanto y
+        // eso no tiene por qué redibujar el panel.
+        final weatherPlace = context.select<WeatherProvider, String>(
+          (weather) => weather.locationDisplayName,
+        );
         return TvSettingsActionRow(
           focusNode: focusNode,
           icon: MoaiIcons.weather,
           label: LocaleKeys.settings_general_weather_title.tr(),
-          description: weather.locationDisplayName,
+          description: weatherPlace,
           onPressed: () {
             TvWeatherLocationDialog.show(context);
           },

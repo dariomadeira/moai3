@@ -130,7 +130,6 @@ class _DebugLogPanelState extends State<DebugLogPanel> {
                     context,
                     color: scheme.onSurface,
                     fontSize: 16,
-                    fontWeight: FontWeight.w800,
                   ),
                 ),
               );

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:moai3/features/home/widgets/home_clock.dart';
 import 'package:moai3/features/settings/widgets/settings_widgets.dart';
+import 'package:moai3/theme/moai_sport_colors.dart';
 import 'package:moai3/theme/moai_text.dart';
 import 'package:moai3/models/sport_subscription.dart';
 import 'package:moai3/state/calendar_provider.dart';
@@ -135,11 +136,10 @@ class CalendarSubscriptionsPanelState
                                     ) {
                                       // El color del deporte, el mismo de
                                       // sus eventos, encendido o no.
-                                      final sportColor =
-                                          CalendarProvider.getSubscriptionColor(
-                                            sub.id,
-                                            context.scheme.primary,
-                                          );
+                                      final sportColor = MoaiSportColors.of(
+                                        sub.id,
+                                        context.scheme.primary,
+                                      );
                                       return Padding(
                                         padding: const EdgeInsets.symmetric(
                                           vertical: TvPanelSlots.gap / 2,

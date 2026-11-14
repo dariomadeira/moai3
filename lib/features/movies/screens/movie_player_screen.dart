@@ -421,7 +421,10 @@ class _MoviePlayerScreenState extends State<MoviePlayerScreen> {
           }
           _maybeAskRecommendation();
         }
-      } catch (_) {}
+      } catch (_) {
+        // Una vuelta fallida (el motor cerrándose o sin responder) no se
+        // anota: corre cada 600 ms y la que sigue lo vuelve a intentar.
+      }
     });
   }
 

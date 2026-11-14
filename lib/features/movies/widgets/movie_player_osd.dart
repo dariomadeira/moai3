@@ -676,7 +676,7 @@ class MoviePlayerErrorPanel extends StatelessWidget {
     Widget key(String label) => Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: moaiGlassChipDecoration(scheme, radius: 6),
-      child: Text(label, style: hint.copyWith(fontWeight: FontWeight.w800)),
+      child: Text(label, style: hint.copyWith(fontWeight: FontWeight.w700)),
     );
 
     return Container(

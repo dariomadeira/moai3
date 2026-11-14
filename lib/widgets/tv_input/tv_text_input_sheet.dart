@@ -243,7 +243,7 @@ class _TvTextInputSheetState extends State<_TvTextInputSheet> {
                                     style: MoaiText.body(
                                       context,
                                       color: scheme.onSurfaceVariant,
-                                      fontSize: 11,
+                                      fontSize: MoaiText.sizeCaption,
                                       letterSpacing: 0.2,
                                     ),
                                   ),

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:moai3/models/movie_models.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -77,7 +78,10 @@ class MovieProgressService {
       if (json is Map<String, dynamic>) {
         return MovieWatchProgress.fromJson(json);
       }
-    } catch (_) {}
+    } catch (e) {
+      // Guardado ilegible: como si no hubiera progreso.
+      debugPrint('[MovieProgress] Progreso ilegible de $contentId: $e');
+    }
     return null;
   }
 

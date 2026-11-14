@@ -281,7 +281,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
     });
 
     if (_currentUrl.isEmpty && !channel.isPluginChannel) {
-      _scheduleReconnect(reason: 'URL vacía');
+      _scheduleReconnect(reason: LocaleKeys.player_error_empty_url.tr());
       return;
     }
 
@@ -299,7 +299,7 @@ class _TvViewerState extends State<TvViewer> with WidgetsBindingObserver {
     }
     if (!alive()) return;
     if (resolved.url.isEmpty) {
-      _scheduleReconnect(reason: 'URL vacía');
+      _scheduleReconnect(reason: LocaleKeys.player_error_empty_url.tr());
       return;
     }
 

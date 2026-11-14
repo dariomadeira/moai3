@@ -496,8 +496,7 @@ class _DiscountGridCard extends StatelessWidget {
                         DiscountFormat.headline(d),
                         style: MoaiText.display(
                           context,
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w800,
+                          fontSize: MoaiText.sizeCaption,
                           color: fgColor,
                         ),
                       ),
@@ -520,10 +519,10 @@ class _DiscountGridCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: MoaiText.body(
                     context,
-                    fontSize: 9.5,
+                    fontSize: MoaiText.sizeDense,
                     fontWeight: FontWeight.w700,
                     color: fgColor,
-                    height: 1.25,
+                    height: 1.2,
                   ),
                 ),
               ),
@@ -536,7 +535,7 @@ class _DiscountGridCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: MoaiText.body(
                     context,
-                    fontSize: 8.5,
+                    fontSize: MoaiText.sizeDense,
                     color: scheme.onSurfaceVariant,
                     height: 1.2,
                   ),

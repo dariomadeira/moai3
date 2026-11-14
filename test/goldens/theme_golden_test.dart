@@ -273,7 +273,6 @@ class _Sheet extends StatelessWidget {
                   style: MoaiText.display(
                     context,
                     fontSize: 20,
-                    fontWeight: FontWeight.w800,
                     color: scheme.onSurface,
                   ),
                 ),

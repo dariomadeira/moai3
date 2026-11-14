@@ -674,6 +674,7 @@ abstract class  LocaleKeys {
   static const playback_error_unknown = 'playback_error_unknown';
   static const player_change_server = 'player_change_server';
   static const player_error_all_servers = 'player_error_all_servers';
+  static const player_error_empty_url = 'player_error_empty_url';
   static const player_error_no_urls = 'player_error_no_urls';
   static const player_error_retry_hint = 'player_error_retry_hint';
   static const player_plugin_missing_ids = 'player_plugin_missing_ids';
@@ -726,7 +727,6 @@ abstract class  LocaleKeys {
   static const series_episodes_one = 'series_episodes_one';
   static const series_next_episode = 'series_next_episode';
   static const series_next_season = 'series_next_season';
-  static const series_open = 'series_open';
   static const series_recommend_prompt = 'series_recommend_prompt';
   static const series_seasons_count = 'series_seasons_count';
   static const series_seasons_label = 'series_seasons_label';

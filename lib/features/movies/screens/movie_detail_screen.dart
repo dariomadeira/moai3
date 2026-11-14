@@ -15,6 +15,7 @@ import 'package:moai3/widgets/tv_common/tv_meta_pill.dart';
 import 'package:moai3/features/movies/movie_playback.dart';
 import 'package:moai3/services/moiamov_api_service.dart';
 import 'package:moai3/services/movie_metadata_service.dart';
+import 'package:moai3/services/movie_synopsis_service.dart';
 import 'package:moai3/services/movie_watchlist_service.dart';
 import 'package:moai3/services/movie_progress_service.dart';
 import 'package:moai3/services/titan_ranger_service.dart';
@@ -36,6 +37,11 @@ class MovieDetailScreen extends StatefulWidget {
   /// Los tests lo reemplazan si quieren simular red o respuesta fija.
   final Future<String?> Function(MovieItem movie)? resolveYear;
 
+  /// La sinopsis en español de TMDb cuando la del catálogo falta o está en
+  /// inglés; por defecto [MovieSynopsisService.forMovie]. Los tests lo
+  /// reemplazan.
+  final Future<String?> Function(MovieItem movie)? resolveSynopsis;
+
   /// Abre un adelanto en YouTube; por defecto [YoutubeLauncher.open]. `false`
   /// si no se pudo.
   final Future<bool> Function(String videoId)? openTrailer;
@@ -45,6 +51,7 @@ class MovieDetailScreen extends StatefulWidget {
     required this.movie,
     this.resolveStream,
     this.resolveYear,
+    this.resolveSynopsis,
     this.openTrailer,
   });
 
@@ -66,6 +73,9 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   bool _isLoadingStream = false;
   MovieWatchProgress? _watchProgress;
   String? _resolvedYear;
+
+  /// La sinopsis de TMDb, si la del catálogo no sirve y se consiguió.
+  String? _synopsis;
 
   /// Un tráiler se ve de una vez: sin progreso ni "Marcar como interesante".
   bool get _isTrailer => widget.movie.isTrailer;
@@ -92,6 +102,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
       );
       _loadProgress();
       _loadWatchlist();
+      _loadSynopsis();
     }
     _openingFocus.start();
   }
@@ -132,10 +143,32 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     }
   }
 
+  /// Sólo sale a buscar si la sinopsis del catálogo falta o está en inglés
+  /// ([MovieSynopsisService.needsLookup]); mientras tanto se ve la que hay.
+  Future<void> _loadSynopsis() async {
+    final movie = widget.movie;
+    if (!MovieSynopsisService.needsLookup(movie.description)) return;
+    final resolver =
+        widget.resolveSynopsis ?? MovieSynopsisService.instance.forMovie;
+    final String? synopsis;
+    try {
+      synopsis = await resolver(movie);
+    } catch (e) {
+      debugPrint('⚠️ [Sinopsis] ${movie.name}: $e');
+      return;
+    }
+    if (!mounted || widget.movie.contentId != movie.contentId) return;
+    if (synopsis != null && synopsis.isNotEmpty) {
+      setState(() => _synopsis = synopsis);
+    }
+  }
+
   @override
   void didUpdateWidget(covariant MovieDetailScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.movie.contentId != widget.movie.contentId) {
+      _synopsis = null;
+      if (!_isTrailer) _loadSynopsis();
       _resolvedYear = widget.movie.formattedYear;
       if (_resolvedYear == null) {
         _loadYear();
@@ -489,7 +522,11 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
         ],
 
         // 6. Sinopsis: sin foco ni scroll, la letra se achica para que entre.
-        Expanded(child: MovieSynopsisBlock(description: movie.description)),
+        Expanded(
+          child: MovieSynopsisBlock(
+            description: _synopsis ?? movie.description,
+          ),
+        ),
       ],
     );
   }

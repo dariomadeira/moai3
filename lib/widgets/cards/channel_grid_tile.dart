@@ -148,7 +148,7 @@ class _ChannelGridTileState extends State<ChannelGridTile> {
             style: MoaiText.body(
               context,
               color: labelColor,
-              fontSize: 10.5,
+              fontSize: MoaiText.sizeDense,
               fontWeight: itemStyle.fontWeight,
             ),
           ),

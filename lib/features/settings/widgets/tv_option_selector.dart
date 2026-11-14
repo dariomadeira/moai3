@@ -132,8 +132,8 @@ class _TvOptionSelectorState<T> extends State<TvOptionSelector<T>> {
                   style: MoaiText.body(
                     context,
                     color: fg,
-                    fontSize: 11,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    fontSize: MoaiText.sizeCaption,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                   ),
                 ),
               ),

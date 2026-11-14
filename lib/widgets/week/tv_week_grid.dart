@@ -87,7 +87,7 @@ class TvWeekDayColumn extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: MoaiText.body(
                         context,
-                        fontSize: 11,
+                        fontSize: MoaiText.sizeCaption,
                         fontWeight: isToday ? FontWeight.w900 : FontWeight.w600,
                         color: dayNameColor,
                       ),
@@ -229,7 +229,7 @@ class TvWeekDayColumn extends StatelessWidget {
               textAlign: TextAlign.center,
               style: MoaiText.body(
                 context,
-                fontSize: 11,
+                fontSize: MoaiText.sizeCaption,
                 fontWeight: isFocused ? FontWeight.w700 : FontWeight.w500,
                 color: contentColor,
               ),
@@ -442,7 +442,7 @@ class TvWeekStatusChip extends StatelessWidget {
             style: MoaiText.body(
               context,
               fontSize: 8,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
               color: color,
               letterSpacing: 0.4,
             ),

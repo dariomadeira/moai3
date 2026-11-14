@@ -23,10 +23,23 @@ void main() {
   test('la fuente real está cargada', () {
     // Con la de prueba de Flutter (una familia sin cargar cae en ella) mediría
     // igual.
-    expect(width('VarelaRound'), isNot(width('SinCargar')));
+    expect(width('Quicksand'), isNot(width('SinCargar')));
   });
 
-  testWidgets('títulos y texto usan Varela Round', (tester) async {
+  test('cada peso tiene su archivo: la negrita no es sintética', () {
+    final widths = {
+      for (final weight in const [
+        FontWeight.w400,
+        FontWeight.w500,
+        FontWeight.w600,
+        FontWeight.w700,
+      ])
+        width('Quicksand', weight: weight),
+    };
+    expect(widths, hasLength(4));
+  });
+
+  testWidgets('títulos y texto usan Quicksand', (tester) async {
     late BuildContext ctx;
     await tester.pumpWidget(
       MaterialApp(
@@ -44,7 +57,7 @@ void main() {
       MoaiText.display(ctx, fontSize: 18, headline: true),
       MoaiText.body(ctx),
     ]) {
-      expect(style.fontFamily, 'VarelaRound');
+      expect(style.fontFamily, 'Quicksand');
     }
   });
 }

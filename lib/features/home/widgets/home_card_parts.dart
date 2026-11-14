@@ -17,7 +17,6 @@ class HomeCardSummary extends StatelessWidget {
     required this.color,
     required this.title,
     required this.line,
-    this.highlightLine = false,
     this.svgIcon,
   });
 
@@ -35,9 +34,6 @@ class HomeCardSummary extends StatelessWidget {
   final Color color;
   final String title;
   final String line;
-
-  /// La línea va en el acento (p. ej. un aviso o "Presioná OK").
-  final bool highlightLine;
 
   @override
   Widget build(BuildContext context) {
@@ -92,8 +88,8 @@ class HomeCardSummary extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: MoaiText.body(
             context,
-            color: highlightLine ? scheme.primary : muted,
-            fontSize: 11.5,
+            color: muted,
+            fontSize: MoaiText.sizeCaption,
             fontWeight: FontWeight.w500,
           ),
         ),

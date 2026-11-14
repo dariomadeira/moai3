@@ -44,9 +44,10 @@ const Map<String, int> _allowed = {
   'lib/features/settings/screens/accent_color_screen.dart': 2,
   'lib/features/settings/widgets/settings_widgets.dart': 6,
   'lib/features/settings/widgets/tv_option_selector.dart': 5,
-  'lib/state/calendar_provider.dart': 6,
   'lib/theme/moai_accent_colors.dart': 11,
   'lib/theme/moai_focus_style.dart': 1,
+  // Un color por deporte (de datos): estaban en calendar_provider.dart.
+  'lib/theme/moai_sport_colors.dart': 6,
   'lib/utils/image_tint.dart': 1,
   'lib/widgets/buttons/moai_pill_button.dart': 5,
   'lib/widgets/buttons/tv_back_pill.dart': 1,
